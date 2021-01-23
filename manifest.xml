@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RenoiseScriptingTool doc_version="0">
+  <ApiVersion>6</ApiVersion>
+  <AutoUpgraded>true</AutoUpgraded>
+  <Id>com.dufte.SimplePianoroll</Id>
+  <Version>0.1</Version>
+  <Author>dufte (toimp)</Author>
+  <Name>Simple Pianoroll</Name>
+  <Category>Tools</Category>
+  <Description>Simple pianoroll for Renoise</Description>
+  <Homepage>http://tools.renoise.com</Homepage>
+</RenoiseScriptingTool>
