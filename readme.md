@@ -1,4 +1,4 @@
-# Simple Pianoroll for Renoise [ALPHA]
+# Simple Pianoroll for Renoise [ALPHA-0.1]
 
 * still work in progress *
 
