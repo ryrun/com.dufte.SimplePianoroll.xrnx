@@ -6,6 +6,11 @@
 
 Adding note logic is not done yet. 
 
+## Install
+
+Just download the source as ZIP, change file extension from "zip" to "xrnx" and drag and drop it onto renoise.
+
+
 ## How to use it
 
 * Right click on a track in pattern editor and select "Edit with Pianoroll ..."
