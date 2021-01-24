@@ -20,3 +20,5 @@ Just download the source as ZIP, change file extension from "zip" to "xrnx" and 
 * multiple select notes by click each notes while holding "Left-CTRL"
 * transpose notes by select one or more and use arrow keys, when you hold "Left-SHIFT" or "Right-SHIFT" it will transpose by one octave
 * for note preview, enable OSC server in Renoise settings, port 8000 UDP (currently hardcoded)
+* for polyphony, just add note columns for the current track
+* when a track is empty, the current selected instrument will be used
