@@ -825,6 +825,7 @@ local function main_function()
         fillPianoRoll()
         --show dialog
         windowObj = app:show_custom_dialog("Simple Pianoroll", windowContent, function(dialog, key)
+            local handled = false
             if key.name == "lcontrol" and key.state == "pressed" then
                 keyControl = true
             elseif key.name == "lcontrol" and key.state == "released" then
@@ -854,6 +855,7 @@ local function main_function()
                 else
                     transposeSelectedNotes(1)
                 end
+                handled = true
             end
             if key.name == "down" and key.state == "released" then
                 if keyShift or keyRShift then
@@ -861,6 +863,11 @@ local function main_function()
                 else
                     transposeSelectedNotes(-1)
                 end
+                handled = true
+            end
+            --return key to host
+            if not handled then
+                return key
             end
         end, {
             send_key_repeat = false,
