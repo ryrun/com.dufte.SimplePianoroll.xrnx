@@ -100,7 +100,7 @@ local function removeSelectedNotes()
     refreshPianoRollNeeded = true
 end
 
---simple function for double blick dbclk detection for buttons
+--simple function for double click detection for buttons
 local function dbclkDetector(index)
     if lastClickCache[index] ~= nil and os.clock() - lastClickCache[index] < dblclicktime then
         return true
