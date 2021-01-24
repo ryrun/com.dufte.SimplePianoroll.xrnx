@@ -19,3 +19,4 @@ Just download the source as ZIP, change file extension from "zip" to "xrnx" and 
 * click on notes to set note length and velocity for drawing notes, will also select this note
 * multiple select notes by click each notes while holding "Left-CTRL"
 * transpose notes by select one or more and use arrow keys, when you hold "Left-SHIFT" or "Right-SHIFT" it will transpose by one octave
+* for note preview,e nable OSC server in Renoise settings, port 8000 UDP (currently hardcoded)
