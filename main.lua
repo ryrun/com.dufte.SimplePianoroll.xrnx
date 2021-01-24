@@ -576,6 +576,7 @@ local function appNewDoc()
     song.selected_pattern_track_observable:add_notifier(obsPianoRefresh)
     song.selected_pattern_observable:add_notifier(obsPianoRefresh)
     song.selected_track_observable:add_notifier(obsPianoRefresh)
+    song.selected_pattern.number_of_lines_observable:add_notifier(obsPianoRefresh)
     refreshPianoRollNeeded = true
 end
 
