@@ -301,6 +301,10 @@ function pianoGridClick(x, y)
         }
         --
         refreshPianoRollNeeded = true
+    else
+        --deselect selected notes
+        noteSelection = {}
+        refreshPianoRollNeeded = true
     end
 end
 
