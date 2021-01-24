@@ -4,12 +4,17 @@
 
 ## Important
 
-Adding note logic is not fully done yet. 
+Adding note logic is not fully done yet. Dragging currently not possible.
+
+## Video on Youtube
+
+Showing the tool in action:
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/5qJCNvbco7M/0.jpg)](https://www.youtube.com/watch?v=5qJCNvbco7M)
 
 ## Install
 
 Just download the source as ZIP, change file extension from "zip" to "xrnx" and drag and drop it onto renoise.
-
 
 ## How to use it
 
