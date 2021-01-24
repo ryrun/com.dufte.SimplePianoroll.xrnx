@@ -91,7 +91,7 @@ local function dbclkDetector(index)
     if lastClickCache[index] ~= nil and os.clock() - lastClickCache[index] < dblclicktime then
         return true
     end
-    lastClickCache[index] = os.clock();
+    lastClickCache[index] = os.clock()
     return false
 end
 
@@ -239,6 +239,7 @@ end
 --enable a note button, when its visible, set correct length of the button
 local function enableNoteButton(column, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, noteOff)
     if current_note_rowIndex ~= nil then
+        local color = colorNote
         local noteOnStepIndex = current_note_step
         local current_note_index = tostring(current_note_step) .. "_" .. tostring(current_note_rowIndex)
         if current_note_vel == nil then
@@ -257,18 +258,24 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
         end
         table.insert(noteOnStep[noteOnStepIndex], current_note_index)
         local b = vbw["b" .. current_note_index]
-        b.width = (gridStepSizeW * current_note_len) - (gridSpacing * (current_note_len - 1));
+        b.width = (gridStepSizeW * current_note_len) - (gridSpacing * (current_note_len - 1))
         if gridStepSizeW < 34 and current_note_len < 2 then
-            b.text = "";
+            b.text = ""
         elseif gridStepSizeH < 18 then
-            b.text = "";
+            b.text = ""
         else
-            b.text = current_note_string;
+            b.text = current_note_string
         end
-        b.visible = true;
-        b.color = colorNote
+        for i=1, #noteSelection do
+            if noteSelection[i].note == current_note and noteSelection[i].line == current_note_step and noteSelection[i].column == column then
+                color = colorNoteSelected
+                break
+            end
+        end
+        b.color = color
+        b.visible = true
         if noteOff then
-            vbw["p" .. current_note_index].visible = false;
+            vbw["p" .. current_note_index].visible = false
         end
     end
 end
@@ -372,13 +379,13 @@ local function fillPianoRoll()
                         p.visible = true
                         --refresh step indicator
                         if y == 1 then
-                            vbw["s" .. stepString].visible = true;
+                            vbw["s" .. stepString].visible = true
                         end
                     else
                         p.visible = false
                         --refresh step indicator
                         if y == 1 then
-                            vbw["s" .. stepString].visible = false;
+                            vbw["s" .. stepString].visible = false
                         end
                     end
                 end
@@ -412,7 +419,7 @@ local function fillPianoRoll()
                 end
 
                 if current_note_rowIndex ~= nil then
-                    vbw["p" .. stepString .. "_" .. tostring(current_note_rowIndex)].visible = false;
+                    vbw["p" .. stepString .. "_" .. tostring(current_note_rowIndex)].visible = false
                     current_note_len = current_note_len + 1
                 end
 
@@ -520,11 +527,11 @@ local function main_function()
     if not windowObj or not windowObj.visible then
         lastStepOn = nil
 
-        vbw.note_len = nil;
-        vbw.note_vel = nil;
-        vbw.note_end_vel = nil;
+        vbw.note_len = nil
+        vbw.note_vel = nil
+        vbw.note_end_vel = nil
 
-        local vb_temp;
+        local vb_temp
         local playCursor = vb:row {
             margin = -gridMargin,
             spacing = -gridSpacing,
