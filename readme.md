@@ -18,4 +18,4 @@ Just download the source as ZIP, change file extension from "zip" to "xrnx" and 
 * note deletion with double click on note, or when selected "DEL"-key  
 * click on notes to set note length and velocity for drawing notes, will also select this note
 * multiple select notes by click each notes while holding "Left-CTRL"
-* transpose notes by select one or more and use arrow keys, when "Left-SHIFT" is pressed it will tranpose by one octave
+* transpose notes by select one or more and use arrow keys, when you hold "Left-SHIFT" or "right-SHIFT" it will tranpose by one octave

@@ -68,6 +68,7 @@ local noteData = {}
 --key states
 local keyControl = false
 local keyShift = false
+local keyRShift = false
 local keyAlt = false
 
 --
@@ -835,18 +836,23 @@ local function main_function()
             elseif key.name == "lshift" and key.state == "released" then
                 keyShift = false
             end
+            if key.name == "rshift" and key.state == "pressed" then
+                keyRShift = true
+            elseif key.name == "rshift" and key.state == "released" then
+                keyRShift = false
+            end
             if key.name == "del" and key.state == "released" then
                 removeSelectedNotes()
             end
             if key.name == "up" and key.state == "released" then
-                if keyShift then
+                if keyShift or keyRShift then
                     transposeSelectedNotes(12)
                 else
                     transposeSelectedNotes(1)
                 end
             end
             if key.name == "down" and key.state == "released" then
-                if keyShift then
+                if keyShift or keyRShift then
                     transposeSelectedNotes(-12)
                 else
                     transposeSelectedNotes(-1)
