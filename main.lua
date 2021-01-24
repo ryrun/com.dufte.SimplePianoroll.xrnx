@@ -563,6 +563,9 @@ end
 
 --refresh notifier for observers
 local function obsPianoRefresh()
+    --clear note selection
+    noteSelection = {}
+    --set refresh flag
     refreshPianoRollNeeded = true
 end
 
