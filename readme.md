@@ -13,6 +13,9 @@ Just download the source as ZIP, change file extension from "zip" to "xrnx" and 
 
 ## How to use it
 
-* Right click on a track in pattern editor and select "Edit with Pianoroll ..."
-* Note drawing with double click, will also play the note
-* Click on notes to set note length and velocity for drawing notes
+* right click on a track in pattern editor and select "Edit with Pianoroll ..."
+* note drawing with double click, will also play the note
+* note deletion with double click on note, or when selected "DEL"-key  
+* click on notes to set note length and velocity for drawing notes, will also select this note
+* multiple select notes by click each notes while holding "Left-CTRL"
+* transpose notes by select one or more and use arrow keys, when "Left-SHIFT" is pressed it will tranpose by one octave

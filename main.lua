@@ -90,10 +90,33 @@ end
 local function removeSelectedNotes()
     local lineValues = song.selected_pattern_track.lines
     --loop through selected notes
-    for key,value in pairs(noteSelection) do
+    for key, value in pairs(noteSelection) do
         local note_column = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column)
         if note_column ~= nil then
             note_column:clear()
+            --check for note on before this note, set note off when needed
+            for i = noteSelection[key].line, 1, -1 do
+                local temp = lineValues[i]:note_column(noteSelection[key].column)
+                if temp.note_value < 120 then
+                    note_column.note_value = 120
+                    break
+                elseif temp.note_value == 120 then
+                    break
+                end
+            end
+            --check for note off
+            if noteSelection[key].len > 1 then
+                --remove end note vel
+                note_column = lineValues[noteSelection[key].line + noteSelection[key].len - 1]:note_column(noteSelection[key].column)
+                note_column:clear()
+                --remove note off, when needed
+                if noteSelection[key].line + noteSelection[key].len <= song.selected_pattern.number_of_lines then
+                    note_column = lineValues[noteSelection[key].line + noteSelection[key].len]:note_column(noteSelection[key].column)
+                    if note_column.note_value == 120 then
+                        note_column:clear()
+                    end
+                end
+            end
         end
     end
     noteSelection = {}
@@ -171,6 +194,23 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed)
         --start timer
         renoise.tool():add_timer(triggerTimer, triggerTime)
     end
+end
+
+--transpose each selected notes
+local function transposeSelectedNotes(transpose)
+    local lineValues = song.selected_pattern_track.lines
+    for key, value in pairs(noteSelection) do
+        local note_column = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column)
+        noteSelection[key].note = noteSelection[key].note + transpose
+        if noteSelection[key].note < 0 then
+            noteSelection[key].note = 0
+        elseif noteSelection[key].note >= 120 then
+            noteSelection[key].note = 119
+        end
+        note_column.note_value = noteSelection[key].note
+        triggerNoteOfCurrentInstrument(noteSelection[key].note)
+    end
+    refreshPianoRollNeeded = true
 end
 
 --convert the note value to a grid y position
@@ -797,6 +837,20 @@ local function main_function()
             end
             if key.name == "del" and key.state == "released" then
                 removeSelectedNotes()
+            end
+            if key.name == "up" and key.state == "released" then
+                if keyShift then
+                    transposeSelectedNotes(12)
+                else
+                    transposeSelectedNotes(1)
+                end
+            end
+            if key.name == "down" and key.state == "released" then
+                if keyShift then
+                    transposeSelectedNotes(-12)
+                else
+                    transposeSelectedNotes(-1)
+                end
             end
         end, {
             send_key_repeat = false,
