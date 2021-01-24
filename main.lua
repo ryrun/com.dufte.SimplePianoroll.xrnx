@@ -263,14 +263,44 @@ function pianoGridClick(x, y)
     if dbclk then
         local steps = song.selected_pattern.number_of_lines
         local lineValues = song.selected_pattern_track.lines
-        local column = 1
+        local column
         local note_value
         local noteOff = false
-        --disable edit mode because of side effects
-        song.transport.edit_mode = false
         --move x by stepoffset
         x = x + stepOffset
-        --
+        --disable edit mode because of side effects
+        song.transport.edit_mode = false
+        --check if enough space for a new note
+        for c = 1, song.selected_track.visible_note_columns do
+            local validSpace = true
+            --check for note on before
+            if x > 1 then
+                for i = x, 1, -1 do
+                    if lineValues[i]:note_column(c).note_value < 120 then
+                        validSpace = false
+                        break
+                    elseif lineValues[i]:note_column(c).note_value == 120 then
+                        break
+                    end
+                end
+            end
+            --check for note on in
+            for i = x, x + currentNoteLength - 1 do
+                if lineValues[i]:note_column(c).note_value < 120 then
+                    validSpace = false
+                end
+            end
+            if validSpace then
+                column = c
+                break
+            end
+        end
+        --no column found
+        if column == nil then
+            --no space for this note
+            return false
+        end
+        --add new note
         note_value = gridOffset2NoteValue(y)
         lineValues[x]:note_column(column).note_value = note_value
         lineValues[x]:note_column(column).volume_string = string.format("%X", currentNoteVelocity)
