@@ -257,7 +257,7 @@ function noteClick(x, y)
     end
 end
 
---we be called, when an empty grid button was clicked
+--will be called, when an empty grid button was clicked
 function pianoGridClick(x, y)
     local dbclk = dbclkDetector("p" .. tostring(x) .. "_" .. tostring(y))
     if dbclk then
@@ -268,6 +268,11 @@ function pianoGridClick(x, y)
         local noteOff = false
         --move x by stepoffset
         x = x + stepOffset
+        --check if current note length is too long for pattern size, reduce len if needed
+        if x+currentNoteLength>steps then
+            currentNoteLength = steps-x +1
+            refreshNoteControls()
+        end
         --disable edit mode because of side effects
         song.transport.edit_mode = false
         --check if enough space for a new note
