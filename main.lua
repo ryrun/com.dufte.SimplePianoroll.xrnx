@@ -86,6 +86,20 @@ function dump(o)
     end
 end
 
+--remove selected notes
+local function removeSelectedNotes()
+    local lineValues = song.selected_pattern_track.lines
+    --loop through selected notes
+    for key,value in pairs(noteSelection) do
+        local note_column = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column)
+        if note_column ~= nil then
+            note_column:clear()
+        end
+    end
+    noteSelection = {}
+    refreshPianoRollNeeded = true
+end
+
 --simple function for double blick dbclk detection for buttons
 local function dbclkDetector(index)
     if lastClickCache[index] ~= nil and os.clock() - lastClickCache[index] < dblclicktime then
@@ -184,6 +198,7 @@ function noteClick(x, y)
     local dbclk = dbclkDetector("b" .. index)
     if dbclk then
         --note remove
+        removeSelectedNotes()
     else
         local note_data = noteData[index]
         if note_data ~= nil then
@@ -191,7 +206,7 @@ function noteClick(x, y)
             if not keyControl then
                 noteSelection = {}
             end
-            table.insert(noteSelection, note_data)
+            noteSelection[tostring(note_data.line) .. "_" .. tostring(note_data.column)] = note_data
             currentNoteLength = note_data.len
             currentNoteVelocity = note_data.vel
             refreshNoteControls()
@@ -209,6 +224,7 @@ function pianoGridClick(x, y)
         local lineValues = song.selected_pattern_track.lines
         local column = 1
         local note_value
+        local noteOff = false
         --disable edit mode because of side effects
         song.transport.edit_mode = false
         --move x by stepoffset
@@ -226,12 +242,23 @@ function pianoGridClick(x, y)
             if lineValues[x + currentNoteLength]:note_column(column).note_value < 120 then
 
             else
+                noteOff = true
                 lineValues[x + currentNoteLength]:note_column(column).note_value = 120
             end
         end
         if not song.transport.playing then
             triggerNoteOfCurrentInstrument(note_value)
         end
+        --clear selection and add new note as new selection
+        noteSelection = {}
+        noteSelection[tostring(x) .. "_" .. tostring(column)] = {
+            note = note_value,
+            column = column,
+            line = x,
+            len = currentNoteLength,
+            noteOff = noteOff,
+        }
+        --
         refreshPianoRollNeeded = true
     end
 end
@@ -240,13 +267,14 @@ end
 local function enableNoteButton(column, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, noteOff)
     if current_note_rowIndex ~= nil then
         local color = colorNote
+        local line = current_note_step + stepOffset
         local noteOnStepIndex = current_note_step
         local current_note_index = tostring(current_note_step) .. "_" .. tostring(current_note_rowIndex)
         if current_note_vel == nil then
             current_note_vel = 255
         end
         noteData[current_note_index] = {
-            line = current_note_step,
+            line = line,
             note = current_note,
             vel = current_note_vel,
             len = current_note_len,
@@ -266,11 +294,8 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
         else
             b.text = current_note_string
         end
-        for i=1, #noteSelection do
-            if noteSelection[i].note == current_note and noteSelection[i].line == current_note_step and noteSelection[i].column == column then
-                color = colorNoteSelected
-                break
-            end
+        if noteSelection[tostring(line) .. "_" .. tostring(column)] ~= nil then
+            color = colorNoteSelected
         end
         b.color = color
         b.visible = true
@@ -770,8 +795,8 @@ local function main_function()
             elseif key.name == "lshift" and key.state == "released" then
                 keyShift = false
             end
-            if key.name == "del" and key.state == "released" and #noteSelection > 0 then
-                print("kill notes")
+            if key.name == "del" and key.state == "released" then
+                removeSelectedNotes()
             end
         end, {
             send_key_repeat = false,
