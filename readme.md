@@ -1,10 +1,10 @@
 # Simple Pianoroll for Renoise [ALPHA-0.1]
-
 * still work in progress *
+![Pianoroll in action](https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/assets/pianorollanim.gif?raw=true "Pianoroll in Renoise")
 
 ## Important
 
-Adding note logic is not done yet. 
+Adding note logic is not fully done yet. 
 
 ## Install
 
