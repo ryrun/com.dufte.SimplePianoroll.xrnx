@@ -1,4 +1,4 @@
-# Simple Pianoroll for Renoise [ALPHA-0.1]
+# Simple Pianoroll for Renoise [alpha]
 * still work in progress *
 ![Pianoroll in action](https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pianorollanim.gif?raw=true "Pianoroll in Renoise")
 
