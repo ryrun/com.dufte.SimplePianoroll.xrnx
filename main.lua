@@ -328,9 +328,8 @@ function pianoGridClick(x, y)
                 lineValues[x + currentNoteLength]:note_column(column).note_value = 120
             end
         end
-        if not song.transport.playing then
-            triggerNoteOfCurrentInstrument(note_value)
-        end
+        --trigger preview notes
+        triggerNoteOfCurrentInstrument(note_value)
         --clear selection and add new note as new selection
         noteSelection = {}
         noteSelection[tostring(x) .. "_" .. tostring(column)] = {
