@@ -55,7 +55,7 @@ local refreshPianoRollNeeded = false
 local noteOnStep = {}
 
 --edit vars
-local dblclicktime = 0.4
+local dblClickTime = 0.4
 local lastClickCache = {}
 local currentNoteLength = 2
 local currentNoteVelocity = 255
@@ -126,7 +126,7 @@ end
 
 --simple function for double click detection for buttons
 local function dbclkDetector(index)
-    if lastClickCache[index] ~= nil and os.clock() - lastClickCache[index] < dblclicktime then
+    if lastClickCache[index] ~= nil and os.clock() - lastClickCache[index] < dblClickTime then
         return true
     end
     lastClickCache[index] = os.clock()
