@@ -111,17 +111,16 @@ local function removeSelectedNotes()
                     break
                 end
             end
-            --check for note off
-            if noteSelection[key].len > 1 then
-                --remove end note vel
+            --remove end note vel
+            if noteSelection[key].len>1 then
                 note_column = lineValues[noteSelection[key].line + noteSelection[key].len - 1]:note_column(noteSelection[key].column)
                 note_column:clear()
-                --remove note off, when needed
-                if noteSelection[key].line + noteSelection[key].len <= song.selected_pattern.number_of_lines then
-                    note_column = lineValues[noteSelection[key].line + noteSelection[key].len]:note_column(noteSelection[key].column)
-                    if note_column.note_value == 120 then
-                        note_column:clear()
-                    end
+            end
+            --remove note off, when needed
+            if noteSelection[key].line + noteSelection[key].len <= song.selected_pattern.number_of_lines then
+                note_column = lineValues[noteSelection[key].line + noteSelection[key].len]:note_column(noteSelection[key].column)
+                if note_column.note_value == 120 then
+                    note_column:clear()
                 end
             end
         end
@@ -275,8 +274,8 @@ function pianoGridClick(x, y)
         --move x by stepoffset
         x = x + stepOffset
         --check if current note length is too long for pattern size, reduce len if needed
-        if x+currentNoteLength>steps then
-            currentNoteLength = steps-x +1
+        if x + currentNoteLength > steps then
+            currentNoteLength = steps - x + 1
             refreshNoteControls()
         end
         --disable edit mode because of side effects
@@ -312,7 +311,7 @@ function pianoGridClick(x, y)
             return false
         end
         --show note column if hidden
-        if column>song.selected_track.visible_note_columns then
+        if column > song.selected_track.visible_note_columns then
             song.selected_track.visible_note_columns = column
         end
         --add new note
@@ -549,7 +548,7 @@ local function fillPianoRoll()
     end
 
     --hide unused note columns
-    if lastColumnWithNotes ~= nil and lastColumnWithNotes<columns then
+    if lastColumnWithNotes ~= nil and lastColumnWithNotes < columns then
         track.visible_note_columns = lastColumnWithNotes
     end
 
