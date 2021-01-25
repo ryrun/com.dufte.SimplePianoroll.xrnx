@@ -14,7 +14,7 @@ Showing the tool in action:
 
 ## Install
 
-Just download the source as ZIP, change file extension from "zip" to "xrnx" and drag and drop it onto renoise.
+Download the latest build here and drop onto Renoise: https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/raw/master/out/com.dufte.SimplePianoroll.xrnx
 
 ## How to use it
 
