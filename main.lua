@@ -5,6 +5,12 @@ local app = renoise.app()
 local song
 local tool = renoise.tool()
 
+--load manifest for fetching versionnumber
+local manifest = renoise.Document.create("RenoiseScriptingTool") {
+    Version = "",
+}
+manifest:load_from("manifest.xml")
+
 --dialog vars
 local windowObj
 local windowContent
@@ -863,7 +869,7 @@ local function main_function()
         --fill new created pianoroll
         fillPianoRoll()
         --show dialog
-        windowObj = app:show_custom_dialog("Simple Pianoroll", windowContent, function(dialog, key)
+        windowObj = app:show_custom_dialog("Simple Pianoroll v" .. manifest:property("Version").value, windowContent, function(dialog, key)
             local handled = false
             if key.name == "lcontrol" and key.state == "pressed" then
                 keyControl = true
