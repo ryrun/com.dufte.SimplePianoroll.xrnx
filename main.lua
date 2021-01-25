@@ -282,7 +282,7 @@ function pianoGridClick(x, y)
         --disable edit mode because of side effects
         song.transport.edit_mode = false
         --check if enough space for a new note
-        for c = 1, song.selected_track.visible_note_columns do
+        for c = 1, song.selected_track.max_note_columns do
             local validSpace = true
             --check for note on before
             if x > 1 then
@@ -310,6 +310,10 @@ function pianoGridClick(x, y)
         if column == nil then
             --no space for this note
             return false
+        end
+        --show note column if hidden
+        if column>song.selected_track.visible_note_columns then
+            song.selected_track.visible_note_columns = column
         end
         --add new note
         note_value = gridOffset2NoteValue(y)
@@ -400,6 +404,7 @@ local function fillPianoRoll()
     local blackKeyIndex = {}
     local noffset = noteOffset - 1
     local blackKey
+    local lastColumnWithNotes
 
     --reset vars
     noteOnStep = {}
@@ -441,6 +446,7 @@ local function fillPianoRoll()
                     local volume_string = note_column.volume_string
 
                     if note < 120 then
+                        lastColumnWithNotes = c
                         current_note = note
                         current_note_string = note_string
                         current_note_len = 0
@@ -515,6 +521,7 @@ local function fillPianoRoll()
                     if current_note ~= nil then
                         enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, false)
                     end
+                    lastColumnWithNotes = c
                     current_note = note
                     current_note_string = note_string
                     current_note_len = 0
@@ -539,6 +546,11 @@ local function fillPianoRoll()
         if current_note ~= nil then
             enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, false)
         end
+    end
+
+    --hide unused note columns
+    if lastColumnWithNotes ~= nil and lastColumnWithNotes<columns then
+        track.visible_note_columns = lastColumnWithNotes
     end
 
     --no instrument found, use the current selected one
