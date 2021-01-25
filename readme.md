@@ -16,8 +16,9 @@ Showing the tool in action:
 
 Download the latest build here and drop onto Renoise: https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/raw/master/out/com.dufte.SimplePianoroll.xrnx
 
-## How to use it
+## How to use it / Features
 
+* HDPI support via Renoise, it should work with any scale value
 * right click on a track in pattern editor and select "Edit with Pianoroll ..."
 * note drawing with double click, will also play the note
 * note deletion with double click on note, or when selected "DEL"-key  

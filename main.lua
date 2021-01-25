@@ -779,6 +779,22 @@ local function main_function()
                         refreshNoteControls()
                     end,
                 },
+                vb:button {
+                    text = "double",
+                    tooltip = "Double current note length number",
+                    notifier = function(number)
+                        currentNoteLength = math.floor(currentNoteLength * 2)
+                        refreshNoteControls()
+                    end,
+                },
+                vb:button {
+                    text = "half",
+                    tooltip = "Halve current note length number",
+                    notifier = function(number)
+                        currentNoteLength = math.floor(currentNoteLength / 2)
+                        refreshNoteControls()
+                    end,
+                },
                 vb:text {
                     text = "Vel:",
                 },
