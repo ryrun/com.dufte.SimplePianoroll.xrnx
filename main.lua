@@ -68,11 +68,15 @@ local currentNoteVelocity = 255
 local currentNoteVelocityPreview = 127
 local currentNoteEndVelocity = 255
 local currentInstrument
+
 local noteSelection = {}
+local noteSelectionSize = 0
+
 local noteData = {}
 
 --key states
 local keyControl = false
+local keyRControl = false
 local keyShift = false
 local keyRShift = false
 local keyAlt = false
@@ -112,7 +116,7 @@ local function removeSelectedNotes()
                 end
             end
             --remove end note vel
-            if noteSelection[key].len>1 then
+            if noteSelection[key].len > 1 then
                 note_column = lineValues[noteSelection[key].line + noteSelection[key].len - 1]:note_column(noteSelection[key].column)
                 note_column:clear()
             end
@@ -126,6 +130,7 @@ local function removeSelectedNotes()
         end
     end
     noteSelection = {}
+    noteSelectionSize = 0
     refreshPianoRollNeeded = true
 end
 
@@ -251,8 +256,10 @@ function noteClick(x, y)
             --clear selection, when ctrl is not holded
             if not keyControl then
                 noteSelection = {}
+                noteSelectionSize = 0
             end
             noteSelection[tostring(note_data.line) .. "_" .. tostring(note_data.column)] = note_data
+            noteSelectionSize = noteSelectionSize + 1
             currentNoteLength = note_data.len
             currentNoteVelocity = note_data.vel
             refreshNoteControls()
@@ -335,6 +342,7 @@ function pianoGridClick(x, y)
         triggerNoteOfCurrentInstrument(note_value)
         --clear selection and add new note as new selection
         noteSelection = {}
+        noteSelectionSize = 0
         noteSelection[tostring(x) .. "_" .. tostring(column)] = {
             note = note_value,
             column = column,
@@ -342,11 +350,13 @@ function pianoGridClick(x, y)
             len = currentNoteLength,
             noteOff = noteOff,
         }
+        noteSelectionSize = noteSelectionSize + 1
         --
         refreshPianoRollNeeded = true
     else
         --deselect selected notes
         noteSelection = {}
+        noteSelectionSize = 0
         refreshPianoRollNeeded = true
     end
 end
@@ -620,6 +630,7 @@ end
 local function obsPianoRefresh()
     --clear note selection
     noteSelection = {}
+    noteSelectionSize = 0
     --set refresh flag
     refreshPianoRollNeeded = true
 end
@@ -899,40 +910,60 @@ local function main_function()
             local handled = false
             if key.name == "lcontrol" and key.state == "pressed" then
                 keyControl = true
+                handled = true
             elseif key.name == "lcontrol" and key.state == "released" then
                 keyControl = false
+                handled = true
+            end
+            if key.name == "rcontrol" and key.state == "pressed" then
+                keyRControl = true
+                handled = true
+            elseif key.name == "rcontrol" and key.state == "released" then
+                keyRControl = false
+                handled = true
             end
             if key.name == "lalt" and key.state == "pressed" then
                 keyAlt = true
+                handled = true
             elseif key.name == "lalt" and key.state == "released" then
                 keyAlt = false
+                handled = true
             end
             if key.name == "lshift" and key.state == "pressed" then
                 keyShift = true
+                handled = true
             elseif key.name == "lshift" and key.state == "released" then
                 keyShift = false
+                handled = true
             end
             if key.name == "rshift" and key.state == "pressed" then
                 keyRShift = true
+                handled = true
             elseif key.name == "rshift" and key.state == "released" then
                 keyRShift = false
+                handled = true
             end
             if key.name == "del" and key.state == "released" then
                 removeSelectedNotes()
+                handled = true
             end
             if key.name == "up" and key.state == "released" then
+                local transpose = 1
                 if keyShift or keyRShift then
-                    transposeSelectedNotes(12)
-                else
-                    transposeSelectedNotes(1)
+                    transpose = 12
+                end
+                if noteSelectionSize>0 then
+                    transposeSelectedNotes(transpose)
                 end
                 handled = true
             end
             if key.name == "down" and key.state == "released" then
+                local transpose = -1
                 if keyShift or keyRShift then
-                    transposeSelectedNotes(-12)
-                else
-                    transposeSelectedNotes(-1)
+                    transpose = -12
+                end
+                if noteSelectionSize>0 then
+                    transposeSelectedNotes(transpose)
                 end
                 handled = true
             end
