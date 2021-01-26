@@ -643,7 +643,8 @@ local function appNewDoc()
     song.selected_pattern_observable:add_notifier(obsPianoRefresh)
     song.selected_track_observable:add_notifier(obsPianoRefresh)
     song.selected_pattern.number_of_lines_observable:add_notifier(obsPianoRefresh)
-    refreshPianoRollNeeded = true
+    --clear selection and refresh piano roll
+    obsPianoRefresh()
 end
 
 --edit in pianoroll main function
