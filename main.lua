@@ -947,6 +947,18 @@ local function main_function()
                 removeSelectedNotes()
                 handled = true
             end
+            if key.name == "a" and key.state == "released" and (keyControl or keyRControl) then
+                --clear current selection
+                noteSelection = {}
+                noteSelectionSize = 0
+                --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
+                for key, value in pairs(noteData) do
+                    local note_data = noteData[key]
+                    noteSelection[tostring(note_data.line) .. "_" .. tostring(note_data.column)] = note_data
+                    noteSelectionSize = noteSelectionSize + 1
+                end
+                refreshPianoRollNeeded = true
+            end
             if key.name == "up" and key.state == "released" then
                 local transpose = 1
                 if keyShift or keyRShift then
