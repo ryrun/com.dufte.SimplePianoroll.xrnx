@@ -488,7 +488,6 @@ local function fillPianoRoll()
     local noffset = noteOffset - 1
     local blackKey
     local lastColumnWithNotes
-    local hideEl = {}
 
     --reset vars
     noteOnStep = {}
@@ -587,9 +586,7 @@ local function fillPianoRoll()
                         p.visible = false
                         --refresh step indicator
                         if y == 1 then
-                            --vbw["s" .. stepString].visible = false
-                            --not sure, but its faster outside the loop
-                            table.insert(hideEl, "s" .. stepString)
+                            vbw["s" .. stepString].visible = false
                         end
                     end
                 end
@@ -624,9 +621,7 @@ local function fillPianoRoll()
                 end
 
                 if current_note_rowIndex ~= nil then
-                    --vbw["p" .. stepString .. "_" .. tostring(current_note_rowIndex)].visible = false
-                    --not sure, but its faster outside the loop
-                    table.insert(hideEl, "p" .. stepString .. "_" .. tostring(current_note_rowIndex))
+                    vbw["p" .. stepString .. "_" .. tostring(current_note_rowIndex)].visible = false
                     current_note_len = current_note_len + 1
                 end
 
@@ -642,11 +637,6 @@ local function fillPianoRoll()
     if not vbw["b" .. tostring(4) .. "_" .. tostring(4)].visible then
         vbw["b" .. tostring(4) .. "_" .. tostring(4)].visible = true
         vbw["b" .. tostring(4) .. "_" .. tostring(4)].visible = false
-    end
-
-    --go through the hide table to hide buttons, its faster doing this way instead inside the loop
-    for i = 1, #hideEl do
-        vbw[hideEl[i]].visible = false
     end
 
     --hide unused note columns
