@@ -624,7 +624,7 @@ local function fillPianoRoll()
 
                 if current_note_rowIndex ~= nil then
                     --vbw["p" .. stepString .. "_" .. tostring(current_note_rowIndex)].visible = false
-                    --not sure, but its faster do it outside the loop
+                    --not sure, but its faster outside the loop
                     table.insert(hideEl, "p" .. stepString .. "_" .. tostring(current_note_rowIndex))
                     current_note_len = current_note_len + 1
                 end
@@ -637,7 +637,7 @@ local function fillPianoRoll()
         end
     end
 
-    --go thorugh the hide table to hide buttons, its faster doing it this way instead inside the loop
+    --go through the hide table to hide buttons, its faster doing this way instead inside the loop
     for i = 1, #hideEl do
         vbw[hideEl[i]].visible = false
     end
