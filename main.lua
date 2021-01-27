@@ -391,7 +391,7 @@ function pianoGridClick(x, y)
                 end
             end
             --piano refresh
-            lastSelectionClick = nil
+            lastSelectionClick = { x, y }
             refreshPianoRollNeeded = true
         else
             lastSelectionClick = { x, y }
@@ -474,7 +474,6 @@ local function fillPianoRoll()
     noteOnStep = {}
     noteData = {}
     currentInstrument = nil
-    lastSelectionClick = nil
 
     --check if stepoffset is inside the grid, also setup stepSlider if needed
     if steps > gridWidth then
@@ -719,6 +718,7 @@ local function main_function()
     --only create pianoroll grid, when window is not created and not visible
     if not windowObj or not windowObj.visible then
         lastStepOn = nil
+        lastSelectionClick = nil
         noteOffset = 28 -- default offset
         vbw.note_len = nil
         vbw.note_vel = nil
