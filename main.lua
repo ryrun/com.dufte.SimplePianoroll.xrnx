@@ -221,7 +221,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed)
 end
 
 --transpose each selected notes
-local function transposeSelectedNotes(transpose,keepscale)
+local function transposeSelectedNotes(transpose, keepscale)
     local lineValues = song.selected_pattern_track.lines
     for key, value in pairs(noteSelection) do
         local transposeVal = transpose
@@ -440,7 +440,6 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
     highestNote = math.max(highestNote, current_note)
     --process only visible ones
     if current_note_rowIndex ~= nil then
-        local color = colorNote
         local line = current_note_step + stepOffset
         local noteOnStepIndex = current_note_step
         local current_note_index = tostring(current_note_step) .. "_" .. tostring(current_note_rowIndex)
@@ -461,17 +460,16 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
         table.insert(noteOnStep[noteOnStepIndex], current_note_index)
         local b = vbw["b" .. current_note_index]
         b.width = (gridStepSizeW * current_note_len) - (gridSpacing * (current_note_len - 1))
-        if gridStepSizeW < 34 and current_note_len < 2 then
-            b.text = ""
-        elseif gridStepSizeH < 18 then
+        if (gridStepSizeW < 34 and current_note_len < 2) or gridStepSizeH < 18 then
             b.text = ""
         else
             b.text = current_note_string
         end
         if noteSelection[tostring(line) .. "_" .. tostring(column)] ~= nil then
-            color = colorNoteSelected
+            b.color = colorNoteSelected
+        else
+            b.color = colorNote
         end
-        b.color = color
         b.visible = true
         if noteOff then
             vbw["p" .. current_note_index].visible = false
@@ -490,6 +488,7 @@ local function fillPianoRoll()
     local noffset = noteOffset - 1
     local blackKey
     local lastColumnWithNotes
+    local hideEl = {}
 
     --reset vars
     noteOnStep = {}
@@ -523,7 +522,7 @@ local function fillPianoRoll()
             local stepString = tostring(s)
 
             --check for notes outside the grid on left side
-            if s == 1 and stepOffset > 0 then
+            if s == 1 then
                 for i = stepOffset + 1, 1, -1 do
                     local note_column = lineValues[i]:note_column(c)
                     local note = note_column.note_value
@@ -575,7 +574,7 @@ local function fillPianoRoll()
                         end
                     end
                     vbw["b" .. index].visible = false
-                    if s <= steps then
+                    if s <= stepsCount then
                         p.color = blackKeyIndex[y]
                         p.visible = true
                         --refresh step indicator
@@ -586,7 +585,9 @@ local function fillPianoRoll()
                         p.visible = false
                         --refresh step indicator
                         if y == 1 then
-                            vbw["s" .. stepString].visible = false
+                            --vbw["s" .. stepString].visible = false
+                            --not sure, but its faster do it outside the loop
+                            table.insert(hideEl, "s" .. stepString)
                         end
                     end
                 end
@@ -594,6 +595,7 @@ local function fillPianoRoll()
 
             --render notes
             if s <= stepsCount then
+
                 local note_column = lineValues[s + stepOffset]:note_column(c)
                 local note = note_column.note_value
                 local note_string = note_column.note_string
@@ -621,7 +623,9 @@ local function fillPianoRoll()
                 end
 
                 if current_note_rowIndex ~= nil then
-                    vbw["p" .. stepString .. "_" .. tostring(current_note_rowIndex)].visible = false
+                    --vbw["p" .. stepString .. "_" .. tostring(current_note_rowIndex)].visible = false
+                    --not sure, but its faster do it outside the loop
+                    table.insert(hideEl, "p" .. stepString .. "_" .. tostring(current_note_rowIndex))
                     current_note_len = current_note_len + 1
                 end
 
@@ -631,6 +635,11 @@ local function fillPianoRoll()
         if current_note ~= nil then
             enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, false)
         end
+    end
+
+    --go thorugh the hide table to hide buttons, its faster doing it this way instead inside the loop
+    for i = 1, #hideEl do
+        vbw[hideEl[i]].visible = false
     end
 
     --hide unused note columns
@@ -1066,7 +1075,7 @@ local function main_function()
                     transpose = 12
                 end
                 if noteSelectionSize > 0 then
-                    transposeSelectedNotes(transpose,keyControl or keyRControl)
+                    transposeSelectedNotes(transpose, keyControl or keyRControl)
                 elseif noteSlider.value + transpose <= noteSlider.max and noteSlider.value + transpose >= noteSlider.min then
                     noteSlider.value = noteSlider.value + transpose
                 end
