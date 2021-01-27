@@ -101,6 +101,15 @@ function dump(o)
     end
 end
 
+--returns true, when note in scale
+local function noteInScale(note)
+    note = note % 12
+    if note == 1 or note == 3 or note == 6 or note == 8 or note == 10 then
+        return false
+    end
+    return true
+end
+
 --remove selected notes
 local function removeSelectedNotes()
     local lineValues = song.selected_pattern_track.lines
@@ -212,14 +221,26 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed)
 end
 
 --transpose each selected notes
-local function transposeSelectedNotes(transpose)
+local function transposeSelectedNotes(transpose,keepscale)
     local lineValues = song.selected_pattern_track.lines
     for key, value in pairs(noteSelection) do
+        local transposeVal = transpose
         --disable edit mode to prevent side effects
         song.transport.edit_mode = false
         --transpose
         local note_column = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column)
-        noteSelection[key].note = noteSelection[key].note + transpose
+
+        --when in scale transposing is active move note further, when needed
+        if keepscale and not noteInScale(noteSelection[key].note + transposeVal) then
+            if transposeVal > 0 then
+                transposeVal = transposeVal + 1
+            else
+                transposeVal = transposeVal - 1
+            end
+        end
+
+        --default transpose note
+        noteSelection[key].note = noteSelection[key].note + transposeVal
         if noteSelection[key].note < 0 then
             noteSelection[key].note = 0
         elseif noteSelection[key].note >= 120 then
@@ -531,9 +552,9 @@ local function fillPianoRoll()
                     local index = stepString .. "_" .. ystring
                     local p = vbw["p" .. index]
                     if blackKeyIndex[y] == nil then
-                        blackKey = (y + noffset) % 12
+                        blackKey = not noteInScale((y + noffset) % 12)
                         --color black notes
-                        if blackKey == 1 or blackKey == 3 or blackKey == 6 or blackKey == 8 or blackKey == 10 then
+                        if blackKey then
                             blackKeyIndex[y] = colorBlackKey
                         else
                             blackKeyIndex[y] = colorWhiteKey
@@ -1045,7 +1066,7 @@ local function main_function()
                     transpose = 12
                 end
                 if noteSelectionSize > 0 then
-                    transposeSelectedNotes(transpose)
+                    transposeSelectedNotes(transpose,keyControl or keyRControl)
                 elseif noteSlider.value + transpose <= noteSlider.max and noteSlider.value + transpose >= noteSlider.min then
                     noteSlider.value = noteSlider.value + transpose
                 end
@@ -1057,7 +1078,7 @@ local function main_function()
                     transpose = -12
                 end
                 if noteSelectionSize > 0 then
-                    transposeSelectedNotes(transpose)
+                    transposeSelectedNotes(transpose, keyControl or keyRControl)
                 elseif noteSlider.value + transpose <= noteSlider.max and noteSlider.value + transpose >= noteSlider.min then
                     noteSlider.value = noteSlider.value + transpose
                 end
