@@ -1,9 +1,9 @@
 --some basic renoise vars for reuse
-local vb = renoise.ViewBuilder()
-local vbw = vb.views
 local app = renoise.app()
-local song
 local tool = renoise.tool()
+local vb
+local vbw
+local song
 
 --load manifest for fetching versionnumber
 local manifest = renoise.Document.create("RenoiseScriptingTool") {
@@ -544,7 +544,7 @@ local function fillPianoRoll()
                 end
             end
 
-            --only reset column on first step
+            --only reset buttons on first column
             if c == 1 then
                 for y = 1, gridHeight do
                     local ystring = tostring(y)
@@ -575,7 +575,9 @@ local function fillPianoRoll()
                     end
                     vbw["b" .. index].visible = false
                     if s <= stepsCount then
-                        p.color = blackKeyIndex[y]
+                        if p.color[1] ~= blackKeyIndex[y][1] then
+                            p.color = blackKeyIndex[y]
+                        end
                         p.visible = true
                         --refresh step indicator
                         if y == 1 then
@@ -586,13 +588,12 @@ local function fillPianoRoll()
                         --refresh step indicator
                         if y == 1 then
                             --vbw["s" .. stepString].visible = false
-                            --not sure, but its faster do it outside the loop
+                            --not sure, but its faster outside the loop
                             table.insert(hideEl, "s" .. stepString)
                         end
                     end
                 end
             end
-
             --render notes
             if s <= stepsCount then
 
@@ -635,6 +636,12 @@ local function fillPianoRoll()
         if current_note ~= nil then
             enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, false)
         end
+    end
+
+    --quirk? i need to visible and hide a note button to get fast vertical scroll
+    if not vbw["b" .. tostring(4) .. "_" .. tostring(4)].visible then
+        vbw["b" .. tostring(4) .. "_" .. tostring(4)].visible = true
+        vbw["b" .. tostring(4) .. "_" .. tostring(4)].visible = false
     end
 
     --go through the hide table to hide buttons, its faster doing this way instead inside the loop
@@ -747,12 +754,12 @@ local function main_function()
 
     --only create pianoroll grid, when window is not created and not visible
     if not windowObj or not windowObj.visible then
+        vb = renoise.ViewBuilder()
+        vbw = vb.views
+
         lastStepOn = nil
         lastSelectionClick = nil
         noteOffset = 28 -- default offset
-        vbw.note_len = nil
-        vbw.note_vel = nil
-        vbw.note_end_vel = nil
 
         local vb_temp
         local playCursor = vb:row {
@@ -760,7 +767,6 @@ local function main_function()
             spacing = -gridSpacing,
         }
         for x = 1, gridWidth do
-            vbw["s" .. tostring(x)] = nil
             local temp = "setPlaybackPos(" .. tostring(x) .. ")"
             vb_temp = vb:row {
                 vb:space {
@@ -790,8 +796,6 @@ local function main_function()
                 spacing = -gridSpacing,
             }
             for x = 1, gridWidth do
-                vbw["p" .. tostring(x) .. "_" .. tostring(y)] = nil
-                vbw["b" .. tostring(x) .. "_" .. tostring(y)] = nil
                 local temp = "pianoGridClick(" .. tostring(x) .. "," .. tostring(y) .. ")"
                 vb_temp = vb:button {
                     id = "p" .. tostring(x) .. "_" .. tostring(y),
@@ -853,7 +857,6 @@ local function main_function()
             spacing = -1,
         }
         for y = gridHeight, 1, -1 do
-            vbw["k" .. tostring(y)] = nil
             whiteKeys:add_child(
                     vb:row {
                         margin = -gridMargin,
