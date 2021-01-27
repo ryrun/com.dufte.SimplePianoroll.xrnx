@@ -362,7 +362,7 @@ function pianoGridClick(x, y)
         refreshPianoRollNeeded = true
     else
         --when a last click was saved and shift is pressing, than try to seelect notes
-        if keyShift and lastSelectionClick then
+        if (keyShift or keyRShift) and lastSelectionClick then
             local lineValues = song.selected_pattern_track.lines
             local columns = song.selected_track.visible_note_columns
             local smin = math.min(x, lastSelectionClick[1])
