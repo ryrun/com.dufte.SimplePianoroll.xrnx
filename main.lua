@@ -72,6 +72,7 @@ local currentInstrument
 
 local noteSelection = {}
 local noteSelectionSize = 0
+local lastSelectionClick
 local lowesetNote
 local highestNote
 
@@ -360,10 +361,48 @@ function pianoGridClick(x, y)
         --
         refreshPianoRollNeeded = true
     else
-        --deselect selected notes
-        noteSelection = {}
-        noteSelectionSize = 0
-        refreshPianoRollNeeded = true
+        --when a last click was saved and shift is pressing, than try to seelect notes
+        if keyShift and lastSelectionClick then
+            local lineValues = song.selected_pattern_track.lines
+            local columns = song.selected_track.visible_note_columns
+            local smin = math.min(x, lastSelectionClick[1])
+            local smax = math.max(x, lastSelectionClick[1])
+            local nmin = gridOffset2NoteValue(math.min(y, lastSelectionClick[2]))
+            local nmax = gridOffset2NoteValue(math.max(y, lastSelectionClick[2]))
+            --remove current note selection
+            noteSelection = {}
+            noteSelectionSize = 0
+            --loop through columns
+            for c = 1, columns do
+                --loop through lines as steps
+                for s = smin, smax do
+                    local note_column = lineValues[s + stepOffset]:note_column(c)
+                    local note = note_column.note_value
+                    --note inside the selection rect?
+                    if note >= nmin and note <= nmax then
+                        local note_data = noteData[tostring(s) .. "_" .. tostring(noteValue2GridRowOffset(note))]
+                        --note found?
+                        if note_data ~= nil then
+                            --add to selection table
+                            noteSelection[tostring(note_data.line) .. "_" .. tostring(note_data.column)] = note_data
+                            noteSelectionSize = noteSelectionSize + 1
+                        end
+                    end
+                end
+            end
+            --piano refresh
+            lastSelectionClick = nil
+            refreshPianoRollNeeded = true
+        else
+            lastSelectionClick = { x, y }
+            --deselect selected notes
+            if noteSelectionSize > 0 then
+                noteSelection = {}
+                noteSelectionSize = 0
+                refreshPianoRollNeeded = true
+                lastSelectionClick = { x, y }
+            end
+        end
     end
 end
 
@@ -435,6 +474,7 @@ local function fillPianoRoll()
     noteOnStep = {}
     noteData = {}
     currentInstrument = nil
+    lastSelectionClick = nil
 
     --check if stepoffset is inside the grid, also setup stepSlider if needed
     if steps > gridWidth then
@@ -979,7 +1019,7 @@ local function main_function()
                 handled = true
             end
             if key.name == "esc" and key.state == "released" then
-                if noteSelectionSize>0 then
+                if noteSelectionSize > 0 then
                     noteSelection = {}
                     noteSelectionSize = 0
                     refreshPianoRollNeeded = true
