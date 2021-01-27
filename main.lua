@@ -31,7 +31,7 @@ local gridSpacing = 4
 local gridMargin = 1
 --size of pianorollgrid
 local gridWidth = 64
-local gridHeight = 32
+local gridHeight = 42
 
 --current note offset and stepoffset (x/y) - sliders (scrollbars)
 local noteOffset
@@ -975,6 +975,14 @@ local function main_function()
                 removeSelectedNotes()
                 handled = true
             end
+            if key.name == "esc" and key.state == "released" then
+                if noteSelectionSize>0 then
+                    noteSelection = {}
+                    noteSelectionSize = 0
+                    refreshPianoRollNeeded = true
+                end
+                handled = true
+            end
             if key.name == "a" and key.state == "released" and (keyControl or keyRControl) then
                 --clear current selection
                 noteSelection = {}
@@ -986,6 +994,7 @@ local function main_function()
                     noteSelectionSize = noteSelectionSize + 1
                 end
                 refreshPianoRollNeeded = true
+                handled = true
             end
             if key.name == "up" and key.state == "released" then
                 local transpose = 1
