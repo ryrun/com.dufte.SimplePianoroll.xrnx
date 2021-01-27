@@ -15,6 +15,7 @@ manifest:load_from("manifest.xml")
 local windowObj
 local windowContent
 local stepSlider
+local noteSlider
 
 --last step position for resetting the last step button
 local lastStepOn
@@ -33,7 +34,7 @@ local gridWidth = 64
 local gridHeight = 32
 
 --current note offset and stepoffset (x/y) - sliders (scrollbars)
-local noteOffset = 28
+local noteOffset
 local stepOffset = 0
 
 local pianoKeyWidth = gridStepSizeW * 3
@@ -71,6 +72,8 @@ local currentInstrument
 
 local noteSelection = {}
 local noteSelectionSize = 0
+local lowesetNote
+local highestNote
 
 local noteData = {}
 
@@ -363,6 +366,16 @@ end
 
 --enable a note button, when its visible, set correct length of the button
 local function enableNoteButton(column, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, noteOff)
+    --save highest and lowest note
+    if lowesetNote == nil then
+        lowesetNote = current_note
+    end
+    if highestNote == nil then
+        highestNote = current_note
+    end
+    lowesetNote = math.min(lowesetNote, current_note)
+    highestNote = math.max(highestNote, current_note)
+    --process only visible ones
     if current_note_rowIndex ~= nil then
         local color = colorNote
         local line = current_note_step + stepOffset
@@ -663,7 +676,7 @@ local function main_function()
     --only create pianoroll grid, when window is not created and not visible
     if not windowObj or not windowObj.visible then
         lastStepOn = nil
-
+        noteOffset = 28 -- default offset
         vbw.note_len = nil
         vbw.note_vel = nil
         vbw.note_end_vel = nil
@@ -730,6 +743,7 @@ local function main_function()
             pianorollColumns:add_child(row)
         end
 
+        --horizontal scrollbar
         stepSlider = vb:minislider {
             width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)),
             height = math.max(16, gridStepSizeW / 2),
@@ -743,6 +757,22 @@ local function main_function()
                     refreshPianoRollNeeded = true
                 end
             end,
+        }
+
+        --vertical scrollbar
+        noteSlider = vb:minislider {
+            width = math.max(16, gridStepSizeW / 2),
+            height = "100%",
+            min = 0,
+            max = 120 - gridHeight,
+            notifier = function(number)
+                number = math.floor(number)
+                if number ~= noteOffset then
+                    noteOffset = number
+                    refreshPianoRollNeeded = true
+                end
+            end,
+            value = noteOffset
         }
 
         local whiteKeys = vb:column {
@@ -876,20 +906,7 @@ local function main_function()
                 }
             },
             vb:row {
-                vb:minislider {
-                    width = math.max(16, gridStepSizeW / 2),
-                    height = "100%",
-                    min = 0,
-                    max = 120 - gridHeight,
-                    notifier = function(number)
-                        number = math.floor(number)
-                        if number ~= noteOffset then
-                            noteOffset = number
-                            refreshPianoRollNeeded = true
-                        end
-                    end,
-                    value = noteOffset
-                },
+                noteSlider,
                 vb:row {
                     whiteKeys,
                 },
@@ -906,6 +923,16 @@ local function main_function()
         refreshNoteControls()
         --fill new created pianoroll
         fillPianoRoll()
+        --center note view
+        if lowesetNote ~= nil then
+            local nOffset = math.floor((lowesetNote + highestNote) / 2) - (gridHeight / 2)
+            if nOffset < 0 then
+                noteOffset = 0
+            elseif nOffset > noteSlider.max then
+                noteOffset = noteSlider.max
+            end
+            noteSlider.value = math.floor((lowesetNote + highestNote) / 2) - (gridHeight / 2)
+        end
         --show dialog
         windowObj = app:show_custom_dialog("Simple Pianoroll v" .. manifest:property("Version").value, windowContent, function(dialog, key)
             local handled = false
@@ -965,8 +992,10 @@ local function main_function()
                 if keyShift or keyRShift then
                     transpose = 12
                 end
-                if noteSelectionSize>0 then
+                if noteSelectionSize > 0 then
                     transposeSelectedNotes(transpose)
+                elseif noteSlider.value + transpose <= noteSlider.max and noteSlider.value + transpose >= noteSlider.min then
+                    noteSlider.value = noteSlider.value + transpose
                 end
                 handled = true
             end
@@ -975,8 +1004,10 @@ local function main_function()
                 if keyShift or keyRShift then
                     transpose = -12
                 end
-                if noteSelectionSize>0 then
+                if noteSelectionSize > 0 then
                     transposeSelectedNotes(transpose)
+                elseif noteSlider.value + transpose <= noteSlider.max and noteSlider.value + transpose >= noteSlider.min then
+                    noteSlider.value = noteSlider.value + transpose
                 end
                 handled = true
             end
