@@ -214,6 +214,9 @@ end
 local function transposeSelectedNotes(transpose)
     local lineValues = song.selected_pattern_track.lines
     for key, value in pairs(noteSelection) do
+        --disable edit mode to prevent side effects
+        song.transport.edit_mode = false
+        --transpose
         local note_column = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column)
         noteSelection[key].note = noteSelection[key].note + transpose
         if noteSelection[key].note < 0 then
