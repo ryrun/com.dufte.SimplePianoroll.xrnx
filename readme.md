@@ -7,6 +7,9 @@ Showing the tool v0.1 in action:
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/5qJCNvbco7M/0.jpg)](https://www.youtube.com/watch?v=5qJCNvbco7M)
 
+## Thread on official Renoise forum
+https://forum.renoise.com/t/another-piano-roll-com-dufte-simplepianoroll-xrnx/63034
+
 ## Features
 
 * Piano roll workflow, inspired by FL piano roll
