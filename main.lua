@@ -300,7 +300,7 @@ end
 --will be called, when an empty grid button was clicked
 function pianoGridClick(x, y)
     local dbclk = dbclkDetector("p" .. tostring(x) .. "_" .. tostring(y))
-    if dbclk then
+    if dbclk or (keyAlt)then
         local steps = song.selected_pattern.number_of_lines
         local lineValues = song.selected_pattern_track.lines
         local column
