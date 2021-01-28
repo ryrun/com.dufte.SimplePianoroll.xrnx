@@ -32,7 +32,7 @@ Download the latest build here and drop it onto Renoise: https://github.com/ryru
 
 |Actions||
 |---|---|
-|Add notes|Double click on a free spot in the grid|
+|Add notes|Double click on a free spot in the grid<br>Alternative: Hold <kbd>alt</kbd> and one click in the grid|
 |Remove notes|Double click on a note|
 |Select a note|Click on a note<br><br>*It also reads out note length and velocity of the selected note and set these values for new notes.*|
 |Preview a note|Click on a note|
