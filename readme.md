@@ -57,4 +57,4 @@ Info: Non handled keyboard events will be send back to the host. So renoise defa
 |<kbd>ctrl + shift + down</kbd>|One or more notes selected|Transpose note 12 semitone up but stay in scale|
 |<kbd>del</kbd>|One or more notes selected|Remove selected notes|
 |<kbd>esc</kbd>|One or more notes selected|Deselect all notes|
-|<kbd>strg + a</kbd>|-|Select all visible notes|
+|<kbd>ctrl + a</kbd>|-|Select all visible notes|
