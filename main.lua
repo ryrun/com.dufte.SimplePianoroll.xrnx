@@ -66,6 +66,8 @@ local dblClickTime = 0.4
 local lastClickCache = {}
 local currentNoteLength = 2
 local currentNoteVelocity = 255
+local currentNotePan = 255
+local currentNoteDelay = 0
 local currentNoteVelocityPreview = 127
 local currentNoteEndVelocity = 255
 local currentInstrument
@@ -99,6 +101,15 @@ function dump(o)
     else
         return tostring(o)
     end
+end
+
+--return hex value always als 2 digit hex value
+local function toHex(value)
+    value = string.format("%X", value)
+    if string.len(value) == 1 then
+        return "0" .. value
+    end
+    return value
 end
 
 --returns true, when note in scale
@@ -160,6 +171,8 @@ end
 local function refreshNoteControls()
     vbw.note_len.value = currentNoteLength
     vbw.note_vel.value = currentNoteVelocity
+    vbw.note_pan.value = currentNotePan
+    vbw.note_dly.value = currentNoteDelay
     if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
         currentNoteVelocityPreview = currentNoteVelocity
     else
@@ -170,6 +183,7 @@ local function refreshNoteControls()
         vbw.note_end_vel.value = currentNoteEndVelocity
         vbw.note_end_vel.active = false
     else
+        vbw.note_end_vel.value = currentNoteEndVelocity
         vbw.note_end_vel.active = true
     end
 end
@@ -290,6 +304,9 @@ function noteClick(x, y)
             noteSelectionSize = noteSelectionSize + 1
             currentNoteLength = note_data.len
             currentNoteVelocity = note_data.vel
+            currentNoteEndVelocity = note_data.end_vel
+            currentNotePan = note_data.pan
+            currentNoteDelay = note_data.dly
             refreshNoteControls()
             triggerNoteOfCurrentInstrument(note_data.note)
             refreshPianoRollNeeded = true
@@ -300,7 +317,7 @@ end
 --will be called, when an empty grid button was clicked
 function pianoGridClick(x, y)
     local dbclk = dbclkDetector("p" .. tostring(x) .. "_" .. tostring(y))
-    if dbclk or (keyAlt)then
+    if dbclk or (keyAlt) then
         local steps = song.selected_pattern.number_of_lines
         local lineValues = song.selected_pattern_track.lines
         local column
@@ -352,10 +369,12 @@ function pianoGridClick(x, y)
         --add new note
         note_value = gridOffset2NoteValue(y)
         lineValues[x]:note_column(column).note_value = note_value
-        lineValues[x]:note_column(column).volume_string = string.format("%X", currentNoteVelocity)
+        lineValues[x]:note_column(column).volume_string = toHex(currentNoteVelocity)
+        lineValues[x]:note_column(column).panning_string = toHex(currentNotePan)
+        lineValues[x]:note_column(column).delay_string = toHex(currentNoteDelay)
         lineValues[x]:note_column(column).instrument_value = currentInstrument - 1
         if currentNoteLength > 1 then
-            lineValues[x + currentNoteLength - 1]:note_column(column).volume_string = string.format("%X", currentNoteEndVelocity)
+            lineValues[x + currentNoteLength - 1]:note_column(column).volume_string = toHex(currentNoteEndVelocity)
         end
         --set note off?
         if x + currentNoteLength <= steps then
@@ -428,7 +447,7 @@ function pianoGridClick(x, y)
 end
 
 --enable a note button, when its visible, set correct length of the button
-local function enableNoteButton(column, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, noteOff)
+local function enableNoteButton(column, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, noteOff)
     --save highest and lowest note
     if lowesetNote == nil then
         lowesetNote = current_note
@@ -446,10 +465,22 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
         if current_note_vel == nil then
             current_note_vel = 255
         end
+        if current_note_end_vel == nil then
+            current_note_end_vel = 255
+        end
+        if current_note_pan == nil then
+            current_note_pan = 255
+        end
+        if current_note_dly == nil then
+            current_note_dly = 0
+        end
         noteData[current_note_index] = {
             line = line,
             note = current_note,
             vel = current_note_vel,
+            end_vel = current_note_end_vel,
+            dly = current_note_dly,
+            pan = current_note_pan,
             len = current_note_len,
             noteoff = noteOff,
             column = column,
@@ -513,6 +544,9 @@ local function fillPianoRoll()
         local current_note_string
         local current_note_len = 0
         local current_note_vel = 255
+        local current_note_end_vel = 255
+        local current_note_pan = 255
+        local current_note_dly = 255
         local current_note_step
         local current_note_rowIndex
 
@@ -522,11 +556,14 @@ local function fillPianoRoll()
 
             --check for notes outside the grid on left side
             if s == 1 then
+                current_note_end_vel = nil
                 for i = stepOffset + 1, 1, -1 do
                     local note_column = lineValues[i]:note_column(c)
                     local note = note_column.note_value
                     local note_string = note_column.note_string
                     local volume_string = note_column.volume_string
+                    local panning_string = note_column.panning_string
+                    local delay_string = note_column.delay_string
 
                     if note < 120 then
                         lastColumnWithNotes = c
@@ -535,6 +572,8 @@ local function fillPianoRoll()
                         current_note_len = 0
                         current_note_step = s
                         current_note_vel = tonumber(volume_string, 16)
+                        current_note_pan = tonumber(panning_string, 16)
+                        current_note_dly = tonumber(delay_string, 16)
                         current_note_rowIndex = noteValue2GridRowOffset(current_note)
                         break
                     elseif note == 120 then
@@ -598,13 +637,15 @@ local function fillPianoRoll()
                 local note = note_column.note_value
                 local note_string = note_column.note_string
                 local volume_string = note_column.volume_string
+                local panning_string = note_column.panning_string
+                local delay_string = note_column.delay_string
 
                 if note < 120 then
                     if currentInstrument == nil and note_column.instrument_value < 255 then
                         currentInstrument = note_column.instrument_value + 1
                     end
                     if current_note ~= nil then
-                        enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, false)
+                        enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false)
                     end
                     lastColumnWithNotes = c
                     current_note = note
@@ -612,12 +653,16 @@ local function fillPianoRoll()
                     current_note_len = 0
                     current_note_step = s
                     current_note_vel = tonumber(volume_string, 16)
+                    current_note_pan = tonumber(panning_string, 16)
+                    current_note_dly = tonumber(delay_string, 16)
                     current_note_rowIndex = noteValue2GridRowOffset(current_note)
                 elseif note == 120 and current_note ~= nil then
-                    enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, true)
+                    enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, true)
                     current_note = nil
                     current_note_len = 0
                     current_note_rowIndex = nil
+                else
+                    current_note_end_vel = tonumber(volume_string, 16)
                 end
 
                 if current_note_rowIndex ~= nil then
@@ -629,7 +674,7 @@ local function fillPianoRoll()
         end
         --pattern end, no note off, enable last note
         if current_note ~= nil then
-            enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, false)
+            enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false)
         end
     end
 
@@ -916,7 +961,7 @@ local function main_function()
                         if number == 255 then
                             return "--"
                         end
-                        return string.format("%X", number)
+                        return toHex(number)
                     end,
                     tonumber = function(string)
                         if string == "--" then
@@ -929,8 +974,13 @@ local function main_function()
                         refreshNoteControls()
                     end,
                 },
-                vb:text {
-                    text = "End-Vel:",
+                vb:button {
+                    text = "C",
+                    tooltip = "Clear note velocity",
+                    notifier = function()
+                        currentNoteVelocity = 255
+                        refreshNoteControls()
+                    end,
                 },
                 vb:valuebox {
                     id = "note_end_vel",
@@ -943,7 +993,7 @@ local function main_function()
                         if number == 255 then
                             return "--"
                         end
-                        return string.format("%X", number)
+                        return toHex(number)
                     end,
                     tonumber = function(string)
                         if string == "--" then
@@ -953,6 +1003,84 @@ local function main_function()
                     end,
                     notifier = function(number)
                         currentNoteEndVelocity = number
+                        refreshNoteControls()
+                    end,
+                },
+                vb:button {
+                    text = "C",
+                    tooltip = "Clear end note velocity",
+                    notifier = function()
+                        currentNoteEndVelocity = 255
+                        refreshNoteControls()
+                    end,
+                },
+                vb:text {
+                    text = "Pan:",
+                },
+                vb:valuebox {
+                    id = "note_pan",
+                    tooltip = "Note panning",
+                    steps = { 1, 2 },
+                    min = 0,
+                    max = 255,
+                    value = currentNotePan,
+                    tostring = function(number)
+                        if number == 255 then
+                            return "--"
+                        end
+                        return toHex(number)
+                    end,
+                    tonumber = function(string)
+                        if string == "--" then
+                            return 255
+                        end
+                        return tonumber(string, 16)
+                    end,
+                    notifier = function(number)
+                        currentNotePan = number
+                        refreshNoteControls()
+                    end,
+                },
+                vb:button {
+                    text = "C",
+                    tooltip = "Clear note panning",
+                    notifier = function()
+                        currentNotePan = 255
+                        refreshNoteControls()
+                    end,
+                },
+                vb:text {
+                    text = "Delay:",
+                },
+                vb:valuebox {
+                    id = "note_dly",
+                    tooltip = "Note delay",
+                    steps = { 1, 2 },
+                    min = 0,
+                    max = 255,
+                    value = currentNoteDelay,
+                    tostring = function(number)
+                        if number == 0 then
+                            return "--"
+                        end
+                        return toHex(number)
+                    end,
+                    tonumber = function(string)
+                        if string == "--" then
+                            return 0
+                        end
+                        return tonumber(string, 16)
+                    end,
+                    notifier = function(number)
+                        currentNoteDelay = number
+                        refreshNoteControls()
+                    end,
+                },
+                vb:button {
+                    text = "C",
+                    tooltip = "Clear note delay",
+                    notifier = function()
+                        currentNoteDelay = 0
                         refreshNoteControls()
                     end,
                 },
