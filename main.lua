@@ -88,7 +88,7 @@ local keyRShift = false
 local keyAlt = false
 
 --dump complex tables
-function dump(o)
+local function dump(o)
     if type(o) == 'table' then
         local s = '{ '
         for k, v in pairs(o) do
@@ -145,11 +145,10 @@ local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dela
     return noteOff
 end
 
---check for a specific line, search for a column, which have enough space
+--search for a column, which have enough space for the line and length of a new note
 local function returnColumnWhenEnoughSpaceForNote(line, len)
     local lineValues = song.selected_pattern_track.lines
     local column
-
     --check if enough space for a new note
     for c = 1, song.selected_track.max_note_columns do
         local validSpace = true
@@ -170,12 +169,12 @@ local function returnColumnWhenEnoughSpaceForNote(line, len)
                 validSpace = false
             end
         end
+        --found valid space, break the loop
         if validSpace then
             column = c
             break
         end
     end
-
     return column
 end
 
@@ -308,7 +307,6 @@ local function transposeSelectedNotes(transpose, keepscale)
         song.transport.edit_mode = false
         --transpose
         local note_column = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column)
-
         --when in scale transposing is active move note further, when needed
         if keepscale and not noteInScale(noteSelection[key].note + transposeVal) then
             if transposeVal > 0 then
@@ -317,7 +315,6 @@ local function transposeSelectedNotes(transpose, keepscale)
                 transposeVal = transposeVal - 1
             end
         end
-
         --default transpose note
         noteSelection[key].note = noteSelection[key].note + transposeVal
         if noteSelection[key].note < 0 then
@@ -1214,10 +1211,13 @@ local function main_function()
                 refreshPianoRollNeeded = true
                 handled = true
             end
-            if key.name == "up" and key.state == "released" then
+            if (key.name == "up" or key.name == "down") and key.state == "released" then
                 local transpose = 1
                 if keyShift or keyRShift then
                     transpose = 12
+                end
+                if key.name == "down" then
+                    transpose = transpose * -1
                 end
                 if noteSelectionSize > 0 then
                     transposeSelectedNotes(transpose, keyControl or keyRControl)
@@ -1226,15 +1226,15 @@ local function main_function()
                 end
                 handled = true
             end
-            if key.name == "down" and key.state == "released" then
-                local transpose = -1
-                if keyShift or keyRShift then
-                    transpose = -12
+            if (key.name == "left" or key.name == "righ5") and key.state == "released" then
+                local steps = 1
+                if key.name == "left" then
+                    steps = steps * -1
                 end
                 if noteSelectionSize > 0 then
-                    transposeSelectedNotes(transpose, keyControl or keyRControl)
-                elseif noteSlider.value + transpose <= noteSlider.max and noteSlider.value + transpose >= noteSlider.min then
-                    noteSlider.value = noteSlider.value + transpose
+                    --move notes
+                elseif stepSlider.value + steps <= stepSlider.max and stepSlider.value + steps >= stepSlider.min then
+                    stepSlider.value = stepSlider.value + steps
                 end
                 handled = true
             end
