@@ -479,7 +479,7 @@ function pianoGridClick(x, y)
                         --note found?
                         if note_data ~= nil then
                             --add to selection table
-                            noteSelection[tostring(note_data.line) .. "_" .. tostring(note_data.column)] = note_data
+                            table.insert(noteSelection, note_data)
                         end
                     end
                 end
