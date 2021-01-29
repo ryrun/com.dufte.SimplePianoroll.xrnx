@@ -87,7 +87,7 @@ local keyShift = false
 local keyRShift = false
 local keyAlt = false
 
---
+--dump complex tables
 function dump(o)
     if type(o) == 'table' then
         local s = '{ '
@@ -121,37 +121,102 @@ local function noteInScale(note)
     return true
 end
 
---remove selected notes
-local function removeSelectedNotes()
+--return true, when a noteOff was set
+local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, delay)
+    local noteOff = false
     local lineValues = song.selected_pattern_track.lines
-    --loop through selected notes
-    for key, value in pairs(noteSelection) do
-        local note_column = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column)
-        if note_column ~= nil then
-            note_column:clear()
-            --check for note on before this note, set note off when needed
-            for i = noteSelection[key].line, 1, -1 do
-                local temp = lineValues[i]:note_column(noteSelection[key].column)
-                if temp.note_value < 120 then
-                    note_column.note_value = 120
+    lineValues[line]:note_column(column).note_value = note
+    lineValues[line]:note_column(column).volume_string = toHex(vel)
+    lineValues[line]:note_column(column).panning_string = toHex(pan)
+    lineValues[line]:note_column(column).delay_string = toHex(delay)
+    lineValues[line]:note_column(column).instrument_value = currentInstrument - 1
+    if len > 1 then
+        lineValues[line + len - 1]:note_column(column).volume_string = toHex(end_vel)
+    end
+    --set note off?
+    if line + len <= song.selected_pattern.number_of_lines then
+        if lineValues[line + len]:note_column(column).note_value < 120 then
+
+        else
+            noteOff = true
+            lineValues[line + len]:note_column(column).note_value = 120
+        end
+    end
+    return noteOff
+end
+
+--check for a specific line, search for a column, which have enough space
+local function returnColumnWhenEnoughSpaceForNote(line, len)
+    local lineValues = song.selected_pattern_track.lines
+    local column
+
+    --check if enough space for a new note
+    for c = 1, song.selected_track.max_note_columns do
+        local validSpace = true
+        --check for note on before
+        if line > 1 then
+            for i = line, 1, -1 do
+                if lineValues[i]:note_column(c).note_value < 120 then
+                    validSpace = false
                     break
-                elseif temp.note_value == 120 then
+                elseif lineValues[i]:note_column(c).note_value == 120 then
                     break
-                end
-            end
-            --remove end note vel
-            if noteSelection[key].len > 1 then
-                note_column = lineValues[noteSelection[key].line + noteSelection[key].len - 1]:note_column(noteSelection[key].column)
-                note_column:clear()
-            end
-            --remove note off, when needed
-            if noteSelection[key].line + noteSelection[key].len <= song.selected_pattern.number_of_lines then
-                note_column = lineValues[noteSelection[key].line + noteSelection[key].len]:note_column(noteSelection[key].column)
-                if note_column.note_value == 120 then
-                    note_column:clear()
                 end
             end
         end
+        --check for note on in
+        for i = line, line + len - 1 do
+            if lineValues[i]:note_column(c).note_value < 120 then
+                validSpace = false
+            end
+        end
+        if validSpace then
+            column = c
+            break
+        end
+    end
+
+    return column
+end
+
+--remove note
+local function removeNoteInPattern(column, line, len)
+    local lineValues = song.selected_pattern_track.lines
+    local note_column = lineValues[line]:note_column(column)
+    if note_column ~= nil then
+        note_column:clear()
+        --check for note on before this note, set note off when needed
+        for i = line, 1, -1 do
+            local temp = lineValues[i]:note_column(column)
+            if temp.note_value < 120 then
+                note_column.note_value = 120
+                break
+            elseif temp.note_value == 120 then
+                break
+            end
+        end
+        --remove end note vel
+        if len > 1 then
+            note_column = lineValues[line + len - 1]:note_column(column)
+            note_column:clear()
+        end
+        --remove note off, when needed
+        if line + len <= song.selected_pattern.number_of_lines then
+            note_column = lineValues[line + len]:note_column(column)
+            if note_column.note_value == 120 then
+                note_column:clear()
+            end
+        end
+        return true
+    end
+    return false
+end
+
+--remove selected notes
+local function removeSelectedNotes()
+    --loop through selected notes
+    for key, value in pairs(noteSelection) do
+        removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
     end
     noteSelection = {}
     noteSelectionSize = 0
@@ -319,7 +384,6 @@ function pianoGridClick(x, y)
     local dbclk = dbclkDetector("p" .. tostring(x) .. "_" .. tostring(y))
     if dbclk or (keyAlt) then
         local steps = song.selected_pattern.number_of_lines
-        local lineValues = song.selected_pattern_track.lines
         local column
         local note_value
         local noteOff = false
@@ -332,31 +396,7 @@ function pianoGridClick(x, y)
         end
         --disable edit mode because of side effects
         song.transport.edit_mode = false
-        --check if enough space for a new note
-        for c = 1, song.selected_track.max_note_columns do
-            local validSpace = true
-            --check for note on before
-            if x > 1 then
-                for i = x, 1, -1 do
-                    if lineValues[i]:note_column(c).note_value < 120 then
-                        validSpace = false
-                        break
-                    elseif lineValues[i]:note_column(c).note_value == 120 then
-                        break
-                    end
-                end
-            end
-            --check for note on in
-            for i = x, x + currentNoteLength - 1 do
-                if lineValues[i]:note_column(c).note_value < 120 then
-                    validSpace = false
-                end
-            end
-            if validSpace then
-                column = c
-                break
-            end
-        end
+        column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength)
         --no column found
         if column == nil then
             --no space for this note
@@ -368,23 +408,7 @@ function pianoGridClick(x, y)
         end
         --add new note
         note_value = gridOffset2NoteValue(y)
-        lineValues[x]:note_column(column).note_value = note_value
-        lineValues[x]:note_column(column).volume_string = toHex(currentNoteVelocity)
-        lineValues[x]:note_column(column).panning_string = toHex(currentNotePan)
-        lineValues[x]:note_column(column).delay_string = toHex(currentNoteDelay)
-        lineValues[x]:note_column(column).instrument_value = currentInstrument - 1
-        if currentNoteLength > 1 then
-            lineValues[x + currentNoteLength - 1]:note_column(column).volume_string = toHex(currentNoteEndVelocity)
-        end
-        --set note off?
-        if x + currentNoteLength <= steps then
-            if lineValues[x + currentNoteLength]:note_column(column).note_value < 120 then
-
-            else
-                noteOff = true
-                lineValues[x + currentNoteLength]:note_column(column).note_value = 120
-            end
-        end
+        noteOff = addNoteToPattern(column,x,currentNoteLength,note_value,currentNoteVelocity,currentNoteEndVelocity,currentNotePan,currentNoteDelay)
         --trigger preview notes
         triggerNoteOfCurrentInstrument(note_value)
         --clear selection and add new note as new selection
