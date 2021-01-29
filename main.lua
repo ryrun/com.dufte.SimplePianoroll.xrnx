@@ -73,7 +73,6 @@ local currentNoteEndVelocity = 255
 local currentInstrument
 
 local noteSelection = {}
-local noteSelectionSize = 0
 local lastSelectionClick
 local lowesetNote
 local highestNote
@@ -122,13 +121,13 @@ local function noteInScale(note)
 end
 
 --return true, when a noteOff was set
-local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, delay)
+local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly)
     local noteOff = false
     local lineValues = song.selected_pattern_track.lines
     lineValues[line]:note_column(column).note_value = note
     lineValues[line]:note_column(column).volume_string = toHex(vel)
     lineValues[line]:note_column(column).panning_string = toHex(pan)
-    lineValues[line]:note_column(column).delay_string = toHex(delay)
+    lineValues[line]:note_column(column).delay_string = toHex(dly)
     lineValues[line]:note_column(column).instrument_value = currentInstrument - 1
     if len > 1 then
         lineValues[line + len - 1]:note_column(column).volume_string = toHex(end_vel)
@@ -142,6 +141,10 @@ local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dela
             lineValues[line + len]:note_column(column).note_value = 120
         end
     end
+    --show note column if hidden
+    if column > song.selected_track.visible_note_columns then
+        song.selected_track.visible_note_columns = column
+    end
     return noteOff
 end
 
@@ -149,6 +152,10 @@ end
 local function returnColumnWhenEnoughSpaceForNote(line, len)
     local lineValues = song.selected_pattern_track.lines
     local column
+    --note outside the grid?
+    if line < 1 or line + len - 1 > song.selected_pattern.number_of_lines then
+        return column
+    end
     --check if enough space for a new note
     for c = 1, song.selected_track.max_note_columns do
         local validSpace = true
@@ -218,7 +225,6 @@ local function removeSelectedNotes()
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
     end
     noteSelection = {}
-    noteSelectionSize = 0
     refreshPianoRollNeeded = true
 end
 
@@ -298,6 +304,39 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed)
     end
 end
 
+--move selected notes
+local function moveSelectedNotes(steps)
+    local lineValues = song.selected_pattern_track.lines
+    local column
+    for key, value in pairs(noteSelection) do
+        --disable edit mode to prevent side effects
+        song.transport.edit_mode = false
+        --remove note
+        removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
+        --search for valid column
+        column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line + steps, noteSelection[key].len)
+        if column then
+            noteSelection[key].line = noteSelection[key].line + steps
+            noteSelection[key].column = column
+        end
+        local noteOff = addNoteToPattern(
+                noteSelection[key].column,
+                noteSelection[key].line,
+                noteSelection[key].len,
+                noteSelection[key].note,
+                noteSelection[key].vel,
+                noteSelection[key].end_vel,
+                noteSelection[key].pan,
+                noteSelection[key].dly
+        )
+        if not column then
+            break
+        end
+        noteSelection[key].noteOff = noteOff
+    end
+    refreshPianoRollNeeded = true
+end
+
 --transpose each selected notes
 local function transposeSelectedNotes(transpose, keepscale)
     local lineValues = song.selected_pattern_track.lines
@@ -360,10 +399,8 @@ function noteClick(x, y)
             --clear selection, when ctrl is not holded
             if not keyControl then
                 noteSelection = {}
-                noteSelectionSize = 0
             end
-            noteSelection[tostring(note_data.line) .. "_" .. tostring(note_data.column)] = note_data
-            noteSelectionSize = noteSelectionSize + 1
+            table.insert(noteSelection, note_data)
             currentNoteLength = note_data.len
             currentNoteVelocity = note_data.vel
             currentNoteEndVelocity = note_data.end_vel
@@ -399,26 +436,24 @@ function pianoGridClick(x, y)
             --no space for this note
             return false
         end
-        --show note column if hidden
-        if column > song.selected_track.visible_note_columns then
-            song.selected_track.visible_note_columns = column
-        end
         --add new note
         note_value = gridOffset2NoteValue(y)
-        noteOff = addNoteToPattern(column,x,currentNoteLength,note_value,currentNoteVelocity,currentNoteEndVelocity,currentNotePan,currentNoteDelay)
+        noteOff = addNoteToPattern(column, x, currentNoteLength, note_value, currentNoteVelocity, currentNoteEndVelocity, currentNotePan, currentNoteDelay)
         --trigger preview notes
         triggerNoteOfCurrentInstrument(note_value)
         --clear selection and add new note as new selection
         noteSelection = {}
-        noteSelectionSize = 0
-        noteSelection[tostring(x) .. "_" .. tostring(column)] = {
-            note = note_value,
-            column = column,
+        table.insert(noteSelection, {
             line = x,
+            note = note_value,
+            vel = currentNoteVelocity,
+            end_vel = currentNoteEndVelocity,
+            dly = currentNoteDelay,
+            pan = currentNotePan,
             len = currentNoteLength,
-            noteOff = noteOff,
-        }
-        noteSelectionSize = noteSelectionSize + 1
+            noteoff = noteOff,
+            column = column,
+        })
         --
         refreshPianoRollNeeded = true
     else
@@ -432,7 +467,6 @@ function pianoGridClick(x, y)
             local nmax = gridOffset2NoteValue(math.max(y, lastSelectionClick[2]))
             --remove current note selection
             noteSelection = {}
-            noteSelectionSize = 0
             --loop through columns
             for c = 1, columns do
                 --loop through lines as steps
@@ -446,7 +480,6 @@ function pianoGridClick(x, y)
                         if note_data ~= nil then
                             --add to selection table
                             noteSelection[tostring(note_data.line) .. "_" .. tostring(note_data.column)] = note_data
-                            noteSelectionSize = noteSelectionSize + 1
                         end
                     end
                 end
@@ -457,9 +490,8 @@ function pianoGridClick(x, y)
         else
             lastSelectionClick = { x, y }
             --deselect selected notes
-            if noteSelectionSize > 0 then
+            if #noteSelection > 0 then
                 noteSelection = {}
-                noteSelectionSize = 0
                 refreshPianoRollNeeded = true
                 lastSelectionClick = { x, y }
             end
@@ -517,10 +549,12 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
         else
             b.text = current_note_string
         end
-        if noteSelection[tostring(line) .. "_" .. tostring(column)] ~= nil then
-            b.color = colorNoteSelected
-        else
-            b.color = colorNote
+        b.color = colorNote
+        for key, value in pairs(noteSelection) do
+            if noteSelection[key].line == line and noteSelection[key].column == column then
+                b.color = colorNoteSelected
+                break
+            end
         end
         b.visible = true
         if noteOff then
@@ -778,7 +812,6 @@ end
 local function obsPianoRefresh()
     --clear note selection
     noteSelection = {}
-    noteSelectionSize = 0
     --set refresh flag
     refreshPianoRollNeeded = true
 end
@@ -1191,9 +1224,8 @@ local function main_function()
                 handled = true
             end
             if key.name == "esc" and key.state == "released" then
-                if noteSelectionSize > 0 then
+                if #noteSelection > 0 then
                     noteSelection = {}
-                    noteSelectionSize = 0
                     refreshPianoRollNeeded = true
                 end
                 handled = true
@@ -1201,12 +1233,10 @@ local function main_function()
             if key.name == "a" and key.state == "released" and (keyControl or keyRControl) then
                 --clear current selection
                 noteSelection = {}
-                noteSelectionSize = 0
                 --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
                 for key, value in pairs(noteData) do
                     local note_data = noteData[key]
-                    noteSelection[tostring(note_data.line) .. "_" .. tostring(note_data.column)] = note_data
-                    noteSelectionSize = noteSelectionSize + 1
+                    table.insert(noteSelection, note_data)
                 end
                 refreshPianoRollNeeded = true
                 handled = true
@@ -1219,20 +1249,23 @@ local function main_function()
                 if key.name == "down" then
                     transpose = transpose * -1
                 end
-                if noteSelectionSize > 0 then
+                if #noteSelection > 0 then
                     transposeSelectedNotes(transpose, keyControl or keyRControl)
                 elseif noteSlider.value + transpose <= noteSlider.max and noteSlider.value + transpose >= noteSlider.min then
                     noteSlider.value = noteSlider.value + transpose
                 end
                 handled = true
             end
-            if (key.name == "left" or key.name == "righ5") and key.state == "released" then
+            if (key.name == "left" or key.name == "right") and key.state == "released" then
                 local steps = 1
+                if keyShift or keyRShift then
+                    steps = math.max(4)
+                end
                 if key.name == "left" then
                     steps = steps * -1
                 end
-                if noteSelectionSize > 0 then
-                    --move notes
+                if #noteSelection > 0 then
+                    moveSelectedNotes(steps)
                 elseif stepSlider.value + steps <= stepSlider.max and stepSlider.value + steps >= stepSlider.min then
                     stepSlider.value = stepSlider.value + steps
                 end
