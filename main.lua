@@ -868,17 +868,19 @@ local function highlightNotesOnStep(step, highlight)
             --when notes are on current step and not selected
             if noteOnStep[step][i] ~= nil then
                 local note = noteOnStep[step][i]
-                if vbw["b" .. note.index].color[1] ~= colorNoteSelected[1] then
-                    if highlight then
+                if highlight then
+                    if vbw["b" .. note.index].color[1] ~= colorNoteSelected[1] then
                         vbw["b" .. note.index].color = colorNoteHighlight
-                        vbw["k" .. note.row].color = colorNoteHighlight
-                    else
+                    end
+                    vbw["k" .. note.row].color = colorNoteHighlight
+                else
+                    if vbw["b" .. note.index].color[1] ~= colorNoteSelected[1] then
                         vbw["b" .. note.index].color = colorNote
-                        if noteInScale(note.note) then
-                            vbw["k" .. note.row].color = colorKeyWhite
-                        else
-                            vbw["k" .. note.row].color = colorKeyBlack
-                        end
+                    end
+                    if noteInScale(note.note) then
+                        vbw["k" .. note.row].color = colorKeyWhite
+                    else
+                        vbw["k" .. note.row].color = colorKeyBlack
                     end
                 end
             end
