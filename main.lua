@@ -47,6 +47,8 @@ local colorNoteHighlight = { 232, 204, 110 }
 local colorNoteSelected = { 244, 150, 149 }
 local colorStepOff = { 30, 6, 0 }
 local colorStepOn = { 180, 80, 40 }
+local colorKeyWhite = { 255, 255, 255 }
+local colorKeyBlack = { 20, 20, 20 }
 
 --note trigger vars
 local oscClient
@@ -645,7 +647,12 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
         if noteOnStep[noteOnStepIndex] == nil then
             noteOnStep[noteOnStepIndex] = {}
         end
-        table.insert(noteOnStep[noteOnStepIndex], current_note_index)
+        table.insert(noteOnStep[noteOnStepIndex], {
+            index = current_note_index,
+            step = current_note_step,
+            row = current_note_rowIndex,
+            note = current_note,
+        })
         local b = vbw["b" .. current_note_index]
         b.width = (gridStepSizeW * current_note_len) - (gridSpacing * (current_note_len - 1))
         if (gridStepSizeW < 34 and current_note_len < 2) or gridStepSizeH < 18 then
@@ -759,10 +766,10 @@ local function fillPianoRoll()
                     if s == 1 then
                         local key = vbw["k" .. ystring]
                         if blackKeyIndex[y][1] == colorBlackKey[1] then
-                            key.color = { 20, 20, 20 }
+                            key.color = colorKeyBlack
                             key.text = ""
                         else
-                            key.color = { 255, 255, 255 }
+                            key.color = colorKeyWhite
                             if (y + noffset) % 12 == 0 then
                                 key.text = "         C" .. tostring(math.floor((y + noffset) / 12))
                             else
@@ -859,11 +866,20 @@ local function highlightNotesOnStep(step, highlight)
     if noteOnStep[step] ~= nil and #noteOnStep[step] > 0 then
         for i = 1, #noteOnStep[step] do
             --when notes are on current step and not selected
-            if noteOnStep[step][i] ~= nil and vbw["b" .. noteOnStep[step][i]].color[1] ~= colorNoteSelected[1] then
-                if highlight then
-                    vbw["b" .. noteOnStep[step][i]].color = colorNoteHighlight
-                else
-                    vbw["b" .. noteOnStep[step][i]].color = colorNote
+            if noteOnStep[step][i] ~= nil then
+                local note = noteOnStep[step][i]
+                if vbw["b" .. note.index].color[1] ~= colorNoteSelected[1] then
+                    if highlight then
+                        vbw["b" .. note.index].color = colorNoteHighlight
+                        vbw["k" .. note.row].color = colorNoteHighlight
+                    else
+                        vbw["b" .. note.index].color = colorNote
+                        if noteInScale(note.note) then
+                            vbw["k" .. note.row].color = colorKeyWhite
+                        else
+                            vbw["k" .. note.row].color = colorKeyBlack
+                        end
+                    end
                 end
             end
         end
@@ -1419,6 +1435,7 @@ local function main_function()
                 handled = true
             end
             --return key to host
+            --TODO BUG sometimes key events got missed when bringed back to host
             if not handled then
                 return key
             end
