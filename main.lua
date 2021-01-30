@@ -1293,6 +1293,9 @@ local function main_function()
         --show dialog
         windowObj = app:show_custom_dialog("Simple Pianoroll v" .. manifest:property("Version").value, windowContent, function(dialog, key)
             local handled = false
+            --always disable edit mode because of side effects
+            song.transport.edit_mode = false
+            --
             if key.name == "lcontrol" and key.state == "pressed" then
                 keyControl = true
                 handled = true
@@ -1339,7 +1342,7 @@ local function main_function()
                 end
                 handled = true
             end
-            if key.name == "b" and key.state == "released" and (keyControl or keyRControl) then
+            if key.name == "b" and key.state == "released" and key.modifiers == "control" then
                 if #noteSelection == 0 then
                     --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
                     for key, value in pairs(noteData) do
@@ -1347,17 +1350,19 @@ local function main_function()
                         table.insert(noteSelection, note_data)
                     end
                     --duplciate content
-                    local ret = duplicateSelectedNotes()
-                    --was not possible then deselect
-                    if not ret then
-                        noteSelection = {}
+                    if #noteSelection > 0 then
+                        local ret = duplicateSelectedNotes()
+                        --was not possible then deselect
+                        if not ret then
+                            noteSelection = {}
+                        end
                     end
                 elseif #noteSelection > 0 then
                     duplicateSelectedNotes()
                 end
                 handled = true
             end
-            if key.name == "a" and key.state == "released" and (keyControl or keyRControl) then
+            if key.name == "a" and key.state == "released" and key.modifiers == "control" then
                 --clear current selection
                 noteSelection = {}
                 --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
