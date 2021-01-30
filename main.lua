@@ -140,6 +140,14 @@ local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly)
             noteOff = true
             lineValues[line + len]:note_column(column).note_value = 120
         end
+    elseif line + len - 1 == song.selected_pattern.number_of_lines then
+        --set note off to the beginning of a pattern for looping purpose
+        if lineValues[1]:note_column(column).note_value < 120 then
+
+        else
+            noteOff = true
+            lineValues[1]:note_column(column).note_value = 120
+        end
     end
     --show note column if hidden
     if column > song.selected_track.visible_note_columns then
@@ -209,6 +217,13 @@ local function removeNoteInPattern(column, line, len)
         --remove note off, when needed
         if line + len <= song.selected_pattern.number_of_lines then
             note_column = lineValues[line + len]:note_column(column)
+            if note_column.note_value == 120 then
+                note_column:clear()
+            end
+        end
+        --remove note off in the beginning, when note off was added for looping purpose
+        if line + len - 1 == song.selected_pattern.number_of_lines then
+            note_column = lineValues[1]:note_column(column)
             if note_column.note_value == 120 then
                 note_column:clear()
             end
