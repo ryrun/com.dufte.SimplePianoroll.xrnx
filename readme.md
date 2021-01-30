@@ -54,6 +54,10 @@ Info: Non handled keyboard events will be send back to the host. So renoise defa
 |<kbd>down</kbd>|One or more notes selected|Transpose note 1 semitone down|
 |<kbd>shift + up</kbd>|One or more notes selected|Transpose note 12 semitone up|
 |<kbd>shift + down</kbd>|One or more notes selected|Transpose note 12 semitone up|
+|<kbd>left</kbd>|One or more notes selected|Move note 1 step left|
+|<kbd>right</kbd>|One or more notes selected|Move note 1 step right|
+|<kbd>shift + left</kbd>|One or more notes selected|Move note 4 step left|
+|<kbd>shift + right</kbd>|One or more notes selected|Move note 4 step right|
 |<kbd>ctrl + up</kbd>|One or more notes selected|Transpose note 1 semitone up but stay in scale|
 |<kbd>ctrl + down</kbd>|One or more notes selected|Transpose note 1 semitone down but stay in scale|
 |<kbd>ctrl + shift + up</kbd>|One or more notes selected|Transpose note 12 semitone up but stay in scale|
@@ -61,3 +65,5 @@ Info: Non handled keyboard events will be send back to the host. So renoise defa
 |<kbd>del</kbd>|One or more notes selected|Remove selected notes|
 |<kbd>esc</kbd>|One or more notes selected|Deselect all notes|
 |<kbd>ctrl + a</kbd>|-|Select all visible notes|
+|<kbd>ctrl + b</kbd>|-|Select all visible notes and duplicate it to the right|
+|<kbd>ctrl + b</kbd>|One or more notes selected|Duplicate selected notes to the right|

@@ -324,12 +324,12 @@ local function moveSelectedNotes(steps)
     --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
     if steps < 0 then
         --left one notes first
-        table.sort(noteSelection, function (a, b)
+        table.sort(noteSelection, function(a, b)
             return a.line < b.line
         end)
     else
         --right one notes first
-        table.sort(noteSelection, function (a, b)
+        table.sort(noteSelection, function(a, b)
             return a.line > b.line
         end)
     end
@@ -369,12 +369,12 @@ local function transposeSelectedNotes(transpose, keepscale)
     --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
     if transpose > 0 then
         --higher one notes first
-        table.sort(noteSelection, function (a, b)
+        table.sort(noteSelection, function(a, b)
             return a.note > b.note
         end)
     else
         --lower one notes first
-        table.sort(noteSelection, function (a, b)
+        table.sort(noteSelection, function(a, b)
             return a.note < b.note
         end)
     end
@@ -409,6 +409,47 @@ local function transposeSelectedNotes(transpose, keepscale)
         end
         note_column.note_value = noteSelection[key].note
         triggerNoteOfCurrentInstrument(noteSelection[key].note)
+    end
+    refreshPianoRollNeeded = true
+end
+
+--duplicate content
+local function duplicateSelectedNotes()
+    local offset
+    local column
+    --first notes first
+    table.sort(noteSelection, function(a, b)
+        return a.line < b.line
+    end)
+    offset = noteSelection[1].line
+    --last notes first
+    table.sort(noteSelection, function(a, b)
+        return a.line > b.line
+    end)
+    --get offset
+    offset = (noteSelection[1].line + noteSelection[1].len) - offset
+    --go through selection
+    for key, value in pairs(noteSelection) do
+        --disable edit mode to prevent side effects
+        song.transport.edit_mode = false
+        --search for valid column
+        column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line + offset, noteSelection[key].len)
+        if column then
+            noteSelection[key].line = noteSelection[key].line + offset
+        else
+            break
+        end
+        local noteOff = addNoteToPattern(
+                noteSelection[key].column,
+                noteSelection[key].line,
+                noteSelection[key].len,
+                noteSelection[key].note,
+                noteSelection[key].vel,
+                noteSelection[key].end_vel,
+                noteSelection[key].pan,
+                noteSelection[key].dly
+        )
+        noteSelection[key].noteOff = noteOff
     end
     refreshPianoRollNeeded = true
 end
@@ -1293,6 +1334,19 @@ local function main_function()
                 if #noteSelection > 0 then
                     noteSelection = {}
                     refreshPianoRollNeeded = true
+                end
+                handled = true
+            end
+            if key.name == "b" and key.state == "released" and (keyControl or keyRControl) then
+                if #noteSelection == 0 then
+                    --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
+                    for key, value in pairs(noteData) do
+                        local note_data = noteData[key]
+                        table.insert(noteSelection, note_data)
+                    end
+                end
+                if #noteSelection > 0 then
+                    duplicateSelectedNotes()
                 end
                 handled = true
             end
