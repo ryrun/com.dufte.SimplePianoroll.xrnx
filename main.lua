@@ -438,7 +438,7 @@ local function duplicateSelectedNotes()
             noteSelection[key].column = column
             noteSelection[key].line = noteSelection[key].line + offset
         else
-            break
+            return false
         end
         local noteOff = addNoteToPattern(
                 noteSelection[key].column,
@@ -453,6 +453,7 @@ local function duplicateSelectedNotes()
         noteSelection[key].noteOff = noteOff
     end
     refreshPianoRollNeeded = true
+    return true
 end
 
 --convert the note value to a grid y position
@@ -1345,8 +1346,13 @@ local function main_function()
                         local note_data = noteData[key]
                         table.insert(noteSelection, note_data)
                     end
-                end
-                if #noteSelection > 0 then
+                    --duplciate content
+                    local ret = duplicateSelectedNotes()
+                    --was not possible then deselect
+                    if not ret then
+                        noteSelection = {}
+                    end
+                elseif #noteSelection > 0 then
                     duplicateSelectedNotes()
                 end
                 handled = true
