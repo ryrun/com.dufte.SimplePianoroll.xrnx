@@ -435,6 +435,7 @@ local function duplicateSelectedNotes()
         --search for valid column
         column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line + offset, noteSelection[key].len)
         if column then
+            noteSelection[key].column = column
             noteSelection[key].line = noteSelection[key].line + offset
         else
             break
