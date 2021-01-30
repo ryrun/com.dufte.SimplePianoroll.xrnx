@@ -42,14 +42,21 @@ Download the latest build here and drop it onto Renoise: https://github.com/ryru
 
 ## Keyboard actions
 
-Info: Non handled keyboard events will be send back to the host. So renoise default keyboard shortcuts should work.
+Info: Non handled keyboard events will be sent back to the host. So renoise default keyboard shortcuts should work.
 
 |Keys|Context|Description|
 |---|---|---|
 |<kbd>up</kbd>|Nothing selected|Move in the grid upwards|
 |<kbd>down</kbd>|Nothing selected|Move in the grid downwards|
+|<kbd>left</kbd>|Nothing selected|Move in the grid leftwards|
+|<kbd>right</kbd>|Nothing selected|Move in the grid rightwards|
 |<kbd>shift + up</kbd>|Nothing selected|Move in the grid 12 steps upwards|
 |<kbd>shift + down</kbd>|Nothing selected|Move in the grid 12 steps downwards|
+|<kbd>shift + left</kbd>|Nothing selected|Move in the grid 4 steps leftwards|
+|<kbd>shift + right</kbd>|Nothing selected|Move in the grid 4 steps rightwards|
+|<kbd>ctrl + a</kbd>|Nothing selected|Select all visible notes|
+|<kbd>ctrl + b</kbd>|Nothing selected|Select all visible notes and duplicate it to the right|
+|<kbd>ctrl + b</kbd>|One or more notes selected|Duplicate selected notes to the right|
 |<kbd>up</kbd>|One or more notes selected|Transpose note 1 semitone up|
 |<kbd>down</kbd>|One or more notes selected|Transpose note 1 semitone down|
 |<kbd>shift + up</kbd>|One or more notes selected|Transpose note 12 semitone up|
@@ -64,6 +71,3 @@ Info: Non handled keyboard events will be send back to the host. So renoise defa
 |<kbd>ctrl + shift + down</kbd>|One or more notes selected|Transpose note 12 semitone up but stay in scale|
 |<kbd>del</kbd>|One or more notes selected|Remove selected notes|
 |<kbd>esc</kbd>|One or more notes selected|Deselect all notes|
-|<kbd>ctrl + a</kbd>|-|Select all visible notes|
-|<kbd>ctrl + b</kbd>|-|Select all visible notes and duplicate it to the right|
-|<kbd>ctrl + b</kbd>|One or more notes selected|Duplicate selected notes to the right|
