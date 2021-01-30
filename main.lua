@@ -240,8 +240,16 @@ end
 --refresh all controls
 local function refreshNoteControls()
     vbw.note_len.value = currentNoteLength
-    vbw.note_vel.value = currentNoteVelocity
-    vbw.note_pan.value = currentNotePan
+    if currentNoteVelocity == 255 then
+        vbw.note_vel.value = -1
+    else
+        vbw.note_vel.value = currentNoteVelocity
+    end
+    if currentNotePan == 255 then
+        vbw.note_pan.value = -1
+    else
+        vbw.note_pan.value = currentNotePan
+    end
     vbw.note_dly.value = currentNoteDelay
     if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
         currentNoteVelocityPreview = currentNoteVelocity
@@ -250,10 +258,14 @@ local function refreshNoteControls()
     end
     if currentNoteLength == 1 then
         currentNoteEndVelocity = 255
-        vbw.note_end_vel.value = currentNoteEndVelocity
+        vbw.note_end_vel.value = -1
         vbw.note_end_vel.active = false
     else
-        vbw.note_end_vel.value = currentNoteEndVelocity
+        if currentNoteEndVelocity == 255 then
+            vbw.note_end_vel.value = -1
+        else
+            vbw.note_end_vel.value = currentNoteEndVelocity
+        end
         vbw.note_end_vel.active = true
     end
 end
@@ -1008,23 +1020,27 @@ local function main_function()
                     id = "note_vel",
                     tooltip = "Note velocity",
                     steps = { 1, 2 },
-                    min = 0,
-                    max = 255,
-                    value = currentNoteVelocity,
+                    min = -1,
+                    max = 254,
+                    value = -1,
                     tostring = function(number)
-                        if number == 255 then
+                        if number == -1 then
                             return "--"
                         end
                         return toHex(number)
                     end,
                     tonumber = function(string)
                         if string == "--" then
-                            return 255
+                            return -1
                         end
                         return tonumber(string, 16)
                     end,
                     notifier = function(number)
-                        currentNoteVelocity = number
+                        if number == -1 then
+                            currentNoteVelocity = 255
+                        else
+                            currentNoteVelocity = number
+                        end
                         refreshNoteControls()
                     end,
                 },
@@ -1040,23 +1056,27 @@ local function main_function()
                     id = "note_end_vel",
                     tooltip = "End note velocity",
                     steps = { 1, 2 },
-                    min = 0,
-                    max = 255,
-                    value = currentNoteEndVelocity,
+                    min = -1,
+                    max = 254,
+                    value = -1,
                     tostring = function(number)
-                        if number == 255 then
+                        if number == -1 then
                             return "--"
                         end
                         return toHex(number)
                     end,
                     tonumber = function(string)
                         if string == "--" then
-                            return 255
+                            return -1
                         end
                         return tonumber(string, 16)
                     end,
                     notifier = function(number)
-                        currentNoteEndVelocity = number
+                        if number == -1 then
+                            currentNoteEndVelocity = 255
+                        else
+                            currentNoteEndVelocity = number
+                        end
                         refreshNoteControls()
                     end,
                 },
@@ -1075,23 +1095,27 @@ local function main_function()
                     id = "note_pan",
                     tooltip = "Note panning",
                     steps = { 1, 2 },
-                    min = 0,
-                    max = 255,
-                    value = currentNotePan,
+                    min = -1,
+                    max = 254,
+                    value = -1,
                     tostring = function(number)
-                        if number == 255 then
+                        if number == -1 then
                             return "--"
                         end
                         return toHex(number)
                     end,
                     tonumber = function(string)
                         if string == "--" then
-                            return 255
+                            return -1
                         end
                         return tonumber(string, 16)
                     end,
                     notifier = function(number)
-                        currentNotePan = number
+                        if number == -1 then
+                            currentNotePan = 255
+                        else
+                            currentNotePan = number
+                        end
                         refreshNoteControls()
                     end,
                 },
