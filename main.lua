@@ -320,6 +320,20 @@ end
 local function moveSelectedNotes(steps)
     local lineValues = song.selected_pattern_track.lines
     local column
+
+    --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
+    if steps < 0 then
+        --left one notes first
+        table.sort(noteSelection, function (a, b)
+            return a.line < b.line
+        end)
+    else
+        --right one notes first
+        table.sort(noteSelection, function (a, b)
+            return a.line > b.line
+        end)
+    end
+
     for key, value in pairs(noteSelection) do
         --disable edit mode to prevent side effects
         song.transport.edit_mode = false
@@ -352,6 +366,19 @@ end
 --transpose each selected notes
 local function transposeSelectedNotes(transpose, keepscale)
     local lineValues = song.selected_pattern_track.lines
+    --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
+    if transpose > 0 then
+        --higher one notes first
+        table.sort(noteSelection, function (a, b)
+            return a.note > b.note
+        end)
+    else
+        --lower one notes first
+        table.sort(noteSelection, function (a, b)
+            return a.note < b.note
+        end)
+    end
+    --go through selection
     for key, value in pairs(noteSelection) do
         local transposeVal = transpose
         --disable edit mode to prevent side effects
@@ -366,8 +393,15 @@ local function transposeSelectedNotes(transpose, keepscale)
                 transposeVal = transposeVal - 1
             end
         end
+        transposeVal = noteSelection[key].note + transposeVal
+        --outside the not range skip the whole tansposing
+        if transposeVal < 0 then
+            break
+        elseif transposeVal >= 120 then
+            break
+        end
         --default transpose note
-        noteSelection[key].note = noteSelection[key].note + transposeVal
+        noteSelection[key].note = transposeVal
         if noteSelection[key].note < 0 then
             noteSelection[key].note = 0
         elseif noteSelection[key].note >= 120 then
@@ -917,6 +951,13 @@ local function main_function()
                     notifier = loadstring(temp),
                 }
                 row:add_child(vb_temp)
+                vb_temp = vb:space {
+                    id = "spc" .. tostring(x) .. "_" .. tostring(y),
+                    height = gridStepSizeH,
+                    width = gridStepSizeW,
+                    visible = false,
+                }
+                row:add_child(vb_temp)
             end
             pianorollColumns:add_child(row)
         end
@@ -1199,11 +1240,12 @@ local function main_function()
         if lowesetNote ~= nil then
             local nOffset = math.floor((lowesetNote + highestNote) / 2) - (gridHeight / 2)
             if nOffset < 0 then
-                noteOffset = 0
+                nOffset = 0
             elseif nOffset > noteSlider.max then
-                noteOffset = noteSlider.max
+                nOffset = noteSlider.max
             end
-            noteSlider.value = math.floor((lowesetNote + highestNote) / 2) - (gridHeight / 2)
+            noteSlider.value = nOffset
+            noteOffset = nOffset
         end
         --show dialog
         windowObj = app:show_custom_dialog("Simple Pianoroll v" .. manifest:property("Version").value, windowContent, function(dialog, key)
