@@ -349,10 +349,10 @@ local function moveSelectedNotes(steps)
             return a.line > b.line
         end)
     end
-
+    --disable edit mode to prevent side effects
+    song.transport.edit_mode = false
+    --go through selection
     for key, value in pairs(noteSelection) do
-        --disable edit mode to prevent side effects
-        song.transport.edit_mode = false
         --remove note
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
         --search for valid column
@@ -394,11 +394,11 @@ local function transposeSelectedNotes(transpose, keepscale)
             return a.note < b.note
         end)
     end
+    --disable edit mode to prevent side effects
+    song.transport.edit_mode = false
     --go through selection
     for key, value in pairs(noteSelection) do
         local transposeVal = transpose
-        --disable edit mode to prevent side effects
-        song.transport.edit_mode = false
         --transpose
         local note_column = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column)
         --when in scale transposing is active move note further, when needed
@@ -444,10 +444,10 @@ local function duplicateSelectedNotes()
     end)
     --get offset
     offset = (noteSelection[1].line + noteSelection[1].len) - offset
+    --disable edit mode to prevent side effects
+    song.transport.edit_mode = false
     --go through selection
     for key, value in pairs(noteSelection) do
-        --disable edit mode to prevent side effects
-        song.transport.edit_mode = false
         --search for valid column
         column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line + offset, noteSelection[key].len)
         if column then
@@ -466,6 +466,45 @@ local function duplicateSelectedNotes()
                 noteSelection[key].pan,
                 noteSelection[key].dly
         )
+        noteSelection[key].noteOff = noteOff
+    end
+    refreshPianoRollNeeded = true
+    return true
+end
+
+--change note size
+local function changeSizeSelectedNotes(len)
+    local offset
+    local column
+    --first notes first
+    table.sort(noteSelection, function(a, b)
+        return a.line < b.line
+    end)
+    --disable edit mode to prevent side effects
+    song.transport.edit_mode = false
+    --go through selection
+    for key, value in pairs(noteSelection) do
+        --remove note
+        removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
+        --search for valid column
+        column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line, len)
+        if column then
+            noteSelection[key].len = len
+            noteSelection[key].column = column
+        end
+        local noteOff = addNoteToPattern(
+                noteSelection[key].column,
+                noteSelection[key].line,
+                noteSelection[key].len,
+                noteSelection[key].note,
+                noteSelection[key].vel,
+                noteSelection[key].end_vel,
+                noteSelection[key].pan,
+                noteSelection[key].dly
+        )
+        if not column then
+            break
+        end
         noteSelection[key].noteOff = noteOff
     end
     refreshPianoRollNeeded = true
@@ -1120,6 +1159,9 @@ local function main_function()
                     max = 256,
                     value = currentNoteLength,
                     notifier = function(number)
+                        if #noteSelection and currentNoteLength ~= number  then
+                            changeSizeSelectedNotes(number)
+                        end
                         currentNoteLength = number
                         refreshNoteControls()
                     end,
