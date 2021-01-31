@@ -337,7 +337,6 @@ end
 local function moveSelectedNotes(steps)
     local lineValues = song.selected_pattern_track.lines
     local column
-
     --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
     if steps < 0 then
         --left one notes first
@@ -938,12 +937,23 @@ local function obsPianoRefresh()
     refreshPianoRollNeeded = true
 end
 
+--will be called when something in the pattern will be changed
+local function lineNotifier(pos)
+    refreshPianoRollNeeded = true
+end
+
 --on each new song, reset pianoroll and setup locals
 local function appNewDoc()
     song = renoise.song()
     --set new observers
     song.selected_pattern_track_observable:add_notifier(obsPianoRefresh)
-    song.selected_pattern_observable:add_notifier(obsPianoRefresh)
+    song.selected_pattern_observable:add_notifier(function()
+        if not song.selected_pattern:has_line_notifier(lineNotifier) then
+            song.selected_pattern:add_line_notifier(lineNotifier)
+        end
+        refreshPianoRollNeeded = true
+    end)
+    song.selected_pattern:add_line_notifier(lineNotifier)
     song.selected_track_observable:add_notifier(obsPianoRefresh)
     song.selected_pattern.number_of_lines_observable:add_notifier(obsPianoRefresh)
     --clear selection and refresh piano roll
