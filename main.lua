@@ -474,7 +474,6 @@ end
 
 --change note size
 local function changeSizeSelectedNotes(len)
-    local offset
     local column
     --first notes first
     table.sort(noteSelection, function(a, b)
@@ -506,6 +505,30 @@ local function changeSizeSelectedNotes(len)
             break
         end
         noteSelection[key].noteOff = noteOff
+    end
+    refreshPianoRollNeeded = true
+    return true
+end
+
+--change note properties
+local function changePropertiesSelectedNotes(vel, end_vel, dly, pan)
+    local column
+    local lineValues = song.selected_pattern_track.lines
+    --disable edit mode to prevent side effects
+    song.transport.edit_mode = false
+    --go through selection
+    for key, value in pairs(noteSelection) do
+        local selection = noteSelection[key]
+        local note = lineValues[selection.line]:note_column(selection.column)
+        if vel ~= nil then
+            note.volume_string = toHex(vel)
+        end
+        if pan ~= nil then
+            note.panning_string = toHex(pan)
+        end
+        if dly ~= nil then
+            note.delay_string = toHex(dly)
+        end
     end
     refreshPianoRollNeeded = true
     return true
@@ -1159,7 +1182,7 @@ local function main_function()
                     max = 256,
                     value = currentNoteLength,
                     notifier = function(number)
-                        if #noteSelection and currentNoteLength ~= number  then
+                        if #noteSelection > 0 and currentNoteLength ~= number then
                             changeSizeSelectedNotes(number)
                         end
                         currentNoteLength = number
@@ -1206,8 +1229,14 @@ local function main_function()
                     end,
                     notifier = function(number)
                         if number == -1 then
+                            if #noteSelection > 0 and number ~= currentNoteVelocity then
+                                changePropertiesSelectedNotes(255, nil, nil, nil)
+                            end
                             currentNoteVelocity = 255
                         else
+                            if #noteSelection > 0 and number ~= currentNoteVelocity then
+                                changePropertiesSelectedNotes(number, nil, nil, nil)
+                            end
                             currentNoteVelocity = number
                         end
                         refreshNoteControls()
