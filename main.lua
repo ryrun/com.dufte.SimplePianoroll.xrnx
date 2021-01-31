@@ -59,6 +59,7 @@ local triggerTime = 250
 
 --main flag for refreshing pianoroll
 local refreshPianoRollNeeded = false
+local refreshControls = false
 
 --table to save note indices per step for highlighting
 local noteOnStep = {}
@@ -511,7 +512,7 @@ local function changeSizeSelectedNotes(len)
 end
 
 --change note properties
-local function changePropertiesSelectedNotes(vel, end_vel, dly, pan)
+local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan)
     local column
     local lineValues = song.selected_pattern_track.lines
     --disable edit mode to prevent side effects
@@ -520,8 +521,16 @@ local function changePropertiesSelectedNotes(vel, end_vel, dly, pan)
     for key, value in pairs(noteSelection) do
         local selection = noteSelection[key]
         local note = lineValues[selection.line]:note_column(selection.column)
+        local note_end = lineValues[selection.line + selection.len - 1]:note_column(selection.column)
         if vel ~= nil then
             note.volume_string = toHex(vel)
+        end
+        if end_vel ~= nil then
+            if selection.len > 1 then
+                note_end.volume_string = toHex(end_vel)
+            else
+                note.volume_string = toHex(end_vel)
+            end
         end
         if pan ~= nil then
             note.panning_string = toHex(pan)
@@ -573,7 +582,7 @@ function noteClick(x, y)
             currentNoteEndVelocity = note_data.end_vel
             currentNotePan = note_data.pan
             currentNoteDelay = note_data.dly
-            refreshNoteControls()
+            refreshControls = true
             triggerNoteOfCurrentInstrument(note_data.note)
             refreshPianoRollNeeded = true
         end
@@ -593,7 +602,7 @@ function pianoGridClick(x, y)
         --check if current note length is too long for pattern size, reduce len if needed
         if x + currentNoteLength > steps then
             currentNoteLength = steps - x + 1
-            refreshNoteControls()
+            refreshControls = true
         end
         --disable edit mode because of side effects
         song.transport.edit_mode = false
@@ -967,6 +976,11 @@ local function appIdleEvent()
             refreshPianoRollNeeded = false
         end
 
+        if refreshControls then
+            refreshNoteControls()
+            refreshControls = false
+        end
+
         --refresh playback pos indicator
         local line = song.transport.playback_pos.line
         if song.selected_pattern_index == song.transport.playback_pos.sequence and lastStepOn ~= line and song.transport.playing then
@@ -1186,7 +1200,7 @@ local function main_function()
                             changeSizeSelectedNotes(number)
                         end
                         currentNoteLength = number
-                        refreshNoteControls()
+                        refreshControls = true
                     end,
                 },
                 vb:button {
@@ -1194,7 +1208,7 @@ local function main_function()
                     tooltip = "Double current note length number",
                     notifier = function()
                         currentNoteLength = math.floor(currentNoteLength * 2)
-                        refreshNoteControls()
+                        refreshControls = true
                     end,
                 },
                 vb:button {
@@ -1202,7 +1216,7 @@ local function main_function()
                     tooltip = "Halve current note length number",
                     notifier = function()
                         currentNoteLength = math.floor(currentNoteLength / 2)
-                        refreshNoteControls()
+                        refreshControls = true
                     end,
                 },
                 vb:text {
@@ -1229,17 +1243,14 @@ local function main_function()
                     end,
                     notifier = function(number)
                         if number == -1 then
-                            if #noteSelection > 0 and number ~= currentNoteVelocity then
-                                changePropertiesSelectedNotes(255, nil, nil, nil)
-                            end
                             currentNoteVelocity = 255
                         else
-                            if #noteSelection > 0 and number ~= currentNoteVelocity then
-                                changePropertiesSelectedNotes(number, nil, nil, nil)
-                            end
                             currentNoteVelocity = number
                         end
-                        refreshNoteControls()
+                        if #noteSelection > 0 and not refreshControls then
+                            changePropertiesOfSelectedNotes(currentNoteVelocity, nil, nil, nil)
+                        end
+                        refreshControls = true
                     end,
                 },
                 vb:button {
@@ -1247,7 +1258,10 @@ local function main_function()
                     tooltip = "Clear note velocity",
                     notifier = function()
                         currentNoteVelocity = 255
-                        refreshNoteControls()
+                        if #noteSelection > 0 then
+                            changePropertiesOfSelectedNotes(currentNoteVelocity, nil, nil, nil)
+                        end
+                        refreshControls = true
                     end,
                 },
                 vb:valuebox {
@@ -1275,7 +1289,10 @@ local function main_function()
                         else
                             currentNoteEndVelocity = number
                         end
-                        refreshNoteControls()
+                        if #noteSelection > 0 and not refreshControls then
+                            changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity, nil, nil)
+                        end
+                        refreshControls = true
                     end,
                 },
                 vb:button {
@@ -1283,7 +1300,10 @@ local function main_function()
                     tooltip = "Clear end note velocity",
                     notifier = function()
                         currentNoteEndVelocity = 255
-                        refreshNoteControls()
+                        if #noteSelection > 0 then
+                            changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity, nil, nil)
+                        end
+                        refreshControls = true
                     end,
                 },
                 vb:text {
@@ -1314,7 +1334,10 @@ local function main_function()
                         else
                             currentNotePan = number
                         end
-                        refreshNoteControls()
+                        if #noteSelection > 0 and not refreshControls then
+                            changePropertiesOfSelectedNotes(nil, nil, nil, currentNotePan)
+                        end
+                        refreshControls = true
                     end,
                 },
                 vb:button {
@@ -1322,7 +1345,8 @@ local function main_function()
                     tooltip = "Clear note panning",
                     notifier = function()
                         currentNotePan = 255
-                        refreshNoteControls()
+                        changePropertiesOfSelectedNotes(nil, nil, nil, currentNotePan)
+                        refreshControls = true
                     end,
                 },
                 vb:text {
@@ -1349,7 +1373,10 @@ local function main_function()
                     end,
                     notifier = function(number)
                         currentNoteDelay = number
-                        refreshNoteControls()
+                        if #noteSelection > 0 and not refreshControls then
+                            changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay, nil)
+                        end
+                        refreshControls = true
                     end,
                 },
                 vb:button {
@@ -1357,7 +1384,8 @@ local function main_function()
                     tooltip = "Clear note delay",
                     notifier = function()
                         currentNoteDelay = 0
-                        refreshNoteControls()
+                        changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay, nil)
+                        refreshControls = true
                     end,
                 },
             },
@@ -1390,7 +1418,7 @@ local function main_function()
             },
         }
         --refresh note controls
-        refreshNoteControls()
+        refreshControls = true
         --fill new created pianoroll
         fillPianoRoll()
         --center note view
