@@ -1460,3 +1460,11 @@ tool:add_menu_entry {
         main_function()
     end
 }
+
+--add key shortcut
+tool:add_keybinding {
+    name = "Pattern Editor:Tools:Open Simple Pianoroll ...",
+    invoke = function()
+        main_function()
+    end
+}
