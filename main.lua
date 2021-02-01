@@ -1279,7 +1279,7 @@ local function main_function()
         windowContent = vb:column {
             vb:row {
                 margin = 3,
-                spacing = 12,
+                spacing = 6,
                 vb:row {
                     margin = 3,
                     spacing = 3,
