@@ -286,6 +286,7 @@ local function refreshNoteControls()
         -- velocity column visible
         vbw.notecolumn_vel.color = colorVelocity
         vbw.note_vel.active = true
+        vbw.note_vel_clear.active = true
         if currentNoteVelocity == 255 then
             vbw.note_vel.value = -1
         else
@@ -1343,6 +1344,7 @@ local function main_function()
                         min = -1,
                         max = 254,
                         value = -1,
+                        width = 54,
                         tostring = function(number)
                             if number == -1 then
                                 return "--"
@@ -1386,6 +1388,7 @@ local function main_function()
                         min = -1,
                         max = 254,
                         value = -1,
+                        width = 54,
                         tostring = function(number)
                             if number == -1 then
                                 return "--"
@@ -1442,6 +1445,7 @@ local function main_function()
                         min = -1,
                         max = 254,
                         value = -1,
+                        width = 54,
                         tostring = function(number)
                             if number == -1 then
                                 return "--"
@@ -1495,6 +1499,7 @@ local function main_function()
                         steps = { 1, 2 },
                         min = 0,
                         max = 255,
+                        width = 54,
                         value = currentNoteDelay,
                         tostring = function(number)
                             if number == 0 then
