@@ -200,16 +200,30 @@ end
 local function removeNoteInPattern(column, line, len)
     local lineValues = song.selected_pattern_track.lines
     local note_column = lineValues[line]:note_column(column)
+    local steps = song.selected_pattern.number_of_lines
     if note_column ~= nil then
         note_column:clear()
-        --check for note on before this note, set note off when needed
-        for i = line, 1, -1 do
-            local temp = lineValues[i]:note_column(column)
-            if temp.note_value < 120 then
-                note_column.note_value = 120
-                break
-            elseif temp.note_value == 120 then
-                break
+        if line == 1 then
+            --check for note on before this note, set note off when needed
+            for i = steps, 1, -1 do
+                local temp = lineValues[i]:note_column(column)
+                if temp.note_value < 120 then
+                    note_column.note_value = 120
+                    break
+                elseif temp.note_value == 120 then
+                    break
+                end
+            end
+        else
+            --check for note on before this note, set note off when needed
+            for i = line, 1, -1 do
+                local temp = lineValues[i]:note_column(column)
+                if temp.note_value < 120 then
+                    note_column.note_value = 120
+                    break
+                elseif temp.note_value == 120 then
+                    break
+                end
             end
         end
         --remove end note vel
@@ -238,6 +252,8 @@ end
 
 --remove selected notes
 local function removeSelectedNotes()
+    --
+    song:describe_undo("Pianoroll: Delete notes ...")
     --loop through selected notes
     for key, value in pairs(noteSelection) do
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
@@ -336,7 +352,6 @@ end
 
 --move selected notes
 local function moveSelectedNotes(steps)
-    local lineValues = song.selected_pattern_track.lines
     local column
     --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
     if steps < 0 then
@@ -352,6 +367,8 @@ local function moveSelectedNotes(steps)
     end
     --disable edit mode to prevent side effects
     song.transport.edit_mode = false
+    --
+    song:describe_undo("Pianoroll: Move notes ...")
     --go through selection
     for key, value in pairs(noteSelection) do
         --remove note
@@ -397,6 +414,8 @@ local function transposeSelectedNotes(transpose, keepscale)
     end
     --disable edit mode to prevent side effects
     song.transport.edit_mode = false
+    --
+    song:describe_undo("Pianoroll: Transpose notes ...")
     --go through selection
     for key, value in pairs(noteSelection) do
         local transposeVal = transpose
@@ -447,6 +466,8 @@ local function duplicateSelectedNotes()
     offset = (noteSelection[1].line + noteSelection[1].len) - offset
     --disable edit mode to prevent side effects
     song.transport.edit_mode = false
+    --
+    song:describe_undo("Pianoroll: Duplicate notes to right ...")
     --go through selection
     for key, value in pairs(noteSelection) do
         --search for valid column
@@ -482,6 +503,8 @@ local function changeSizeSelectedNotes(len)
     end)
     --disable edit mode to prevent side effects
     song.transport.edit_mode = false
+    --
+    song:describe_undo("Pianoroll: Change note lengths ...")
     --go through selection
     for key, value in pairs(noteSelection) do
         --remove note
@@ -513,8 +536,9 @@ end
 
 --change note properties
 local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan)
-    local column
     local lineValues = song.selected_pattern_track.lines
+    --describe for undo
+    song:describe_undo("Pianoroll: Change note properties ...")
     --disable edit mode to prevent side effects
     song.transport.edit_mode = false
     --go through selection
@@ -612,6 +636,8 @@ function pianoGridClick(x, y)
             --no space for this note
             return false
         end
+        --
+        song:describe_undo("Pianoroll: Draw a note ...")
         --add new note
         note_value = gridOffset2NoteValue(y)
         noteOff = addNoteToPattern(column, x, currentNoteLength, note_value, currentNoteVelocity, currentNoteEndVelocity, currentNotePan, currentNoteDelay)
