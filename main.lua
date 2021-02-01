@@ -1326,7 +1326,7 @@ local function main_function()
                     style = "panel",
                     vb:button {
                         id = "notecolumn_vel",
-                        text = "VOL",
+                        text = "Vol",
                         tooltip = "Enable / disable note volume column",
                         color = colorDisableButton,
                         notifier = function()
@@ -1427,7 +1427,7 @@ local function main_function()
                     },
                     vb:button {
                         id = "notecolumn_pan",
-                        text = "PAN",
+                        text = "Pan",
                         tooltip = "Enable / disable note pan column",
                         color = colorDisableButton,
                         notifier = function()
@@ -1482,7 +1482,7 @@ local function main_function()
                     },
                     vb:button {
                         id = "notecolumn_delay",
-                        text = "DLY",
+                        text = "Dly",
                         tooltip = "Enable / disable note delay column",
                         color = colorDisableButton,
                         notifier = function()
