@@ -1303,7 +1303,7 @@ local function main_function()
                         end,
                     },
                     vb:button {
-                        text = "double",
+                        text = "Dbl",
                         tooltip = "Double current note length number",
                         notifier = function()
                             currentNoteLength = math.floor(currentNoteLength * 2)
@@ -1311,10 +1311,10 @@ local function main_function()
                         end,
                     },
                     vb:button {
-                        text = "half",
+                        text = "Hlv",
                         tooltip = "Halve current note length number",
                         notifier = function()
-                            currentNoteLength = math.floor(currentNoteLength / 2)
+                            currentNoteLength = math.max(math.floor(currentNoteLength / 2), 1)
                             refreshControls = true
                         end,
                     },
