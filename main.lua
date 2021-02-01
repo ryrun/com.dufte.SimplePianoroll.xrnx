@@ -1092,21 +1092,6 @@ local function obsColumnRefresh()
     refreshControls = true
 end
 
---willb e called, when track was changed
-local function obsSelectedTrack()
-    if not song.selected_track.volume_column_visible_observable:has_notifier(obsColumnRefresh) then
-        song.selected_track.volume_column_visible_observable:add_notifier(obsColumnRefresh)
-    end
-    if not song.selected_track.panning_column_visible_observable:has_notifier(obsColumnRefresh) then
-        song.selected_track.panning_column_visible_observable:add_notifier(obsColumnRefresh)
-    end
-    if not song.selected_track.delay_column_visible_observable:has_notifier(obsColumnRefresh) then
-        song.selected_track.delay_column_visible_observable:add_notifier(obsColumnRefresh)
-    end
-    refreshPianoRollNeeded = true
-    refreshControls = true
-end
-
 --will be called when something in the pattern will be changed
 local function lineNotifier()
     refreshPianoRollNeeded = true
@@ -1124,10 +1109,24 @@ local function appNewDoc()
         refreshPianoRollNeeded = true
     end)
     song.selected_pattern:add_line_notifier(lineNotifier)
-    song.selected_track_observable:add_notifier(obsSelectedTrack)
+    song.selected_track_observable:add_notifier(function()
+        if not song.selected_track.volume_column_visible_observable:has_notifier(obsColumnRefresh) then
+            song.selected_track.volume_column_visible_observable:add_notifier(obsColumnRefresh)
+        end
+        if not song.selected_track.panning_column_visible_observable:has_notifier(obsColumnRefresh) then
+            song.selected_track.panning_column_visible_observable:add_notifier(obsColumnRefresh)
+        end
+        if not song.selected_track.delay_column_visible_observable:has_notifier(obsColumnRefresh) then
+            song.selected_track.delay_column_visible_observable:add_notifier(obsColumnRefresh)
+        end
+        refreshControls = true
+    end)
+    --add some observers for the current track
     song.selected_pattern.number_of_lines_observable:add_notifier(obsPianoRefresh)
+    song.selected_track.volume_column_visible_observable:add_notifier(obsColumnRefresh)
+    song.selected_track.panning_column_visible_observable:add_notifier(obsColumnRefresh)
+    song.selected_track.delay_column_visible_observable:add_notifier(obsColumnRefresh)
     --clear selection and refresh piano roll
-    obsSelectedTrack()
     obsPianoRefresh()
     obsColumnRefresh()
 end
