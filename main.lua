@@ -49,6 +49,10 @@ local colorStepOff = { 30, 6, 0 }
 local colorStepOn = { 180, 80, 40 }
 local colorKeyWhite = { 255, 255, 255 }
 local colorKeyBlack = { 20, 20, 20 }
+local colorVelocity = { 212, 188, 36 }
+local colorPan = { 138, 187, 122 }
+local colorDelay = { 71, 194, 236 }
+local colorDisableButton = { 66, 66, 66 }
 
 --note trigger vars
 local oscClient
@@ -74,6 +78,9 @@ local currentNoteDelay = 0
 local currentNoteVelocityPreview = 127
 local currentNoteEndVelocity = 255
 local currentInstrument
+local velColumn = false
+local panColumn = false
+local delayColumn = false
 
 local noteSelection = {}
 local lastSelectionClick
@@ -274,33 +281,74 @@ end
 --refresh all controls
 local function refreshNoteControls()
     vbw.note_len.value = currentNoteLength
-    if currentNoteVelocity == 255 then
-        vbw.note_vel.value = -1
-    else
-        vbw.note_vel.value = currentNoteVelocity
-    end
-    if currentNotePan == 255 then
-        vbw.note_pan.value = -1
-    else
-        vbw.note_pan.value = currentNotePan
-    end
-    vbw.note_dly.value = currentNoteDelay
-    if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
-        currentNoteVelocityPreview = currentNoteVelocity
-    else
-        currentNoteVelocityPreview = 127
-    end
-    if currentNoteLength == 1 then
-        currentNoteEndVelocity = 255
-        vbw.note_end_vel.value = -1
-        vbw.note_end_vel.active = false
-    else
-        if currentNoteEndVelocity == 255 then
-            vbw.note_end_vel.value = -1
+
+    if song.selected_track.volume_column_visible then
+        -- velocity column visible
+        vbw.notecolumn_vel.color = colorVelocity
+        vbw.note_vel.active = true
+        if currentNoteVelocity == 255 then
+            vbw.note_vel.value = -1
         else
-            vbw.note_end_vel.value = currentNoteEndVelocity
+            vbw.note_vel.value = currentNoteVelocity
         end
-        vbw.note_end_vel.active = true
+        if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
+            currentNoteVelocityPreview = currentNoteVelocity
+        else
+            currentNoteVelocityPreview = 127
+        end
+        if currentNoteLength == 1 then
+            currentNoteEndVelocity = 255
+            vbw.note_end_vel.value = -1
+            vbw.note_end_vel.active = false
+            vbw.note_vel_clear.active = false
+        else
+            if currentNoteEndVelocity == 255 then
+                vbw.note_end_vel.value = -1
+            else
+                vbw.note_end_vel.value = currentNoteEndVelocity
+            end
+            vbw.note_end_vel.active = true
+            vbw.note_vel_clear.active = true
+        end
+        vbw.note_end_vel_clear.active = true
+    else
+        -- velocity column not visible
+        vbw.notecolumn_vel.color = colorDisableButton
+        currentNoteVelocityPreview = 127
+        vbw.note_vel.value = -1
+        vbw.note_end_vel.value = -1
+        vbw.note_vel.active = false
+        vbw.note_end_vel.active = false
+        vbw.note_vel_clear.active = false
+        vbw.note_end_vel_clear.active = false
+    end
+
+    if song.selected_track.panning_column_visible then
+        vbw.notecolumn_pan.color = colorPan
+        if currentNotePan == 255 then
+            vbw.note_pan.value = -1
+        else
+            vbw.note_pan.value = currentNotePan
+        end
+        vbw.note_pan.active = true
+        vbw.note_pan_clear.active = true
+    else
+        vbw.notecolumn_pan.color = colorDisableButton
+        vbw.note_pan.value = -1
+        vbw.note_pan.active = false
+        vbw.note_pan_clear.active = false
+    end
+
+    if song.selected_track.delay_column_visible then
+        vbw.notecolumn_delay.color = colorDelay
+        vbw.note_dly.value = currentNoteDelay
+        vbw.note_dly.active = true
+        vbw.note_dly_clear.active = true
+    else
+        vbw.notecolumn_delay.color = colorDisableButton
+        vbw.note_dly.value = 0
+        vbw.note_dly.active = false
+        vbw.note_dly_clear.active = false
     end
 end
 
@@ -1035,12 +1083,32 @@ end
 local function obsPianoRefresh()
     --clear note selection
     noteSelection = {}
-    --set refresh flag
+    --set refresh flags
     refreshPianoRollNeeded = true
 end
 
+--will be called when the visibility of columns will be changed
+local function obsColumnRefresh()
+    refreshControls = true
+end
+
+--willb e called, when track was changed
+local function obsSelectedTrack()
+    if not song.selected_track.volume_column_visible_observable:has_notifier(obsColumnRefresh) then
+        song.selected_track.volume_column_visible_observable:add_notifier(obsColumnRefresh)
+    end
+    if not song.selected_track.panning_column_visible_observable:has_notifier(obsColumnRefresh) then
+        song.selected_track.panning_column_visible_observable:add_notifier(obsColumnRefresh)
+    end
+    if not song.selected_track.delay_column_visible_observable:has_notifier(obsColumnRefresh) then
+        song.selected_track.delay_column_visible_observable:add_notifier(obsColumnRefresh)
+    end
+    refreshPianoRollNeeded = true
+    refreshControls = true
+end
+
 --will be called when something in the pattern will be changed
-local function lineNotifier(pos)
+local function lineNotifier()
     refreshPianoRollNeeded = true
 end
 
@@ -1056,10 +1124,12 @@ local function appNewDoc()
         refreshPianoRollNeeded = true
     end)
     song.selected_pattern:add_line_notifier(lineNotifier)
-    song.selected_track_observable:add_notifier(obsPianoRefresh)
+    song.selected_track_observable:add_notifier(obsSelectedTrack)
     song.selected_pattern.number_of_lines_observable:add_notifier(obsPianoRefresh)
     --clear selection and refresh piano roll
+    obsSelectedTrack()
     obsPianoRefresh()
+    obsColumnRefresh()
 end
 
 --edit in pianoroll main function
@@ -1210,209 +1280,253 @@ local function main_function()
         windowContent = vb:column {
             vb:row {
                 margin = 3,
-                spacing = 3,
-                vb:text {
-                    text = "Len:",
+                spacing = 12,
+                vb:row {
+                    margin = 3,
+                    spacing = 3,
+                    style = "panel",
+                    vb:text {
+                        text = "Len:",
+                    },
+                    vb:valuebox {
+                        id = "note_len",
+                        tooltip = "Note length",
+                        steps = { 1, 2 },
+                        min = 1,
+                        max = 256,
+                        value = currentNoteLength,
+                        notifier = function(number)
+                            if #noteSelection > 0 and currentNoteLength ~= number then
+                                changeSizeSelectedNotes(number)
+                            end
+                            currentNoteLength = number
+                            refreshControls = true
+                        end,
+                    },
+                    vb:button {
+                        text = "double",
+                        tooltip = "Double current note length number",
+                        notifier = function()
+                            currentNoteLength = math.floor(currentNoteLength * 2)
+                            refreshControls = true
+                        end,
+                    },
+                    vb:button {
+                        text = "half",
+                        tooltip = "Halve current note length number",
+                        notifier = function()
+                            currentNoteLength = math.floor(currentNoteLength / 2)
+                            refreshControls = true
+                        end,
+                    },
                 },
-                vb:valuebox {
-                    id = "note_len",
-                    tooltip = "Note length",
-                    steps = { 1, 2 },
-                    min = 1,
-                    max = 256,
-                    value = currentNoteLength,
-                    notifier = function(number)
-                        if #noteSelection > 0 and currentNoteLength ~= number then
-                            changeSizeSelectedNotes(number)
+                vb:row {
+                    margin = 3,
+                    spacing = 3,
+                    style = "panel",
+                    vb:button {
+                        id = "notecolumn_vel",
+                        text = "Vel:",
+                        tooltip = "Enable / disable note velocity column",
+                        color = colorDisableButton,
+                        notifier = function()
+                            if song.selected_track.volume_column_visible then
+                                song.selected_track.volume_column_visible = false
+                            else
+                                song.selected_track.volume_column_visible = true
+                            end
                         end
-                        currentNoteLength = number
-                        refreshControls = true
-                    end,
-                },
-                vb:button {
-                    text = "double",
-                    tooltip = "Double current note length number",
-                    notifier = function()
-                        currentNoteLength = math.floor(currentNoteLength * 2)
-                        refreshControls = true
-                    end,
-                },
-                vb:button {
-                    text = "half",
-                    tooltip = "Halve current note length number",
-                    notifier = function()
-                        currentNoteLength = math.floor(currentNoteLength / 2)
-                        refreshControls = true
-                    end,
-                },
-                vb:text {
-                    text = "Vel:",
-                },
-                vb:valuebox {
-                    id = "note_vel",
-                    tooltip = "Note velocity",
-                    steps = { 1, 2 },
-                    min = -1,
-                    max = 254,
-                    value = -1,
-                    tostring = function(number)
-                        if number == -1 then
-                            return "--"
-                        end
-                        return toHex(number)
-                    end,
-                    tonumber = function(string)
-                        if string == "--" then
-                            return -1
-                        end
-                        return tonumber(string, 16)
-                    end,
-                    notifier = function(number)
-                        if number == -1 then
+                    },
+                    vb:valuebox {
+                        id = "note_vel",
+                        tooltip = "Note velocity",
+                        steps = { 1, 2 },
+                        min = -1,
+                        max = 254,
+                        value = -1,
+                        tostring = function(number)
+                            if number == -1 then
+                                return "--"
+                            end
+                            return toHex(number)
+                        end,
+                        tonumber = function(string)
+                            if string == "--" then
+                                return -1
+                            end
+                            return tonumber(string, 16)
+                        end,
+                        notifier = function(number)
+                            if number == -1 then
+                                currentNoteVelocity = 255
+                            else
+                                currentNoteVelocity = number
+                            end
+                            if #noteSelection > 0 and not refreshControls then
+                                changePropertiesOfSelectedNotes(currentNoteVelocity, nil, nil, nil)
+                            end
+                            refreshControls = true
+                        end,
+                    },
+                    vb:button {
+                        id = "note_vel_clear",
+                        text = "C",
+                        tooltip = "Clear note velocity",
+                        notifier = function()
                             currentNoteVelocity = 255
-                        else
-                            currentNoteVelocity = number
-                        end
-                        if #noteSelection > 0 and not refreshControls then
-                            changePropertiesOfSelectedNotes(currentNoteVelocity, nil, nil, nil)
-                        end
-                        refreshControls = true
-                    end,
-                },
-                vb:button {
-                    text = "C",
-                    tooltip = "Clear note velocity",
-                    notifier = function()
-                        currentNoteVelocity = 255
-                        if #noteSelection > 0 then
-                            changePropertiesOfSelectedNotes(currentNoteVelocity, nil, nil, nil)
-                        end
-                        refreshControls = true
-                    end,
-                },
-                vb:valuebox {
-                    id = "note_end_vel",
-                    tooltip = "End note velocity",
-                    steps = { 1, 2 },
-                    min = -1,
-                    max = 254,
-                    value = -1,
-                    tostring = function(number)
-                        if number == -1 then
-                            return "--"
-                        end
-                        return toHex(number)
-                    end,
-                    tonumber = function(string)
-                        if string == "--" then
-                            return -1
-                        end
-                        return tonumber(string, 16)
-                    end,
-                    notifier = function(number)
-                        if number == -1 then
+                            if #noteSelection > 0 then
+                                changePropertiesOfSelectedNotes(currentNoteVelocity, nil, nil, nil)
+                            end
+                            refreshControls = true
+                        end,
+                    },
+                    vb:valuebox {
+                        id = "note_end_vel",
+                        tooltip = "End note velocity",
+                        steps = { 1, 2 },
+                        min = -1,
+                        max = 254,
+                        value = -1,
+                        tostring = function(number)
+                            if number == -1 then
+                                return "--"
+                            end
+                            return toHex(number)
+                        end,
+                        tonumber = function(string)
+                            if string == "--" then
+                                return -1
+                            end
+                            return tonumber(string, 16)
+                        end,
+                        notifier = function(number)
+                            if number == -1 then
+                                currentNoteEndVelocity = 255
+                            else
+                                currentNoteEndVelocity = number
+                            end
+                            if #noteSelection > 0 and not refreshControls then
+                                changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity, nil, nil)
+                            end
+                            refreshControls = true
+                        end,
+                    },
+                    vb:button {
+                        id = "note_end_vel_clear",
+                        text = "C",
+                        tooltip = "Clear end note velocity",
+                        notifier = function()
                             currentNoteEndVelocity = 255
-                        else
-                            currentNoteEndVelocity = number
+                            if #noteSelection > 0 then
+                                changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity, nil, nil)
+                            end
+                            refreshControls = true
+                        end,
+                    },
+                    vb:button {
+                        id = "notecolumn_pan",
+                        text = "Pan:",
+                        tooltip = "Enable / disable note pan column",
+                        color = colorDisableButton,
+                        notifier = function()
+                            if song.selected_track.panning_column_visible then
+                                song.selected_track.panning_column_visible = false
+                            else
+                                song.selected_track.panning_column_visible = true
+                            end
                         end
-                        if #noteSelection > 0 and not refreshControls then
-                            changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity, nil, nil)
-                        end
-                        refreshControls = true
-                    end,
-                },
-                vb:button {
-                    text = "C",
-                    tooltip = "Clear end note velocity",
-                    notifier = function()
-                        currentNoteEndVelocity = 255
-                        if #noteSelection > 0 then
-                            changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity, nil, nil)
-                        end
-                        refreshControls = true
-                    end,
-                },
-                vb:text {
-                    text = "Pan:",
-                },
-                vb:valuebox {
-                    id = "note_pan",
-                    tooltip = "Note panning",
-                    steps = { 1, 2 },
-                    min = -1,
-                    max = 254,
-                    value = -1,
-                    tostring = function(number)
-                        if number == -1 then
-                            return "--"
-                        end
-                        return toHex(number)
-                    end,
-                    tonumber = function(string)
-                        if string == "--" then
-                            return -1
-                        end
-                        return tonumber(string, 16)
-                    end,
-                    notifier = function(number)
-                        if number == -1 then
+                    },
+                    vb:valuebox {
+                        id = "note_pan",
+                        tooltip = "Note panning",
+                        steps = { 1, 2 },
+                        min = -1,
+                        max = 254,
+                        value = -1,
+                        tostring = function(number)
+                            if number == -1 then
+                                return "--"
+                            end
+                            return toHex(number)
+                        end,
+                        tonumber = function(string)
+                            if string == "--" then
+                                return -1
+                            end
+                            return tonumber(string, 16)
+                        end,
+                        notifier = function(number)
+                            if number == -1 then
+                                currentNotePan = 255
+                            else
+                                currentNotePan = number
+                            end
+                            if #noteSelection > 0 and not refreshControls then
+                                changePropertiesOfSelectedNotes(nil, nil, nil, currentNotePan)
+                            end
+                            refreshControls = true
+                        end,
+                    },
+                    vb:button {
+                        id = "note_pan_clear",
+                        text = "C",
+                        tooltip = "Clear note panning",
+                        notifier = function()
                             currentNotePan = 255
-                        else
-                            currentNotePan = number
-                        end
-                        if #noteSelection > 0 and not refreshControls then
                             changePropertiesOfSelectedNotes(nil, nil, nil, currentNotePan)
-                        end
-                        refreshControls = true
-                    end,
-                },
-                vb:button {
-                    text = "C",
-                    tooltip = "Clear note panning",
-                    notifier = function()
-                        currentNotePan = 255
-                        changePropertiesOfSelectedNotes(nil, nil, nil, currentNotePan)
-                        refreshControls = true
-                    end,
-                },
-                vb:text {
-                    text = "Delay:",
-                },
-                vb:valuebox {
-                    id = "note_dly",
-                    tooltip = "Note delay",
-                    steps = { 1, 2 },
-                    min = 0,
-                    max = 255,
-                    value = currentNoteDelay,
-                    tostring = function(number)
-                        if number == 0 then
-                            return "--"
-                        end
-                        return toHex(number)
-                    end,
-                    tonumber = function(string)
-                        if string == "--" then
-                            return 0
-                        end
-                        return tonumber(string, 16)
-                    end,
-                    notifier = function(number)
-                        currentNoteDelay = number
-                        if #noteSelection > 0 and not refreshControls then
+                            refreshControls = true
+                        end,
+                    },
+                    vb:button {
+                        id = "notecolumn_delay",
+                        text = "Delay:",
+                        tooltip = "Enable / disable note delay column",
+                        color = colorDisableButton,
+                        notifier = function()
+                            if song.selected_track.delay_column_visible then
+                                song.selected_track.delay_column_visible = false
+                            else
+                                song.selected_track.delay_column_visible = true
+                            end
+                        end,
+                    },
+                    vb:valuebox {
+                        id = "note_dly",
+                        tooltip = "Note delay",
+                        steps = { 1, 2 },
+                        min = 0,
+                        max = 255,
+                        value = currentNoteDelay,
+                        tostring = function(number)
+                            if number == 0 then
+                                return "--"
+                            end
+                            return toHex(number)
+                        end,
+                        tonumber = function(string)
+                            if string == "--" then
+                                return 0
+                            end
+                            return tonumber(string, 16)
+                        end,
+                        notifier = function(number)
+                            currentNoteDelay = number
+                            if #noteSelection > 0 and not refreshControls then
+                                changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay, nil)
+                            end
+                            refreshControls = true
+                        end,
+                    },
+                    vb:button {
+                        id = "note_dly_clear",
+                        text = "C",
+                        tooltip = "Clear note delay",
+                        notifier = function()
+                            currentNoteDelay = 0
                             changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay, nil)
-                        end
-                        refreshControls = true
-                    end,
-                },
-                vb:button {
-                    text = "C",
-                    tooltip = "Clear note delay",
-                    notifier = function()
-                        currentNoteDelay = 0
-                        changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay, nil)
-                        refreshControls = true
-                    end,
+                            refreshControls = true
+                        end,
+                    },
                 },
             },
             vb:row {
