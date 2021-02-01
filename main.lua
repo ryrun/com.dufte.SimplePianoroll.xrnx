@@ -1326,8 +1326,8 @@ local function main_function()
                     style = "panel",
                     vb:button {
                         id = "notecolumn_vel",
-                        text = "Vel:",
-                        tooltip = "Enable / disable note velocity column",
+                        text = "VOL",
+                        tooltip = "Enable / disable note volume column",
                         color = colorDisableButton,
                         notifier = function()
                             if song.selected_track.volume_column_visible then
@@ -1427,7 +1427,7 @@ local function main_function()
                     },
                     vb:button {
                         id = "notecolumn_pan",
-                        text = "Pan:",
+                        text = "PAN",
                         tooltip = "Enable / disable note pan column",
                         color = colorDisableButton,
                         notifier = function()
@@ -1482,7 +1482,7 @@ local function main_function()
                     },
                     vb:button {
                         id = "notecolumn_delay",
-                        text = "Delay:",
+                        text = "DLY",
                         tooltip = "Enable / disable note delay column",
                         color = colorDisableButton,
                         notifier = function()
