@@ -64,6 +64,7 @@ local triggerTime = 250
 --main flag for refreshing pianoroll
 local refreshPianoRollNeeded = false
 local refreshControls = false
+local refreshTimeline = false
 
 --table to save note indices per step for highlighting
 local noteOnStep = {}
@@ -78,9 +79,6 @@ local currentNoteDelay = 0
 local currentNoteVelocityPreview = 127
 local currentNoteEndVelocity = 255
 local currentInstrument
-local velColumn = false
-local panColumn = false
-local delayColumn = false
 
 local noteSelection = {}
 local lastSelectionClick
@@ -818,6 +816,59 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
     end
 end
 
+--refresh timeline
+local function fillTimeline()
+    local steps = song.selected_pattern.number_of_lines
+    local lpb = song.transport.lpb
+    local stepsCount = math.min(steps, gridWidth)
+    --setup timeline
+    local timestep = 0
+    local lastbeat = nil
+    local timeslot = nil
+    local timeslotsize = 1
+    for i = 1, stepsCount do
+        local line = i + stepOffset
+        local beat = math.ceil((line - lpb) / lpb) % 4 + 1
+        local bar = math.ceil((line - (lpb * 4)) / (lpb * 4)) + 1
+
+        if lastbeat ~= beat then
+            timestep = timestep + 1
+            timeslot = vbw["timeline" .. timestep]
+            timeslot.width = (gridStepSizeW - 4)
+            if line % lpb == 1 then
+                if lpb == 2 and beat % lpb == 0 then
+                    timeslot.text = ""
+                else
+                    timeslot.text = "│"
+                end
+            else
+                timeslot.text = ""
+            end
+            if beat == 1 then
+                timeslot.style = "strong"
+            else
+                timeslot.style = "disabled"
+            end
+            timeslot.visible = true
+            lastbeat = beat
+            timeslotsize = 1
+        else
+            if line % lpb == 2 or (lpb == 2 and line % lpb == 0) then
+                timeslot.text = "│ " .. bar .. "." .. beat
+            end
+            if lpb == 2 and beat % lpb == 0 then
+                timeslot.text = ""
+            end
+            timeslotsize = timeslotsize + 1
+            timeslot.width = (gridStepSizeW - 4) * timeslotsize
+        end
+    end
+    while vbw["timeline" .. timestep + 1] do
+        vbw["timeline" .. timestep + 1].visible = false
+        timestep = timestep + 1
+    end
+end
+
 --reset pianoroll and enable notes
 local function fillPianoRoll()
     local track = song.selected_track
@@ -1050,9 +1101,16 @@ local function appIdleEvent()
             refreshPianoRollNeeded = false
         end
 
+        --refresh control, when needed
         if refreshControls then
             refreshNoteControls()
             refreshControls = false
+        end
+
+        --refresh timeline, when needed
+        if refreshTimeline then
+            fillTimeline()
+            refreshTimeline = false
         end
 
         --refresh playback pos indicator
@@ -1101,12 +1159,16 @@ end
 local function appNewDoc()
     song = renoise.song()
     --set new observers
+    song.transport.lpb_observable:add_notifier(function()
+        refreshTimeline = true
+    end)
     song.selected_pattern_track_observable:add_notifier(obsPianoRefresh)
     song.selected_pattern_observable:add_notifier(function()
         if not song.selected_pattern:has_line_notifier(lineNotifier) then
             song.selected_pattern:add_line_notifier(lineNotifier)
         end
         refreshPianoRollNeeded = true
+        refreshTimeline = true
     end)
     song.selected_pattern:add_line_notifier(lineNotifier)
     song.selected_track_observable:add_notifier(function()
@@ -1122,13 +1184,17 @@ local function appNewDoc()
         refreshControls = true
     end)
     --add some observers for the current track
-    song.selected_pattern.number_of_lines_observable:add_notifier(obsPianoRefresh)
+    song.selected_pattern.number_of_lines_observable:add_notifier(function()
+        refreshControls = true
+        obsPianoRefresh()
+    end)
     song.selected_track.volume_column_visible_observable:add_notifier(obsColumnRefresh)
     song.selected_track.panning_column_visible_observable:add_notifier(obsColumnRefresh)
     song.selected_track.delay_column_visible_observable:add_notifier(obsColumnRefresh)
     --clear selection and refresh piano roll
     obsPianoRefresh()
     obsColumnRefresh()
+    refreshTimeline = true
 end
 
 --edit in pianoroll main function
@@ -1231,6 +1297,7 @@ local function main_function()
                 if number ~= stepOffset then
                     stepOffset = number
                     refreshPianoRollNeeded = true
+                    refreshTimeline = true
                 end
             end,
         }
@@ -1275,6 +1342,20 @@ local function main_function()
                     }
             )
         end
+
+        local timeline = vb:row {
+            style = "plain",
+        }
+        for i = 1, gridWidth do
+            local temp = vb:text {
+                id = "timeline" .. i,
+                visible = false,
+            }
+            timeline:add_child(temp)
+        end
+        timeline:add_child(vb:space {
+            width = 6,
+        })
 
         windowContent = vb:column {
             vb:row {
@@ -1544,6 +1625,13 @@ local function main_function()
                     vb:space {
                         height = 3,
                     },
+                    vb:row {
+                        spacing = -5,
+                        vb:space {
+                            width = 1,
+                        },
+                        timeline,
+                    }
                 }
             },
             vb:row {
@@ -1560,9 +1648,9 @@ local function main_function()
                 stepSlider,
             },
         }
-        --refresh note controls
-        refreshControls = true
-        --fill new created pianoroll
+        --fill new created pianoroll, timeline and refresh controls
+        refreshNoteControls()
+        fillTimeline()
         fillPianoRoll()
         --center note view
         if lowesetNote ~= nil then
