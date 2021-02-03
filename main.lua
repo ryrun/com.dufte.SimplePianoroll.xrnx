@@ -1185,7 +1185,7 @@ local function appNewDoc()
     end)
     --add some observers for the current track
     song.selected_pattern.number_of_lines_observable:add_notifier(function()
-        refreshControls = true
+        refreshTimeline = true
         obsPianoRefresh()
     end)
     song.selected_track.volume_column_visible_observable:add_notifier(obsColumnRefresh)
