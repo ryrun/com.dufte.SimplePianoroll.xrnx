@@ -69,6 +69,9 @@ local refreshTimeline = false
 --table to save note indices per step for highlighting
 local noteOnStep = {}
 
+--table for save used notes for faster overlapping detection
+local usedNotes = {}
+
 --edit vars
 local dblClickTime = 0.4
 local lastClickCache = {}
@@ -759,10 +762,11 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
     lowesetNote = math.min(lowesetNote, current_note)
     highestNote = math.max(highestNote, current_note)
     --process only visible ones
-    if current_note_rowIndex ~= nil then
+    if current_note_rowIndex ~= nil and current_note_len > 0 then
         local line = current_note_step + stepOffset
         local noteOnStepIndex = current_note_step
         local current_note_index = tostring(current_note_step) .. "_" .. tostring(current_note_rowIndex)
+        local button_note_len
         if current_note_vel == nil then
             current_note_vel = 255
         end
@@ -786,8 +790,23 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
             noteoff = noteOff,
             column = column,
         }
+        --any "used" notes to check?
+        if usedNotes[current_note] ~= nil then
+            --go through steps and search for overlapped notes
+            for i = current_note_step, current_note_step + (current_note_len - 1) do
+                if usedNotes[current_note][i] == nil then
+                    if not button_note_len then
+                        button_note_len = 1
+                    else
+                        button_note_len = button_note_len + 1
+                    end
+                end
+            end
+        else
+            button_note_len = current_note_len
+        end
         --fill noteOnStep not just note start, also the full length
-        for i = 0, current_note_len do
+        for i = 0, current_note_len - 1 do
             if noteOnStep[noteOnStepIndex + i] == nil then
                 noteOnStep[noteOnStepIndex + i] = {}
             end
@@ -796,25 +815,43 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
                 step = current_note_step,
                 row = current_note_rowIndex,
                 note = current_note,
+                len = current_note_len - i
             })
-        end
-        local b = vbw["b" .. current_note_index]
-        b.width = (gridStepSizeW * current_note_len) - (gridSpacing * (current_note_len - 1))
-        if (gridStepSizeW < 34 and current_note_len < 2) or gridStepSizeH < 18 then
-            b.text = ""
-        else
-            b.text = current_note_string
-        end
-        b.color = colorNote
-        for key, value in pairs(noteSelection) do
-            if noteSelection[key].line == line and noteSelection[key].column == column then
-                b.color = colorNoteSelected
-                break
+            if usedNotes[current_note] == nil then
+                usedNotes[current_note] = {}
             end
+            usedNotes[current_note][noteOnStepIndex + i] = true
         end
-        b.visible = true
-        if noteOff then
-            vbw["p" .. current_note_index].visible = false
+        --display note button, only when a correct len was calculated
+        if button_note_len ~= nil then
+            local b = vbw["b" .. current_note_index]
+            local bw = gridStepSizeW * button_note_len
+            local bspc = gridSpacing * (button_note_len - 1)
+            if b.visible and b.width == bw - bspc then
+                --note will be completly overlapped
+            elseif b.visible then
+                --change the width of the already visible note, because both are overlapping
+                b.width = b.width + bw - (gridSpacing * (button_note_len))
+            else
+                --default display of note
+                b.width = bw - bspc
+                if (gridStepSizeW < 34 and button_note_len < 2) or gridStepSizeH < 18 then
+                    b.text = ""
+                else
+                    b.text = current_note_string
+                end
+                b.color = colorNote
+                for key, value in pairs(noteSelection) do
+                    if noteSelection[key].line == line and noteSelection[key].column == column then
+                        b.color = colorNoteSelected
+                        break
+                    end
+                end
+                b.visible = true
+            end
+            if noteOff then
+                vbw["p" .. current_note_index].visible = false
+            end
         end
     end
 end
@@ -886,6 +923,7 @@ local function fillPianoRoll()
 
     --reset vars
     noteOnStep = {}
+    usedNotes = {}
     noteData = {}
     currentInstrument = nil
 
