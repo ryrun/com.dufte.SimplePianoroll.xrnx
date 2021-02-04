@@ -786,15 +786,18 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
             noteoff = noteOff,
             column = column,
         }
-        if noteOnStep[noteOnStepIndex] == nil then
-            noteOnStep[noteOnStepIndex] = {}
+        --fill noteOnStep not just note start, also the full length
+        for i = 0, current_note_len do
+            if noteOnStep[noteOnStepIndex + i] == nil then
+                noteOnStep[noteOnStepIndex + i] = {}
+            end
+            table.insert(noteOnStep[noteOnStepIndex + i], {
+                index = current_note_index,
+                step = current_note_step,
+                row = current_note_rowIndex,
+                note = current_note,
+            })
         end
-        table.insert(noteOnStep[noteOnStepIndex], {
-            index = current_note_index,
-            step = current_note_step,
-            row = current_note_rowIndex,
-            note = current_note,
-        })
         local b = vbw["b" .. current_note_index]
         b.width = (gridStepSizeW * current_note_len) - (gridSpacing * (current_note_len - 1))
         if (gridStepSizeW < 34 and current_note_len < 2) or gridStepSizeH < 18 then
