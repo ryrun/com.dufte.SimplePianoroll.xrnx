@@ -1211,6 +1211,7 @@ local function appNewDoc()
         if not song.selected_pattern:has_line_notifier(lineNotifier) then
             song.selected_pattern:add_line_notifier(lineNotifier)
         end
+        stepSlider.value = 0
         refreshPianoRollNeeded = true
         refreshTimeline = true
     end)
