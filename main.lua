@@ -1158,7 +1158,8 @@ local function appIdleEvent()
 
         --refresh playback pos indicator
         local line = song.transport.playback_pos.line
-        if song.selected_pattern_index == song.transport.playback_pos.sequence and lastStepOn ~= line and song.transport.playing then
+        local seq = song.sequencer:pattern(song.transport.playback_pos.sequence)
+        if song.selected_pattern_index == seq and lastStepOn ~= line and song.transport.playing then
             if lastStepOn then
                 vbw["s" .. tostring(lastStepOn)].color = colorStepOff
                 highlightNotesOnStep(lastStepOn, false)
@@ -1172,7 +1173,7 @@ local function appIdleEvent()
             else
                 lastStepOn = nil
             end
-        elseif lastStepOn and song.selected_pattern_index ~= song.transport.playback_pos.sequence then
+        elseif lastStepOn and song.selected_pattern_index ~= seq then
             vbw["s" .. tostring(lastStepOn)].color = colorStepOff
             highlightNotesOnStep(lastStepOn, false)
             lastStepOn = nil
