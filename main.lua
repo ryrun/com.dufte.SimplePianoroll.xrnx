@@ -1160,8 +1160,8 @@ local function fillPianoRoll()
         currentInstrument = song.selected_instrument_index
     end
 
-    --render ghost notes
-    if currentGhostTrack then
+    --render ghost notes, only when index is not the current track
+    if currentGhostTrack and currentGhostTrack ~= song.selected_track_index then
         ghostTrack(currentGhostTrack)
     end
 end
@@ -1330,6 +1330,7 @@ local function main_function()
         lastStepOn = nil
         lastSelectionClick = nil
         noteOffset = 28 -- default offset
+        currentGhostTrack = nil
 
         local vb_temp
         local playCursor = vb:row {
