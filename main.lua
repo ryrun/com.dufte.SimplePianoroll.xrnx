@@ -1086,10 +1086,12 @@ local function fillPianoRoll()
         vbw["b" .. tostring(4) .. "_" .. tostring(4)].visible = false
     end
 
-    --hide unused note columns
+    --hide unused note columns - never hide, because it the track could be larger on a different pattern where more columns are needed
+    --[[
     if lastColumnWithNotes ~= nil and lastColumnWithNotes < columns then
         track.visible_note_columns = lastColumnWithNotes
     end
+    --]]
 
     --no instrument found, use the current selected one
     if currentInstrument == nil then
