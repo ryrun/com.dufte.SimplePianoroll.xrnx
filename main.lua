@@ -778,7 +778,7 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
     lowesetNote = math.min(lowesetNote, current_note)
     highestNote = math.max(highestNote, current_note)
     --process only visible ones
-    if current_note_rowIndex ~= nil and current_note_len > 0 then
+    if current_note_rowIndex ~= nil then
         local line = current_note_step + stepOffset
         local noteOnStepIndex = current_note_step
         local current_note_index = tostring(current_note_step) .. "_" .. tostring(current_note_rowIndex)
@@ -864,6 +864,10 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
                     end
                 end
                 b.visible = true
+                --another quirk? i need to show and hide a bad note button, so scrolling gets faster for extra long notes
+                if button_note_len == 0 then
+                    b.visible = false
+                end
             end
             if noteOff then
                 vbw["p" .. current_note_index].visible = false
