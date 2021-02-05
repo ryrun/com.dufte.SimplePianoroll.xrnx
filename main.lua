@@ -42,6 +42,7 @@ local pianoKeyWidth = gridStepSizeW * 3
 --colors
 local colorWhiteKey = { 52, 68, 78 }
 local colorBlackKey = { 35, 47, 57 }
+local colorGhostNote = { 80, 97, 107 }
 local colorNote = { 170, 217, 179 }
 local colorNoteHighlight = { 232, 204, 110 }
 local colorNoteSelected = { 244, 150, 149 }
@@ -82,6 +83,7 @@ local currentNoteDelay = 0
 local currentNoteVelocityPreview = 127
 local currentNoteEndVelocity = 255
 local currentInstrument
+local currentGhostTrack
 
 local noteSelection = {}
 local lastSelectionClick
@@ -350,6 +352,20 @@ local function refreshNoteControls()
         vbw.note_dly.value = 0
         vbw.note_dly.active = false
         vbw.note_dly_clear.active = false
+    end
+
+    local ghostTracks = {}
+    for i = 1, song.sequencer_track_count do
+        if i == song.selected_track_index then
+            ghostTracks[i] = "---"
+        else
+            ghostTracks[i] = song:track(i).name
+        end
+    end
+    vbw.ghosttracks.items = ghostTracks
+    if not currentGhostTrack or currentGhostTrack > song.sequencer_track_count then
+        currentGhostTrack = song.selected_track_index
+        vbw.ghosttracks.value = currentGhostTrack
     end
 end
 
@@ -909,6 +925,48 @@ local function fillTimeline()
     end
 end
 
+local function ghostTrack(trackIndex)
+    local track = song:track(trackIndex)
+    local columns = track.visible_note_columns
+    local steps = song.selected_pattern.number_of_lines
+    local stepsCount = math.min(steps, gridWidth)
+    local lineValues = song.selected_pattern:track(trackIndex).lines
+    for c = 1, columns do
+        local rowoffset = nil
+
+        if stepOffset > 0 then
+            for i = stepOffset + 1, 1, -1 do
+                local note_column = lineValues[i]:note_column(c)
+                local note = note_column.note_value
+                if note < 120 then
+                    rowoffset = noteValue2GridRowOffset(note)
+                    break
+                elseif note == 120 then
+                    break
+                end
+            end
+        end
+
+        for s = 1, stepsCount do
+            local note_column = lineValues[s + stepOffset]:note_column(c)
+            local note = note_column.note_value
+
+            if note < 120 then
+                rowoffset = noteValue2GridRowOffset(note)
+            elseif note == 120 then
+                rowoffset = nil
+            end
+
+            if rowoffset then
+                local p = vbw["p" .. s .. "_" .. rowoffset]
+                if p then
+                    p.color = colorGhostNote
+                end
+            end
+        end
+    end
+end
+
 --reset pianoroll and enable notes
 local function fillPianoRoll()
     local track = song.selected_track
@@ -1096,6 +1154,11 @@ local function fillPianoRoll()
     --no instrument found, use the current selected one
     if currentInstrument == nil then
         currentInstrument = song.selected_instrument_index
+    end
+
+    --render ghost notes
+    if currentGhostTrack then
+        ghostTrack(currentGhostTrack)
     end
 end
 
@@ -1657,6 +1720,24 @@ local function main_function()
                         end,
                     },
                 },
+                vb:row {
+                    margin = 3,
+                    spacing = 3,
+                    style = "panel",
+                    vb:text {
+                        text = "Ghost Track:",
+                    },
+                    vb:popup {
+                        id = "ghosttracks",
+                        notifier = function(index)
+                            if not currentGhostTrack or currentGhostTrack ~= index then
+                                currentGhostTrack = index
+                                refreshControls = true
+                                refreshPianoRollNeeded = true
+                            end
+                        end,
+                    },
+                }
             },
             vb:row {
                 vb:space {
