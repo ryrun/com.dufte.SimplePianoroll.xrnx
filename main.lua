@@ -124,6 +124,17 @@ local function toHex(value)
     return value
 end
 
+--change a value randomly
+local function randomizeValue(input, scale, min, max)
+    input = input + math.random(-scale, scale)
+    if input > max then
+        input = max
+    elseif input < min then
+        input = min
+    end
+    return input
+end
+
 --returns true, when note in scale
 local function noteInScale(note)
     note = note % 12
@@ -290,6 +301,7 @@ local function refreshNoteControls()
         vbw.notecolumn_vel.color = colorVelocity
         vbw.note_vel.active = true
         vbw.note_vel_clear.active = true
+        vbw.note_vel_humanize.active = true
         if currentNoteVelocity == 255 then
             vbw.note_vel.value = -1
         else
@@ -323,6 +335,7 @@ local function refreshNoteControls()
         vbw.note_vel.active = false
         vbw.note_end_vel.active = false
         vbw.note_vel_clear.active = false
+        vbw.note_vel_humanize.active = false
         vbw.note_end_vel_clear.active = false
     end
 
@@ -347,11 +360,13 @@ local function refreshNoteControls()
         vbw.note_dly.value = currentNoteDelay
         vbw.note_dly.active = true
         vbw.note_dly_clear.active = true
+        vbw.note_dly_humanize.active = true
     else
         vbw.notecolumn_delay.color = colorDisableButton
         vbw.note_dly.value = 0
         vbw.note_dly.active = false
         vbw.note_dly_clear.active = false
+        vbw.note_dly_humanize.active = false
     end
 
     local ghostTracks = {}
@@ -602,6 +617,8 @@ end
 --change note properties
 local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan)
     local lineValues = song.selected_pattern_track.lines
+    --randomize seed for humanizing
+    math.randomseed(os.time())
     --describe for undo
     song:describe_undo("Pianoroll: Change note properties ...")
     --disable edit mode to prevent side effects
@@ -612,7 +629,11 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan)
         local note = lineValues[selection.line]:note_column(selection.column)
         local note_end = lineValues[selection.line + selection.len - 1]:note_column(selection.column)
         if vel ~= nil then
-            note.volume_string = toHex(vel)
+            if tostring(vel) == "h" and note.volume_value <= 127 then
+                note.volume_value = randomizeValue(note.volume_value, 2, 1, 127)
+            else
+                note.volume_string = toHex(vel)
+            end
         end
         if end_vel ~= nil then
             if selection.len > 1 then
@@ -625,7 +646,11 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan)
             note.panning_string = toHex(pan)
         end
         if dly ~= nil then
-            note.delay_string = toHex(dly)
+            if tostring(dly) == "h" and note.volume_value <= 127 then
+                note.delay_value = randomizeValue(note.delay_value, 2, 0, 127)
+            else
+                note.delay_string = toHex(dly)
+            end
         end
     end
     refreshPianoRollNeeded = true
@@ -668,6 +693,11 @@ function noteClick(x, y)
             table.insert(noteSelection, note_data)
             currentNoteLength = note_data.len
             currentNoteVelocity = note_data.vel
+            if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
+                currentNoteVelocityPreview = currentNoteVelocity
+            else
+                currentNoteVelocityPreview = 127
+            end
             currentNoteEndVelocity = note_data.end_vel
             currentNotePan = note_data.pan
             currentNoteDelay = note_data.dly
@@ -1563,6 +1593,16 @@ local function main_function()
                         end,
                     },
                     vb:button {
+                        id = "note_vel_humanize",
+                        text = "H",
+                        tooltip = "Humanize note velocity",
+                        notifier = function()
+                            if #noteSelection > 0 then
+                                changePropertiesOfSelectedNotes("h", nil, nil, nil)
+                            end
+                        end,
+                    },
+                    vb:button {
                         id = "note_vel_clear",
                         text = "C",
                         tooltip = "Clear note velocity",
@@ -1712,6 +1752,16 @@ local function main_function()
                                 changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay, nil)
                             end
                             refreshControls = true
+                        end,
+                    },
+                    vb:button {
+                        id = "note_dly_humanize",
+                        text = "H",
+                        tooltip = "Humanize note delay",
+                        notifier = function()
+                            if #noteSelection > 0 then
+                                changePropertiesOfSelectedNotes(nil, nil, "h", nil)
+                            end
                         end,
                     },
                     vb:button {
