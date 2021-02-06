@@ -1227,7 +1227,10 @@ local function fillPianoRoll()
 
     --render ghost notes, only when index is not the current track
     if currentGhostTrack and currentGhostTrack ~= song.selected_track_index then
+        vbw.ghosttrackswitch.active = true
         ghostTrack(currentGhostTrack)
+    else
+        vbw.ghosttrackswitch.active = false
     end
 end
 
@@ -1834,6 +1837,18 @@ local function main_function()
                                 currentGhostTrack = index
                                 refreshControls = true
                                 refreshPianoRollNeeded = true
+                            end
+                        end,
+                    },
+                    vb:button {
+                        id = "ghosttrackswitch",
+                        text = "Switch",
+                        tooltip = "Switch to selected ghost track",
+                        notifier = function()
+                            if currentGhostTrack and currentGhostTrack ~= song.selected_track_index then
+                                local temp = currentGhostTrack
+                                vbw.ghosttracks.value = song.selected_track_index
+                                song.selected_track_index = temp
                             end
                         end,
                     },
