@@ -73,9 +73,13 @@ local noteOnStep = {}
 --table for save used notes for faster overlapping detection
 local usedNotes = {}
 
+--table for clipboard function
+local clipboard = {}
+
 --edit vars
 local dblClickTime = 0.4
 local lastClickCache = {}
+local pasteCursor = {}
 local currentNoteLength = 2
 local currentNoteVelocity = 255
 local currentNotePan = 255
@@ -98,6 +102,16 @@ local keyRControl = false
 local keyShift = false
 local keyRShift = false
 local keyAlt = false
+
+--show some text in Renoise status bar
+local function showStatus(status)
+    app:show_status("Simple Pianoroll: " .. status)
+end
+
+--set undo description
+local function setUndoDescription(description)
+    song:describe_undo("Simple Pianoroll: " .. description)
+end
 
 --dump complex tables
 local function dump(o)
@@ -272,9 +286,13 @@ local function removeNoteInPattern(column, line, len)
 end
 
 --remove selected notes
-local function removeSelectedNotes()
+local function removeSelectedNotes(cut)
     --
-    song:describe_undo("Pianoroll: Delete notes ...")
+    if cut then
+        setUndoDescription("Cut notes ...")
+    else
+        setUndoDescription("Delete notes ...")
+    end
     --loop through selected notes
     for key, value in pairs(noteSelection) do
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
@@ -462,7 +480,7 @@ local function moveSelectedNotes(steps)
     --disable edit mode to prevent side effects
     song.transport.edit_mode = false
     --
-    song:describe_undo("Pianoroll: Move notes ...")
+    setUndoDescription("Move notes ...")
     --go through selection
     for key, value in pairs(noteSelection) do
         --remove note
@@ -509,7 +527,7 @@ local function transposeSelectedNotes(transpose, keepscale)
     --disable edit mode to prevent side effects
     song.transport.edit_mode = false
     --
-    song:describe_undo("Pianoroll: Transpose notes ...")
+    setUndoDescription("Transpose notes ...")
     --go through selection
     for key, value in pairs(noteSelection) do
         local transposeVal = transpose
@@ -543,6 +561,61 @@ local function transposeSelectedNotes(transpose, keepscale)
     refreshPianoRollNeeded = true
 end
 
+--paste notes from clipboard
+local function pasteNotesFromClipboard()
+    local column
+    local noteoffset
+    local lineoffset
+    --disable edit mode to prevent side effects
+    song.transport.edit_mode = false
+    --describe undo for renoise
+    setUndoDescription("Paste notes from clipboard ...")
+    --note offset
+    table.sort(clipboard, function(a, b)
+        return a.note < b.note
+    end)
+    noteoffset = pasteCursor[2] - clipboard[1].note
+    table.sort(clipboard, function(a, b)
+        return a.line < b.line
+    end)
+    lineoffset = pasteCursor[1] - clipboard[1].line
+    --clear current note selection
+    noteSelection = {}
+    --go through clipboard
+    for key, value in pairs(clipboard) do
+        --search for valid column
+        column = returnColumnWhenEnoughSpaceForNote(clipboard[key].line + lineoffset, clipboard[key].len)
+        if column then
+            clipboard[key].column = column
+            clipboard[key].line = clipboard[key].line + lineoffset
+            clipboard[key].note = clipboard[key].note + noteoffset
+        else
+            return false
+        end
+        local noteOff = addNoteToPattern(
+                clipboard[key].column,
+                clipboard[key].line,
+                clipboard[key].len,
+                clipboard[key].note,
+                clipboard[key].vel,
+                clipboard[key].end_vel,
+                clipboard[key].pan,
+                clipboard[key].dly
+        )
+        clipboard[key].noteOff = noteOff
+        --add pasted note to selection
+        table.insert(noteSelection, clipboard[key])
+    end
+    --move paste cursor
+    table.sort(noteSelection, function(a, b)
+        return a.line > b.line
+    end)
+    pasteCursor = { noteSelection[1].line + noteSelection[1].len, pasteCursor[2] }
+    --
+    refreshPianoRollNeeded = true
+    return true
+end
+
 --duplicate content
 local function duplicateSelectedNotes()
     local offset
@@ -561,7 +634,7 @@ local function duplicateSelectedNotes()
     --disable edit mode to prevent side effects
     song.transport.edit_mode = false
     --
-    song:describe_undo("Pianoroll: Duplicate notes to right ...")
+    setUndoDescription("Duplicate notes to right ...")
     --go through selection
     for key, value in pairs(noteSelection) do
         --search for valid column
@@ -598,7 +671,7 @@ local function changeSizeSelectedNotes(len)
     --disable edit mode to prevent side effects
     song.transport.edit_mode = false
     --
-    song:describe_undo("Pianoroll: Change note lengths ...")
+    setUndoDescription("Change note lengths ...")
     --go through selection
     for key, value in pairs(noteSelection) do
         --remove note
@@ -634,7 +707,7 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan)
     --randomize seed for humanizing
     math.randomseed(os.time())
     --describe for undo
-    song:describe_undo("Pianoroll: Change note properties ...")
+    setUndoDescription("Change note properties ...")
     --disable edit mode to prevent side effects
     song.transport.edit_mode = false
     --go through selection
@@ -735,6 +808,9 @@ end
 --will be called, when an empty grid button was clicked
 function pianoGridClick(x, y)
     local dbclk = dbclkDetector("p" .. tostring(x) .. "_" .. tostring(y))
+    --set paste cursor
+    pasteCursor = { x + stepOffset, gridOffset2NoteValue(y) }
+
     if dbclk or (keyAlt) then
         local steps = song.selected_pattern.number_of_lines
         local column
@@ -756,7 +832,7 @@ function pianoGridClick(x, y)
             return false
         end
         --
-        song:describe_undo("Pianoroll: Draw a note ...")
+        setUndoDescription("Draw a note ...")
         --add new note
         note_value = gridOffset2NoteValue(y)
         noteOff = addNoteToPattern(column, x, currentNoteLength, note_value, currentNoteVelocity, currentNoteEndVelocity, currentNotePan, currentNoteDelay)
@@ -1946,7 +2022,10 @@ local function main_function()
                 handled = true
             end
             if key.name == "del" and key.state == "released" then
-                removeSelectedNotes()
+                if #noteSelection > 0 then
+                    showStatus(#noteSelection .. " notes deleted.")
+                    removeSelectedNotes()
+                end
                 handled = true
             end
             if key.name == "esc" and key.state == "released" then
@@ -1965,6 +2044,7 @@ local function main_function()
                     end
                     --duplciate content
                     if #noteSelection > 0 then
+                        showStatus(#noteSelection .. " notes duplicated.")
                         local ret = duplicateSelectedNotes()
                         --was not possible then deselect
                         if not ret then
@@ -1972,7 +2052,58 @@ local function main_function()
                         end
                     end
                 elseif #noteSelection > 0 then
+                    showStatus(#noteSelection .. " notes duplicated.")
                     duplicateSelectedNotes()
+                end
+                handled = true
+            end
+            if key.name == "c" and key.state == "released" and key.modifiers == "control" then
+                if #noteSelection > 0 then
+                    clipboard = {}
+                    for key, value in pairs(noteSelection) do
+                        local note_data = noteSelection[key]
+                        table.insert(clipboard, note_data)
+                    end
+                    --set paste cursor
+                    table.sort(clipboard, function(a, b)
+                        return a.line > b.line
+                    end)
+                    pasteCursor = { clipboard[1].line + clipboard[1].len, 0 }
+                    table.sort(clipboard, function(a, b)
+                        return a.note < b.note
+                    end)
+                    pasteCursor = { pasteCursor[1], clipboard[1].note }
+                    showStatus(#noteSelection .. " notes copied.")
+                end
+                handled = true
+            end
+            if key.name == "x" and key.state == "released" and key.modifiers == "control" then
+                if #noteSelection > 0 then
+                    clipboard = {}
+                    for key, value in pairs(noteSelection) do
+                        local note_data = noteSelection[key]
+                        table.insert(clipboard, note_data)
+                    end
+                    --set paste cursor
+                    table.sort(clipboard, function(a, b)
+                        return a.line < b.line
+                    end)
+                    pasteCursor = { clipboard[1].line, 0 }
+                    table.sort(clipboard, function(a, b)
+                        return a.note < b.note
+                    end)
+                    pasteCursor = { pasteCursor[1], clipboard[1].note }
+                    --set status
+                    showStatus(#noteSelection .. " notes cut.")
+                    --remove selected notes
+                    removeSelectedNotes(true)
+                end
+                handled = true
+            end
+            if key.name == "v" and key.state == "released" and key.modifiers == "control" then
+                if #clipboard > 0 then
+                    showStatus(#clipboard .. " notes pasted.")
+                    pasteNotesFromClipboard()
                 end
                 handled = true
             end
@@ -1984,6 +2115,7 @@ local function main_function()
                     local note_data = noteData[key]
                     table.insert(noteSelection, note_data)
                 end
+                showStatus(#noteSelection .. " notes selected.")
                 refreshPianoRollNeeded = true
                 handled = true
             end

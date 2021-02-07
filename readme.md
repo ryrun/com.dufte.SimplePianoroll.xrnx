@@ -62,17 +62,20 @@ Info: Non handled keyboard events will be sent back to the host. So renoise defa
 |<kbd>ctrl + a</kbd>|Nothing selected|Select all visible notes|
 |<kbd>ctrl + b</kbd>|Nothing selected|Select all visible notes and duplicate it to the right|
 |<kbd>ctrl + b</kbd>|One or more notes selected|Duplicate selected notes to the right|
+|<kbd>ctrl + c</kbd>|One or more notes selected|Copy selected notes to internal clipboard|
+|<kbd>ctrl + x</kbd>|One or more notes selected|Cut selected notes to internal clipboard|
+|<kbd>ctrl + v</kbd>|One or more notes selected|Paste notes to the last click grid position|
 |<kbd>up</kbd>|One or more notes selected|Transpose note 1 semitone up|
 |<kbd>down</kbd>|One or more notes selected|Transpose note 1 semitone down|
 |<kbd>shift + up</kbd>|One or more notes selected|Transpose note 12 semitone up|
 |<kbd>shift + down</kbd>|One or more notes selected|Transpose note 12 semitone up|
-|<kbd>left</kbd>|One or more notes selected|Move note 1 step left|
-|<kbd>right</kbd>|One or more notes selected|Move note 1 step right|
-|<kbd>shift + left</kbd>|One or more notes selected|Move note 4 step left|
-|<kbd>shift + right</kbd>|One or more notes selected|Move note 4 step right|
 |<kbd>ctrl + up</kbd>|One or more notes selected|Transpose note 1 semitone up but stay in scale|
 |<kbd>ctrl + down</kbd>|One or more notes selected|Transpose note 1 semitone down but stay in scale|
 |<kbd>ctrl + shift + up</kbd>|One or more notes selected|Transpose note 12 semitone up but stay in scale|
 |<kbd>ctrl + shift + down</kbd>|One or more notes selected|Transpose note 12 semitone up but stay in scale|
+|<kbd>left</kbd>|One or more notes selected|Move note 1 step left|
+|<kbd>right</kbd>|One or more notes selected|Move note 1 step right|
+|<kbd>shift + left</kbd>|One or more notes selected|Move note 4 step left|
+|<kbd>shift + right</kbd>|One or more notes selected|Move note 4 step right|
 |<kbd>del</kbd>|One or more notes selected|Remove selected notes|
 |<kbd>esc</kbd>|One or more notes selected|Deselect all notes|
