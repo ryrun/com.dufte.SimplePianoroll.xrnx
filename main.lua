@@ -579,6 +579,10 @@ local function pasteNotesFromClipboard()
         return a.line < b.line
     end)
     lineoffset = pasteCursor[1] - clipboard[1].line
+    --process last note first
+    table.sort(clipboard, function(a, b)
+        return a.line > b.line
+    end)
     --clear current note selection
     noteSelection = {}
     --go through clipboard
@@ -590,6 +594,7 @@ local function pasteNotesFromClipboard()
             clipboard[key].line = clipboard[key].line + lineoffset
             clipboard[key].note = clipboard[key].note + noteoffset
         else
+            showStatus("Not enough space to paste notes here.")
             return false
         end
         local noteOff = addNoteToPattern(
@@ -643,6 +648,7 @@ local function duplicateSelectedNotes()
             noteSelection[key].column = column
             noteSelection[key].line = noteSelection[key].line + offset
         else
+            showStatus("Not enough space to duplicate notes here.")
             return false
         end
         local noteOff = addNoteToPattern(
