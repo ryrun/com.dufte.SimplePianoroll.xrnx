@@ -564,21 +564,23 @@ end
 --paste notes from clipboard
 local function pasteNotesFromClipboard()
     local column
-    local noteoffset
-    local lineoffset
+    local noteoffset = 0
+    local lineoffset = 0
     --disable edit mode to prevent side effects
     song.transport.edit_mode = false
     --describe undo for renoise
     setUndoDescription("Paste notes from clipboard ...")
-    --note offset
-    table.sort(clipboard, function(a, b)
-        return a.note < b.note
-    end)
-    noteoffset = pasteCursor[2] - clipboard[1].note
-    table.sort(clipboard, function(a, b)
-        return a.line < b.line
-    end)
-    lineoffset = pasteCursor[1] - clipboard[1].line
+    if #pasteCursor > 0 then
+        --note offset
+        table.sort(clipboard, function(a, b)
+            return a.note < b.note
+        end)
+        noteoffset = pasteCursor[2] - clipboard[1].note
+        table.sort(clipboard, function(a, b)
+            return a.line < b.line
+        end)
+        lineoffset = pasteCursor[1] - clipboard[1].line
+    end
     --process last note first
     table.sort(clipboard, function(a, b)
         return a.line > b.line
@@ -1428,6 +1430,7 @@ local function appNewDoc()
         if not song.selected_pattern:has_line_notifier(lineNotifier) then
             song.selected_pattern:add_line_notifier(lineNotifier)
         end
+        pasteCursor = {}
         stepSlider.value = 0
         refreshPianoRollNeeded = true
         refreshTimeline = true
@@ -1443,6 +1446,7 @@ local function appNewDoc()
         if not song.selected_track.delay_column_visible_observable:has_notifier(obsColumnRefresh) then
             song.selected_track.delay_column_visible_observable:add_notifier(obsColumnRefresh)
         end
+        pasteCursor = {}
         refreshControls = true
     end)
     --add some observers for the current track
