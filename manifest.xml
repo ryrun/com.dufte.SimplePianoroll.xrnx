@@ -2,7 +2,7 @@
 <RenoiseScriptingTool doc_version="0">
   <ApiVersion>6</ApiVersion>
   <AutoUpgraded>true</AutoUpgraded>
-  <Id>com.dufte.SimplePianoroll</Id>
+  <Id>com.dufte0.SimplePianoroll</Id>
   <Version>0.6</Version>
   <Author>dufte (toimp)</Author>
   <Name>Simple Pianoroll</Name>
