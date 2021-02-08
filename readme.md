@@ -1,11 +1,11 @@
-# Simple Pianoroll for Renoise [alpha] [WIP]
-![Pianoroll in action](https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pianorollanim.gif?raw=true "Pianoroll in Renoise")
+# Simple Pianoroll for Renoise v0.6
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pianorollanim.gif?raw=true" width="300">
 
 ## Video on Youtube
 
 Showing the tool v0.1 in action:
 
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/5qJCNvbco7M/0.jpg)](https://www.youtube.com/watch?v=5qJCNvbco7M)
+[<img src="https://img.youtube.com/vi/5qJCNvbco7M/0.jpg" width="300">](https://www.youtube.com/watch?v=5qJCNvbco7M)
 
 ## Thread on official Renoise forum
 https://forum.renoise.com/t/another-piano-roll-com-dufte-simplepianoroll-xrnx/63034
@@ -16,12 +16,12 @@ https://forum.renoise.com/t/another-piano-roll-com-dufte-simplepianoroll-xrnx/63
 * Native HDPI support
 * Polyphony support (automatically adds note column, if needed)
 * Note preview via Renoise inbuild OSC Server (UDP, Port 8000 currently hardcoded)
+* Ghost Track
+* and more...
 
 ## Important
 
-* Adding note logic is not fully done yet
 * Dragging notes currently not possible, use arrow keys
-* Overlapped notes will currently break the piano roll grid
 * Its using always the instrument, which is used in the pattern. In an empty pattern, its using the current active instrument
 
 ## Install
@@ -31,7 +31,7 @@ Download the latest build here and drop it onto Renoise: https://github.com/ryru
 ## How to edit a track
 
 Just right click on a track and choose "Edit with Pianoroll ..."
-![Edit with](https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/openit.gif?raw=true)
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/openit.gif?raw=true" width="300">
 
 ## Mouse actions
 
