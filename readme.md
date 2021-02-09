@@ -32,7 +32,7 @@ Alternative download the latest build here and drop it onto Renoise:<br>https://
 
 ## How to edit a track
 
-Just right click on a track and choose "Edit with Pianoroll ..."
+Just right click on a track and choose "Edit with Pianoroll ...":<br>
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/openit.gif?raw=true" width="300">
 
 ## Mouse actions
