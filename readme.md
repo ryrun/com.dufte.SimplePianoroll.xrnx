@@ -26,7 +26,9 @@ https://forum.renoise.com/t/another-piano-roll-com-dufte-simplepianoroll-xrnx/63
 
 ## Install
 
-Download the latest build here and drop it onto Renoise: https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/raw/master/out/com.dufte.SimplePianoroll.xrnx
+Download latest verison from official tool page:<br>https://www.renoise.com/tools/simple-pianoroll
+
+Alternative download the latest build here and drop it onto Renoise:<br>https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/out/com.duftetools.SimplePianoroll.xrnx
 
 ## How to edit a track
 
