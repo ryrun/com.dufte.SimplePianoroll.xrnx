@@ -158,6 +158,19 @@ local function noteInScale(note)
     return true
 end
 
+--returns index, when note is in seleciton
+local function noteInSelection(notedata)
+    local ret
+    for i = 1, #noteSelection do
+        local note_data = noteSelection[i]
+        if note_data.note == notedata.note and note_data.line == notedata.line and note_data.len == notedata.len and note_data.column == notedata.column then
+            ret = i
+            break
+        end
+    end
+    return ret
+end
+
 --return true, when a noteOff was set
 local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly)
     local noteOff = false
@@ -778,7 +791,21 @@ end
 
 --keyboard preview
 function keyClick(y, pressed)
-    triggerNoteOfCurrentInstrument(gridOffset2NoteValue(y), pressed)
+    local note = gridOffset2NoteValue(y)
+    triggerNoteOfCurrentInstrument(note, pressed)
+    --select all note events which have the specific note
+    if keyControl then
+        if not keyShift then
+            noteSelection = {}
+        end
+        for key, value in pairs(noteData) do
+            local note_data = noteData[key]
+            if note_data.note == note and noteInSelection(note_data) == nil then
+                table.insert(noteSelection, note_data)
+            end
+        end
+        refreshPianoRollNeeded = true
+    end
 end
 
 --will be called, when a note was clicked
