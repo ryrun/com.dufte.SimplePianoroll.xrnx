@@ -1568,13 +1568,6 @@ local function main_function()
                     notifier = loadstring(temp),
                 }
                 row:add_child(vb_temp)
-                vb_temp = vb:space {
-                    id = "spc" .. tostring(x) .. "_" .. tostring(y),
-                    height = gridStepSizeH,
-                    width = gridStepSizeW,
-                    visible = false,
-                }
-                row:add_child(vb_temp)
             end
             pianorollColumns:add_child(row)
         end
@@ -1968,32 +1961,36 @@ local function main_function()
                 }
             },
             vb:row {
-                vb:space {
-                    width = math.max(16, gridStepSizeW / 2) + (gridStepSizeW * 3)
-                },
                 vb:column {
                     vb:space {
-                        height = 3,
-                    },
-                    playCursor,
-                    vb:space {
-                        height = 3,
+                        height = (gridStepSizeH * 2) - gridSpacing,
                     },
                     vb:row {
-                        spacing = -5,
-                        vb:space {
-                            width = 1,
-                        },
-                        timeline,
+                        noteSlider,
+                        whiteKeys,
                     }
-                }
-            },
-            vb:row {
-                noteSlider,
-                vb:row {
-                    whiteKeys,
                 },
-                pianorollColumns,
+                vb:column {
+                    vb:column {
+                        vb:space {
+                            height = 3,
+                        },
+                        playCursor,
+                        vb:space {
+                            height = 3,
+                        },
+                    },
+                    vb:column {
+                        vb:row {
+                            spacing = -5,
+                            vb:space {
+                                width = 1,
+                            },
+                            timeline,
+                        },
+                        pianorollColumns,
+                    },
+                },
             },
             vb:row {
                 vb:space {
