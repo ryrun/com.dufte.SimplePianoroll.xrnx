@@ -822,9 +822,15 @@ end
 function noteClick(x, y)
     local index = tostring(x) .. "_" .. tostring(y)
     local dbclk = dbclkDetector("b" .. index)
-    if dbclk then
+    if dbclk or (keyAlt) then
         --note remove
-        removeSelectedNotes()
+        local note_data = noteData[index]
+        --set clicked note as selected for remove function
+        if note_data ~= nil then
+            noteSelection = {}
+            table.insert(noteSelection, note_data)
+            removeSelectedNotes()
+        end
     else
         local note_data = noteData[index]
         if note_data ~= nil then
