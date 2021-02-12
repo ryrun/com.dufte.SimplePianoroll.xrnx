@@ -834,11 +834,24 @@ function noteClick(x, y)
     else
         local note_data = noteData[index]
         if note_data ~= nil then
+            local deselect = false
             --clear selection, when ctrl is not holded
             if not keyControl then
                 noteSelection = {}
+            elseif #noteSelection > 0 then
+                --check if the note is in selection, then just deselect
+                for i = 1, #noteSelection do
+                    if noteSelection[i].line == note_data.line and noteSelection[i].len == note_data.len and noteSelection[i].column == note_data.column then
+                        deselect = true
+                        table.remove(noteSelection, i)
+                        break
+                    end
+                end
             end
-            table.insert(noteSelection, note_data)
+            --when note was not deselected, then add this note to selection
+            if not deselect then
+                table.insert(noteSelection, note_data)
+            end
             currentNoteLength = note_data.len
             currentNoteVelocity = note_data.vel
             if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
