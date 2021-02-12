@@ -39,11 +39,12 @@ Just right click on a track and choose "Edit with Pianoroll ...":<br>
 
 |Actions||
 |---|---|
-|Add notes|Double click on a free spot in the grid<br>Alternative: Hold <kbd>alt</kbd> and one click in the grid|
-|Remove notes|Double click on a note|
-|Select a note|Click on a note<br><br>*It also reads out note length and velocity of the selected note and set these values for new notes.*|
-|Preview a note|Click on a note|
+|Add notes|Double click on a free spot in the grid<br>Alternative: While hold <kbd>alt</kbd> its just one click|
+|Remove notes|Double click on a note<br>Alternative: While hold <kbd>alt</kbd> its just one click|
+|Select a note|Click on a note.<br>*It also reads out note length and velocity of the selected note and set these values for new notes.*|
+|Preview a note|Click on a note.|
 |Select multiple individual notes|While holding <kbd>ctrl</kbd>, click on a note|
+|Deselect individual notes in selection|While holding <kbd>ctrl</kbd>, click on a selected note|
 |Deselect notes|Click on a free spot in the grid|
 |Rectangle select notes|First click on a free spot in the grid to set the first corner, then hold <kbd>shift</kbd> and click another free spot and it will select all notes inside this rectangle
 
@@ -69,12 +70,14 @@ Info: Non handled keyboard events will be sent back to the host. So renoise defa
 |<kbd>ctrl + v</kbd>|One or more notes selected|Paste notes to the last click grid position|
 |<kbd>up</kbd>|One or more notes selected|Transpose note 1 semitone up|
 |<kbd>down</kbd>|One or more notes selected|Transpose note 1 semitone down|
+|<kbd>alt + up</kbd>|One or more notes selected|Transpose note 7 semitone up|
+|<kbd>alt + down</kbd>|One or more notes selected|Transpose note 7 semitone down|
 |<kbd>shift + up</kbd>|One or more notes selected|Transpose note 12 semitone up|
-|<kbd>shift + down</kbd>|One or more notes selected|Transpose note 12 semitone up|
+|<kbd>shift + down</kbd>|One or more notes selected|Transpose note 12 semitone down|
 |<kbd>ctrl + up</kbd>|One or more notes selected|Transpose note 1 semitone up but stay in scale|
 |<kbd>ctrl + down</kbd>|One or more notes selected|Transpose note 1 semitone down but stay in scale|
 |<kbd>ctrl + shift + up</kbd>|One or more notes selected|Transpose note 12 semitone up but stay in scale|
-|<kbd>ctrl + shift + down</kbd>|One or more notes selected|Transpose note 12 semitone up but stay in scale|
+|<kbd>ctrl + shift + down</kbd>|One or more notes selected|Transpose note 12 semitone down but stay in scale|
 |<kbd>left</kbd>|One or more notes selected|Move note 1 step left|
 |<kbd>right</kbd>|One or more notes selected|Move note 1 step right|
 |<kbd>shift + left</kbd>|One or more notes selected|Move note 4 step left|

@@ -2184,6 +2184,9 @@ local function main_function()
             end
             if (key.name == "up" or key.name == "down") and key.state == "released" then
                 local transpose = 1
+                if keyAlt then
+                    transpose = 7
+                end
                 if keyShift or keyRShift then
                     transpose = 12
                 end
