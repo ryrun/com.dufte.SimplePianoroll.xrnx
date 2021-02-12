@@ -2084,134 +2084,152 @@ local function main_function()
                 keyRShift = false
                 handled = true
             end
-            if key.name == "del" and key.state == "released" then
-                if #noteSelection > 0 then
-                    showStatus(#noteSelection .. " notes deleted.")
-                    removeSelectedNotes()
+            if key.name == "del" then
+                if key.state == "released" then
+                    if #noteSelection > 0 then
+                        showStatus(#noteSelection .. " notes deleted.")
+                        removeSelectedNotes()
+                    end
                 end
                 handled = true
             end
-            if key.name == "esc" and key.state == "released" then
-                if #noteSelection > 0 then
+            if key.name == "esc" then
+                if key.state == "released" then
+                    if #noteSelection > 0 then
+                        noteSelection = {}
+                        refreshPianoRollNeeded = true
+                    end
+                end
+                handled = true
+            end
+            if key.name == "b" and key.modifiers == "control" then
+                if key.state == "released" then
+                    if #noteSelection == 0 then
+                        --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
+                        for key, value in pairs(noteData) do
+                            local note_data = noteData[key]
+                            table.insert(noteSelection, note_data)
+                        end
+                        --duplciate content
+                        if #noteSelection > 0 then
+                            showStatus(#noteSelection .. " notes duplicated.")
+                            local ret = duplicateSelectedNotes()
+                            --was not possible then deselect
+                            if not ret then
+                                noteSelection = {}
+                            end
+                        end
+                    elseif #noteSelection > 0 then
+                        showStatus(#noteSelection .. " notes duplicated.")
+                        duplicateSelectedNotes()
+                    end
+                end
+                handled = true
+            end
+            if key.name == "c" and key.modifiers == "control" then
+                if key.state == "released" then
+                    if #noteSelection > 0 then
+                        clipboard = {}
+                        for key, value in pairs(noteSelection) do
+                            local note_data = noteSelection[key]
+                            table.insert(clipboard, note_data)
+                        end
+                        --set paste cursor
+                        table.sort(clipboard, function(a, b)
+                            return a.line > b.line
+                        end)
+                        pasteCursor = { clipboard[1].line + clipboard[1].len, 0 }
+                        table.sort(clipboard, function(a, b)
+                            return a.note < b.note
+                        end)
+                        pasteCursor = { pasteCursor[1], clipboard[1].note }
+                        showStatus(#noteSelection .. " notes copied.")
+                    end
+                end
+                handled = true
+            end
+            if key.name == "x" and key.modifiers == "control" then
+                if key.state == "released" then
+                    if #noteSelection > 0 then
+                        clipboard = {}
+                        for key, value in pairs(noteSelection) do
+                            local note_data = noteSelection[key]
+                            table.insert(clipboard, note_data)
+                        end
+                        --set paste cursor
+                        table.sort(clipboard, function(a, b)
+                            return a.line < b.line
+                        end)
+                        pasteCursor = { clipboard[1].line, 0 }
+                        table.sort(clipboard, function(a, b)
+                            return a.note < b.note
+                        end)
+                        pasteCursor = { pasteCursor[1], clipboard[1].note }
+                        --set status
+                        showStatus(#noteSelection .. " notes cut.")
+                        --remove selected notes
+                        removeSelectedNotes(true)
+                    end
+                end
+                handled = true
+            end
+            if key.name == "v" and key.modifiers == "control" then
+                if key.state == "released" then
+                    if #clipboard > 0 then
+                        showStatus(#clipboard .. " notes pasted.")
+                        pasteNotesFromClipboard()
+                    end
+                    handled = true
+                end
+            end
+            if key.name == "a" and key.modifiers == "control" then
+                if key.state == "released" then
+                    --clear current selection
                     noteSelection = {}
-                    refreshPianoRollNeeded = true
-                end
-                handled = true
-            end
-            if key.name == "b" and key.state == "released" and key.modifiers == "control" then
-                if #noteSelection == 0 then
                     --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
                     for key, value in pairs(noteData) do
                         local note_data = noteData[key]
                         table.insert(noteSelection, note_data)
                     end
-                    --duplciate content
+                    showStatus(#noteSelection .. " notes selected.")
+                    refreshPianoRollNeeded = true
+                end
+                handled = true
+            end
+            if (key.name == "up" or key.name == "down") then
+                if key.state == "released" then
+                    local transpose = 1
+                    if keyAlt then
+                        transpose = 7
+                    end
+                    if keyShift or keyRShift then
+                        transpose = 12
+                    end
+                    if key.name == "down" then
+                        transpose = transpose * -1
+                    end
                     if #noteSelection > 0 then
-                        showStatus(#noteSelection .. " notes duplicated.")
-                        local ret = duplicateSelectedNotes()
-                        --was not possible then deselect
-                        if not ret then
-                            noteSelection = {}
-                        end
+                        transposeSelectedNotes(transpose, keyControl or keyRControl)
+                    elseif noteSlider.value + transpose <= noteSlider.max and noteSlider.value + transpose >= noteSlider.min then
+                        noteSlider.value = noteSlider.value + transpose
                     end
-                elseif #noteSelection > 0 then
-                    showStatus(#noteSelection .. " notes duplicated.")
-                    duplicateSelectedNotes()
                 end
                 handled = true
             end
-            if key.name == "c" and key.state == "released" and key.modifiers == "control" then
-                if #noteSelection > 0 then
-                    clipboard = {}
-                    for key, value in pairs(noteSelection) do
-                        local note_data = noteSelection[key]
-                        table.insert(clipboard, note_data)
+            if (key.name == "left" or key.name == "right") then
+                if key.state == "released" then
+                    local steps = 1
+                    if keyShift or keyRShift then
+                        steps = math.max(4)
                     end
-                    --set paste cursor
-                    table.sort(clipboard, function(a, b)
-                        return a.line > b.line
-                    end)
-                    pasteCursor = { clipboard[1].line + clipboard[1].len, 0 }
-                    table.sort(clipboard, function(a, b)
-                        return a.note < b.note
-                    end)
-                    pasteCursor = { pasteCursor[1], clipboard[1].note }
-                    showStatus(#noteSelection .. " notes copied.")
-                end
-                handled = true
-            end
-            if key.name == "x" and key.state == "released" and key.modifiers == "control" then
-                if #noteSelection > 0 then
-                    clipboard = {}
-                    for key, value in pairs(noteSelection) do
-                        local note_data = noteSelection[key]
-                        table.insert(clipboard, note_data)
+                    if key.name == "left" then
+                        steps = steps * -1
                     end
-                    --set paste cursor
-                    table.sort(clipboard, function(a, b)
-                        return a.line < b.line
-                    end)
-                    pasteCursor = { clipboard[1].line, 0 }
-                    table.sort(clipboard, function(a, b)
-                        return a.note < b.note
-                    end)
-                    pasteCursor = { pasteCursor[1], clipboard[1].note }
-                    --set status
-                    showStatus(#noteSelection .. " notes cut.")
-                    --remove selected notes
-                    removeSelectedNotes(true)
-                end
-                handled = true
-            end
-            if key.name == "v" and key.state == "released" and key.modifiers == "control" then
-                if #clipboard > 0 then
-                    showStatus(#clipboard .. " notes pasted.")
-                    pasteNotesFromClipboard()
-                end
-                handled = true
-            end
-            if key.name == "a" and key.state == "released" and key.modifiers == "control" then
-                --clear current selection
-                noteSelection = {}
-                --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
-                for key, value in pairs(noteData) do
-                    local note_data = noteData[key]
-                    table.insert(noteSelection, note_data)
-                end
-                showStatus(#noteSelection .. " notes selected.")
-                refreshPianoRollNeeded = true
-                handled = true
-            end
-            if (key.name == "up" or key.name == "down") and key.state == "released" then
-                local transpose = 1
-                if keyAlt then
-                    transpose = 7
-                end
-                if keyShift or keyRShift then
-                    transpose = 12
-                end
-                if key.name == "down" then
-                    transpose = transpose * -1
-                end
-                if #noteSelection > 0 then
-                    transposeSelectedNotes(transpose, keyControl or keyRControl)
-                elseif noteSlider.value + transpose <= noteSlider.max and noteSlider.value + transpose >= noteSlider.min then
-                    noteSlider.value = noteSlider.value + transpose
-                end
-                handled = true
-            end
-            if (key.name == "left" or key.name == "right") and key.state == "released" then
-                local steps = 1
-                if keyShift or keyRShift then
-                    steps = math.max(4)
-                end
-                if key.name == "left" then
-                    steps = steps * -1
-                end
-                if #noteSelection > 0 then
-                    moveSelectedNotes(steps)
-                elseif stepSlider.value + steps <= stepSlider.max and stepSlider.value + steps >= stepSlider.min then
-                    stepSlider.value = stepSlider.value + steps
+                    if #noteSelection > 0 then
+                        moveSelectedNotes(steps)
+                    elseif stepSlider.value + steps <= stepSlider.max and stepSlider.value + steps >= stepSlider.min then
+                        stepSlider.value = stepSlider.value + steps
+                    end
                 end
                 handled = true
             end
