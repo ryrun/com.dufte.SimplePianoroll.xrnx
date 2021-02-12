@@ -175,6 +175,12 @@ end
 local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly)
     local noteOff = false
     local lineValues = song.selected_pattern_track.lines
+
+    --when no instrument is set, use the current selected one
+    if not currentInstrument then
+        currentInstrument = song.selected_instrument_index
+    end
+
     lineValues[line]:note_column(column).note_value = note
     lineValues[line]:note_column(column).volume_string = toHex(vel)
     lineValues[line]:note_column(column).panning_string = toHex(pan)
@@ -431,6 +437,10 @@ end
 
 --simple note trigger
 local function triggerNoteOfCurrentInstrument(note_value, pressed)
+    --when no instrument is set, use the current selected one
+    if not currentInstrument then
+        currentInstrument = song.selected_instrument_index
+    end
     --init server connection, when not ready
     local socket_error
     if oscClient == nil then
@@ -1320,9 +1330,9 @@ local function fillPianoRoll()
     end
     --]]
 
-    --no instrument found, use the current selected one
-    if currentInstrument == nil then
-        currentInstrument = song.selected_instrument_index
+    --switch to instrument which is used in pattern
+    if currentInstrument and currentInstrument ~= song.selected_instrument_index then
+        song.selected_instrument_index = currentInstrument
     end
 
     --enable buttons when something selected
