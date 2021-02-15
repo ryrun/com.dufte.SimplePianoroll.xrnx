@@ -106,6 +106,10 @@ local keyShift = false
 local keyRShift = false
 local keyAlt = false
 
+--button states
+local penMode = false
+local notePreview = true
+
 --show some text in Renoise status bar
 local function showStatus(status)
     app:show_status("Simple Pianoroll: " .. status)
@@ -447,6 +451,19 @@ local function refreshNoteControls()
         currentGhostTrack = song.selected_track_index
         vbw.ghosttracks.value = currentGhostTrack
     end
+
+    if notePreview then
+        vbw.notepreview.color = colorNoteHighlight
+    else
+        vbw.notepreview.color = colorDisableButton
+    end
+    if penMode or keyAlt then
+        vbw.mode_pen.color = colorNoteHighlight
+        vbw.mode_select.color = colorDisableButton
+    else
+        vbw.mode_pen.color = colorDisableButton
+        vbw.mode_select.color = colorNoteHighlight
+    end
 end
 
 --simple note trigger
@@ -592,7 +609,9 @@ local function transposeSelectedNotes(transpose, keepscale)
             noteSelection[key].note = 119
         end
         note_column.note_value = noteSelection[key].note
-        triggerNoteOfCurrentInstrument(noteSelection[key].note)
+        if notePreview then
+            triggerNoteOfCurrentInstrument(noteSelection[key].note)
+        end
     end
     refreshPianoRollNeeded = true
 end
@@ -942,7 +961,7 @@ end
 function noteClick(x, y)
     local index = tostring(x) .. "_" .. tostring(y)
     local dbclk = dbclkDetector("b" .. index)
-    if dbclk or (keyAlt) then
+    if dbclk or keyAlt or penMode then
         --note remove
         local note_data = noteData[index]
         --set clicked note as selected for remove function
@@ -985,7 +1004,9 @@ function noteClick(x, y)
             currentNotePan = note_data.pan
             currentNoteDelay = note_data.dly
             refreshControls = true
-            triggerNoteOfCurrentInstrument(note_data.note)
+            if notePreview then
+                triggerNoteOfCurrentInstrument(note_data.note)
+            end
             refreshPianoRollNeeded = true
         end
     end
@@ -997,7 +1018,7 @@ function pianoGridClick(x, y)
     --set paste cursor
     pasteCursor = { x + stepOffset, gridOffset2NoteValue(y) }
 
-    if dbclk or (keyAlt) then
+    if dbclk or keyAlt or penMode then
         local steps = song.selected_pattern.number_of_lines
         local column
         local note_value
@@ -1035,7 +1056,9 @@ function pianoGridClick(x, y)
             column = column,
         }
         --trigger preview notes
-        triggerNoteOfCurrentInstrument(note_data.note)
+        if notePreview then
+            triggerNoteOfCurrentInstrument(note_data.note)
+        end
         --clear selection and add new note as new selection
         noteSelection = {}
         table.insert(noteSelection, note_data)
@@ -1702,9 +1725,15 @@ local function handleKeyEvent(key)
     if key.name == "lalt" and key.state == "pressed" then
         keyAlt = true
         handled = true
+        if not penMode then
+            refreshControls = true
+        end
     elseif key.name == "lalt" and key.state == "released" then
         keyAlt = false
         handled = true
+        if not penMode then
+            refreshControls = true
+        end
     end
     if key.name == "lshift" and key.state == "pressed" then
         keyShift = true
@@ -2385,8 +2414,40 @@ local function main_function()
             },
             vb:row {
                 vb:column {
-                    vb:space {
+                    vb:row {
                         height = (gridStepSizeH * 2) - gridSpacing + 2,
+                        spacing = 4,
+                        margin = 7,
+                        vb:row {
+                            spacing = -3,
+                            vb:button {
+                                text = "↖",
+                                tooltip = "Select mode",
+                                id = "mode_select",
+                                notifier = function()
+                                    penMode = false
+                                    refreshControls = true
+                                end,
+                            },
+                            vb:button {
+                                text = "✎",
+                                tooltip = "Pen mode",
+                                id = "mode_pen",
+                                notifier = function()
+                                    penMode = true
+                                    refreshControls = true
+                                end,
+                            },
+                        },
+                        vb:button {
+                            text = "♬",
+                            tooltip = "Enable / Disable note preview",
+                            id = "notepreview",
+                            notifier = function()
+                                notePreview = not notePreview
+                                refreshControls = true
+                            end,
+                        },
                     },
                     vb:row {
                         noteSlider,
