@@ -82,5 +82,6 @@ Info: Non handled keyboard events will be sent back to the host. So renoise defa
 |<kbd>right</kbd>|One or more notes selected|Move note 1 step right|
 |<kbd>shift + left</kbd>|One or more notes selected|Move note 4 step left|
 |<kbd>shift + right</kbd>|One or more notes selected|Move note 4 step right|
+|<kbd>shift + i</kbd>|One or more notes selected|Invert note selection|
 |<kbd>del</kbd>|One or more notes selected|Remove selected notes|
 |<kbd>esc</kbd>|One or more notes selected|Deselect all notes|
