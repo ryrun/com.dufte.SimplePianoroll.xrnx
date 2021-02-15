@@ -149,6 +149,24 @@ local function randomizeValue(input, scale, min, max)
     return input
 end
 
+--jump to the note position in pattern
+local function jumpToNoteInPattern(notedata)
+    --only when not playing or follow player
+    if not song.transport.playing or not song.transport.follow_player then
+        --only when the edit cursor is in the correct pattern
+        if song.selected_pattern_index == song.sequencer:pattern(song.transport.edit_pos.sequence) then
+            local npos = renoise.SongPos()
+            npos.line = notedata.line
+            npos.sequence = song.transport.edit_pos.sequence
+            song.transport.edit_pos = npos
+            --switch to the correct note column
+            if song.selected_note_column_index ~= notedata.column then
+                song.selected_note_column_index = notedata.column
+            end
+        end
+    end
+end
+
 --returns true, when note in scale
 local function noteInScale(note)
     note = note % 12
@@ -829,6 +847,7 @@ function noteClick(x, y)
             noteSelection = {}
             table.insert(noteSelection, note_data)
             removeSelectedNotes()
+            jumpToNoteInPattern(note_data)
         end
     else
         local note_data = noteData[index]
@@ -851,6 +870,7 @@ function noteClick(x, y)
             if not deselect then
                 table.insert(noteSelection, note_data)
             end
+            jumpToNoteInPattern(note_data)
             currentNoteLength = note_data.len
             currentNoteVelocity = note_data.vel
             if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
@@ -899,11 +919,8 @@ function pianoGridClick(x, y)
         --add new note
         note_value = gridOffset2NoteValue(y)
         noteOff = addNoteToPattern(column, x, currentNoteLength, note_value, currentNoteVelocity, currentNoteEndVelocity, currentNotePan, currentNoteDelay)
-        --trigger preview notes
-        triggerNoteOfCurrentInstrument(note_value)
-        --clear selection and add new note as new selection
-        noteSelection = {}
-        table.insert(noteSelection, {
+        --
+        local note_data = {
             line = x,
             note = note_value,
             vel = currentNoteVelocity,
@@ -913,7 +930,13 @@ function pianoGridClick(x, y)
             len = currentNoteLength,
             noteoff = noteOff,
             column = column,
-        })
+        }
+        --trigger preview notes
+        triggerNoteOfCurrentInstrument(note_data.note)
+        --clear selection and add new note as new selection
+        noteSelection = {}
+        table.insert(noteSelection, note_data)
+        jumpToNoteInPattern(note_data)
         --
         refreshPianoRollNeeded = true
     else
