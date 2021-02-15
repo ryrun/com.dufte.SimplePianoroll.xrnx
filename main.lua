@@ -594,15 +594,14 @@ local function pasteNotesFromClipboard()
     --describe undo for renoise
     setUndoDescription("Paste notes from clipboard ...")
     if #pasteCursor > 0 then
-        --note offset
         table.sort(clipboard, function(a, b)
-            return a.note < b.note
-        end)
-        noteoffset = pasteCursor[2] - clipboard[1].note
-        table.sort(clipboard, function(a, b)
+            if a.line == b.line then
+                return a.note < b.note
+            end
             return a.line < b.line
         end)
         lineoffset = pasteCursor[1] - clipboard[1].line
+        noteoffset = pasteCursor[2] - clipboard[1].note
     end
     --process last note first
     table.sort(clipboard, function(a, b)
