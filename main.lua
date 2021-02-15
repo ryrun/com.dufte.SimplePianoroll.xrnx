@@ -374,20 +374,13 @@ local function refreshNoteControls()
         else
             currentNoteVelocityPreview = 127
         end
-        if currentNoteLength == 1 then
-            currentNoteEndVelocity = 255
+        if currentNoteEndVelocity == 255 then
             vbw.note_end_vel.value = -1
-            vbw.note_end_vel.active = false
-            vbw.note_end_vel_clear.active = false
         else
-            if currentNoteEndVelocity == 255 then
-                vbw.note_end_vel.value = -1
-            else
-                vbw.note_end_vel.value = currentNoteEndVelocity
-            end
-            vbw.note_end_vel.active = true
-            vbw.note_end_vel_clear.active = true
+            vbw.note_end_vel.value = currentNoteEndVelocity
         end
+        vbw.note_end_vel.active = true
+        vbw.note_end_vel_clear.active = true
     else
         -- velocity column not visible
         vbw.notecolumn_vel.color = colorDisableButton
