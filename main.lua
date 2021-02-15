@@ -664,6 +664,55 @@ local function pasteNotesFromClipboard()
     return true
 end
 
+--scale note selection
+local function scaleNoteSelection(times)
+    setUndoDescription("Scale note selection ...")
+    --get offset
+    table.sort(noteSelection, function(a, b)
+        return a.line < b.line
+    end)
+    local first_line = noteSelection[1].line
+    --change note order depends of sclaing or shrinking
+    if times > 1 then
+        table.sort(noteSelection, function(a, b)
+            return a.line > b.line
+        end)
+    else
+        table.sort(noteSelection, function(a, b)
+            return a.line < b.line
+        end)
+    end
+    --go through selection
+    for key in pairs(noteSelection) do
+        removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
+        --change len and position
+        local len = math.max(math.floor(noteSelection[key].len * times), 1)
+        local line = math.floor((noteSelection[key].line - first_line) * times) + first_line
+        local column = returnColumnWhenEnoughSpaceForNote(line, len)
+        if column then
+            noteSelection[key].column = column
+            noteSelection[key].line = line
+            noteSelection[key].len = len
+        end
+        noteSelection[key].noteoff = addNoteToPattern(
+                noteSelection[key].column,
+                noteSelection[key].line,
+                noteSelection[key].len,
+                noteSelection[key].note,
+                noteSelection[key].vel,
+                noteSelection[key].end_vel,
+                noteSelection[key].pan,
+                noteSelection[key].dly
+        )
+        if not column then
+            showStatus("Not enough space to scale selection.")
+            return false
+        end
+    end
+    refreshPianoRollNeeded = true
+    return true
+end
+
 --chop selected notes
 local function chopSelectedNotes()
     local newSelection = {}
@@ -675,8 +724,9 @@ local function chopSelectedNotes()
     --go through selection
     for key in pairs(noteSelection) do
         if noteSelection[key].len > 1 then
-            --change note properties
+            --remove old note
             removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
+            --create two new notes (chop chop)
             for _, v in pairs({
                 {
                     line = noteSelection[key].line,
@@ -2048,6 +2098,9 @@ local function main_function()
                         text = "Dbl",
                         tooltip = "Double current note length number",
                         notifier = function()
+                            if #noteSelection > 0 then
+                                scaleNoteSelection(2)
+                            end
                             currentNoteLength = math.floor(currentNoteLength * 2)
                             refreshControls = true
                         end,
@@ -2056,6 +2109,9 @@ local function main_function()
                         text = "Hlv",
                         tooltip = "Halve current note length number",
                         notifier = function()
+                            if #noteSelection > 0 then
+                                scaleNoteSelection(0.5)
+                            end
                             currentNoteLength = math.max(math.floor(currentNoteLength / 2), 1)
                             refreshControls = true
                         end,
