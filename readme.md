@@ -1,4 +1,5 @@
 # Simple Pianoroll for Renoise v0.6
+
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pianorollanim.gif?raw=true" width="300">
 
 ## Video on Youtube
@@ -8,6 +9,7 @@ Showing the tool v0.1 in action:
 [<img src="https://img.youtube.com/vi/5qJCNvbco7M/0.jpg" width="300">](https://www.youtube.com/watch?v=5qJCNvbco7M)
 
 ## Thread on official Renoise forum
+
 https://forum.renoise.com/t/another-piano-roll-com-dufte-simplepianoroll-xrnx/63034
 
 ## Features
@@ -22,13 +24,15 @@ https://forum.renoise.com/t/another-piano-roll-com-dufte-simplepianoroll-xrnx/63
 ## Important
 
 * Dragging notes currently not possible, use arrow keys
-* Its using always the instrument, which is used in the pattern. In an empty pattern, its using the current active instrument
+* Its using always the instrument, which is used in the pattern. In an empty pattern, its using the current active
+  instrument
 
 ## Install
 
 Download latest verison from official tool page:<br>https://www.renoise.com/tools/simple-pianoroll
 
-Alternative download the latest build here and drop it onto Renoise:<br>https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/out/com.duftetools.SimplePianoroll.xrnx
+Alternative download the latest build here and drop it onto
+Renoise:<br>https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/out/com.duftetools.SimplePianoroll.xrnx
 
 ## How to edit a track
 
@@ -41,7 +45,8 @@ Just right click on a track and choose "Edit with Pianoroll ...":<br>
 |---|---|
 |Add notes|Double click on a free spot in the grid<br>Alternative: While hold <kbd>alt</kbd> its just one click|
 |Remove notes|Double click on a note<br>Alternative: While hold <kbd>alt</kbd> its just one click|
-|Select a note|Click on a note.<br>*It also reads out note length and velocity of the selected note and set these values for new notes.*|
+|Select a note|Click on a note.<br>*It also reads out note length and velocity of the selected note and set these values
+for new notes.*|
 |Preview a note|Click on a note.|
 |Select multiple individual notes|While holding <kbd>ctrl</kbd>, click on a note|
 |Deselect individual notes in selection|While holding <kbd>ctrl</kbd>, click on a selected note|
@@ -64,7 +69,9 @@ Info: Non handled keyboard events will be sent back to the host. So renoise defa
 |<kbd>shift + right</kbd>|Nothing selected|Move in the grid 4 steps rightwards|
 |<kbd>ctrl + a</kbd>|Nothing selected|Select all visible notes|
 |<kbd>ctrl + b</kbd>|Nothing selected|Select all visible notes and duplicate it to the right|
+|<kbd>ctrl + u</kbd>|Nothing selected|Select all visible notes and quick chop it|
 |<kbd>ctrl + b</kbd>|One or more notes selected|Duplicate selected notes to the right|
+|<kbd>ctrl + u</kbd>|One or more notes selected|Quick chop all selected notes|
 |<kbd>ctrl + c</kbd>|One or more notes selected|Copy selected notes to internal clipboard|
 |<kbd>ctrl + x</kbd>|One or more notes selected|Cut selected notes to internal clipboard|
 |<kbd>ctrl + v</kbd>|One or more notes selected|Paste notes to the last click grid position|

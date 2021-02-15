@@ -194,7 +194,7 @@ end
 
 --return true, when a noteOff was set
 local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly)
-    local noteOff = false
+    local noteoff = false
     local lineValues = song.selected_pattern_track.lines
 
     --when no instrument is set, use the current selected one
@@ -215,7 +215,7 @@ local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly)
         if lineValues[line + len]:note_column(column).note_value < 120 then
 
         else
-            noteOff = true
+            noteoff = true
             lineValues[line + len]:note_column(column).note_value = 120
         end
     elseif line + len - 1 == song.selected_pattern.number_of_lines then
@@ -223,7 +223,7 @@ local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly)
         if lineValues[1]:note_column(column).note_value < 120 then
 
         else
-            noteOff = true
+            noteoff = true
             lineValues[1]:note_column(column).note_value = 120
         end
     end
@@ -231,7 +231,7 @@ local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly)
     if column > song.selected_track.visible_note_columns then
         song.selected_track.visible_note_columns = column
     end
-    return noteOff
+    return noteoff
 end
 
 --search for a column, which have enough space for the line and length of a new note
@@ -535,7 +535,7 @@ local function moveSelectedNotes(steps)
             noteSelection[key].line = noteSelection[key].line + steps
             noteSelection[key].column = column
         end
-        local noteOff = addNoteToPattern(
+        noteSelection[key].noteoff = addNoteToPattern(
                 noteSelection[key].column,
                 noteSelection[key].line,
                 noteSelection[key].len,
@@ -548,7 +548,6 @@ local function moveSelectedNotes(steps)
         if not column then
             break
         end
-        noteSelection[key].noteOff = noteOff
     end
     refreshPianoRollNeeded = true
 end
@@ -642,7 +641,7 @@ local function pasteNotesFromClipboard()
             showStatus("Not enough space to paste notes here.")
             return false
         end
-        local noteOff = addNoteToPattern(
+        clipboard[key].noteoff = addNoteToPattern(
                 clipboard[key].column,
                 clipboard[key].line,
                 clipboard[key].len,
@@ -652,7 +651,6 @@ local function pasteNotesFromClipboard()
                 clipboard[key].pan,
                 clipboard[key].dly
         )
-        clipboard[key].noteOff = noteOff
         --add pasted note to selection
         table.insert(noteSelection, clipboard[key])
     end
@@ -662,6 +660,67 @@ local function pasteNotesFromClipboard()
     end)
     pasteCursor = { noteSelection[1].line + noteSelection[1].len, pasteCursor[2] }
     --
+    refreshPianoRollNeeded = true
+    return true
+end
+
+--chop selected notes
+local function chopSelectedNotes()
+    local newSelection = {}
+    setUndoDescription("Chop notes ...")
+    --first notes first
+    table.sort(noteSelection, function(a, b)
+        return a.line < b.line
+    end)
+    --go through selection
+    for key in pairs(noteSelection) do
+        if noteSelection[key].len > 1 then
+            --change note properties
+            removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
+            for _, v in pairs({
+                {
+                    line = noteSelection[key].line,
+                    len = math.floor(noteSelection[key].len / 2),
+                },
+                {
+                    line = noteSelection[key].line + math.floor(noteSelection[key].len / 2),
+                    len = noteSelection[key].len - math.floor(noteSelection[key].len / 2),
+                },
+            }) do
+                --search for valid column
+                local column = returnColumnWhenEnoughSpaceForNote(v.line, v.len)
+                if not column then
+                    showStatus("Not enough space to chop notes here.")
+                    return false
+                end
+                local note_data = {
+                    line = v.line,
+                    note = noteSelection[key].note,
+                    vel = noteSelection[key].vel,
+                    end_vel = noteSelection[key].end_vel,
+                    dly = noteSelection[key].dly,
+                    pan = noteSelection[key].pan,
+                    len = v.len,
+                    noteoff = noteSelection[key].noteoff,
+                    column = column,
+                }
+                note_data.noteoff = addNoteToPattern(
+                        note_data.column,
+                        note_data.line,
+                        note_data.len,
+                        note_data.note,
+                        note_data.vel,
+                        note_data.end_vel,
+                        note_data.pan,
+                        note_data.dly
+                )
+                table.insert(newSelection, note_data)
+            end
+        else
+            table.insert(newSelection, noteSelection[key])
+        end
+    end
+    noteSelection = newSelection
     refreshPianoRollNeeded = true
     return true
 end
@@ -696,7 +755,7 @@ local function duplicateSelectedNotes()
             showStatus("Not enough space to duplicate notes here.")
             return false
         end
-        local noteOff = addNoteToPattern(
+        noteSelection[key].noteoff = addNoteToPattern(
                 noteSelection[key].column,
                 noteSelection[key].line,
                 noteSelection[key].len,
@@ -706,7 +765,6 @@ local function duplicateSelectedNotes()
                 noteSelection[key].pan,
                 noteSelection[key].dly
         )
-        noteSelection[key].noteOff = noteOff
     end
     refreshPianoRollNeeded = true
     return true
@@ -733,7 +791,7 @@ local function changeSizeSelectedNotes(len)
             noteSelection[key].len = len
             noteSelection[key].column = column
         end
-        local noteOff = addNoteToPattern(
+        noteSelection[key].noteoff = addNoteToPattern(
                 noteSelection[key].column,
                 noteSelection[key].line,
                 noteSelection[key].len,
@@ -746,7 +804,6 @@ local function changeSizeSelectedNotes(len)
         if not column then
             break
         end
-        noteSelection[key].noteOff = noteOff
     end
     refreshPianoRollNeeded = true
     return true
@@ -901,7 +958,7 @@ function pianoGridClick(x, y)
         local steps = song.selected_pattern.number_of_lines
         local column
         local note_value
-        local noteOff = false
+        local noteoff = false
         --move x by stepoffset
         x = x + stepOffset
         --check if current note length is too long for pattern size, reduce len if needed
@@ -921,7 +978,7 @@ function pianoGridClick(x, y)
         setUndoDescription("Draw a note ...")
         --add new note
         note_value = gridOffset2NoteValue(y)
-        noteOff = addNoteToPattern(column, x, currentNoteLength, note_value, currentNoteVelocity, currentNoteEndVelocity, currentNotePan, currentNoteDelay)
+        noteoff = addNoteToPattern(column, x, currentNoteLength, note_value, currentNoteVelocity, currentNoteEndVelocity, currentNotePan, currentNoteDelay)
         --
         local note_data = {
             line = x,
@@ -931,7 +988,7 @@ function pianoGridClick(x, y)
             dly = currentNoteDelay,
             pan = currentNotePan,
             len = currentNoteLength,
-            noteoff = noteOff,
+            noteoff = noteoff,
             column = column,
         }
         --trigger preview notes
@@ -986,7 +1043,7 @@ function pianoGridClick(x, y)
 end
 
 --enable a note button, when its visible, set correct length of the button
-local function enableNoteButton(column, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, noteOff)
+local function enableNoteButton(column, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, noteoff)
     --save highest and lowest note
     if lowesetNote == nil then
         lowesetNote = current_note
@@ -1022,7 +1079,7 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
             dly = current_note_dly,
             pan = current_note_pan,
             len = current_note_len,
-            noteoff = noteOff,
+            noteoff = noteoff,
             column = column,
         }
         --any "used" notes to check?
@@ -1088,7 +1145,7 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
                     b.visible = false
                 end
             end
-            if noteOff then
+            if noteoff then
                 vbw["p" .. current_note_index].visible = false
             end
         end
@@ -1654,6 +1711,27 @@ local function handleKeyEvent(key)
         end
         handled = true
     end
+    if key.name == "u" and key.modifiers == "control" then
+        if key.state == "released" then
+            if #noteSelection == 0 then
+                for k in pairs(noteData) do
+                    local note_data = noteData[k]
+                    table.insert(noteSelection, note_data)
+                end
+            end
+            if #noteSelection > 0 then
+                local ret = chopSelectedNotes()
+                --was not possible then deselect
+                if not ret then
+                    noteSelection = {}
+                    refreshPianoRollNeeded = true
+                else
+                    showStatus((#noteSelection / 2) .. " notes chopped.")
+                end
+            end
+        end
+        handled = true
+    end
     if key.name == "b" and key.modifiers == "control" then
         if key.state == "released" then
             if #noteSelection == 0 then
@@ -1662,18 +1740,16 @@ local function handleKeyEvent(key)
                     local note_data = noteData[k]
                     table.insert(noteSelection, note_data)
                 end
-                --duplciate content
-                if #noteSelection > 0 then
+            end
+            if #noteSelection > 0 then
+                local ret = duplicateSelectedNotes()
+                --was not possible then deselect
+                if not ret then
+                    noteSelection = {}
+                    refreshPianoRollNeeded = true
+                else
                     showStatus(#noteSelection .. " notes duplicated.")
-                    local ret = duplicateSelectedNotes()
-                    --was not possible then deselect
-                    if not ret then
-                        noteSelection = {}
-                    end
                 end
-            elseif #noteSelection > 0 then
-                showStatus(#noteSelection .. " notes duplicated.")
-                duplicateSelectedNotes()
             end
         end
         handled = true
