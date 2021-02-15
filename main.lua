@@ -2055,7 +2055,7 @@ local function main_function()
             vb:row {
                 vb:column {
                     vb:space {
-                        height = (gridStepSizeH * 2) - gridSpacing,
+                        height = (gridStepSizeH * 2) - gridSpacing + 2,
                     },
                     vb:row {
                         noteSlider,
