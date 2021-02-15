@@ -62,6 +62,9 @@ local lastTriggerNote
 local triggerTimer
 local triggerTime = 250
 
+--missing block loop observable? use a variable for check there was a change
+local blockloopidx
+
 --main flag for refreshing pianoroll
 local refreshPianoRollNeeded = false
 local refreshControls = false
@@ -1143,6 +1146,35 @@ local function fillTimeline()
         vbw["timeline" .. timestep + 1].visible = false
         timestep = timestep + 1
     end
+    --set blockloop indicator, when enabled
+    local hideblockloop = false
+    if not song.transport.loop_block_enabled then
+        hideblockloop = true
+    else
+        --calculate width and start pos for block loop line indicator
+        local len = math.max(math.floor(song.selected_pattern.number_of_lines / song.transport.loop_block_range_coeff), 1)
+        local pos = song.transport.loop_block_start_pos.line
+        pos = pos - stepOffset
+        if pos < 1 then
+            len = len + (pos - 1)
+            pos = 1
+        end
+        if len + pos - 1 > gridWidth then
+            len = len + (gridWidth - len - pos + 1)
+        end
+        if len < 1 or pos > gridWidth then
+            hideblockloop = true
+        else
+            vbw.blockloop.width = gridStepSizeW * len - (gridSpacing * (len - 1)) - 4
+            vbw.blockloopspc.width = math.max(gridStepSizeW * (pos - 1) - (gridSpacing * (pos - 1)), 1)
+            vbw.blockloop.visible = true
+        end
+    end
+    --hide blockmode loop indicator
+    if hideblockloop and vbw.blockloop.visible then
+        vbw.blockloop.visible = false
+        vbw.blockloopspc.width = 1
+    end
 end
 
 local function ghostTrack(trackIndex)
@@ -1474,6 +1506,15 @@ local function appIdleEvent()
             vbw["s" .. tostring(lastStepOn)].color = colorStepOff
             highlightNotesOnStep(lastStepOn, false)
             lastStepOn = nil
+        end
+
+        --block loop
+        local currentblockloop = tostring(song.transport.loop_block_enabled)
+                .. tostring(song.transport.loop_block_start_pos)
+                .. tostring(song.transport.loop_block_range_coeff)
+        if blockloopidx ~= currentblockloop then
+            blockloopidx = currentblockloop
+            refreshTimeline = true
         end
     end
 end
@@ -2028,10 +2069,25 @@ local function main_function()
                         },
                         playCursor,
                         vb:space {
-                            height = 3,
+                            height = 1,
                         },
                     },
                     vb:column {
+                        vb:row {
+                            vb:space {
+                                id = "blockloopspc",
+                                width = gridStepSizeW * 1 - (gridSpacing * 1),
+                                height = 5,
+                            },
+                            vb:button {
+                                id = "blockloop",
+                                color = colorNoteHighlight,
+                                height = 5,
+                                width = gridStepSizeW * 3 - (gridSpacing * 2),
+                                active = false,
+                                visible = false,
+                            },
+                        },
                         vb:row {
                             spacing = -5,
                             vb:space {
