@@ -1,4 +1,4 @@
-# Simple Pianoroll for Renoise v0.6
+# Simple Pianoroll for Renoise v0.7
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pianorollanim.gif?raw=true" width="300">
 
@@ -45,13 +45,13 @@ Just right click on a track and choose "Edit with Pianoroll ...":<br>
 |---|---|
 |Add notes|Double click on a free spot in the grid<br>Alternative: While hold <kbd>alt</kbd> its just one click|
 |Remove notes|Double click on a note<br>Alternative: While hold <kbd>alt</kbd> its just one click|
-|Select a note|Click on a note.<br>*It also reads out note length and velocity of the selected note and set these values
-for new notes.*|
+|Select a note|Click on a note.<br>*It also reads out note length and velocity of the selected note and set these values for new notes.*|
 |Preview a note|Click on a note.|
 |Select multiple individual notes|While holding <kbd>ctrl</kbd>, click on a note|
 |Deselect individual notes in selection|While holding <kbd>ctrl</kbd>, click on a selected note|
 |Deselect notes|Click on a free spot in the grid|
 |Rectangle select notes|First click on a free spot in the grid to set the first corner, then hold <kbd>shift</kbd> and click another free spot and it will select all notes inside this rectangle
+|Select all notes with a specific note value|Hold <kbd>ctrl</kbd> and click one of the notes in the piano keyboard control
 
 ## Keyboard actions
 
