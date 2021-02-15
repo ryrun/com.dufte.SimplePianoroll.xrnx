@@ -2478,7 +2478,7 @@ end
 
 --add main function to context menu
 tool:add_menu_entry {
-    name = "Pattern Editor:Edit with Pianoroll ...",
+    name = "Pattern Editor:Edit with Simple Pianoroll ...",
     invoke = function()
         main_function()
     end
@@ -2486,7 +2486,7 @@ tool:add_menu_entry {
 
 --add key shortcut
 tool:add_keybinding {
-    name = "Pattern Editor:Tools:Open Simple Pianoroll ...",
+    name = "Pattern Editor:Tools:Edit with Simple Pianoroll ...",
     invoke = function()
         main_function()
     end
