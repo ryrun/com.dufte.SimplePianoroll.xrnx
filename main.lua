@@ -334,7 +334,7 @@ local function removeSelectedNotes(cut)
         setUndoDescription("Delete notes ...")
     end
     --loop through selected notes
-    for key, value in pairs(noteSelection) do
+    for key in pairs(noteSelection) do
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
     end
     noteSelection = {}
@@ -526,7 +526,7 @@ local function moveSelectedNotes(steps)
     --
     setUndoDescription("Move notes ...")
     --go through selection
-    for key, value in pairs(noteSelection) do
+    for key in pairs(noteSelection) do
         --remove note
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
         --search for valid column
@@ -573,7 +573,7 @@ local function transposeSelectedNotes(transpose, keepscale)
     --
     setUndoDescription("Transpose notes ...")
     --go through selection
-    for key, value in pairs(noteSelection) do
+    for key in pairs(noteSelection) do
         local transposeVal = transpose
         --transpose
         local note_column = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column)
@@ -631,7 +631,7 @@ local function pasteNotesFromClipboard()
     --clear current note selection
     noteSelection = {}
     --go through clipboard
-    for key, value in pairs(clipboard) do
+    for key in pairs(clipboard) do
         --search for valid column
         column = returnColumnWhenEnoughSpaceForNote(clipboard[key].line + lineoffset, clipboard[key].len)
         if column then
@@ -686,7 +686,7 @@ local function duplicateSelectedNotes()
     --
     setUndoDescription("Duplicate notes to right ...")
     --go through selection
-    for key, value in pairs(noteSelection) do
+    for key in pairs(noteSelection) do
         --search for valid column
         column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line + offset, noteSelection[key].len)
         if column then
@@ -724,7 +724,7 @@ local function changeSizeSelectedNotes(len)
     --
     setUndoDescription("Change note lengths ...")
     --go through selection
-    for key, value in pairs(noteSelection) do
+    for key in pairs(noteSelection) do
         --remove note
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
         --search for valid column
@@ -762,7 +762,7 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan)
     --disable edit mode to prevent side effects
     song.transport.edit_mode = false
     --go through selection
-    for key, value in pairs(noteSelection) do
+    for key in pairs(noteSelection) do
         local selection = noteSelection[key]
         local note = lineValues[selection.line]:note_column(selection.column)
         local note_end = lineValues[selection.line + selection.len - 1]:note_column(selection.column)
@@ -828,7 +828,7 @@ function keyClick(y, pressed)
         if not keyShift then
             noteSelection = {}
         end
-        for key, value in pairs(noteData) do
+        for key in pairs(noteData) do
             local note_data = noteData[key]
             if note_data.note == note and noteInSelection(note_data) == nil then
                 table.insert(noteSelection, note_data)
@@ -1076,7 +1076,7 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
                     b.text = current_note_string
                 end
                 b.color = colorNote
-                for key, value in pairs(noteSelection) do
+                for key in pairs(noteSelection) do
                     if noteSelection[key].line == line and noteSelection[key].column == column then
                         b.color = colorNoteSelected
                         break
@@ -1102,8 +1102,8 @@ local function fillTimeline()
     local stepsCount = math.min(steps, gridWidth)
     --setup timeline
     local timestep = 0
-    local lastbeat = nil
-    local timeslot = nil
+    local lastbeat
+    local timeslot
     local timeslotsize = 1
     for i = 1, stepsCount do
         local line = i + stepOffset
@@ -1184,7 +1184,7 @@ local function ghostTrack(trackIndex)
     local stepsCount = math.min(steps, gridWidth)
     local lineValues = song.selected_pattern:track(trackIndex).lines
     for c = 1, columns do
-        local rowoffset = nil
+        local rowoffset
 
         if stepOffset > 0 then
             for i = stepOffset + 1, 1, -1 do
@@ -2122,7 +2122,7 @@ local function main_function()
             noteOffset = nOffset
         end
         --show dialog
-        windowObj = app:show_custom_dialog("Simple Pianoroll v" .. manifest:property("Version").value, windowContent, function(dialog, key)
+        windowObj = app:show_custom_dialog("Simple Pianoroll v" .. manifest:property("Version").value, windowContent, function(_, key)
             local handled = false
             --always disable edit mode because of side effects
             song.transport.edit_mode = false
@@ -2184,8 +2184,8 @@ local function main_function()
                 if key.state == "released" then
                     if #noteSelection == 0 then
                         --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
-                        for key, value in pairs(noteData) do
-                            local note_data = noteData[key]
+                        for k in pairs(noteData) do
+                            local note_data = noteData[k]
                             table.insert(noteSelection, note_data)
                         end
                         --duplciate content
@@ -2208,8 +2208,8 @@ local function main_function()
                 if key.state == "released" then
                     if #noteSelection > 0 then
                         clipboard = {}
-                        for key, value in pairs(noteSelection) do
-                            local note_data = noteSelection[key]
+                        for k in pairs(noteSelection) do
+                            local note_data = noteSelection[k]
                             table.insert(clipboard, note_data)
                         end
                         --set paste cursor
@@ -2230,8 +2230,8 @@ local function main_function()
                 if key.state == "released" then
                     if #noteSelection > 0 then
                         clipboard = {}
-                        for key, value in pairs(noteSelection) do
-                            local note_data = noteSelection[key]
+                        for k in pairs(noteSelection) do
+                            local note_data = noteSelection[k]
                             table.insert(clipboard, note_data)
                         end
                         --set paste cursor
@@ -2265,8 +2265,8 @@ local function main_function()
                     --clear current selection
                     noteSelection = {}
                     --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
-                    for key, value in pairs(noteData) do
-                        local note_data = noteData[key]
+                    for k in pairs(noteData) do
+                        local note_data = noteData[k]
                         table.insert(noteSelection, note_data)
                     end
                     showStatus(#noteSelection .. " notes selected.")
