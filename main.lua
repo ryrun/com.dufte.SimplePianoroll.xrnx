@@ -469,8 +469,9 @@ end
 --simple note trigger
 local function triggerNoteOfCurrentInstrument(note_value, pressed)
     --when no instrument is set, use the current selected one
+    local instrument = currentInstrument
     if not currentInstrument then
-        currentInstrument = song.selected_instrument_index
+        instrument = song.selected_instrument_index
     end
     --init server connection, when not ready
     local socket_error
@@ -481,12 +482,12 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed)
         end
     end
     if pressed == true then
-        oscClient:send(renoise.Osc.Message("/renoise/trigger/note_on", { { tag = "i", value = currentInstrument },
+        oscClient:send(renoise.Osc.Message("/renoise/trigger/note_on", { { tag = "i", value = instrument },
                                                                          { tag = "i", value = song.selected_track_index },
                                                                          { tag = "i", value = note_value },
                                                                          { tag = "i", value = currentNoteVelocity } }))
     elseif pressed == false then
-        oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", { { tag = "i", value = currentInstrument },
+        oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", { { tag = "i", value = instrument },
                                                                           { tag = "i", value = song.selected_track_index },
                                                                           { tag = "i", value = note_value } }))
     else
@@ -498,7 +499,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed)
             lastTriggerNote = nil
         end
         --build note event
-        lastTriggerNote = { { tag = "i", value = currentInstrument },
+        lastTriggerNote = { { tag = "i", value = instrument },
                             { tag = "i", value = song.selected_track_index },
                             { tag = "i", value = note_value },
                             { tag = "i", value = currentNoteVelocityPreview } }
