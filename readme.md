@@ -4,9 +4,9 @@
 
 ## Video on Youtube
 
-Showing the tool v0.1 in action:
+Showing version 0.7 in action:
 
-[<img src="https://img.youtube.com/vi/5qJCNvbco7M/0.jpg" width="300">](https://www.youtube.com/watch?v=5qJCNvbco7M)
+[<img src="https://img.youtube.com/vi/zUIjN6Wwrgs/0.jpg" width="300">](https://www.youtube.com/watch?v=zUIjN6Wwrgs)
 
 ## Thread on official Renoise forum
 
