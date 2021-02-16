@@ -1958,6 +1958,8 @@ local function main_function()
         lastSelectionClick = nil
         noteOffset = 28 -- default offset
         currentGhostTrack = nil
+        lowesetNote = nil
+        highestNote = nil
 
         local vb_temp
         local playCursor = vb:row {
