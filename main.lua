@@ -2446,7 +2446,7 @@ local function main_function()
                         },
                         vb:button {
                             text = "♬",
-                            tooltip = "Enable / Disable note preview",
+                            tooltip = "Enable / disable note preview",
                             id = "notepreview",
                             notifier = function()
                                 notePreview = not notePreview
