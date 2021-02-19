@@ -1307,6 +1307,7 @@ local function fillTimeline()
     end
 end
 
+--render ghost track by simply change the color of piano grid buttons
 local function ghostTrack(trackIndex)
     local track = song:track(trackIndex)
     local columns = track.visible_note_columns
@@ -1523,7 +1524,7 @@ local function fillPianoRoll()
         vbw["b" .. tostring(4) .. "_" .. tostring(4)].visible = false
     end
 
-    --hide unused note columns - never hide, because it the track could be larger on a different pattern where more columns are needed
+    --hide unused note columns - never hide, because it could hide notes in other patterns where more columns was needed
     --[[
     if lastColumnWithNotes ~= nil and lastColumnWithNotes < columns then
         track.visible_note_columns = lastColumnWithNotes
@@ -1589,7 +1590,7 @@ end
 
 --app idle
 local function appIdleEvent()
-    --only proces when window is created and visible
+    --only process when window is created and visible
     if windowObj and windowObj.visible then
 
         --refresh pianoroll, when needed
@@ -1635,7 +1636,7 @@ local function appIdleEvent()
             lastStepOn = nil
         end
 
-        --block loop
+        --block loop, create an index for comparison, because obserable's are missing here
         local currentblockloop = tostring(song.transport.loop_block_enabled)
                 .. tostring(song.transport.loop_block_start_pos)
                 .. tostring(song.transport.loop_block_range_coeff)
