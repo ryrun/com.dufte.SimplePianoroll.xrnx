@@ -10,7 +10,7 @@ Showing version 0.7 in action:
 
 ## Thread on official Renoise forum
 
-https://forum.renoise.com/t/another-piano-roll-com-dufte-simplepianoroll-xrnx/63034
+https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 
 ## Features
 
@@ -36,7 +36,7 @@ Renoise:<br>https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/
 
 ## How to edit a track
 
-Just right click on a track and choose "Edit with Pianoroll ...":<br>
+Just right click on a track and choose "Edit with Simple Pianoroll ...":<br>
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/openit.gif?raw=true" width="300">
 
 ## Mouse actions
@@ -70,8 +70,14 @@ Info: Non handled keyboard events will be sent back to the host. So renoise defa
 |<kbd>ctrl + a</kbd>|Nothing selected|Select all visible notes|
 |<kbd>ctrl + b</kbd>|Nothing selected|Select all visible notes and duplicate it to the right|
 |<kbd>ctrl + u</kbd>|Nothing selected|Select all visible notes and quick chop it|
+|<kbd>ctrl + 1 .. 9</kbd>|Nothing selected|Set current note length|
+|<kbd>ctrl + 0</kbd>|Nothing selected|Double current note length|
+|<kbd>ctrl + shift + 0</kbd>|Nothing selected|Halve current note length|
 |<kbd>ctrl + b</kbd>|One or more notes selected|Duplicate selected notes to the right|
 |<kbd>ctrl + u</kbd>|One or more notes selected|Quick chop all selected notes|
+|<kbd>ctrl + 1 .. 9</kbd>|One or more notes selected|Set current note length and for very selected note|
+|<kbd>ctrl + 0</kbd>|One or more notes selected|Double current note length and for very selected note|
+|<kbd>ctrl + shift + 0</kbd>|One or more notes selected|Halve current note length and for very selected note|
 |<kbd>ctrl + c</kbd>|One or more notes selected|Copy selected notes to internal clipboard|
 |<kbd>ctrl + x</kbd>|One or more notes selected|Cut selected notes to internal clipboard|
 |<kbd>ctrl + v</kbd>|One or more notes selected|Paste notes to the last click grid position|
