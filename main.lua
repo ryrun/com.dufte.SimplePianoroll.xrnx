@@ -1784,6 +1784,39 @@ local function handleKeyEvent(key)
         end
         handled = true
     end
+    if key.modifiers == "control" and (
+            key.name == "1" or
+                    key.name == "2" or
+                    key.name == "3" or
+                    key.name == "4" or
+                    key.name == "5" or
+                    key.name == "6" or
+                    key.name == "7" or
+                    key.name == "8" or
+                    key.name == "9"
+    ) then
+        if key.state == "released" then
+            vbw.note_len.value = tonumber(key.name)
+        end
+        handled = true
+    end
+    if key.name == "0" then
+        if key.state == "released" then
+            if key.modifiers == "control" then
+                if #noteSelection > 0 then
+                    scaleNoteSelection(2)
+                end
+                currentNoteLength = math.min(math.floor(currentNoteLength * 2), 256)
+            elseif key.modifiers == "shift + control" then
+                if #noteSelection > 0 then
+                    scaleNoteSelection(0.5)
+                end
+                currentNoteLength = math.max(math.floor(currentNoteLength / 2), 1)
+            end
+            refreshControls = true
+        end
+        handled = true
+    end
     if key.name == "u" and key.modifiers == "control" then
         if key.state == "released" then
             if #noteSelection == 0 then
@@ -2129,7 +2162,7 @@ local function main_function()
                             if #noteSelection > 0 then
                                 scaleNoteSelection(2)
                             end
-                            currentNoteLength = math.floor(currentNoteLength * 2)
+                            currentNoteLength = math.min(math.floor(currentNoteLength * 2), 256)
                             refreshControls = true
                         end,
                     },
