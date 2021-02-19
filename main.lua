@@ -2157,6 +2157,18 @@ local function main_function()
                             currentNoteLength = number
                             refreshControls = true
                         end,
+                        tonumber = function(string)
+                            local lpb = song.transport.lpb
+                            if string == "bar" then
+                                return lpb * 4
+                            elseif string == "beat" then
+                                return lpb
+                            end
+                            return tonumber(string)
+                        end,
+                        tostring = function(number)
+                            return tostring(number)
+                        end
                     },
                     vb:button {
                         text = "Dbl",
