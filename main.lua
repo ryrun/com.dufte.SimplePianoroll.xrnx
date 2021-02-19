@@ -1732,6 +1732,11 @@ end
 --function for all keyboard shortcuts
 local function handleKeyEvent(key)
     local handled = false
+
+    --focus pattern editor - https://forum.renoise.com/t/set-focus-from-lua-code/42281/3
+    app.window.lock_keyboard_focus = false
+    app.window.lock_keyboard_focus = true
+
     if key.name == "lcontrol" and key.state == "pressed" then
         keyControl = true
         handled = true
