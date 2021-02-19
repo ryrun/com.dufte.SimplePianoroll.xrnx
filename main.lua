@@ -40,8 +40,8 @@ local stepOffset = 0
 local pianoKeyWidth = gridStepSizeW * 3
 
 --colors
-local colorWhiteKey = { 52, 68, 78 }
-local colorBlackKey = { 35, 47, 57 }
+local colorWhiteKey = { { 44, 59, 68 }, { 52, 68, 78 } }
+local colorBlackKey = { { 30, 42, 52 }, { 35, 47, 57 } }
 local colorGhostNote = { 80, 97, 107 }
 local colorNote = { 170, 217, 179 }
 local colorNoteHighlight = { 232, 204, 110 }
@@ -154,6 +154,11 @@ local function randomizeValue(input, scale, min, max)
         input = min
     end
     return input
+end
+
+local function calculateBar(line)
+    local lpb = song.transport.lpb
+    return math.ceil((line - (lpb * 4)) / (lpb * 4)) + 1
 end
 
 --jump to the note position in pattern
@@ -1221,8 +1226,8 @@ end
 
 --refresh timeline
 local function fillTimeline()
-    local steps = song.selected_pattern.number_of_lines
     local lpb = song.transport.lpb
+    local steps = song.selected_pattern.number_of_lines
     local stepsCount = math.min(steps, gridWidth)
     --setup timeline
     local timestep = 0
@@ -1232,7 +1237,7 @@ local function fillTimeline()
     for i = 1, stepsCount do
         local line = i + stepOffset
         local beat = math.ceil((line - lpb) / lpb) % 4 + 1
-        local bar = math.ceil((line - (lpb * 4)) / (lpb * 4)) + 1
+        local bar = calculateBar(line)
 
         if lastbeat ~= beat then
             timestep = timestep + 1
@@ -1350,7 +1355,6 @@ local function fillPianoRoll()
     local lineValues = song.selected_pattern_track.lines
     local columns = track.visible_note_columns
     local stepsCount = math.min(steps, gridWidth)
-    local blackKeyIndex = {}
     local noffset = noteOffset - 1
     local blackKey
     local lastColumnWithNotes
@@ -1420,42 +1424,40 @@ local function fillPianoRoll()
 
             --only reset buttons on first column
             if c == 1 then
+                local bar = calculateBar(s + stepOffset)
+
                 for y = 1, gridHeight do
                     local ystring = tostring(y)
                     local index = stepString .. "_" .. ystring
                     local p = vbw["p" .. index]
-                    if blackKeyIndex[y] == nil then
-                        blackKey = not noteInScale((y + noffset) % 12)
-                        --color black notes
-                        if blackKey then
-                            blackKeyIndex[y] = colorBlackKey
-                        else
-                            blackKeyIndex[y] = colorWhiteKey
-                        end
-                    end
-                    if s == 1 then
-                        local key = vbw["k" .. ystring]
-                        if blackKeyIndex[y][1] == colorBlackKey[1] then
-                            key.color = colorKeyBlack
-                            key.text = ""
-                        else
-                            key.color = colorKeyWhite
-                            if (y + noffset) % 12 == 0 then
-                                key.text = "         C" .. tostring(math.floor((y + noffset) / 12))
-                            else
-                                key.text = ""
-                            end
-                        end
+                    local color = colorWhiteKey[bar % 2 + 1]
+                    blackKey = not noteInScale((y + noffset) % 12)
+                    --color black notes
+                    if blackKey then
+                        color = colorBlackKey[bar % 2 + 1]
                     end
                     vbw["b" .. index].visible = false
                     if s <= stepsCount then
-                        if p.color[1] ~= blackKeyIndex[y][1] then
-                            p.color = blackKeyIndex[y]
-                        end
+                        p.color = color
                         p.visible = true
                         --refresh step indicator
                         if y == 1 then
                             vbw["s" .. stepString].visible = true
+                        end
+                        --refresh keyboad
+                        if s == 1 then
+                            local key = vbw["k" .. ystring]
+                            if blackKey then
+                                key.color = colorKeyBlack
+                                key.text = ""
+                            else
+                                key.color = colorKeyWhite
+                                if (y + noffset) % 12 == 0 then
+                                    key.text = "         C" .. tostring(math.floor((y + noffset) / 12))
+                                else
+                                    key.text = ""
+                                end
+                            end
                         end
                     else
                         p.visible = false
@@ -1666,6 +1668,7 @@ local function appNewDoc()
     song = renoise.song()
     --set new observers
     song.transport.lpb_observable:add_notifier(function()
+        refreshPianoRollNeeded = true
         refreshTimeline = true
     end)
     song.selected_pattern_track_observable:add_notifier(obsPianoRefresh)
@@ -2038,7 +2041,7 @@ local function main_function()
                     id = "p" .. tostring(x) .. "_" .. tostring(y),
                     height = gridStepSizeH,
                     width = gridStepSizeW,
-                    color = colorWhiteKey,
+                    color = colorWhiteKey[1],
                     visible = false,
                     notifier = loadstring(temp),
                 }
