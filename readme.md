@@ -1,4 +1,4 @@
-# Simple Pianoroll for Renoise v0.7
+# Simple Pianoroll Tool for Renoise
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pianorollanim.gif?raw=true" width="300">
 
@@ -29,7 +29,7 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 
 ## Install
 
-Download latest verison from official tool page:<br>https://www.renoise.com/tools/simple-pianoroll
+Download latest version from official tool page:<br>https://www.renoise.com/tools/simple-pianoroll
 
 Alternative download the latest build here and drop it onto
 Renoise:<br>https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/out/com.duftetools.SimplePianoroll.xrnx
