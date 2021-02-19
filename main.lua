@@ -1873,6 +1873,7 @@ local function handleKeyEvent(key)
             end
             if #noteSelection > 0 then
                 changePropertiesOfSelectedNotes("mute", nil, nil, nil)
+                showStatus(#noteSelection .. " notes was muted.")
                 --when all was automatically selected, deselect it
                 if selectall then
                     noteSelection = {}
@@ -1893,6 +1894,7 @@ local function handleKeyEvent(key)
             end
             if #noteSelection > 0 then
                 changePropertiesOfSelectedNotes("unmute", nil, nil, nil)
+                showStatus(#noteSelection .. " notes was unmuted.")
                 --when all was automatically selected, deselect it
                 if selectall then
                     noteSelection = {}
