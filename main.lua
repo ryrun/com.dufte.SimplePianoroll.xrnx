@@ -45,6 +45,7 @@ local colorBlackKey = { { 30, 42, 52 }, { 35, 47, 57 } }
 local colorGhostNote = { 80, 97, 107 }
 local colorNote = { 170, 217, 179 }
 local colorNoteHighlight = { 232, 204, 110 }
+local colorNoteMuted = { 171, 187, 198 }
 local colorNoteSelected = { 244, 150, 149 }
 local colorStepOff = { 30, 6, 0 }
 local colorStepOn = { 180, 80, 40 }
@@ -884,7 +885,13 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan)
     --randomize seed for humanizing
     math.randomseed(os.time())
     --describe for undo
-    setUndoDescription("Change note properties ...")
+    if tostring(vel) == "mute" then
+        setUndoDescription("Mute selected notes ...")
+    elseif tostring(vel) == "unmute" then
+        setUndoDescription("Unmute selected notes ...")
+    else
+        setUndoDescription("Change note properties ...")
+    end
     --disable edit mode to prevent side effects
     song.transport.edit_mode = false
     --go through selection
@@ -897,6 +904,10 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan)
                 if note.volume_value <= 127 then
                     note.volume_value = randomizeValue(note.volume_value, 2, 1, 127)
                 end
+            elseif tostring(vel) == "mute" then
+                note.volume_value = 0
+            elseif tostring(vel) == "unmute" then
+                note.volume_value = 255
             else
                 note.volume_string = toHex(vel)
             end
@@ -1172,16 +1183,19 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
         end
         --fill noteOnStep not just note start, also the full length
         for i = 0, current_note_len - 1 do
-            if noteOnStep[noteOnStepIndex + i] == nil then
-                noteOnStep[noteOnStepIndex + i] = {}
+            --only when velocity is not 0 (muted)
+            if current_note_vel > 0 then
+                if noteOnStep[noteOnStepIndex + i] == nil then
+                    noteOnStep[noteOnStepIndex + i] = {}
+                end
+                table.insert(noteOnStep[noteOnStepIndex + i], {
+                    index = current_note_index,
+                    step = current_note_step,
+                    row = current_note_rowIndex,
+                    note = current_note,
+                    len = current_note_len - i
+                })
             end
-            table.insert(noteOnStep[noteOnStepIndex + i], {
-                index = current_note_index,
-                step = current_note_step,
-                row = current_note_rowIndex,
-                note = current_note,
-                len = current_note_len - i
-            })
             if usedNotes[current_note] == nil then
                 usedNotes[current_note] = {}
             end
@@ -1205,7 +1219,11 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
                 else
                     b.text = current_note_string
                 end
-                b.color = colorNote
+                if current_note_vel == 0 then
+                    b.color = colorNoteMuted
+                else
+                    b.color = colorNote
+                end
                 for key in pairs(noteSelection) do
                     if noteSelection[key].line == line and noteSelection[key].column == column then
                         b.color = colorNoteSelected
@@ -1838,6 +1856,46 @@ local function handleKeyEvent(key)
                     refreshPianoRollNeeded = true
                 else
                     showStatus((#noteSelection / 2) .. " notes chopped.")
+                end
+            end
+        end
+        handled = true
+    end
+    if key.name == "m" and key.modifiers == "alt" then
+        if key.state == "released" then
+            local selectall = false
+            if #noteSelection == 0 then
+                for k in pairs(noteData) do
+                    local note_data = noteData[k]
+                    table.insert(noteSelection, note_data)
+                end
+                selectall = true
+            end
+            if #noteSelection > 0 then
+                changePropertiesOfSelectedNotes("mute", nil, nil, nil)
+                --when all was automatically selected, deselect it
+                if selectall then
+                    noteSelection = {}
+                end
+            end
+        end
+        handled = true
+    end
+    if key.name == "m" and key.modifiers == "shift + alt" then
+        if key.state == "released" then
+            local selectall = false
+            if #noteSelection == 0 then
+                for k in pairs(noteData) do
+                    local note_data = noteData[k]
+                    table.insert(noteSelection, note_data)
+                end
+                selectall = true
+            end
+            if #noteSelection > 0 then
+                changePropertiesOfSelectedNotes("unmute", nil, nil, nil)
+                --when all was automatically selected, deselect it
+                if selectall then
+                    noteSelection = {}
                 end
             end
         end
