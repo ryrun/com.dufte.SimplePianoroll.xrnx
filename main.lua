@@ -156,6 +156,7 @@ local function randomizeValue(input, scale, min, max)
     return input
 end
 
+--for the line index calculate the correct bar index
 local function calculateBar(line)
     local lpb = song.transport.lpb
     return math.ceil((line - (lpb * 4)) / (lpb * 4)) + 1
@@ -336,7 +337,7 @@ end
 
 --remove selected notes
 local function removeSelectedNotes(cut)
-    --
+    --different undo description for cut
     if cut then
         setUndoDescription("Cut notes ...")
     else
@@ -490,7 +491,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed)
         oscClient:send(renoise.Osc.Message("/renoise/trigger/note_on", { { tag = "i", value = instrument },
                                                                          { tag = "i", value = song.selected_track_index },
                                                                          { tag = "i", value = note_value },
-                                                                         { tag = "i", value = currentNoteVelocity } }))
+                                                                         { tag = "i", value = currentNoteVelocityPreview } }))
     elseif pressed == false then
         oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", { { tag = "i", value = instrument },
                                                                           { tag = "i", value = song.selected_track_index },
