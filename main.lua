@@ -111,6 +111,9 @@ local keyAlt = false
 local penMode = false
 local notePreview = true
 
+--table to save last playingh note for querty playing
+local lastKeyboardNote = {}
+
 --show some text in Renoise status bar
 local function showStatus(status)
     app:show_status("Simple Pianoroll: " .. status)
@@ -158,8 +161,13 @@ local function randomizeValue(input, scale, min, max)
 end
 
 --for the line index calculate the correct bar index
-local function calculateBar(line)
-    local lpb = song.transport.lpb
+local function calculateBarBeat(line, returnbeat, lpb)
+    if not lpb then
+        lpb = song.transport.lpb
+    end
+    if returnbeat == true then
+        return math.ceil((line - lpb) / lpb) % 4 + 1
+    end
     return math.ceil((line - (lpb * 4)) / (lpb * 4)) + 1
 end
 
@@ -1256,7 +1264,7 @@ local function fillTimeline()
     for i = 1, stepsCount do
         local line = i + stepOffset
         local beat = math.ceil((line - lpb) / lpb) % 4 + 1
-        local bar = calculateBar(line)
+        local bar = calculateBarBeat(line, false, lpb)
 
         if lastbeat ~= beat then
             timestep = timestep + 1
@@ -1444,7 +1452,7 @@ local function fillPianoRoll()
 
             --only reset buttons on first column
             if c == 1 then
-                local bar = calculateBar(s + stepOffset)
+                local bar = calculateBarBeat(s + stepOffset)
 
                 for y = 1, gridHeight do
                     local ystring = tostring(y)
@@ -2033,6 +2041,30 @@ local function handleKeyEvent(key)
                 moveSelectedNotes(steps)
             elseif stepSlider.value + steps <= stepSlider.max and stepSlider.value + steps >= stepSlider.min then
                 stepSlider.value = stepSlider.value + steps
+            end
+        end
+        handled = true
+    end
+    --loving tracker computer keyboard noite plaing <3 (returning it back to host is buggy, so do your own)
+    if not handled and key.modifiers == "" and key.note then
+        local note = key.note + (12 * song.transport.octave)
+        local row
+        if key.state == "released" then
+            row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
+            triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], false)
+            if row ~= nil then
+                if noteInScale(lastKeyboardNote[key.name]) then
+                    vbw["k" .. row ].color = colorKeyWhite
+                else
+                    vbw["k" .. row ].color = colorKeyBlack
+                end
+            end
+        else
+            lastKeyboardNote[key.name] = note
+            row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
+            triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], true)
+            if row ~= nil then
+                vbw["k" .. row ].color = colorStepOn
             end
         end
         handled = true
