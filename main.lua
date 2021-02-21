@@ -111,7 +111,7 @@ local keyAlt = false
 local penMode = false
 local notePreview = true
 
---table to save last playingh note for querty playing
+--table to save last playingh note for qwerty playing
 local lastKeyboardNote = {}
 
 --show some text in Renoise status bar
