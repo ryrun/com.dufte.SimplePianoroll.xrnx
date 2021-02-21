@@ -14,11 +14,12 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 
 ## Features
 
-* Piano roll workflow, inspired by FL piano roll
-* Native HDPI support
+* Piano roll workflow (inspired by FL piano roll)
+* It supports Renoise's native HDPI support
 * Polyphony support (automatically adds note column, if needed)
 * Note preview via Renoise inbuild OSC Server (UDP, Port 8000 currently hardcoded)
 * Ghost Track
+* Many useful keyboard shortcuts (inspired by FL and Reason)
 * and more...
 
 ## Important
