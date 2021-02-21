@@ -2047,9 +2047,8 @@ local function handleKeyEvent(key)
     end
     --loving tracker computer keyboard noite plaing <3 (returning it back to host is buggy, so do your own)
     if not handled and key.modifiers == "" and key.note then
-        local note = key.note + (12 * song.transport.octave)
         local row
-        if key.state == "released" then
+        if key.state == "released" and lastKeyboardNote[key.name] ~= nil then
             row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
             triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], false)
             if row ~= nil then
@@ -2060,6 +2059,7 @@ local function handleKeyEvent(key)
                 end
             end
         else
+            local note = key.note + (12 * song.transport.octave)
             lastKeyboardNote[key.name] = note
             row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
             triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], true)
