@@ -73,6 +73,8 @@ Info: Non handled keyboard events will be sent back to the host. So renoise defa
 |<kbd>ctrl + 1 .. 9</kbd>|Nothing selected|Set current note length|
 |<kbd>ctrl + 0</kbd>|Nothing selected|Double current note length|
 |<kbd>ctrl + shift + 0</kbd>|Nothing selected|Halve current note length|
+|<kbd>alt + m</kbd>|Nothing selected|Mute all visible notes (set volume to 0)|
+|<kbd>alt + shift + m</kbd>|Nothing selected|Unmute all visible notes (remove volume value)|
 |<kbd>ctrl + b</kbd>|One or more notes selected|Duplicate selected notes to the right|
 |<kbd>ctrl + u</kbd>|One or more notes selected|Quick chop all selected notes|
 |<kbd>ctrl + 1 .. 9</kbd>|One or more notes selected|Set current note length and for very selected note|
@@ -81,6 +83,8 @@ Info: Non handled keyboard events will be sent back to the host. So renoise defa
 |<kbd>ctrl + c</kbd>|One or more notes selected|Copy selected notes to internal clipboard|
 |<kbd>ctrl + x</kbd>|One or more notes selected|Cut selected notes to internal clipboard|
 |<kbd>ctrl + v</kbd>|One or more notes selected|Paste notes to the last click grid position|
+|<kbd>alt + m</kbd>|One or more notes selected|Mute selected notes (set volume to 0)|
+|<kbd>alt + shift + m</kbd>|One or more notes selected|Unmute selected notes (remove volume value)|
 |<kbd>up</kbd>|One or more notes selected|Transpose note 1 semitone up|
 |<kbd>down</kbd>|One or more notes selected|Transpose note 1 semitone down|
 |<kbd>alt + up</kbd>|One or more notes selected|Transpose note 7 semitone up|
