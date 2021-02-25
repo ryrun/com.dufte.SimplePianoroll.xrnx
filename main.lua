@@ -990,7 +990,6 @@ function noteClick(x, y)
     local note_data = noteData[index]
     --always set note date for the next new note
     if note_data ~= nil then
-        jumpToNoteInPattern(note_data)
         currentNoteLength = note_data.len
         currentNoteVelocity = note_data.vel
         if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
@@ -1002,6 +1001,8 @@ function noteClick(x, y)
         currentNotePan = note_data.pan
         currentNoteDelay = note_data.dly
         refreshControls = true
+        --always jump to the note
+        jumpToNoteInPattern(note_data)
     end
     --remove on dblclk or when in penmode
     if dbclk or keyAlt or penMode then
@@ -1010,7 +1011,6 @@ function noteClick(x, y)
             noteSelection = {}
             table.insert(noteSelection, note_data)
             removeSelectedNotes()
-            jumpToNoteInPattern(note_data)
         end
     else
         if note_data ~= nil then
