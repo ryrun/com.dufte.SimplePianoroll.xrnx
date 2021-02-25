@@ -84,6 +84,7 @@ Info: Non handled keyboard events will be sent back to the host. So renoise defa
 |<kbd>ctrl + c</kbd>|One or more notes selected|Copy selected notes to internal clipboard|
 |<kbd>ctrl + x</kbd>|One or more notes selected|Cut selected notes to internal clipboard|
 |<kbd>ctrl + v</kbd>|One or more notes selected|Paste notes to the last click grid position|
+|<kbd>alt + n</kbd>|One or more notes selected|Match note value to the first selected one|
 |<kbd>alt + m</kbd>|One or more notes selected|Mute selected notes (set volume to 0)|
 |<kbd>alt + shift + m</kbd>|One or more notes selected|Unmute selected notes (remove volume value)|
 |<kbd>up</kbd>|One or more notes selected|Transpose note 1 semitone up|

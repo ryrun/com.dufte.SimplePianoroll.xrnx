@@ -888,7 +888,7 @@ local function changeSizeSelectedNotes(len)
 end
 
 --change note properties
-local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan)
+local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
     local lineValues = song.selected_pattern_track.lines
     --randomize seed for humanizing
     math.randomseed(os.time())
@@ -897,6 +897,8 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan)
         setUndoDescription("Mute selected notes ...")
     elseif tostring(vel) == "unmute" then
         setUndoDescription("Unmute selected notes ...")
+    elseif tostring(special) == "matchingnotes" then
+        setUndoDescription("Matching selected notes ...")
     else
         setUndoDescription("Change note properties ...")
     end
@@ -944,6 +946,10 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan)
             else
                 note.delay_string = toHex(dly)
             end
+        end
+        if special == "matchingnotes" then
+            note.note_value = noteSelection[1].note
+            noteSelection[key].note = note.note_value
         end
     end
     refreshPianoRollNeeded = true
@@ -1893,6 +1899,15 @@ local function handleKeyEvent(key)
                 if selectall then
                     noteSelection = {}
                 end
+            end
+        end
+        handled = true
+    end
+    if key.name == "n" and key.modifiers == "alt" then
+        if key.state == "released" then
+            if #noteSelection > 0 then
+                changePropertiesOfSelectedNotes(nil, nil, nil, nil, "matchingnotes")
+                showStatus(#noteSelection .. " notes was matched.")
             end
         end
         handled = true
