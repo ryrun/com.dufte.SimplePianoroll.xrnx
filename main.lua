@@ -987,9 +987,24 @@ end
 function noteClick(x, y)
     local index = tostring(x) .. "_" .. tostring(y)
     local dbclk = dbclkDetector("b" .. index)
+    local note_data = noteData[index]
+    --always set note date for the next new note
+    if note_data ~= nil then
+        jumpToNoteInPattern(note_data)
+        currentNoteLength = note_data.len
+        currentNoteVelocity = note_data.vel
+        if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
+            currentNoteVelocityPreview = currentNoteVelocity
+        else
+            currentNoteVelocityPreview = 127
+        end
+        currentNoteEndVelocity = note_data.end_vel
+        currentNotePan = note_data.pan
+        currentNoteDelay = note_data.dly
+        refreshControls = true
+    end
+    --remove on dblclk or when in penmode
     if dbclk or keyAlt or penMode then
-        --note remove
-        local note_data = noteData[index]
         --set clicked note as selected for remove function
         if note_data ~= nil then
             noteSelection = {}
@@ -998,7 +1013,6 @@ function noteClick(x, y)
             jumpToNoteInPattern(note_data)
         end
     else
-        local note_data = noteData[index]
         if note_data ~= nil then
             local deselect = false
             --clear selection, when ctrl is not holded
@@ -1018,18 +1032,6 @@ function noteClick(x, y)
             if not deselect then
                 table.insert(noteSelection, note_data)
             end
-            jumpToNoteInPattern(note_data)
-            currentNoteLength = note_data.len
-            currentNoteVelocity = note_data.vel
-            if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
-                currentNoteVelocityPreview = currentNoteVelocity
-            else
-                currentNoteVelocityPreview = 127
-            end
-            currentNoteEndVelocity = note_data.end_vel
-            currentNotePan = note_data.pan
-            currentNoteDelay = note_data.dly
-            refreshControls = true
             if notePreview then
                 triggerNoteOfCurrentInstrument(note_data.note)
             end
@@ -2053,9 +2055,9 @@ local function handleKeyEvent(key)
             triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], false)
             if row ~= nil then
                 if noteInScale(lastKeyboardNote[key.name]) then
-                    vbw["k" .. row ].color = colorKeyWhite
+                    vbw["k" .. row].color = colorKeyWhite
                 else
-                    vbw["k" .. row ].color = colorKeyBlack
+                    vbw["k" .. row].color = colorKeyBlack
                 end
             end
         else
@@ -2064,7 +2066,7 @@ local function handleKeyEvent(key)
             row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
             triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], true)
             if row ~= nil then
-                vbw["k" .. row ].color = colorStepOn
+                vbw["k" .. row].color = colorStepOn
             end
         end
         handled = true
