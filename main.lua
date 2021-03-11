@@ -290,6 +290,20 @@ local function returnColumnWhenEnoughSpaceForNote(line, len)
     return column
 end
 
+--adds note offs to all note columns where no note is at line 1, for looping porpuse
+local function addMissingNoteOffForColumns()
+    local track = song.selected_track
+    local columns = track.visible_note_columns
+    local lineValues = song.selected_pattern_track.lines
+
+    for c = 1, columns do
+        local note_column = lineValues[1]:note_column(c)
+        if note_column.note_value == 121 then
+            note_column.note_value = 120
+        end
+    end
+end
+
 --remove note
 local function removeNoteInPattern(column, line, len)
     local lineValues = song.selected_pattern_track.lines
@@ -357,6 +371,7 @@ local function removeSelectedNotes(cut)
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
     end
     noteSelection = {}
+    addMissingNoteOffForColumns()
     refreshPianoRollNeeded = true
 end
 
@@ -688,6 +703,7 @@ local function pasteNotesFromClipboard()
     end)
     pasteCursor = { noteSelection[1].line + noteSelection[1].len, pasteCursor[2] }
     --
+    addMissingNoteOffForColumns()
     refreshPianoRollNeeded = true
     return true
 end
@@ -737,6 +753,7 @@ local function scaleNoteSelection(times)
             return false
         end
     end
+    addMissingNoteOffForColumns()
     refreshPianoRollNeeded = true
     return true
 end
@@ -799,6 +816,7 @@ local function chopSelectedNotes()
         end
     end
     noteSelection = newSelection
+    addMissingNoteOffForColumns()
     refreshPianoRollNeeded = true
     return true
 end
@@ -844,6 +862,7 @@ local function duplicateSelectedNotes()
                 noteSelection[key].dly
         )
     end
+    addMissingNoteOffForColumns()
     refreshPianoRollNeeded = true
     return true
 end
@@ -883,6 +902,7 @@ local function changeSizeSelectedNotes(len)
             break
         end
     end
+    addMissingNoteOffForColumns()
     refreshPianoRollNeeded = true
     return true
 end
@@ -952,6 +972,7 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
             noteSelection[key].note = note.note_value
         end
     end
+    addMissingNoteOffForColumns()
     refreshPianoRollNeeded = true
     return true
 end
@@ -985,6 +1006,7 @@ function keyClick(y, pressed)
                 table.insert(noteSelection, note_data)
             end
         end
+        addMissingNoteOffForColumns()
         refreshPianoRollNeeded = true
     end
 end
@@ -1098,6 +1120,7 @@ function pianoGridClick(x, y)
         table.insert(noteSelection, note_data)
         jumpToNoteInPattern(note_data)
         --
+        addMissingNoteOffForColumns()
         refreshPianoRollNeeded = true
     else
         --when a last click was saved and shift is pressing, than try to select notes
@@ -1129,6 +1152,7 @@ function pianoGridClick(x, y)
             end
             --piano refresh
             lastSelectionClick = { x, y }
+            addMissingNoteOffForColumns()
             refreshPianoRollNeeded = true
         else
             lastSelectionClick = { x, y }
