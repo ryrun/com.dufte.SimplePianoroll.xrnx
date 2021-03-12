@@ -2087,7 +2087,7 @@ local function handleKeyEvent(key)
         handled = true
     end
     --loving tracker computer keyboard noite plaing <3 (returning it back to host is buggy, so do your own)
-    if not handled and key.modifiers == "" and key.note then
+    if key.note then
         local row
         if key.state == "released" and lastKeyboardNote[key.name] ~= nil then
             row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
@@ -2099,7 +2099,7 @@ local function handleKeyEvent(key)
                     vbw["k" .. row].color = colorKeyBlack
                 end
             end
-        else
+        elseif not handled  and key.modifiers == "" then
             local note = key.note + (12 * song.transport.octave)
             lastKeyboardNote[key.name] = note
             row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
