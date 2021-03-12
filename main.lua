@@ -124,6 +124,13 @@ local function setUndoDescription(description)
     song:describe_undo("Simple Pianoroll: " .. description)
 end
 
+local function badTrackError()
+    showStatus("Current selected track cant be edited with piano roll.")
+    if windowObj and windowObj.visible then
+        windowObj:close()
+    end
+end
+
 --dump complex tables
 local function dump(o)
     if type(o) == 'table' then
@@ -1725,6 +1732,11 @@ end
 
 --on each new song, reset pianoroll and setup locals
 local function appNewDoc()
+    --close window, when a new song was opened
+    if windowObj and windowObj.visible then
+        windowObj:close()
+    end
+
     song = renoise.song()
     --set new observers
     song.transport.lpb_observable:add_notifier(function()
@@ -1743,6 +1755,9 @@ local function appNewDoc()
     end)
     song.selected_pattern:add_line_notifier(lineNotifier)
     song.selected_track_observable:add_notifier(function()
+        if song.selected_track.type ~= renoise.Track.TRACK_TYPE_SEQUENCER and windowObj and windowObj.visible then
+            badTrackError()
+        end
         if not song.selected_track.volume_column_visible_observable:has_notifier(obsColumnRefresh) then
             song.selected_track.volume_column_visible_observable:add_notifier(obsColumnRefresh)
         end
@@ -2115,7 +2130,6 @@ end
 
 --edit in pianoroll main function
 local function main_function()
-
     --setup observers
     if not tool.app_new_document_observable:has_notifier(appNewDoc) then
         tool.app_new_document_observable:add_notifier(appNewDoc)
@@ -2124,6 +2138,11 @@ local function main_function()
 
     if not tool.app_idle_observable:has_notifier(appIdleEvent) then
         tool.app_idle_observable:add_notifier(appIdleEvent)
+    end
+
+    if song.selected_track.type ~= renoise.Track.TRACK_TYPE_SEQUENCER then
+        badTrackError()
+        return
     end
 
     --only create pianoroll grid, when window is not created and not visible
