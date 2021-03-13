@@ -235,6 +235,8 @@ local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly)
     lineValues[line]:note_column(column).instrument_value = currentInstrument - 1
     if len > 1 then
         lineValues[line + len - 1]:note_column(column).volume_string = toHex(end_vel)
+    elseif end_vel>0 and end_vel~=255 then
+        lineValues[line]:note_column(column).volume_string = toHex(end_vel)
     end
     --set note off?
     if line + len <= song.selected_pattern.number_of_lines then
