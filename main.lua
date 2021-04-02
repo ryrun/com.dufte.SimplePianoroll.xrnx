@@ -235,7 +235,7 @@ local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly)
     lineValues[line]:note_column(column).instrument_value = currentInstrument - 1
     if len > 1 then
         lineValues[line + len - 1]:note_column(column).volume_string = toHex(end_vel)
-    elseif end_vel>0 and end_vel~=255 then
+    elseif end_vel > 0 and end_vel ~= 255 then
         lineValues[line]:note_column(column).volume_string = toHex(end_vel)
     end
     --set note off?
@@ -743,6 +743,12 @@ local function scaleNoteSelection(times)
         local line = math.floor((noteSelection[key].line - first_line) * times) + first_line
         local column = returnColumnWhenEnoughSpaceForNote(line, len)
         if column then
+            if noteSelection[key].len == 1 and len > 1 then
+                if toHex(noteSelection[key].vel):sub(1, 1) == "C" then
+                    noteSelection[key].end_vel = noteSelection[key].vel
+                    noteSelection[key].vel = 255
+                end
+            end
             noteSelection[key].column = column
             noteSelection[key].line = line
             noteSelection[key].len = len
@@ -894,6 +900,12 @@ local function changeSizeSelectedNotes(len)
         --search for valid column
         column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line, len)
         if column then
+            if noteSelection[key].len == 1 and len > 1 then
+                if toHex(noteSelection[key].vel):sub(1, 1) == "C" then
+                    noteSelection[key].end_vel = noteSelection[key].vel
+                    noteSelection[key].vel = 255
+                end
+            end
             noteSelection[key].len = len
             noteSelection[key].column = column
         end
@@ -1034,7 +1046,16 @@ function noteClick(x, y)
         else
             currentNoteVelocityPreview = 127
         end
-        currentNoteEndVelocity = note_data.end_vel
+        if note_data.len > 1 then
+            currentNoteEndVelocity = note_data.end_vel
+        else
+            if toHex(note_data.vel):sub(1, 1) == "C" then
+                currentNoteVelocity = 255
+                currentNoteEndVelocity = note_data.vel
+            else
+                currentNoteEndVelocity = 255
+            end
+        end
         currentNotePan = note_data.pan
         currentNoteDelay = note_data.dly
         refreshControls = true
@@ -2116,7 +2137,7 @@ local function handleKeyEvent(key)
                     vbw["k" .. row].color = colorKeyBlack
                 end
             end
-        elseif not handled  and key.modifiers == "" then
+        elseif not handled and key.modifiers == "" then
             local note = key.note + (12 * song.transport.octave)
             lastKeyboardNote[key.name] = note
             row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
