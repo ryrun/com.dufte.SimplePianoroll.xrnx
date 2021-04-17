@@ -44,6 +44,7 @@ local colorWhiteKey = { { 44, 59, 68 }, { 52, 68, 78 } }
 local colorBlackKey = { { 30, 42, 52 }, { 35, 47, 57 } }
 local colorGhostNote = { 80, 97, 107 }
 local colorNote = { 170, 217, 179 }
+local colorNoteGhost = { 194, 177, 226 }
 local colorNoteHighlight = { 232, 204, 110 }
 local colorNoteMuted = { 171, 187, 198 }
 local colorNoteSelected = { 244, 150, 149 }
@@ -90,6 +91,7 @@ local currentNotePan = 255
 local currentNoteDelay = 0
 local currentNoteVelocityPreview = 127
 local currentNoteEndVelocity = 255
+local currentNoteGhost
 local currentInstrument
 local currentGhostTrack
 
@@ -219,7 +221,7 @@ local function noteInSelection(notedata)
 end
 
 --return true, when a noteOff was set
-local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly)
+local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly, ghst)
     local noteoff = false
     local lineValues = song.selected_pattern_track.lines
 
@@ -232,7 +234,9 @@ local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly)
     lineValues[line]:note_column(column).volume_string = toHex(vel)
     lineValues[line]:note_column(column).panning_string = toHex(pan)
     lineValues[line]:note_column(column).delay_string = toHex(dly)
-    lineValues[line]:note_column(column).instrument_value = currentInstrument - 1
+    if not ghst then
+        lineValues[line]:note_column(column).instrument_value = currentInstrument - 1
+    end
     if len > 1 then
         lineValues[line + len - 1]:note_column(column).volume_string = toHex(end_vel)
     elseif end_vel > 0 and end_vel ~= 255 then
@@ -396,6 +400,12 @@ end
 --refresh all controls
 local function refreshNoteControls()
     vbw.note_len.value = currentNoteLength
+
+    if currentNoteGhost == true then
+        vbw.note_ghost.color = colorNoteGhost
+    else
+        vbw.note_ghost.color = colorDisableButton
+    end
 
     if song.selected_track.volume_column_visible then
         -- velocity column visible
@@ -593,7 +603,8 @@ local function moveSelectedNotes(steps)
                 noteSelection[key].vel,
                 noteSelection[key].end_vel,
                 noteSelection[key].pan,
-                noteSelection[key].dly
+                noteSelection[key].dly,
+                noteSelection[key].ghst
         )
         if not column then
             break
@@ -701,7 +712,8 @@ local function pasteNotesFromClipboard()
                 clipboard[key].vel,
                 clipboard[key].end_vel,
                 clipboard[key].pan,
-                clipboard[key].dly
+                clipboard[key].dly,
+                clipboard[key].ghst
         )
         --add pasted note to selection
         table.insert(noteSelection, clipboard[key])
@@ -761,7 +773,8 @@ local function scaleNoteSelection(times)
                 noteSelection[key].vel,
                 noteSelection[key].end_vel,
                 noteSelection[key].pan,
-                noteSelection[key].dly
+                noteSelection[key].dly,
+                noteSelection[key].ghst
         )
         if not column then
             showStatus("Not enough space to scale selection.")
@@ -813,6 +826,7 @@ local function chopSelectedNotes()
                     len = v.len,
                     noteoff = noteSelection[key].noteoff,
                     column = column,
+                    ghst = noteSelection[key].ghst
                 }
                 note_data.noteoff = addNoteToPattern(
                         note_data.column,
@@ -822,7 +836,8 @@ local function chopSelectedNotes()
                         note_data.vel,
                         note_data.end_vel,
                         note_data.pan,
-                        note_data.dly
+                        note_data.dly,
+                        note_data.ghst
                 )
                 table.insert(newSelection, note_data)
             end
@@ -874,7 +889,8 @@ local function duplicateSelectedNotes()
                 noteSelection[key].vel,
                 noteSelection[key].end_vel,
                 noteSelection[key].pan,
-                noteSelection[key].dly
+                noteSelection[key].dly,
+                noteSelection[key].ghst
         )
     end
     addMissingNoteOffForColumns()
@@ -917,7 +933,8 @@ local function changeSizeSelectedNotes(len)
                 noteSelection[key].vel,
                 noteSelection[key].end_vel,
                 noteSelection[key].pan,
-                noteSelection[key].dly
+                noteSelection[key].dly,
+                noteSelection[key].ghst
         )
         if not column then
             break
@@ -1039,6 +1056,7 @@ function noteClick(x, y)
     local note_data = noteData[index]
     --always set note date for the next new note
     if note_data ~= nil then
+        currentNoteGhost = note_data.ghst
         currentNoteLength = note_data.len
         currentNoteVelocity = note_data.vel
         if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
@@ -1128,7 +1146,7 @@ function pianoGridClick(x, y)
         setUndoDescription("Draw a note ...")
         --add new note
         note_value = gridOffset2NoteValue(y)
-        noteoff = addNoteToPattern(column, x, currentNoteLength, note_value, currentNoteVelocity, currentNoteEndVelocity, currentNotePan, currentNoteDelay)
+        noteoff = addNoteToPattern(column, x, currentNoteLength, note_value, currentNoteVelocity, currentNoteEndVelocity, currentNotePan, currentNoteDelay, currentNoteGhost)
         --
         local note_data = {
             line = x,
@@ -1140,6 +1158,7 @@ function pianoGridClick(x, y)
             len = currentNoteLength,
             noteoff = noteoff,
             column = column,
+            ghst = currentNoteGhost
         }
         --trigger preview notes
         if notePreview then
@@ -1197,7 +1216,7 @@ function pianoGridClick(x, y)
 end
 
 --enable a note button, when its visible, set correct length of the button
-local function enableNoteButton(column, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, noteoff)
+local function enableNoteButton(column, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, noteoff, ghost)
     --save highest and lowest note
     if lowesetNote == nil then
         lowesetNote = current_note
@@ -1235,6 +1254,7 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
             len = current_note_len,
             noteoff = noteoff,
             column = column,
+            ghst = ghost
         }
         --any "used" notes to check?
         if usedNotes[current_note] ~= nil then
@@ -1263,7 +1283,8 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
                     step = current_note_step,
                     row = current_note_rowIndex,
                     note = current_note,
-                    len = current_note_len - i
+                    len = current_note_len - i,
+                    ghst = ghost
                 })
             end
             if usedNotes[current_note] == nil then
@@ -1291,6 +1312,8 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
                 end
                 if current_note_vel == 0 then
                     b.color = colorNoteMuted
+                elseif ghost == true then
+                    b.color = colorNoteGhost
                 else
                     b.color = colorNote
                 end
@@ -1471,6 +1494,7 @@ local function fillPianoRoll()
     --loop through columns
     for c = 1, columns do
         local current_note
+        local current_note_ghost
         local current_note_string
         local current_note_len = 0
         local current_note_vel = 255
@@ -1490,6 +1514,7 @@ local function fillPianoRoll()
                 for i = stepOffset + 1, 1, -1 do
                     local note_column = lineValues[i]:note_column(c)
                     local note = note_column.note_value
+                    local instrument = note_column.instrument_value
                     local note_string = note_column.note_string
                     local volume_string = note_column.volume_string
                     local panning_string = note_column.panning_string
@@ -1505,6 +1530,11 @@ local function fillPianoRoll()
                         current_note_pan = tonumber(panning_string, 16)
                         current_note_dly = tonumber(delay_string, 16)
                         current_note_rowIndex = noteValue2GridRowOffset(current_note)
+                        if instrument == 255 then
+                            current_note_ghost = true
+                        else
+                            current_note_ghost = false
+                        end
                         break
                     elseif note == 120 then
                         break
@@ -1567,13 +1597,14 @@ local function fillPianoRoll()
                 local volume_string = note_column.volume_string
                 local panning_string = note_column.panning_string
                 local delay_string = note_column.delay_string
+                local instrument = note_column.instrument_value
 
                 if note < 120 then
                     if currentInstrument == nil and note_column.instrument_value < 255 then
                         currentInstrument = note_column.instrument_value + 1
                     end
                     if current_note ~= nil then
-                        enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false)
+                        enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost)
                     end
                     lastColumnWithNotes = c
                     current_note = note
@@ -1584,11 +1615,17 @@ local function fillPianoRoll()
                     current_note_pan = tonumber(panning_string, 16)
                     current_note_dly = tonumber(delay_string, 16)
                     current_note_rowIndex = noteValue2GridRowOffset(current_note)
+                    if instrument == 255 then
+                        current_note_ghost = true
+                    else
+                        current_note_ghost = false
+                    end
                 elseif note == 120 and current_note ~= nil then
-                    enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, true)
+                    enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, true, current_note_ghost)
                     current_note = nil
                     current_note_len = 0
                     current_note_rowIndex = nil
+                    current_note_ghost = nil
                 else
                     current_note_end_vel = tonumber(volume_string, 16)
                 end
@@ -1602,7 +1639,7 @@ local function fillPianoRoll()
         end
         --pattern end, no note off, enable last note
         if current_note ~= nil then
-            enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false)
+            enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost)
         end
     end
 
@@ -1658,7 +1695,11 @@ local function highlightNotesOnStep(step, highlight)
                     vbw["k" .. note.row].color = colorNoteHighlight
                 else
                     if vbw["b" .. note.index].color[1] ~= colorNoteSelected[1] then
-                        vbw["b" .. note.index].color = colorNote
+                        if note.ghst then
+                            vbw["b" .. note.index].color = colorNoteGhost
+                        else
+                            vbw["b" .. note.index].color = colorNote
+                        end
                     end
                     if noteInScale(note.note) then
                         vbw["k" .. note.row].color = colorKeyWhite
@@ -2615,6 +2656,20 @@ local function main_function()
                                 changePropertiesOfSelectedNotes(nil, nil, "h", nil)
                             end
                         end,
+                    },
+                    vb:button {
+                        id = "note_ghost",
+                        text = "Ghost note",
+                        tooltip = "Enable / disable to draw ghost notes",
+                        color = colorDisableButton,
+                        notifier = function()
+                            if currentNoteGhost then
+                                currentNoteGhost = false
+                            else
+                                currentNoteGhost = true
+                            end
+                            refreshControls = true
+                        end
                     },
                 },
                 vb:row {
