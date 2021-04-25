@@ -78,6 +78,7 @@ Info: Non handled keyboard events will be sent back to the host. So renoise defa
 |<kbd>ctrl + shift + 0</kbd>|Halve current note length|
 |<kbd>alt + m</kbd>|Mute all visible notes (set volume to 0)|
 |<kbd>alt + shift + m</kbd>|Unmute all visible notes (remove volume value)|
+|<kbd>ctrl + space</kbd>|Play from last selection|
 
 ### One or more notes selected
 

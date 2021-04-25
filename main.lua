@@ -19,6 +19,7 @@ local noteSlider
 
 --last step position for resetting the last step button
 local lastStepOn
+local lastPlaySelectionLine
 
 --some grid basics
 local gridStepSizeH = 18
@@ -2172,7 +2173,10 @@ local function handleKeyEvent(key)
                 table.sort(noteSelection, function(a, b)
                     return a.line < b.line
                 end)
-                song.transport:start_at(noteSelection[1].line)
+                lastPlaySelectionLine = noteSelection[1].line
+            end
+            if lastPlaySelectionLine then
+                song.transport:start_at(lastPlaySelectionLine)
             end
         end
         handled = true
