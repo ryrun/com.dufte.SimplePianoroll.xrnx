@@ -2165,6 +2165,18 @@ local function handleKeyEvent(key)
         end
         handled = true
     end
+    --play selection
+    if key.name == "space" and key.modifiers == "control" then
+        if key.state == "released" then
+            if #noteSelection > 0 then
+                table.sort(noteSelection, function(a, b)
+                    return a.line < b.line
+                end)
+                song.transport:start_at(noteSelection[1].line)
+            end
+        end
+        handled = true
+    end
     --loving tracker computer keyboard noite plaing <3 (returning it back to host is buggy, so do your own)
     if key.note then
         local row
