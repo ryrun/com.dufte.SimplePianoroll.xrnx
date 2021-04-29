@@ -1715,7 +1715,22 @@ end
 
 --set playback pos via playback pos indicator
 function setPlaybackPos(pos)
-    song.transport:start_at(pos + stepOffset)
+    --select all note events which are on specific pos
+    if keyControl then
+        if not keyShift then
+            noteSelection = {}
+        end
+        for key in pairs(noteOnStep[pos]) do
+            local note_data = noteData[noteOnStep[pos][key].index]
+            if noteInSelection(note_data) == nil then
+                table.insert(noteSelection, note_data)
+            end
+        end
+        addMissingNoteOffForColumns()
+        refreshPianoRollNeeded = true
+    else
+        song.transport:start_at(pos + stepOffset)
+    end
 end
 
 --app idle

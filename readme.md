@@ -53,6 +53,7 @@ Just right click on a track and choose "Edit with Simple Pianoroll ...":<br>
 |Deselect notes|Click on a free spot in the grid|
 |Rectangle select notes|First click on a free spot in the grid to set the first corner, then hold <kbd>shift</kbd> and click another free spot and it will select all notes inside this rectangle
 |Select all notes with a specific note value|Hold <kbd>ctrl</kbd> and click one of the notes in the piano keyboard control
+|Select all notes with on a specific position|Hold <kbd>ctrl</kbd> and click one of the position indicators above the piano grid
 
 ## Keyboard actions
 
