@@ -1720,10 +1720,12 @@ function setPlaybackPos(pos)
         if not keyShift then
             noteSelection = {}
         end
-        for key in pairs(noteOnStep[pos]) do
-            local note_data = noteData[noteOnStep[pos][key].index]
-            if noteInSelection(note_data) == nil then
-                table.insert(noteSelection, note_data)
+        if noteOnStep[pos] then
+            for key in pairs(noteOnStep[pos]) do
+                local note_data = noteData[noteOnStep[pos][key].index]
+                if noteInSelection(note_data) == nil then
+                    table.insert(noteSelection, note_data)
+                end
             end
         end
         addMissingNoteOffForColumns()
