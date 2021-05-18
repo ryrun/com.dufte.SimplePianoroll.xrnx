@@ -151,12 +151,49 @@ local function dump(o)
 end
 
 --return hex value always als 2 digit hex value
+--[[
 local function toHex(value)
     value = string.format("%X", value)
     if string.len(value) == 1 then
         return "0" .. value
     end
     return value
+end
+]]--
+
+--return special "hex" value which allow values like ZF
+local function toRenoiseHex(val)
+    local t = string.format("%X", val)
+    t = string.upper(t)
+    if string.len(t) == 1 then
+        t = "0" .. t
+    end
+    if string.len(t) > 2 then
+        local tend = string.sub(t, -1)
+        local tstart = string.sub(t, 0, string.len(t) - 1)
+        tstart = tonumber(tstart, 16)
+        tstart = string.char(string.byte("G") - 16 + tstart)
+        return tstart .. tend
+    else
+        return t
+    end
+end
+
+--converts special "hex" value like ZF to a number
+local function fromRenoiseHex(val)
+    if string.len(val) > 2 then
+        return -1
+    end
+    if string.len(val) < 2 then
+        val = "0" .. val
+    end
+    local tend = string.sub(val, -1)
+    local tstart = string.sub(val, 0, 1)
+    if string.byte(tstart) >= string.byte("G") then
+        tstart = 16 + string.byte(tstart) - string.byte("G")
+        tstart = string.format("%X", tstart)
+    end
+    return tonumber(tstart .. tend, 16)
 end
 
 --change a value randomly
@@ -232,16 +269,16 @@ local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly,
     end
 
     lineValues[line]:note_column(column).note_value = note
-    lineValues[line]:note_column(column).volume_string = toHex(vel)
-    lineValues[line]:note_column(column).panning_string = toHex(pan)
-    lineValues[line]:note_column(column).delay_string = toHex(dly)
+    lineValues[line]:note_column(column).volume_string = toRenoiseHex(vel)
+    lineValues[line]:note_column(column).panning_string = toRenoiseHex(pan)
+    lineValues[line]:note_column(column).delay_string = toRenoiseHex(dly)
     if not ghst then
         lineValues[line]:note_column(column).instrument_value = currentInstrument - 1
     end
     if len > 1 then
-        lineValues[line + len - 1]:note_column(column).volume_string = toHex(end_vel)
+        lineValues[line + len - 1]:note_column(column).volume_string = toRenoiseHex(end_vel)
     elseif end_vel > 0 and end_vel ~= 255 then
-        lineValues[line]:note_column(column).volume_string = toHex(end_vel)
+        lineValues[line]:note_column(column).volume_string = toRenoiseHex(end_vel)
     end
     --set note off?
     if line + len <= song.selected_pattern.number_of_lines then
@@ -757,7 +794,7 @@ local function scaleNoteSelection(times)
         local column = returnColumnWhenEnoughSpaceForNote(line, len)
         if column then
             if noteSelection[key].len == 1 and len > 1 then
-                if toHex(noteSelection[key].vel):sub(1, 1) == "C" then
+                if toRenoiseHex(noteSelection[key].vel):sub(1, 1) == "C" then
                     noteSelection[key].end_vel = noteSelection[key].vel
                     noteSelection[key].vel = 255
                 end
@@ -918,7 +955,7 @@ local function changeSizeSelectedNotes(len)
         column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line, len)
         if column then
             if noteSelection[key].len == 1 and len > 1 then
-                if toHex(noteSelection[key].vel):sub(1, 1) == "C" then
+                if toRenoiseHex(noteSelection[key].vel):sub(1, 1) == "C" then
                     noteSelection[key].end_vel = noteSelection[key].vel
                     noteSelection[key].vel = 255
                 end
@@ -978,14 +1015,14 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
             elseif tostring(vel) == "unmute" then
                 note.volume_value = 255
             else
-                note.volume_string = toHex(vel)
+                note.volume_string = toRenoiseHex(vel)
             end
         end
         if end_vel ~= nil then
             if selection.len > 1 then
-                note_end.volume_string = toHex(end_vel)
+                note_end.volume_string = toRenoiseHex(end_vel)
             else
-                note.volume_string = toHex(end_vel)
+                note.volume_string = toRenoiseHex(end_vel)
             end
         end
         if pan ~= nil then
@@ -994,7 +1031,7 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
                     note.panning_volume = randomizeValue(note.panning_volume, 2, 1, 127)
                 end
             else
-                note.panning_string = toHex(pan)
+                note.panning_string = toRenoiseHex(pan)
             end
         end
         if dly ~= nil then
@@ -1003,7 +1040,7 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
                     note.delay_value = randomizeValue(note.delay_value, 2, 0, 127)
                 end
             else
-                note.delay_string = toHex(dly)
+                note.delay_string = toRenoiseHex(dly)
             end
         end
         if special == "matchingnotes" then
@@ -1068,7 +1105,7 @@ function noteClick(x, y)
         if note_data.len > 1 then
             currentNoteEndVelocity = note_data.end_vel
         else
-            if toHex(note_data.vel):sub(1, 1) == "C" then
+            if toRenoiseHex(note_data.vel):sub(1, 1) == "C" then
                 currentNoteVelocity = 255
                 currentNoteEndVelocity = note_data.vel
             else
@@ -1527,9 +1564,9 @@ local function fillPianoRoll()
                         current_note_string = note_string
                         current_note_len = 0
                         current_note_step = s
-                        current_note_vel = tonumber(volume_string, 16)
-                        current_note_pan = tonumber(panning_string, 16)
-                        current_note_dly = tonumber(delay_string, 16)
+                        current_note_vel = fromRenoiseHex(volume_string)
+                        current_note_pan = fromRenoiseHex(panning_string)
+                        current_note_dly = fromRenoiseHex(delay_string)
                         current_note_rowIndex = noteValue2GridRowOffset(current_note)
                         if instrument == 255 then
                             current_note_ghost = true
@@ -1612,9 +1649,9 @@ local function fillPianoRoll()
                     current_note_string = note_string
                     current_note_len = 0
                     current_note_step = s
-                    current_note_vel = tonumber(volume_string, 16)
-                    current_note_pan = tonumber(panning_string, 16)
-                    current_note_dly = tonumber(delay_string, 16)
+                    current_note_vel = fromRenoiseHex(volume_string)
+                    current_note_pan = fromRenoiseHex(panning_string)
+                    current_note_dly = fromRenoiseHex(delay_string)
                     current_note_rowIndex = noteValue2GridRowOffset(current_note)
                     if instrument == 255 then
                         current_note_ghost = true
@@ -1628,7 +1665,7 @@ local function fillPianoRoll()
                     current_note_rowIndex = nil
                     current_note_ghost = nil
                 else
-                    current_note_end_vel = tonumber(volume_string, 16)
+                    current_note_end_vel = fromRenoiseHex(volume_string)
                 end
 
                 if current_note_rowIndex ~= nil then
@@ -2471,20 +2508,20 @@ local function main_function()
                         tooltip = "Note velocity",
                         steps = { 1, 2 },
                         min = -1,
-                        max = 254,
+                        max = 575,
                         value = -1,
                         width = 54,
                         tostring = function(number)
                             if number == -1 then
                                 return "--"
                             end
-                            return toHex(number)
+                            return toRenoiseHex(number)
                         end,
                         tonumber = function(string)
                             if string == "--" then
                                 return -1
                             end
-                            return tonumber(string, 16)
+                            return fromRenoiseHex(string)
                         end,
                         notifier = function(number)
                             if number == -1 then
@@ -2525,20 +2562,20 @@ local function main_function()
                         tooltip = "End note velocity",
                         steps = { 1, 2 },
                         min = -1,
-                        max = 254,
+                        max = 575,
                         value = -1,
                         width = 54,
                         tostring = function(number)
                             if number == -1 then
                                 return "--"
                             end
-                            return toHex(number)
+                            return toRenoiseHex(number)
                         end,
                         tonumber = function(string)
                             if string == "--" then
                                 return -1
                             end
-                            return tonumber(string, 16)
+                            return fromRenoiseHex(string)
                         end,
                         notifier = function(number)
                             if number == -1 then
@@ -2582,20 +2619,20 @@ local function main_function()
                         tooltip = "Note panning",
                         steps = { 1, 2 },
                         min = -1,
-                        max = 254,
+                        max = 575,
                         value = -1,
                         width = 54,
                         tostring = function(number)
                             if number == -1 then
                                 return "--"
                             end
-                            return toHex(number)
+                            return toRenoiseHex(number)
                         end,
                         tonumber = function(string)
                             if string == "--" then
                                 return -1
                             end
-                            return tonumber(string, 16)
+                            return fromRenoiseHex(string)
                         end,
                         notifier = function(number)
                             if number == -1 then
@@ -2647,20 +2684,20 @@ local function main_function()
                         tooltip = "Note delay",
                         steps = { 1, 2 },
                         min = 0,
-                        max = 255,
+                        max = 254,
                         width = 54,
                         value = currentNoteDelay,
                         tostring = function(number)
                             if number == 0 then
                                 return "--"
                             end
-                            return toHex(number)
+                            return toRenoiseHex(number)
                         end,
                         tonumber = function(string)
                             if string == "--" then
                                 return 0
                             end
-                            return tonumber(string, 16)
+                            return fromRenoiseHex(string)
                         end,
                         notifier = function(number)
                             currentNoteDelay = number
