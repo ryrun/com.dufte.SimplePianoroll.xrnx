@@ -1268,6 +1268,7 @@ function pianoGridClick(x, y)
         else
             --fast play from cursor
             if keyControl then
+                song.transport:stop()
                 song.transport:start_at(x + stepOffset)
             end
             lastSelectionClick = { x, y }
@@ -1796,6 +1797,7 @@ function setPlaybackPos(pos)
         addMissingNoteOffForColumns()
         refreshPianoRollNeeded = true
     else
+        song.transport:stop()
         song.transport:start_at(pos + stepOffset)
     end
 end
@@ -2258,6 +2260,7 @@ local function handleKeyEvent(key)
                 lastPlaySelectionLine = noteSelection[1].line
             end
             if lastPlaySelectionLine then
+                song.transport:stop()
                 song.transport:start_at(lastPlaySelectionLine)
             end
         end
