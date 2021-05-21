@@ -32,7 +32,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     --oscsettingstring
     oscConnectionString = "udp://127.0.0.1:8000",
 }
-renoise.tool().preferences = preferences
+tool.preferences = preferences
 
 --dialog vars
 local windowObj
@@ -604,7 +604,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed)
     else
         --when last note is still playing, cut off
         if lastTriggerNote ~= nil then
-            renoise.tool():remove_timer(triggerTimer)
+            tool:remove_timer(triggerTimer)
             table.remove(lastTriggerNote) --remove velocity
             oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote))
             lastTriggerNote = nil
@@ -621,10 +621,10 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed)
             table.remove(lastTriggerNote) --remove velocity
             oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote))
             lastTriggerNote = nil
-            renoise.tool():remove_timer(triggerTimer)
+            tool:remove_timer(triggerTimer)
         end
         --start timer
-        renoise.tool():add_timer(triggerTimer, preferences.triggerTime.value)
+        tool:add_timer(triggerTimer, preferences.triggerTime.value)
     end
 end
 
