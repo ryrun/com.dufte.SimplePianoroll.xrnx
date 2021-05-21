@@ -11,27 +11,43 @@ local manifest = renoise.Document.create("RenoiseScriptingTool") {
 }
 manifest:load_from("manifest.xml")
 
---tool preferences
-local preferences = renoise.Document.create("ScriptingToolPreferences") {
-    --default grid button size
-    gridStepSizeH = 18,
+--default values, can be used to reset to default
+local defaultPreferences = {
     gridStepSizeW = 20,
-    --positive values will be converted to negative ones to reduce margin and spacing, looks better but its slower
+    gridStepSizeH = 18,
     gridSpacing = 4,
     gridMargin = 1,
-    --size of pianorollgrid
     gridWidth = 64,
     gridHeight = 42,
-    --note preview auto note off after x ms
     triggerTime = 250,
-    --doubleclick time
     dblClickTime = 400,
-    --button states
     forcePenMode = false,
     notePreview = true,
     enableOSCClient = true,
-    --oscsettingstring
     oscConnectionString = "udp://127.0.0.1:8000",
+}
+
+--tool preferences
+local preferences = renoise.Document.create("ScriptingToolPreferences") {
+    --default grid button size
+    gridStepSizeW = defaultPreferences.gridStepSizeW,
+    gridStepSizeH = defaultPreferences.gridStepSizeH,
+    --positive values will be converted to negative ones to reduce margin and spacing, looks better but its slower
+    gridSpacing = defaultPreferences.gridSpacing,
+    gridMargin = defaultPreferences.gridMargin,
+    --size of pianorollgrid
+    gridWidth = defaultPreferences.gridWidth,
+    gridHeight = defaultPreferences.gridHeight,
+    --note preview auto note off after x ms
+    triggerTime = defaultPreferences.triggerTime,
+    --doubleclick time
+    dblClickTime = defaultPreferences.dblClickTime,
+    --button states
+    forcePenMode = defaultPreferences.forcePenMode,
+    notePreview = defaultPreferences.notePreview,
+    enableOSCClient = defaultPreferences.enableOSCClient,
+    --oscsettingstring
+    oscConnectionString = defaultPreferences.oscConnectionString,
 }
 tool.preferences = preferences
 
@@ -49,7 +65,14 @@ local lastPlaySelectionLine
 local noteOffset
 local stepOffset = 0
 
-local pianoKeyWidth = preferences.gridStepSizeW.value * 3
+--load grid settings
+local gridStepSizeW
+local gridStepSizeH
+local gridSpacing
+local gridMargin
+local gridWidth
+local gridHeight
+local pianoKeyWidth
 
 --colors
 local colorWhiteKey = { { 44, 59, 68 }, { 52, 68, 78 } }
@@ -1087,7 +1110,7 @@ end
 --convert the note value to a grid y position
 local function noteValue2GridRowOffset(noteValue)
     noteValue = noteValue + (-noteOffset) + 1
-    if noteValue >= 1 and noteValue <= preferences.gridHeight.value then
+    if noteValue >= 1 and noteValue <= gridHeight then
         return noteValue
     end
     return nil
@@ -1369,17 +1392,17 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
         --display note button, only when a correct len was calculated
         if button_note_len ~= nil then
             local b = vbw["b" .. current_note_index]
-            local bw = preferences.gridStepSizeW.value * button_note_len
-            local bspc = preferences.gridSpacing.value * (button_note_len - 1)
+            local bw = gridStepSizeW * button_note_len
+            local bspc = gridSpacing * (button_note_len - 1)
             if b.visible and b.width == bw - bspc then
                 --note will be completly overlapped
             elseif b.visible then
                 --change the width of the already visible note, because both are overlapping
-                b.width = b.width + bw - (preferences.gridSpacing.value * (button_note_len))
+                b.width = b.width + bw - (gridSpacing * (button_note_len))
             else
                 --default display of note
                 b.width = bw - bspc
-                if (preferences.gridStepSizeW.value < 34 and button_note_len < 2) or preferences.gridStepSizeH.value < 18 then
+                if (gridStepSizeW < 34 and button_note_len < 2) or gridStepSizeH < 18 then
                     b.text = ""
                 else
                     b.text = current_note_string
@@ -1414,7 +1437,7 @@ end
 local function fillTimeline()
     local lpb = song.transport.lpb
     local steps = song.selected_pattern.number_of_lines
-    local stepsCount = math.min(steps, preferences.gridWidth.value)
+    local stepsCount = math.min(steps, gridWidth)
     --setup timeline
     local timestep = 0
     local lastbeat
@@ -1428,7 +1451,7 @@ local function fillTimeline()
         if lastbeat ~= beat then
             timestep = timestep + 1
             timeslot = vbw["timeline" .. timestep]
-            timeslot.width = (preferences.gridStepSizeW.value - 4)
+            timeslot.width = (gridStepSizeW - 4)
             if line % lpb == 1 then
                 if lpb == 2 and beat % lpb == 0 then
                     timeslot.text = ""
@@ -1454,7 +1477,7 @@ local function fillTimeline()
                 timeslot.text = ""
             end
             timeslotsize = timeslotsize + 1
-            timeslot.width = (preferences.gridStepSizeW.value - 4) * timeslotsize
+            timeslot.width = (gridStepSizeW - 4) * timeslotsize
         end
     end
     while vbw["timeline" .. timestep + 1] do
@@ -1474,14 +1497,14 @@ local function fillTimeline()
             len = len + (pos - 1)
             pos = 1
         end
-        if len + pos - 1 > preferences.gridWidth.value then
-            len = len + (preferences.gridWidth.value - len - pos + 1)
+        if len + pos - 1 > gridWidth then
+            len = len + (gridWidth - len - pos + 1)
         end
-        if len < 1 or pos > preferences.gridWidth.value then
+        if len < 1 or pos > gridWidth then
             hideblockloop = true
         else
-            vbw.blockloop.width = preferences.gridStepSizeW.value * len - (preferences.gridSpacing.value * (len - 1)) - 4
-            vbw.blockloopspc.width = math.max(preferences.gridStepSizeW.value * (pos - 1) - (preferences.gridSpacing.value * (pos - 1)), 1)
+            vbw.blockloop.width = gridStepSizeW * len - (gridSpacing * (len - 1)) - 4
+            vbw.blockloopspc.width = math.max(gridStepSizeW * (pos - 1) - (gridSpacing * (pos - 1)), 1)
             vbw.blockloop.visible = true
         end
     end
@@ -1497,7 +1520,7 @@ local function ghostTrack(trackIndex)
     local track = song:track(trackIndex)
     local columns = track.visible_note_columns
     local steps = song.selected_pattern.number_of_lines
-    local stepsCount = math.min(steps, preferences.gridWidth.value)
+    local stepsCount = math.min(steps, gridWidth)
     local lineValues = song.selected_pattern:track(trackIndex).lines
     for c = 1, columns do
         local rowoffset
@@ -1541,7 +1564,7 @@ local function fillPianoRoll()
     local steps = song.selected_pattern.number_of_lines
     local lineValues = song.selected_pattern_track.lines
     local columns = track.visible_note_columns
-    local stepsCount = math.min(steps, preferences.gridWidth.value)
+    local stepsCount = math.min(steps, gridWidth)
     local noffset = noteOffset - 1
     local blackKey
     local lastColumnWithNotes
@@ -1553,8 +1576,8 @@ local function fillPianoRoll()
     currentInstrument = nil
 
     --check if stepoffset is inside the grid, also setup stepSlider if needed
-    if steps > preferences.gridWidth.value then
-        stepSlider.max = steps - preferences.gridWidth.value
+    if steps > gridWidth then
+        stepSlider.max = steps - gridWidth
         if stepOffset > stepSlider.max then
             stepOffset = stepSlider.max
         end
@@ -1579,7 +1602,7 @@ local function fillPianoRoll()
         local current_note_rowIndex
 
         --loop through lines as steps
-        for s = 1, preferences.gridWidth.value do
+        for s = 1, gridWidth do
             local stepString = tostring(s)
 
             --check for notes outside the grid on left side
@@ -1620,7 +1643,7 @@ local function fillPianoRoll()
             if c == 1 then
                 local bar = calculateBarBeat(s + stepOffset)
 
-                for y = 1, preferences.gridHeight.value do
+                for y = 1, gridHeight do
                     local ystring = tostring(y)
                     local index = stepString .. "_" .. ystring
                     local p = vbw["p" .. index]
@@ -1845,7 +1868,7 @@ local function appIdleEvent()
             end
             lastStepOn = line - stepOffset
 
-            if lastStepOn > 0 and lastStepOn <= preferences.gridWidth.value then
+            if lastStepOn > 0 and lastStepOn <= gridWidth then
                 vbw["s" .. tostring(lastStepOn)].color = colorStepOn
                 highlightNotesOnStep(lastStepOn, true)
             else
@@ -2322,6 +2345,15 @@ local function main_function()
         vb = renoise.ViewBuilder()
         vbw = vb.views
 
+        --setup grid settings
+        gridStepSizeW = preferences.gridStepSizeW.value
+        gridStepSizeH = preferences.gridStepSizeH.value
+        gridSpacing = preferences.gridSpacing.value
+        gridMargin = preferences.gridMargin.value
+        gridWidth = preferences.gridWidth.value
+        gridHeight = preferences.gridHeight.value
+        pianoKeyWidth = preferences.gridStepSizeW.value * 3
+
         lastStepOn = nil
         lastSelectionClick = nil
         noteOffset = 28 -- default offset
@@ -2336,10 +2368,10 @@ local function main_function()
 
         local vb_temp
         local playCursor = vb:row {
-            margin = -preferences.gridMargin.value,
-            spacing = -preferences.gridSpacing.value,
+            margin = -gridMargin,
+            spacing = -gridSpacing,
         }
-        for x = 1, preferences.gridWidth.value do
+        for x = 1, gridWidth do
             local temp = "setPlaybackPos(" .. tostring(x) .. ")"
             vb_temp = vb:row {
                 vb:space {
@@ -2348,7 +2380,7 @@ local function main_function()
                 vb:button {
                     id = "s" .. tostring(x),
                     height = 9,
-                    width = preferences.gridStepSizeW.value - 4,
+                    width = gridStepSizeW - 4,
                     color = colorStepOff,
                     visible = false,
                     notifier = loadstring(temp),
@@ -2363,17 +2395,17 @@ local function main_function()
             margin = 0,
             spacing = -1,
         }
-        for y = preferences.gridHeight.value, 1, -1 do
+        for y = gridHeight, 1, -1 do
             local row = vb:row {
-                margin = -preferences.gridMargin.value,
-                spacing = -preferences.gridSpacing.value,
+                margin = -gridMargin,
+                spacing = -gridSpacing,
             }
-            for x = 1, preferences.gridWidth.value do
+            for x = 1, gridWidth do
                 local temp = "pianoGridClick(" .. tostring(x) .. "," .. tostring(y) .. ")"
                 vb_temp = vb:button {
                     id = "p" .. tostring(x) .. "_" .. tostring(y),
-                    height = preferences.gridStepSizeH.value,
-                    width = preferences.gridStepSizeW.value,
+                    height = gridStepSizeH,
+                    width = gridStepSizeW,
                     color = colorWhiteKey[1],
                     visible = false,
                     notifier = loadstring(temp),
@@ -2382,8 +2414,8 @@ local function main_function()
                 temp = "noteClick(" .. tostring(x) .. "," .. tostring(y) .. ")"
                 vb_temp = vb:button {
                     id = "b" .. tostring(x) .. "_" .. tostring(y),
-                    height = preferences.gridStepSizeH.value,
-                    width = preferences.gridStepSizeW.value,
+                    height = gridStepSizeH,
+                    width = gridStepSizeW,
                     visible = false,
                     color = colorNote,
                     notifier = loadstring(temp),
@@ -2395,8 +2427,8 @@ local function main_function()
 
         --horizontal scrollbar
         stepSlider = vb:minislider {
-            width = preferences.gridStepSizeW.value * preferences.gridWidth.value - (preferences.gridSpacing.value * (preferences.gridWidth.value)),
-            height = math.max(16, preferences.gridStepSizeW.value / 2),
+            width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)),
+            height = math.max(16, gridStepSizeW / 2),
             min = 0,
             max = 0,
             visible = false,
@@ -2412,10 +2444,10 @@ local function main_function()
 
         --vertical scrollbar
         noteSlider = vb:minislider {
-            width = math.max(16, preferences.gridStepSizeW.value / 2),
+            width = math.max(16, gridStepSizeW / 2),
             height = "100%",
             min = 0,
-            max = 120 - preferences.gridHeight.value,
+            max = 120 - gridHeight,
             notifier = function(number)
                 number = math.floor(number)
                 if number ~= noteOffset then
@@ -2430,14 +2462,14 @@ local function main_function()
             margin = 0,
             spacing = -1,
         }
-        for y = preferences.gridHeight.value, 1, -1 do
+        for y = gridHeight, 1, -1 do
             whiteKeys:add_child(
                     vb:row {
-                        margin = -preferences.gridMargin.value,
-                        spacing = -preferences.gridSpacing.value,
+                        margin = -gridMargin,
+                        spacing = -gridSpacing,
                         vb:button {
                             id = "k" .. tostring(y),
-                            height = preferences.gridStepSizeH.value,
+                            height = gridStepSizeH,
                             width = pianoKeyWidth,
                             color = { 255, 255, 255 },
                             pressed = loadstring("keyClick(" .. y .. ",true)"),
@@ -2454,7 +2486,7 @@ local function main_function()
         local timeline = vb:row {
             style = "plain",
         }
-        for i = 1, preferences.gridWidth.value do
+        for i = 1, gridWidth do
             local temp = vb:text {
                 id = "timeline" .. i,
                 visible = false,
@@ -2820,7 +2852,7 @@ local function main_function()
                         text = "Preferences",
                         tooltip = "Simple Pianoroll Preferences ...",
                         notifier = function()
-                            app:show_custom_prompt("Preferences", vb:row {
+                            local btn = app:show_custom_prompt("Preferences", vb:row {
                                 uniform = true,
                                 margin = 5,
                                 spacing = 5,
@@ -2871,6 +2903,9 @@ local function main_function()
                                             max = 40,
                                             bind = preferences.gridStepSizeH,
                                         },
+                                    },
+                                    vb:text {
+                                        text = "These settings take effect,\nwhen the piano roll will be reopened.",
                                     },
                                 },
                                 vb:column {
@@ -2944,6 +2979,21 @@ local function main_function()
                                     },
                                 },
                             }, { "Close", "Reset to default" })
+                            if btn == "Reset to default" then
+                                preferences.gridStepSizeW.value = defaultPreferences.gridStepSizeW
+                                preferences.gridStepSizeH.value = defaultPreferences.gridStepSizeH
+                                preferences.gridSpacing.value = defaultPreferences.gridSpacing
+                                preferences.gridMargin.value = defaultPreferences.gridMargin
+                                preferences.gridWidth.value = defaultPreferences.gridWidth
+                                preferences.gridHeight.value = defaultPreferences.gridHeight
+                                preferences.triggerTime.value = defaultPreferences.triggerTime
+                                preferences.dblClickTime.value = defaultPreferences.dblClickTime
+                                preferences.forcePenMode.value = defaultPreferences.forcePenMode
+                                preferences.notePreview.value = defaultPreferences.notePreview
+                                preferences.enableOSCClient.value = defaultPreferences.enableOSCClient
+                                preferences.oscConnectionString.value = defaultPreferences.oscConnectionString
+                                app:show_message("All preferences was set to default values.")
+                            end
                             if oscClient then
                                 oscClient:close()
                                 oscClient = nil
@@ -2956,7 +3006,7 @@ local function main_function()
             vb:row {
                 vb:column {
                     vb:row {
-                        height = (preferences.gridStepSizeH.value * 2) - preferences.gridSpacing.value + 2,
+                        height = (gridStepSizeH * 2) - gridSpacing + 2,
                         spacing = 4,
                         margin = 7,
                         vb:row {
@@ -3009,14 +3059,14 @@ local function main_function()
                         vb:row {
                             vb:space {
                                 id = "blockloopspc",
-                                width = preferences.gridStepSizeW.value * 1 - (preferences.gridSpacing.value * 1),
+                                width = gridStepSizeW * 1 - (gridSpacing * 1),
                                 height = 5,
                             },
                             vb:button {
                                 id = "blockloop",
                                 color = colorNoteHighlight,
                                 height = 5,
-                                width = preferences.gridStepSizeW.value * 3 - (preferences.gridSpacing.value * 2),
+                                width = gridStepSizeW * 3 - (gridSpacing * 2),
                                 active = false,
                                 visible = false,
                             },
@@ -3034,7 +3084,7 @@ local function main_function()
             },
             vb:row {
                 vb:space {
-                    width = math.max(16, preferences.gridStepSizeW.value / 2) + (preferences.gridStepSizeW.value * 3)
+                    width = math.max(16, gridStepSizeW / 2) + (gridStepSizeW * 3)
                 },
                 stepSlider,
             },
@@ -3045,7 +3095,7 @@ local function main_function()
         fillPianoRoll()
         --center note view
         if lowesetNote ~= nil then
-            local nOffset = math.floor((lowesetNote + highestNote) / 2) - (preferences.gridHeight.value / 2)
+            local nOffset = math.floor((lowesetNote + highestNote) / 2) - (gridHeight / 2)
             if nOffset < 0 then
                 nOffset = 0
             elseif nOffset > noteSlider.max then
