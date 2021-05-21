@@ -2296,7 +2296,7 @@ local function handleKeyEvent(key)
         end
         handled = true
     end
-    --loving tracker computer keyboard noite plaing <3 (returning it back to host is buggy, so do your own)
+    --loving tracker computer keyboard note playing <3 (returning it back to host is buggy, so do your own)
     if key.note then
         local row
         if key.state == "released" and lastKeyboardNote[key.name] ~= nil then
