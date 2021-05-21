@@ -25,10 +25,12 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     --note preview auto note off after x ms
     triggerTime = 250,
     --doubleclick time
-    dblClickTime = 0.4,
+    dblClickTime = 400,
     --button states
     forcePenMode = false,
     notePreview = true,
+    --oscsettingstring
+    oscConnectionString = "udp://127.0.0.1:8000",
 }
 renoise.tool().preferences = preferences
 
@@ -68,9 +70,6 @@ local colorDisableButton = { 66, 66, 66 }
 
 --note trigger vars
 local oscClient
-local oscPort = 8000
-local lastTriggerNote
-local triggerTimer
 
 --missing block loop observable? use a variable for check there was a change
 local blockloopidx
@@ -433,7 +432,7 @@ end
 
 --simple function for double click detection for buttons
 local function dbclkDetector(index)
-    if lastClickCache[index] ~= nil and os.clock() - lastClickCache[index] < preferences.dblClickTime.value then
+    if lastClickCache[index] ~= nil and os.clock() - lastClickCache[index] < preferences.dblClickTime.value / 1000 then
         return true
     end
     lastClickCache[index] = os.clock()
@@ -568,8 +567,26 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed)
     --init server connection, when not ready
     local socket_error
     if oscClient == nil then
-        oscClient, socket_error = renoise.Socket.create_client("127.0.0.1", oscPort, renoise.Socket.PROTOCOL_UDP)
-        if (socket_error) then
+        local protocol, host, port = string.match(preferences.oscConnectionString.value, '([a-z]+)://([0-9a-zA-Z.]+):([0-9]+)')
+        if protocol and host and port then
+            socket_error = nil
+            if protocol == "udp" then
+                oscClient, socket_error = renoise.Socket.create_client(host, tonumber(port), renoise.Socket.PROTOCOL_UDP)
+            elseif protocol == "tcp" then
+                oscClient, socket_error = renoise.Socket.create_client(host, tonumber(port), renoise.Socket.PROTOCOL_TCP)
+            else
+                socket_error = "Invalid protocol"
+            end
+            if (socket_error) then
+                showStatus("Error: Cant create OSC socket: " .. socket_error)
+                preferences.notePreview.value = false
+                refreshControls = true
+                return
+            end
+        else
+            showStatus("Error: OSC connection string malformed. Note preview disabled.")
+            preferences.notePreview.value = false
+            refreshControls = true
             return
         end
     end
@@ -2776,6 +2793,138 @@ local function main_function()
                                 vbw.ghosttracks.value = song.selected_track_index
                                 song.selected_track_index = temp
                             end
+                        end,
+                    },
+                },
+                vb:row {
+                    margin = 3,
+                    spacing = 3,
+                    style = "panel",
+                    vb:button {
+                        text = "Preferences",
+                        tooltip = "Simple Pianoroll Preferences ...",
+                        notifier = function()
+                            app:show_custom_prompt("Preferences", vb:row {
+                                uniform = true,
+                                margin = 5,
+                                spacing = 5,
+                                vb:column {
+                                    style = "group",
+                                    margin = 5,
+                                    uniform = true,
+                                    spacing = 4,
+                                    vb:text {
+                                        text = "Piano grid",
+                                        font = "big",
+                                        style = "strong",
+                                    },
+                                    vb:text {
+                                        text = "Grid size:",
+                                    },
+                                    vb:row {
+                                        uniform = true,
+                                        vb:valuebox {
+                                            steps = { 1, 2 },
+                                            min = 16,
+                                            max = 256,
+                                            bind = preferences.gridWidth,
+                                        },
+                                        vb:text { text = "x", align = "center", },
+                                        vb:valuebox {
+                                            steps = { 1, 2 },
+                                            min = 16,
+                                            max = 256,
+                                            bind = preferences.gridHeight,
+                                        },
+                                    },
+                                    vb:text {
+                                        text = "Grid step size:",
+                                    },
+                                    vb:row {
+                                        uniform = true,
+                                        vb:valuebox {
+                                            steps = { 1, 2 },
+                                            min = 4,
+                                            max = 40,
+                                            bind = preferences.gridStepSizeW,
+                                        },
+                                        vb:text { text = "x", align = "center", },
+                                        vb:valuebox {
+                                            steps = { 1, 2 },
+                                            min = 4,
+                                            max = 40,
+                                            bind = preferences.gridStepSizeH,
+                                        },
+                                    },
+                                },
+                                vb:column {
+                                    style = "group",
+                                    margin = 5,
+                                    uniform = true,
+                                    spacing = 4,
+                                    vb:text {
+                                        text = "Note preview",
+                                        font = "big",
+                                        style = "strong",
+                                    },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.notePreview
+                                        },
+                                        vb:text {
+                                            text = "Enable note preview",
+                                        },
+                                    },
+                                    vb:text {
+                                        text = "Note preview length (ms):",
+                                    },
+                                    vb:valuebox {
+                                        steps = { 1, 2 },
+                                        min = 50,
+                                        max = 2000,
+                                        bind = preferences.triggerTime,
+                                    },
+                                    vb:text {
+                                        text = "OSC connection string:",
+                                    },
+                                    vb:textfield {
+                                        bind = preferences.oscConnectionString,
+                                    },
+                                },
+                                vb:column {
+                                    style = "group",
+                                    margin = 5,
+                                    uniform = true,
+                                    spacing = 4,
+                                    vb:text {
+                                        text = "Misc",
+                                        font = "big",
+                                        style = "strong",
+                                    },
+                                    vb:text {
+                                        text = "Max double click time (ms):",
+                                    },
+                                    vb:valuebox {
+                                        steps = { 1, 2 },
+                                        min = 50,
+                                        max = 2000,
+                                        bind = preferences.dblClickTime,
+                                    },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.forcePenMode,
+                                        },
+                                        vb:text {
+                                            text = "Enable pen mode by default",
+                                        },
+                                    },
+                                },
+                            }, { "Close", "Reset to default" })
+                            if oscClient then
+                                oscClient:close()
+                                oscClient = nil
+                            end
+                            refreshControls = true
                         end,
                     },
                 }
