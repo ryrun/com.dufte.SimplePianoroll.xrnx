@@ -569,12 +569,12 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed)
     --init server connection, when not ready
     local socket_error
     if oscClient == nil then
-        local protocol, host, port = string.match(preferences.oscConnectionString.value, '([a-z]+)://([0-9a-zA-Z.]+):([0-9]+)')
+        local protocol, host, port = string.match(preferences.oscConnectionString.value, '([a-zA-Z]+)://([0-9a-zA-Z.]+):([0-9]+)')
         if protocol and host and port then
             socket_error = nil
-            if protocol == "udp" then
+            if string.lower(protocol) == "udp" then
                 oscClient, socket_error = renoise.Socket.create_client(host, tonumber(port), renoise.Socket.PROTOCOL_UDP)
-            elseif protocol == "tcp" then
+            elseif string.lower(protocol) == "tcp" then
                 oscClient, socket_error = renoise.Socket.create_client(host, tonumber(port), renoise.Socket.PROTOCOL_TCP)
             else
                 socket_error = "Invalid protocol"
