@@ -29,6 +29,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     --button states
     forcePenMode = false,
     notePreview = true,
+    enableOSCClient = true,
     --oscsettingstring
     oscConnectionString = "udp://127.0.0.1:8000",
 }
@@ -561,6 +562,10 @@ end
 
 --simple note trigger
 local function triggerNoteOfCurrentInstrument(note_value, pressed)
+    --if osc client is enabled
+    if not preferences.enableOSCClient.value then
+        return
+    end
     --when no instrument is set, use the current selected one
     local instrument = currentInstrument
     if not currentInstrument then
@@ -582,12 +587,14 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed)
             if (socket_error) then
                 showStatus("Error: Cant create OSC socket: " .. socket_error)
                 preferences.notePreview.value = false
+                preferences.enableOSCClient.value = false
                 refreshControls = true
                 return
             end
         else
             showStatus("Error: OSC connection string malformed. Note preview disabled.")
             preferences.notePreview.value = false
+            preferences.enableOSCClient.value = false
             refreshControls = true
             return
         end
@@ -2872,9 +2879,17 @@ local function main_function()
                                     uniform = true,
                                     spacing = 4,
                                     vb:text {
-                                        text = "Note preview",
+                                        text = "Note playback / preview",
                                         font = "big",
                                         style = "strong",
+                                    },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.enableOSCClient
+                                        },
+                                        vb:text {
+                                            text = "Enable OSC client",
+                                        },
                                     },
                                     vb:row {
                                         vb:checkbox {
