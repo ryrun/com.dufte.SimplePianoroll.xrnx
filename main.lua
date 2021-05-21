@@ -70,6 +70,8 @@ local colorDisableButton = { 66, 66, 66 }
 
 --note trigger vars
 local oscClient
+local lastTriggerNote
+local triggerTimer
 
 --missing block loop observable? use a variable for check there was a change
 local blockloopidx
@@ -602,7 +604,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed)
     else
         --when last note is still playing, cut off
         if lastTriggerNote ~= nil then
-            renoise.tool():remove_timer(preferences.triggerTimer.value)
+            renoise.tool():remove_timer(triggerTimer)
             table.remove(lastTriggerNote) --remove velocity
             oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote))
             lastTriggerNote = nil
@@ -1264,6 +1266,10 @@ function pianoGridClick(x, y)
             addMissingNoteOffForColumns()
             refreshPianoRollNeeded = true
         else
+            --fast play from cursor
+            if keyControl then
+                song.transport:start_at(x + stepOffset)
+            end
             lastSelectionClick = { x, y }
             --deselect selected notes
             if #noteSelection > 0 then
