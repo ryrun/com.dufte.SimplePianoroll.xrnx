@@ -1969,6 +1969,7 @@ local function handleKeyEvent(key)
 
     --focus pattern editor - https://forum.renoise.com/t/set-focus-from-lua-code/42281/3
     app.window.lock_keyboard_focus = false
+    app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_PATTERN_EDITOR
     app.window.lock_keyboard_focus = true
 
     if key.name == "lcontrol" and key.state == "pressed" then
