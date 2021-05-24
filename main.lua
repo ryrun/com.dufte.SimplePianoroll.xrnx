@@ -2347,8 +2347,8 @@ local function main_function()
         vbw = vb.views
 
         --setup grid settings
-        gridStepSizeW = preferences.gridStepSizeW.value
-        gridStepSizeH = preferences.gridStepSizeH.value
+        gridStepSizeW = defaultPreferences.gridStepSizeW
+        gridStepSizeH = defaultPreferences.gridStepSizeH
         gridSpacing = preferences.gridSpacing.value
         gridMargin = preferences.gridMargin.value
         gridWidth = preferences.gridWidth.value
@@ -2863,7 +2863,7 @@ local function main_function()
                                     uniform = true,
                                     spacing = 4,
                                     vb:text {
-                                        text = "Piano grid",
+                                        text = "Piano roll grid",
                                         font = "big",
                                         style = "strong",
                                     },
@@ -2886,6 +2886,7 @@ local function main_function()
                                             bind = preferences.gridHeight,
                                         },
                                     },
+                                    --[[
                                     vb:text {
                                         text = "Grid step size:",
                                     },
@@ -2893,18 +2894,19 @@ local function main_function()
                                         uniform = true,
                                         vb:valuebox {
                                             steps = { 1, 2 },
-                                            min = 4,
+                                            min = 10,
                                             max = 40,
                                             bind = preferences.gridStepSizeW,
                                         },
                                         vb:text { text = "x", align = "center", },
                                         vb:valuebox {
                                             steps = { 1, 2 },
-                                            min = 4,
+                                            min = 10,
                                             max = 40,
                                             bind = preferences.gridStepSizeH,
                                         },
                                     },
+                                    ]]--
                                     vb:text {
                                         text = "These settings take effect,\nwhen the piano roll will be reopened.",
                                     },
