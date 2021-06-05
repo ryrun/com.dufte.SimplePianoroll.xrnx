@@ -211,6 +211,7 @@ end
 
 --converts special "hex" value like ZF to a number
 local function fromRenoiseHex(val)
+    val = string.upper(val)
     if string.len(val) > 2 then
         return -1
     end
