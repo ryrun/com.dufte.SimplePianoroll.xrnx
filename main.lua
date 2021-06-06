@@ -1377,7 +1377,8 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
             local color = colorNote
             local temp = "noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. ")"
             local spaceWidth = 0
-            local cutValue = nil
+            local delayWidth = 0
+            local cutValue
 
             if song.selected_track.volume_column_visible and current_note_end_vel >= 192 and current_note_end_vel <= 207 then
                 cutValue = current_note_end_vel
@@ -1393,13 +1394,13 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
                 cutValue = current_note_vel
             end
 
-            local bw = (gridStepSizeW) * current_note_len
-            local bspc = gridSpacing * (current_note_len - 1)
+            local buttonWidth = (gridStepSizeW) * current_note_len
+            local buttonSpace = gridSpacing * (current_note_len - 1)
 
             if cutValue then
                 cutValue = cutValue - 192
                 if cutValue < preferences.ticksPerLine.value then
-                    bw = bw - ((gridStepSizeW - gridSpacing) / 100 * (100 / preferences.ticksPerLine.value * (preferences.ticksPerLine.value - cutValue)))
+                    buttonWidth = buttonWidth - ((gridStepSizeW - gridSpacing) / 100 * (100 / preferences.ticksPerLine.value * (preferences.ticksPerLine.value - cutValue)))
                 end
             end
 
@@ -1417,11 +1418,6 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
                 end
             end
 
-            --no note labels when to short, 27 min width for button labels?
-            if bw - bspc - 1 < 27 then
-                current_note_string = ""
-            end
-
             local btn = vb:row {
                 margin = -gridMargin,
                 spacing = -gridSpacing,
@@ -1432,7 +1428,9 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
             end
 
             if song.selected_track.delay_column_visible and current_note_dly > 0 then
-                spaceWidth = spaceWidth + ((gridStepSizeW - gridSpacing) / 0xff * current_note_dly)
+                delayWidth = math.floor((gridStepSizeW - gridSpacing) / 0xff * current_note_dly)
+                spaceWidth = spaceWidth + delayWidth
+                buttonWidth = buttonWidth - delayWidth
             end
 
             if spaceWidth > 0 then
@@ -1441,11 +1439,16 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
                 });
             end
 
+            --no note labels when to short, 27 min width for button labels?
+            if buttonWidth - buttonSpace - 1 < 30 then
+                current_note_string = ""
+            end
+
             vbw["b" .. current_note_index] = nil
             btn:add_child(vb:button {
                 id = "b" .. current_note_index,
                 height = gridStepSizeH,
-                width = math.max(bw - bspc - 1, 1),
+                width = math.max(buttonWidth - buttonSpace - 1, 1),
                 visible = true,
                 color = color,
                 notifier = loadstring(temp),
