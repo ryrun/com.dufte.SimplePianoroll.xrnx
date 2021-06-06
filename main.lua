@@ -1316,7 +1316,7 @@ function pianoGridClick(x, y)
 end
 
 --enable a note button, when its visible, set correct length of the button
-local function enableNoteButton(column, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, noteoff, ghost)
+local function enableNoteButton(column, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, noteoff, ghost)
     --save highest and lowest note
     if lowesetNote == nil then
         lowesetNote = current_note
@@ -1328,7 +1328,6 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
     highestNote = math.max(highestNote, current_note)
     --process only visible ones
     if current_note_rowIndex ~= nil then
-        local line = current_note_step + stepOffset
         local noteOnStepIndex = current_note_step
         local current_note_index = tostring(current_note_step) .. "_" .. tostring(current_note_rowIndex) .. "_" .. tostring(column)
         if current_note_vel == nil then
@@ -1344,7 +1343,7 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
             current_note_dly = 0
         end
         noteData[current_note_index] = {
-            line = line,
+            line = current_note_line,
             note = current_note,
             vel = current_note_vel,
             end_vel = current_note_end_vel,
@@ -1412,7 +1411,7 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
                 color = colorNote
             end
             for key in pairs(noteSelection) do
-                if noteSelection[key].line == line and noteSelection[key].column == column then
+                if noteSelection[key].line == current_note_line and noteSelection[key].column == column then
                     color = colorNoteSelected
                     break
                 end
@@ -1640,6 +1639,7 @@ local function fillPianoRoll()
         local current_note_pan = 255
         local current_note_dly = 255
         local current_note_step
+        local current_note_line
         local current_note_rowIndex
 
         --loop through lines as steps
@@ -1664,6 +1664,7 @@ local function fillPianoRoll()
                         current_note_string = note_string
                         current_note_len = 0
                         current_note_step = s
+                        current_note_line = i
                         current_note_vel = fromRenoiseHex(volume_string)
                         current_note_pan = fromRenoiseHex(panning_string)
                         current_note_dly = fromRenoiseHex(delay_string)
@@ -1741,13 +1742,14 @@ local function fillPianoRoll()
                         currentInstrument = note_column.instrument_value + 1
                     end
                     if current_note ~= nil then
-                        enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost)
+                        enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost)
                     end
                     lastColumnWithNotes = c
                     current_note = note
                     current_note_string = note_string
                     current_note_len = 0
                     current_note_step = s
+                    current_note_line = s + stepOffset
                     current_note_vel = fromRenoiseHex(volume_string)
                     current_note_pan = fromRenoiseHex(panning_string)
                     current_note_dly = fromRenoiseHex(delay_string)
@@ -1758,7 +1760,7 @@ local function fillPianoRoll()
                         current_note_ghost = false
                     end
                 elseif note == 120 and current_note ~= nil then
-                    enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, true, current_note_ghost)
+                    enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, true, current_note_ghost)
                     current_note = nil
                     current_note_len = 0
                     current_note_rowIndex = nil
@@ -1775,7 +1777,7 @@ local function fillPianoRoll()
         end
         --pattern end, no note off, enable last note
         if current_note ~= nil then
-            enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost)
+            enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost)
         end
     end
 
