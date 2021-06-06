@@ -1116,7 +1116,7 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
         end
         if dly ~= nil then
             if tostring(dly) == "h" then
-                if note.volume_value <= 127 then
+                if note.delay_value <= 127 then
                     note.delay_value = randomizeValue(note.delay_value, 2, 0, 127)
                 end
             else
@@ -1466,6 +1466,9 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                 delayWidth = math.floor((gridStepSizeW - gridSpacing) / 0xff * current_note_dly)
                 spaceWidth = spaceWidth + delayWidth
                 buttonWidth = buttonWidth - delayWidth
+                if current_note_step < 2 then
+                    spaceWidth = spaceWidth + gridSpacing
+                end
             end
 
             if spaceWidth > 0 then
