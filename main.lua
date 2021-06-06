@@ -1285,7 +1285,7 @@ function pianoGridClick(x, y)
                     local note = note_column.note_value
                     --note inside the selection rect?
                     if note >= nmin and note <= nmax then
-                        local note_data = noteData[tostring(s) .. "_" .. tostring(noteValue2GridRowOffset(note))]
+                        local note_data = noteData[tostring(s) .. "_" .. tostring(noteValue2GridRowOffset(note)) .. "_" .. tostring(c)]
                         --note found?
                         if note_data ~= nil then
                             --add to selection table
