@@ -1062,7 +1062,7 @@ end
 local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
     local lineValues = song.selected_pattern_track.lines
     --randomize seed for humanizing
-    math.randomseed(os.clock()*100000000000)
+    math.randomseed(os.clock() * 100000000000)
     --describe for undo
     if tostring(vel) == "mute" then
         setUndoDescription("Mute selected notes ...")
@@ -1462,7 +1462,7 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
             end
 
             if song.selected_track.delay_column_visible and current_note_dly > 0 and stepOffset < current_note_line then
-                delayWidth = math.floor((gridStepSizeW - gridSpacing) / 0xff * current_note_dly)
+                delayWidth = math.max(math.floor((gridStepSizeW - gridSpacing) / 0xff * current_note_dly), 1)
                 spaceWidth = spaceWidth + delayWidth
                 buttonWidth = buttonWidth - delayWidth
                 if current_note_step < 2 then
