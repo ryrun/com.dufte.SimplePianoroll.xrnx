@@ -2837,6 +2837,7 @@ local function main_function()
                             currentNoteDelay = 0
                             changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay, nil)
                             refreshControls = true
+                            refreshPianoRollNeeded = true
                         end,
                     },
                     vb:button {
