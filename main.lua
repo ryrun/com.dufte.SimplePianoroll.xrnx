@@ -1157,7 +1157,6 @@ end
 --keyboard preview
 function keyClick(y, pressed)
     local note = gridOffset2NoteValue(y)
-    triggerNoteOfCurrentInstrument(note, pressed)
     --select all note events which have the specific note
     if keyControl then
         if not keyShift then
@@ -1171,6 +1170,8 @@ function keyClick(y, pressed)
         end
         addMissingNoteOffForColumns()
         refreshPianoRollNeeded = true
+    else
+        triggerNoteOfCurrentInstrument(note, pressed)
     end
 end
 
