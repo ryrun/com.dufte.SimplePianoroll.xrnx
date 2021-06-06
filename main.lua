@@ -2783,7 +2783,7 @@ local function main_function()
                         tooltip = "Note delay",
                         steps = { 1, 2 },
                         min = 0,
-                        max = 254,
+                        max = 255,
                         width = 54,
                         value = currentNoteDelay,
                         tostring = function(number)
