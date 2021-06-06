@@ -1145,8 +1145,8 @@ function keyClick(y, pressed)
 end
 
 --will be called, when a note was clicked
-function noteClick(x, y)
-    local index = tostring(x) .. "_" .. tostring(y)
+function noteClick(x, y, c)
+    local index = tostring(x) .. "_" .. tostring(y) .. "_" .. tostring(c)
     local dbclk = dbclkDetector("b" .. index)
     local note_data = noteData[index]
     --always set note date for the next new note
@@ -1330,7 +1330,7 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
     if current_note_rowIndex ~= nil then
         local line = current_note_step + stepOffset
         local noteOnStepIndex = current_note_step
-        local current_note_index = tostring(current_note_step) .. "_" .. tostring(current_note_rowIndex)
+        local current_note_index = tostring(current_note_step) .. "_" .. tostring(current_note_rowIndex) .. "_" .. tostring(column)
         if current_note_vel == nil then
             current_note_vel = 255
         end
@@ -1375,7 +1375,7 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
         --display note button, note len is greater 0
         if current_note_len > 0 then
             local color = colorNote
-            local temp = "noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. ")"
+            local temp = "noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ")"
             local spaceWidth = 0
             local delayWidth = 0
             local cutValue
