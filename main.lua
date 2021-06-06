@@ -25,6 +25,7 @@ local defaultPreferences = {
     notePreview = true,
     enableOSCClient = true,
     oscConnectionString = "udp://127.0.0.1:8000",
+    ticksPerLine = 12,
 }
 
 --tool preferences
@@ -48,6 +49,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     enableOSCClient = defaultPreferences.enableOSCClient,
     --oscsettingstring
     oscConnectionString = defaultPreferences.oscConnectionString,
+    ticksPerLine = defaultPreferences.ticksPerLine,
 }
 tool.preferences = preferences
 
@@ -109,7 +111,7 @@ local refreshTimeline = false
 local noteOnStep = {}
 
 --table for save used notes for faster overlapping detection
-local usedNotes = {}
+local noteButtons = {}
 
 --table for clipboard function
 local clipboard = {}
@@ -1329,7 +1331,6 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
         local line = current_note_step + stepOffset
         local noteOnStepIndex = current_note_step
         local current_note_index = tostring(current_note_step) .. "_" .. tostring(current_note_rowIndex)
-        local button_note_len
         if current_note_vel == nil then
             current_note_vel = 255
         end
@@ -1354,21 +1355,6 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
             column = column,
             ghst = ghost
         }
-        --any "used" notes to check?
-        if usedNotes[current_note] ~= nil then
-            --go through steps and search for overlapped notes
-            for i = current_note_step, current_note_step + (current_note_len - 1) do
-                if usedNotes[current_note][i] == nil then
-                    if not button_note_len then
-                        button_note_len = 1
-                    else
-                        button_note_len = button_note_len + 1
-                    end
-                end
-            end
-        else
-            button_note_len = current_note_len
-        end
         --fill noteOnStep not just note start, also the full length
         for i = 0, current_note_len - 1 do
             --only when velocity is not 0 (muted)
@@ -1385,51 +1371,93 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
                     ghst = ghost
                 })
             end
-            if usedNotes[current_note] == nil then
-                usedNotes[current_note] = {}
-            end
-            usedNotes[current_note][noteOnStepIndex + i] = true
         end
-        --display note button, only when a correct len was calculated
-        if button_note_len ~= nil then
-            local b = vbw["b" .. current_note_index]
-            local bw = gridStepSizeW * button_note_len
-            local bspc = gridSpacing * (button_note_len - 1)
-            if b.visible and b.width == bw - bspc then
-                --note will be completly overlapped
-            elseif b.visible then
-                --change the width of the already visible note, because both are overlapping
-                b.width = b.width + bw - (gridSpacing * (button_note_len))
+        --display note button, note len is greater 0
+        if current_note_len > 0 then
+            local color = colorNote
+            local temp = "noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. ")"
+            local spaceWidth = 0
+            local cutValue = nil
+
+            if song.selected_track.volume_column_visible and current_note_end_vel >= 192 and current_note_end_vel <= 207 then
+                cutValue = current_note_end_vel
+            end
+
+            if song.selected_track.panning_column_visible and current_note_pan >= 192 and current_note_pan <= 207 then
+                current_note_len = 1
+                cutValue = current_note_pan
+            end
+
+            if song.selected_track.volume_column_visible and current_note_vel >= 192 and current_note_vel <= 207 then
+                current_note_len = 1
+                cutValue = current_note_vel
+            end
+
+            local bw = (gridStepSizeW) * current_note_len
+            local bspc = gridSpacing * (current_note_len - 1)
+
+            if cutValue then
+                cutValue = cutValue - 192
+                if cutValue < preferences.ticksPerLine.value then
+                    bw = bw - ((gridStepSizeW - gridSpacing) / 100 * (100 / preferences.ticksPerLine.value * (preferences.ticksPerLine.value - cutValue)))
+                end
+            end
+
+            if current_note_vel == 0 then
+                color = colorNoteMuted
+            elseif ghost == true then
+                color = colorNoteGhost
             else
-                --default display of note
-                b.width = bw - bspc
-                if (gridStepSizeW < 34 and button_note_len < 2) or gridStepSizeH < 18 then
-                    b.text = ""
-                else
-                    b.text = current_note_string
-                end
-                if current_note_vel == 0 then
-                    b.color = colorNoteMuted
-                elseif ghost == true then
-                    b.color = colorNoteGhost
-                else
-                    b.color = colorNote
-                end
-                for key in pairs(noteSelection) do
-                    if noteSelection[key].line == line and noteSelection[key].column == column then
-                        b.color = colorNoteSelected
-                        break
-                    end
-                end
-                b.visible = true
-                --another quirk? i need to show and hide a bad note button, so scrolling gets faster for extra long notes
-                if button_note_len == 0 then
-                    b.visible = false
+                color = colorNote
+            end
+            for key in pairs(noteSelection) do
+                if noteSelection[key].line == line and noteSelection[key].column == column then
+                    color = colorNoteSelected
+                    break
                 end
             end
-            if noteoff then
-                vbw["p" .. current_note_index].visible = false
+
+            --no note labels when to short, 27 min width for button labels?
+            if bw - bspc - 1 < 27 then
+                current_note_string = ""
             end
+
+            local btn = vb:row {
+                margin = -gridMargin,
+                spacing = -gridSpacing,
+            }
+
+            if current_note_step > 1 then
+                spaceWidth = (gridStepSizeW * (current_note_step - 1)) - (gridSpacing * (current_note_step - 2))
+            end
+
+            if song.selected_track.delay_column_visible and current_note_dly > 0 then
+                spaceWidth = spaceWidth + ((gridStepSizeW - gridSpacing) / 0xff * current_note_dly)
+            end
+
+            if spaceWidth > 0 then
+                btn:add_child(vb:space {
+                    width = spaceWidth,
+                });
+            end
+
+            vbw["b" .. current_note_index] = nil
+            btn:add_child(vb:button {
+                id = "b" .. current_note_index,
+                height = gridStepSizeH,
+                width = math.max(bw - bspc - 1, 1),
+                visible = true,
+                color = color,
+                notifier = loadstring(temp),
+                text = current_note_string,
+            });
+
+            if not noteButtons[current_note_rowIndex] then
+                noteButtons[current_note_rowIndex] = {}
+            end
+
+            table.insert(noteButtons[current_note_rowIndex], btn);
+            vbw["row" .. current_note_rowIndex]:add_child(btn)
         end
     end
 end
@@ -1570,9 +1598,18 @@ local function fillPianoRoll()
     local blackKey
     local lastColumnWithNotes
 
+    --remove old notes
+    for y = 1, gridHeight do
+        if noteButtons[y] then
+            for key in pairs(noteButtons[y]) do
+                vbw["row" .. y]:remove_child(noteButtons[y][key])
+            end
+        end
+    end
+
     --reset vars
+    noteButtons = {}
     noteOnStep = {}
-    usedNotes = {}
     noteData = {}
     currentInstrument = nil
 
@@ -1654,7 +1691,6 @@ local function fillPianoRoll()
                     if blackKey then
                         color = colorBlackKey[bar % 2 + 1]
                     end
-                    vbw["b" .. index].visible = false
                     if s <= stepsCount then
                         p.color = color
                         p.visible = true
@@ -1729,7 +1765,6 @@ local function fillPianoRoll()
                 end
 
                 if current_note_rowIndex ~= nil then
-                    vbw["p" .. stepString .. "_" .. tostring(current_note_rowIndex)].visible = false
                     current_note_len = current_note_len + 1
                 end
 
@@ -1740,19 +1775,6 @@ local function fillPianoRoll()
             enableNoteButton(c, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost)
         end
     end
-
-    --quirk? i need to visible and hide a note button to get fast vertical scroll
-    if not vbw["b" .. tostring(4) .. "_" .. tostring(4)].visible then
-        vbw["b" .. tostring(4) .. "_" .. tostring(4)].visible = true
-        vbw["b" .. tostring(4) .. "_" .. tostring(4)].visible = false
-    end
-
-    --hide unused note columns - never hide, because it could hide notes in other patterns where more columns was needed
-    --[[
-    if lastColumnWithNotes ~= nil and lastColumnWithNotes < columns then
-        track.visible_note_columns = lastColumnWithNotes
-    end
-    --]]
 
     --switch to instrument which is used in pattern
     if currentInstrument and currentInstrument ~= song.selected_instrument_index then
@@ -2360,6 +2382,7 @@ local function main_function()
         lastSelectionClick = nil
         noteOffset = 28 -- default offset
         currentGhostTrack = nil
+        noteButtons = {}
         --reset lowest / highest note for center view
         lowesetNote = nil
         highestNote = nil
@@ -2397,7 +2420,12 @@ local function main_function()
             margin = 0,
             spacing = -1,
         }
+
         for y = gridHeight, 1, -1 do
+            local grow = vb:column {
+                id = "row" .. tostring(y),
+                spacing = -(gridStepSizeH - gridSpacing + 2)
+            }
             local row = vb:row {
                 margin = -gridMargin,
                 spacing = -gridSpacing,
@@ -2413,18 +2441,9 @@ local function main_function()
                     notifier = loadstring(temp),
                 }
                 row:add_child(vb_temp)
-                temp = "noteClick(" .. tostring(x) .. "," .. tostring(y) .. ")"
-                vb_temp = vb:button {
-                    id = "b" .. tostring(x) .. "_" .. tostring(y),
-                    height = gridStepSizeH,
-                    width = gridStepSizeW,
-                    visible = false,
-                    color = colorNote,
-                    notifier = loadstring(temp),
-                }
-                row:add_child(vb_temp)
             end
-            pianorollColumns:add_child(row)
+            grow:add_child(row)
+            pianorollColumns:add_child(grow)
         end
 
         --horizontal scrollbar
@@ -2575,6 +2594,7 @@ local function main_function()
                             else
                                 song.selected_track.volume_column_visible = true
                             end
+                            refreshPianoRollNeeded = true
                         end
                     },
                     vb:valuebox {
@@ -2686,6 +2706,7 @@ local function main_function()
                             else
                                 song.selected_track.panning_column_visible = true
                             end
+                            refreshPianoRollNeeded = true
                         end
                     },
                     vb:valuebox {
@@ -2728,6 +2749,7 @@ local function main_function()
                             currentNotePan = 255
                             changePropertiesOfSelectedNotes(nil, nil, nil, currentNotePan)
                             refreshControls = true
+                            refreshPianoRollNeeded = true
                         end,
                     },
                     vb:button {
@@ -2973,6 +2995,15 @@ local function main_function()
                                         max = 2000,
                                         bind = preferences.dblClickTime,
                                     },
+                                    vb:text {
+                                        text = "Song ticks per line:",
+                                    },
+                                    vb:valuebox {
+                                        steps = { 1, 2 },
+                                        min = 1,
+                                        max = 16,
+                                        bind = preferences.ticksPerLine,
+                                    },
                                     vb:row {
                                         vb:checkbox {
                                             bind = preferences.forcePenMode,
@@ -2996,6 +3027,7 @@ local function main_function()
                                 preferences.notePreview.value = defaultPreferences.notePreview
                                 preferences.enableOSCClient.value = defaultPreferences.enableOSCClient
                                 preferences.oscConnectionString.value = defaultPreferences.oscConnectionString
+                                preferences.ticksPerLine.value = defaultPreferences.ticksPerLine
                                 app:show_message("All preferences was set to default values.")
                             end
                             if oscClient then
