@@ -1391,6 +1391,10 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
             if song.selected_track.volume_column_visible and current_note_vel >= 192 and current_note_vel <= 207 then
                 current_note_len = 1
                 cutValue = current_note_vel
+                --wenn note is cut and outside, dont render it
+                if stepOffset >= current_note_line then
+                    return
+                end
             end
 
             local buttonWidth = (gridStepSizeW) * current_note_len
@@ -1426,7 +1430,7 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                 spaceWidth = (gridStepSizeW * (current_note_step - 1)) - (gridSpacing * (current_note_step - 2))
             end
 
-            if song.selected_track.delay_column_visible and current_note_dly > 0 then
+            if song.selected_track.delay_column_visible and current_note_dly > 0 and stepOffset < current_note_line then
                 delayWidth = math.floor((gridStepSizeW - gridSpacing) / 0xff * current_note_dly)
                 spaceWidth = spaceWidth + delayWidth
                 buttonWidth = buttonWidth - delayWidth
@@ -2793,6 +2797,7 @@ local function main_function()
                             else
                                 song.selected_track.delay_column_visible = true
                             end
+                            refreshPianoRollNeeded = true
                         end,
                     },
                     vb:valuebox {
