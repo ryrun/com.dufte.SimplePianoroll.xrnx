@@ -1940,6 +1940,7 @@ end
 --will be called when the visibility of columns will be changed
 local function obsColumnRefresh()
     refreshControls = true
+    refreshPianoRollNeeded = true
 end
 
 --will be called when something in the pattern will be changed
