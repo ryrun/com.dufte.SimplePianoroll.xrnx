@@ -236,7 +236,8 @@ end
 
 --change a value randomly
 local function randomizeValue(input, scale, min, max)
-    input = input + math.random(-scale, scale)
+    local r = math.random(-scale, scale)
+    input = input + r
     if input > max then
         input = max
     elseif input < min then
@@ -1063,7 +1064,7 @@ end
 local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
     local lineValues = song.selected_pattern_track.lines
     --randomize seed for humanizing
-    math.randomseed(os.time())
+    math.randomseed(os.clock()*100000000000)
     --describe for undo
     if tostring(vel) == "mute" then
         setUndoDescription("Mute selected notes ...")
