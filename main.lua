@@ -1439,7 +1439,7 @@ local function enableNoteButton(column, current_note_step, current_note_rowIndex
                 });
             end
 
-            --no note labels when to short, 27 min width for button labels?
+            --no note labels when to short
             if buttonWidth - buttonSpace - 1 < 30 then
                 current_note_string = ""
             end
