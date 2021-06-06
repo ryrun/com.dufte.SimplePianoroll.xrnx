@@ -1052,6 +1052,10 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
         setUndoDescription("Unmute selected notes ...")
     elseif tostring(special) == "matchingnotes" then
         setUndoDescription("Matching selected notes ...")
+    elseif tostring(special) == "ghost" then
+        setUndoDescription("Turn selected notes to ghost notes ...")
+    elseif tostring(special) == "noghost" then
+        setUndoDescription("Turn selected notes to normal notes ...")
     else
         setUndoDescription("Change note properties ...")
     end
@@ -1103,6 +1107,14 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
         if special == "matchingnotes" then
             note.note_value = noteSelection[1].note
             noteSelection[key].note = note.note_value
+        elseif special == "ghost" then
+            note.instrument_value = 255
+        elseif special == "noghost" then
+            --when no instrument is set, use the current selected one
+            if not currentInstrument then
+                currentInstrument = song.selected_instrument_index
+            end
+            note.instrument_value = currentInstrument - 1
         end
     end
     addMissingNoteOffForColumns()
@@ -1879,7 +1891,7 @@ local function appIdleEvent()
         if refreshPianoRollNeeded then
             local start = os.clock()
             fillPianoRoll()
-            print("fillPianoRoll time: " .. os.clock() - start)
+            --print("fillPianoRoll time: " .. os.clock() - start)
             refreshPianoRollNeeded = false
         end
 
@@ -2858,8 +2870,14 @@ local function main_function()
                         notifier = function()
                             if currentNoteGhost then
                                 currentNoteGhost = false
+                                if #noteSelection > 0 then
+                                    changePropertiesOfSelectedNotes(nil, nil, nil, nil, "noghost")
+                                end
                             else
                                 currentNoteGhost = true
+                                if #noteSelection > 0 then
+                                    changePropertiesOfSelectedNotes(nil, nil, nil, nil, "ghost")
+                                end
                             end
                             refreshControls = true
                         end
