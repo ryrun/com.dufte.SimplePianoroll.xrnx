@@ -1377,7 +1377,7 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
             local temp = "noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ")"
             local spaceWidth = 0
             local delayWidth = 0
-            local cutValue
+            local cutValue = 0
 
             if song.selected_track.volume_column_visible and current_note_end_vel >= 192 and current_note_end_vel <= 207 then
                 cutValue = current_note_end_vel
@@ -1400,7 +1400,7 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
             local buttonWidth = (gridStepSizeW) * current_note_len
             local buttonSpace = gridSpacing * (current_note_len - 1)
 
-            if cutValue then
+            if cutValue > 0 then
                 cutValue = cutValue - 192
                 if cutValue < preferences.ticksPerLine.value then
                     buttonWidth = buttonWidth - ((gridStepSizeW - gridSpacing) / 100 * (100 / preferences.ticksPerLine.value * (preferences.ticksPerLine.value - cutValue)))
