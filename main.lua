@@ -26,6 +26,8 @@ local defaultPreferences = {
     enableOSCClient = true,
     oscConnectionString = "udp://127.0.0.1:8000",
     ticksPerLine = 12,
+    applyVelocityColorShading = true,
+    velocityColorShadingAmount = 0.4,
 }
 
 --tool preferences
@@ -50,6 +52,9 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     --oscsettingstring
     oscConnectionString = defaultPreferences.oscConnectionString,
     ticksPerLine = defaultPreferences.ticksPerLine,
+    --velocity rendering
+    applyVelocityColorShading = defaultPreferences.applyVelocityColorShading,
+    velocityColorShadingAmount = defaultPreferences.velocityColorShadingAmount,
 }
 tool.preferences = preferences
 
@@ -249,6 +254,20 @@ local function calculateBarBeat(line, returnbeat, lpb)
         return math.ceil((line - lpb) / lpb) % 4 + 1
     end
     return math.ceil((line - (lpb * 4)) / (lpb * 4)) + 1
+end
+
+--simple function for coloring velocity
+local function colorNoteVelocity(vel)
+    local color = {}
+    if vel < 0x7f and preferences.applyVelocityColorShading.value then
+        local shade = (preferences.velocityColorShadingAmount.value / 0x7f * (0x7f - vel))
+        color[1] = colorNote[1] * (1 - shade)
+        color[2] = colorNote[2] * (1 - shade)
+        color[3] = colorNote[3] * (1 - shade)
+    else
+        color = colorNote
+    end
+    return color
 end
 
 --jump to the note position in pattern
@@ -1379,13 +1398,14 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                     row = current_note_rowIndex,
                     note = current_note,
                     len = current_note_len - i,
+                    vel = current_note_vel,
                     ghst = ghost
                 })
             end
         end
         --display note button, note len is greater 0
         if current_note_len > 0 then
-            local color = colorNote
+            local color = {}
             local temp = "noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ")"
             local spaceWidth = 0
             local delayWidth = 0
@@ -1424,7 +1444,7 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
             elseif ghost == true then
                 color = colorNoteGhost
             else
-                color = colorNote
+                color = colorNoteVelocity(current_note_vel)
             end
             for key in pairs(noteSelection) do
                 if noteSelection[key].line == current_note_line and noteSelection[key].column == column then
@@ -1845,7 +1865,7 @@ local function highlightNotesOnStep(step, highlight)
                         if note.ghst then
                             vbw["b" .. note.index].color = colorNoteGhost
                         else
-                            vbw["b" .. note.index].color = colorNote
+                            vbw["b" .. note.index].color = colorNoteVelocity(note.vel)
                         end
                     end
                     if noteInScale(note.note) then
@@ -2978,6 +2998,29 @@ local function main_function()
                                     vb:text {
                                         text = "These settings take effect,\nwhen the piano roll will be reopened.",
                                     },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.applyVelocityColorShading
+                                        },
+                                        vb:text {
+                                            text = "Shade note color according to velocity",
+                                        },
+                                    },
+                                    vb:text {
+                                        text = "Shade amount:",
+                                    },
+                                    vb:valuebox {
+                                        steps = { 0.01, 0.1 },
+                                        min = 0.1,
+                                        max = 1,
+                                        bind = preferences.velocityColorShadingAmount,
+                                        tostring = function(v)
+                                            return string.format("%.2f", v)
+                                        end,
+                                        tonumber = function(v)
+                                            return tonumber(v)
+                                        end
+                                    },
                                 },
                                 vb:column {
                                     style = "group",
@@ -3073,6 +3116,8 @@ local function main_function()
                                 preferences.enableOSCClient.value = defaultPreferences.enableOSCClient
                                 preferences.oscConnectionString.value = defaultPreferences.oscConnectionString
                                 preferences.ticksPerLine.value = defaultPreferences.ticksPerLine
+                                preferences.applyVelocityColorShading.value = defaultPreferences.applyVelocityColorShading
+                                preferences.velocityColorShadingAmount.value = defaultPreferences.velocityColorShadingAmount
                                 app:show_message("All preferences was set to default values.")
                             end
                             if oscClient then
@@ -3080,6 +3125,7 @@ local function main_function()
                                 oscClient = nil
                             end
                             refreshControls = true
+                            refreshPianoRollNeeded = true
                         end,
                     },
                 }
