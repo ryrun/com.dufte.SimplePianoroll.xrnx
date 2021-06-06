@@ -20,6 +20,7 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 * Note preview via Renoise inbuild OSC Server
 * Ghost Track
 * Many useful keyboard shortcuts (inspired by FL and Reason)
+* Can display notes with note cut effects and delayed ones
 * and more...
 
 ## Important
