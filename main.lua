@@ -25,7 +25,6 @@ local defaultPreferences = {
     notePreview = true,
     enableOSCClient = true,
     oscConnectionString = "udp://127.0.0.1:8000",
-    ticksPerLine = 12,
     applyVelocityColorShading = true,
     velocityColorShadingAmount = 0.4,
 }
@@ -51,7 +50,6 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     enableOSCClient = defaultPreferences.enableOSCClient,
     --oscsettingstring
     oscConnectionString = defaultPreferences.oscConnectionString,
-    ticksPerLine = defaultPreferences.ticksPerLine,
     --velocity rendering
     applyVelocityColorShading = defaultPreferences.applyVelocityColorShading,
     velocityColorShadingAmount = defaultPreferences.velocityColorShadingAmount,
@@ -1435,8 +1433,8 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
 
             if cutValue > 0 then
                 cutValue = cutValue - 192
-                if cutValue < preferences.ticksPerLine.value then
-                    buttonWidth = buttonWidth - ((gridStepSizeW - gridSpacing) / 100 * (100 / preferences.ticksPerLine.value * (preferences.ticksPerLine.value - cutValue)))
+                if cutValue < song.transport.tpl then
+                    buttonWidth = buttonWidth - ((gridStepSizeW - gridSpacing) / 100 * (100 / song.transport.tpl * (song.transport.tpl - cutValue)))
                 end
             end
 
@@ -3087,15 +3085,6 @@ local function main_function()
                                         max = 2000,
                                         bind = preferences.dblClickTime,
                                     },
-                                    vb:text {
-                                        text = "Song ticks per line:",
-                                    },
-                                    vb:valuebox {
-                                        steps = { 1, 2 },
-                                        min = 1,
-                                        max = 16,
-                                        bind = preferences.ticksPerLine,
-                                    },
                                     vb:row {
                                         vb:checkbox {
                                             bind = preferences.forcePenMode,
@@ -3119,7 +3108,6 @@ local function main_function()
                                 preferences.notePreview.value = defaultPreferences.notePreview
                                 preferences.enableOSCClient.value = defaultPreferences.enableOSCClient
                                 preferences.oscConnectionString.value = defaultPreferences.oscConnectionString
-                                preferences.ticksPerLine.value = defaultPreferences.ticksPerLine
                                 preferences.applyVelocityColorShading.value = defaultPreferences.applyVelocityColorShading
                                 preferences.velocityColorShadingAmount.value = defaultPreferences.velocityColorShadingAmount
                                 app:show_message("All preferences was set to default values.")
