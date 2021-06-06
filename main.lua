@@ -1779,6 +1779,12 @@ local function fillPianoRoll()
         end
     end
 
+    --quirk? i need to visible and hide a note button to get fast vertical scroll
+    if not vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible then
+        vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible = true
+        vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible = false
+    end
+
     --switch to instrument which is used in pattern
     if currentInstrument and currentInstrument ~= song.selected_instrument_index then
         song.selected_instrument_index = currentInstrument
@@ -2442,6 +2448,15 @@ local function main_function()
                     color = colorWhiteKey[1],
                     visible = false,
                     notifier = loadstring(temp),
+                }
+                row:add_child(vb_temp)
+                --dummy for quirk?
+                vb_temp = vb:button {
+                    id = "dummy" .. tostring(x) .. "_" .. tostring(y),
+                    height = gridStepSizeH,
+                    width = gridStepSizeW,
+                    visible = false,
+                    color = colorNote,
                 }
                 row:add_child(vb_temp)
             end
