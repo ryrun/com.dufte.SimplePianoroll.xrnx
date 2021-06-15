@@ -27,6 +27,7 @@ local defaultPreferences = {
     oscConnectionString = "udp://127.0.0.1:8000",
     applyVelocityColorShading = true,
     velocityColorShadingAmount = 0.4,
+    followPlayCursor = true,
 }
 
 --tool preferences
@@ -53,6 +54,8 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     --velocity rendering
     applyVelocityColorShading = defaultPreferences.applyVelocityColorShading,
     velocityColorShadingAmount = defaultPreferences.velocityColorShadingAmount,
+    --misc settings
+    followPlayCursor = defaultPreferences.followPlayCursor,
 }
 tool.preferences = preferences
 
@@ -1950,8 +1953,8 @@ local function appIdleEvent()
             end
             lastStepOn = line - stepOffset
 
-            --follow play cursor, when enabled
-            if song.transport.follow_player and lastStepOn > gridWidth or lastStepOn < 0 then
+            if preferences.followPlayCursor.value and song.transport.follow_player and (lastStepOn > gridWidth or lastStepOn < 0) then
+                --follow play cursor, when enabled
                 local v = stepSlider.value + (gridWidth * (lastStepOn / gridWidth)) - 1
                 if v > stepSlider.max then
                     v = stepSlider.max
@@ -1961,8 +1964,8 @@ local function appIdleEvent()
                 end
                 lastStepOn = nil
                 stepSlider.value = v
-            --highlight when inside the grid
             elseif lastStepOn > 0 and lastStepOn <= gridWidth then
+                --highlight when inside the grid
                 vbw["s" .. tostring(lastStepOn)].color = colorStepOn
                 highlightNotesOnStep(lastStepOn, true)
             else
@@ -3021,7 +3024,7 @@ local function main_function()
                                     },
                                     ]]--
                                     vb:text {
-                                        text = "These settings take effect,\nwhen the piano roll will be reopened.",
+                                        text = "Grid size settings takes effect,\nwhen the piano roll will be reopened.",
                                     },
                                     vb:row {
                                         vb:checkbox {
@@ -3116,6 +3119,14 @@ local function main_function()
                                             text = "Enable pen mode by default",
                                         },
                                     },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.followPlayCursor,
+                                        },
+                                        vb:text {
+                                            text = "Follow play cursor, when enabled in Renoise",
+                                        },
+                                    },
                                 },
                             }, { "Close", "Reset to default" })
                             if btn == "Reset to default" then
@@ -3133,6 +3144,7 @@ local function main_function()
                                 preferences.oscConnectionString.value = defaultPreferences.oscConnectionString
                                 preferences.applyVelocityColorShading.value = defaultPreferences.applyVelocityColorShading
                                 preferences.velocityColorShadingAmount.value = defaultPreferences.velocityColorShadingAmount
+                                preferences.followPlayCursor.value = defaultPreferences.followPlayCursor
                                 app:show_message("All preferences was set to default values.")
                             end
                             if oscClient then
