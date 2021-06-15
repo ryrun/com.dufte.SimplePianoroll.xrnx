@@ -1950,7 +1950,19 @@ local function appIdleEvent()
             end
             lastStepOn = line - stepOffset
 
-            if lastStepOn > 0 and lastStepOn <= gridWidth then
+            --follow play cursor, when enabled
+            if song.transport.follow_player and lastStepOn > gridWidth or lastStepOn < 0 then
+                local v = stepSlider.value + (gridWidth * (lastStepOn / gridWidth)) - 1
+                if v > stepSlider.max then
+                    v = stepSlider.max
+                end
+                if v < stepSlider.min then
+                    v = stepSlider.min
+                end
+                lastStepOn = nil
+                stepSlider.value = v
+            --highlight when inside the grid
+            elseif lastStepOn > 0 and lastStepOn <= gridWidth then
                 vbw["s" .. tostring(lastStepOn)].color = colorStepOn
                 highlightNotesOnStep(lastStepOn, true)
             else
@@ -2439,6 +2451,7 @@ local function main_function()
         pianoKeyWidth = preferences.gridStepSizeW.value * 3
 
         lastStepOn = nil
+        stepOffset = 0
         lastSelectionClick = nil
         noteOffset = 28 -- default offset
         currentGhostTrack = nil
