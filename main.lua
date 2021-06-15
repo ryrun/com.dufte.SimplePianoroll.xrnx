@@ -1088,38 +1088,47 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
             if tostring(vel) == "h" then
                 if note.volume_value <= 127 then
                     note.volume_value = randomizeValue(note.volume_value, 2, 1, 127)
+                    selection.vel = note.volume_value
                 end
             elseif tostring(vel) == "mute" then
                 note.volume_value = 0
+                selection.vel = note.volume_value
             elseif tostring(vel) == "unmute" then
                 note.volume_value = 255
+                selection.vel = note.volume_value
             else
                 note.volume_string = toRenoiseHex(vel)
+                selection.vel = vel
             end
         end
         if end_vel ~= nil then
+            selection.end_vel = end_vel
             if selection.len > 1 then
-                note_end.volume_string = toRenoiseHex(end_vel)
+                note_end.volume_string = toRenoiseHex(selection.end_vel)
             else
-                note.volume_string = toRenoiseHex(end_vel)
+                note.volume_string = toRenoiseHex(selection.end_vel)
             end
         end
         if pan ~= nil then
             if tostring(vel) == "h" then
                 if note.panning_volume <= 127 then
                     note.panning_volume = randomizeValue(note.panning_volume, 2, 1, 127)
+                    selection.pan = note.panning_volume
                 end
             else
                 note.panning_string = toRenoiseHex(pan)
+                selection.pan = pan
             end
         end
         if dly ~= nil then
             if tostring(dly) == "h" then
                 if note.delay_value <= 127 then
                     note.delay_value = randomizeValue(note.delay_value, 2, 0, 127)
+                    selection.dly = note.delay_value
                 end
             else
                 note.delay_string = toRenoiseHex(dly)
+                selection.dly = dly
             end
         end
         if special == "matchingnotes" then
