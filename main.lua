@@ -1345,7 +1345,8 @@ function pianoGridClick(x, y)
             --fast play from cursor
             if keyControl then
                 song.transport:stop()
-                song.transport:start_at(x + stepOffset)
+                lastPlaySelectionLine = x + stepOffset
+                song.transport:start_at(lastPlaySelectionLine)
             end
             lastSelectionClick = { x, y }
             --deselect selected notes
@@ -2391,6 +2392,9 @@ local function handleKeyEvent(key)
             if lastPlaySelectionLine then
                 song.transport:stop()
                 song.transport:start_at(lastPlaySelectionLine)
+            else
+                song.transport:stop()
+                song.transport:start_at(1)
             end
         end
         handled = true
