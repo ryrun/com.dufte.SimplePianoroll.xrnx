@@ -28,6 +28,7 @@ local defaultPreferences = {
     applyVelocityColorShading = true,
     velocityColorShadingAmount = 0.4,
     followPlayCursor = true,
+    showNoteHints = true,
 }
 
 --tool preferences
@@ -56,6 +57,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     velocityColorShadingAmount = defaultPreferences.velocityColorShadingAmount,
     --misc settings
     followPlayCursor = defaultPreferences.followPlayCursor,
+    showNoteHints = defaultPreferences.showNoteHints,
 }
 tool.preferences = preferences
 
@@ -1462,6 +1464,36 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
             for key in pairs(noteSelection) do
                 if noteSelection[key].line == current_note_line and noteSelection[key].column == column then
                     color = colorNoteSelected
+                    --set select color to key sub state button
+                    vbw["ks" .. current_note_rowIndex].color = color
+                    vbw["ks" .. current_note_rowIndex].visible = true
+                    vbw["kss" .. current_note_rowIndex].visible = false
+                    --show note hints, when option is enabled
+                    if preferences.showNoteHints.value then
+                        for i = 1, 3, 1 do
+                            local idx
+                            for t = 1, 4, 1 do
+                                if t == 1 then
+                                    --octaves
+                                    idx = (current_note_rowIndex + (i * 12))
+                                elseif t == 2 then
+                                    --octaves
+                                    idx = (current_note_rowIndex - (i * 12))
+                                elseif t == 3 then
+                                    --fifths
+                                    idx = (current_note_rowIndex + (i * 12) - 5)
+                                elseif t == 4 then
+                                    --fifths
+                                    idx = (current_note_rowIndex - (i * 12) + 7)
+                                end
+                                if vbw["ks" .. idx] ~= nil and not vbw["ks" .. idx].visible then
+                                    vbw["ks" .. idx].color = colorKeyWhite
+                                    vbw["ks" .. idx].visible = true
+                                    vbw["kss" .. idx].visible = false
+                                end
+                            end
+                        end
+                    end
                     break
                 end
             end
@@ -1768,6 +1800,9 @@ local function fillPianoRoll()
                                     key.text = ""
                                 end
                             end
+                            --reset key sub state button color
+                            vbw["ks" .. ystring].visible = false
+                            vbw["kss" .. ystring].visible = true
                         end
                     else
                         p.visible = false
@@ -2587,8 +2622,20 @@ local function main_function()
                             visible = true,
                         },
                         vb:space {
+                            width = 5,
+                        },
+                        vb:button {
+                            id = "ks" .. tostring(y),
+                            height = gridStepSizeH,
                             width = 6,
-                        }
+                            visible = false,
+                            active = false,
+                        },
+                        vb:space {
+                            id = "kss" .. tostring(y),
+                            width = 6,
+                            visible = false,
+                        },
                     }
             )
         end
@@ -3131,6 +3178,14 @@ local function main_function()
                                             text = "Follow play cursor, when enabled in Renoise",
                                         },
                                     },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.showNoteHints,
+                                        },
+                                        vb:text {
+                                            text = "Show octaves and fifths of selected notes",
+                                        },
+                                    },
                                 },
                             }, { "Close", "Reset to default" })
                             if btn == "Reset to default" then
@@ -3149,6 +3204,7 @@ local function main_function()
                                 preferences.applyVelocityColorShading.value = defaultPreferences.applyVelocityColorShading
                                 preferences.velocityColorShadingAmount.value = defaultPreferences.velocityColorShadingAmount
                                 preferences.followPlayCursor.value = defaultPreferences.followPlayCursor
+                                preferences.showNoteHints.value = defaultPreferences.showNoteHints
                                 app:show_message("All preferences was set to default values.")
                             end
                             if oscClient then
