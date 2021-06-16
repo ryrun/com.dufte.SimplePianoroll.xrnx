@@ -3034,11 +3034,10 @@ local function main_function()
                                         font = "big",
                                         style = "strong",
                                     },
-                                    vb:text {
-                                        text = "Grid size:",
-                                    },
                                     vb:row {
-                                        uniform = true,
+                                        vb:text {
+                                            text = "Grid size:",
+                                        },
                                         vb:valuebox {
                                             steps = { 1, 2 },
                                             min = 16,
@@ -3077,6 +3076,7 @@ local function main_function()
                                     vb:text {
                                         text = "Grid size settings takes effect,\nwhen the piano roll will be reopened.",
                                     },
+                                    vb:space { height = 8 },
                                     vb:row {
                                         vb:checkbox {
                                             bind = preferences.applyVelocityColorShading
@@ -3085,20 +3085,22 @@ local function main_function()
                                             text = "Shade note color according to velocity",
                                         },
                                     },
-                                    vb:text {
-                                        text = "Shade amount:",
-                                    },
-                                    vb:valuebox {
-                                        steps = { 0.01, 0.1 },
-                                        min = 0.1,
-                                        max = 1,
-                                        bind = preferences.velocityColorShadingAmount,
-                                        tostring = function(v)
-                                            return string.format("%.2f", v)
-                                        end,
-                                        tonumber = function(v)
-                                            return tonumber(v)
-                                        end
+                                    vb:row {
+                                        vb:text {
+                                            text = "Shade amount:",
+                                        },
+                                        vb:valuebox {
+                                            steps = { 0.01, 0.1 },
+                                            min = 0.1,
+                                            max = 1,
+                                            bind = preferences.velocityColorShadingAmount,
+                                            tostring = function(v)
+                                                return string.format("%.2f", v)
+                                            end,
+                                            tonumber = function(v)
+                                                return tonumber(v)
+                                            end
+                                        },
                                     },
                                 },
                                 vb:column {
@@ -3107,7 +3109,7 @@ local function main_function()
                                     uniform = true,
                                     spacing = 4,
                                     vb:text {
-                                        text = "Note playback / preview",
+                                        text = "Note playback and preview",
                                         font = "big",
                                         style = "strong",
                                     },
@@ -3127,14 +3129,16 @@ local function main_function()
                                             text = "Enable note preview",
                                         },
                                     },
-                                    vb:text {
-                                        text = "Note preview length (ms):",
-                                    },
-                                    vb:valuebox {
-                                        steps = { 1, 2 },
-                                        min = 50,
-                                        max = 2000,
-                                        bind = preferences.triggerTime,
+                                    vb:row {
+                                        vb:text {
+                                            text = "Note preview length (ms):",
+                                        },
+                                        vb:valuebox {
+                                            steps = { 1, 2 },
+                                            min = 50,
+                                            max = 2000,
+                                            bind = preferences.triggerTime,
+                                        },
                                     },
                                     vb:text {
                                         text = "OSC connection string:",
@@ -3153,14 +3157,16 @@ local function main_function()
                                         font = "big",
                                         style = "strong",
                                     },
-                                    vb:text {
-                                        text = "Max double click time (ms):",
-                                    },
-                                    vb:valuebox {
-                                        steps = { 1, 2 },
-                                        min = 50,
-                                        max = 2000,
-                                        bind = preferences.dblClickTime,
+                                    vb:row {
+                                        vb:text {
+                                            text = "Max double click time (ms):",
+                                        },
+                                        vb:valuebox {
+                                            steps = { 1, 2 },
+                                            min = 50,
+                                            max = 2000,
+                                            bind = preferences.dblClickTime,
+                                        },
                                     },
                                     vb:row {
                                         vb:checkbox {
