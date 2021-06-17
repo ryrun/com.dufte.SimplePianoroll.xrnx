@@ -2003,7 +2003,6 @@ local function appIdleEvent()
 
         --refresh pianoroll, when needed
         if refreshPianoRollNeeded then
-            local start = os.clock()
             fillPianoRoll()
             --print("fillPianoRoll time: " .. os.clock() - start)
             refreshPianoRollNeeded = false
