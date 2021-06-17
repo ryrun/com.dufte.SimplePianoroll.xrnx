@@ -3153,12 +3153,13 @@ local function main_function()
                                             text = "Scale highlighting:",
                                         },
                                         vb:popup {
+                                            width = 110,
                                             items = {
                                                 "None",
-                                                "Major",
-                                                "Minor",
-                                                "Instrument",
-                                                "Auto",
+                                                "Major scale",
+                                                "Minor scale",
+                                                "Instrument scale",
+                                                "Automatic scale",
                                             },
                                             bind = preferences.scaleHighlightingType,
                                         },
