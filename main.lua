@@ -1835,11 +1835,10 @@ local function fillPianoRoll()
                                 key.color = colorKeyWhite
                             end
                             --set root label
-                            if preferences.scaleHighlightingType.value == 1 and noteIndexInScale((y + noffset) % 12, true) == 0 then
-                                key.text = "         " .. notesTable[(y + noffset) % 12 + 1] .. tostring(math.floor((y + noffset) / 12))
-                            elseif preferences.scaleHighlightingType.value == 2 and noteIndexInScale((y + noffset) % 12) == 0 then
-                                key.text = "         " .. notesTable[(y + noffset) % 12 + 1] .. tostring(math.floor((y + noffset) / 12))
-                            elseif preferences.scaleHighlightingType.value == 3 and noteIndexInScale((y + noffset) % 12) == 9 then
+                            if (preferences.scaleHighlightingType.value == 1 and noteIndexInScale((y + noffset) % 12, true) == 0) or
+                                    (preferences.scaleHighlightingType.value == 2 and noteIndexInScale((y + noffset) % 12) == 0) or
+                                    (preferences.scaleHighlightingType.value == 3 and noteIndexInScale((y + noffset) % 12) == 9)
+                            then
                                 key.text = "         " .. notesTable[(y + noffset) % 12 + 1] .. tostring(math.floor((y + noffset) / 12))
                             else
                                 key.text = ""
@@ -1963,7 +1962,7 @@ local function highlightNotesOnStep(step, highlight)
                             vbw["b" .. note.index].color = colorNoteVelocity(note.vel)
                         end
                     end
-                    if noteInScale(note.note) then
+                    if noteInScale(note.note, true) then
                         vbw["k" .. note.row].color = colorKeyWhite
                     else
                         vbw["k" .. note.row].color = colorKeyBlack
