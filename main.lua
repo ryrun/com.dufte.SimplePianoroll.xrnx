@@ -11,6 +11,22 @@ local manifest = renoise.Document.create("RenoiseScriptingTool") {
 }
 manifest:load_from("manifest.xml")
 
+--notes table
+local notesTable = {
+    "C",
+    "C#",
+    "D",
+    "D#",
+    "E",
+    "F",
+    "F#",
+    "G",
+    "G#",
+    "A",
+    "A#",
+    "B",
+}
+
 --default values, can be used to reset to default
 local defaultPreferences = {
     gridStepSizeW = 20,
@@ -29,6 +45,8 @@ local defaultPreferences = {
     velocityColorShadingAmount = 0.4,
     followPlayCursor = true,
     showNoteHints = true,
+    scaleHighlightingType = 2,
+    keyForSelectedScale = 1,
 }
 
 --tool preferences
@@ -58,6 +76,9 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     --misc settings
     followPlayCursor = defaultPreferences.followPlayCursor,
     showNoteHints = defaultPreferences.showNoteHints,
+    --scale highlighting settings
+    scaleHighlightingType = defaultPreferences.scaleHighlightingType,
+    keyForSelectedScale = defaultPreferences.keyForSelectedScale,
 }
 tool.preferences = preferences
 
@@ -292,9 +313,28 @@ local function jumpToNoteInPattern(notedata)
     end
 end
 
---returns true, when note in scale
-local function noteInScale(note)
+--returns note index of scale
+local function noteIndexInScale(note, forceMajorC)
+    if not forceMajorC then
+        note = note - (preferences.keyForSelectedScale.value - 1)
+        if preferences.scaleHighlightingType.value == 1 then
+            --no scale
+            return -1
+        elseif preferences.scaleHighlightingType.value == 3 then
+            --minor
+            note = note - 3
+        end
+    end
     note = note % 12
+    return note
+end
+
+--returns true, when note in scale
+local function noteInScale(note, forceMajorC)
+    note = noteIndexInScale(note, forceMajorC)
+    if note == -1 then
+        return true
+    end
     if note == 1 or note == 3 or note == 6 or note == 8 or note == 10 then
         return false
     end
@@ -1464,12 +1504,12 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
             for key in pairs(noteSelection) do
                 if noteSelection[key].line == current_note_line and noteSelection[key].column == column then
                     color = colorNoteSelected
-                    --set select color to key sub state button
-                    vbw["ks" .. current_note_rowIndex].color = color
-                    vbw["ks" .. current_note_rowIndex].visible = true
-                    vbw["kss" .. current_note_rowIndex].visible = false
                     --show note hints, when option is enabled
                     if preferences.showNoteHints.value then
+                        --set select color to key sub state button
+                        vbw["ks" .. current_note_rowIndex].color = color
+                        vbw["ks" .. current_note_rowIndex].visible = true
+                        vbw["kss" .. current_note_rowIndex].visible = false
                         for i = 1, 3, 1 do
                             local idx
                             for t = 1, 4, 1 do
@@ -1789,16 +1829,20 @@ local function fillPianoRoll()
                         --refresh keyboad
                         if s == 1 then
                             local key = vbw["k" .. ystring]
-                            if blackKey then
+                            if not noteInScale((y + noffset) % 12, true) then
                                 key.color = colorKeyBlack
-                                key.text = ""
                             else
                                 key.color = colorKeyWhite
-                                if (y + noffset) % 12 == 0 then
-                                    key.text = "         C" .. tostring(math.floor((y + noffset) / 12))
-                                else
-                                    key.text = ""
-                                end
+                            end
+                            --set root label
+                            if preferences.scaleHighlightingType.value == 1 and noteIndexInScale((y + noffset) % 12, true) == 0 then
+                                key.text = "         " .. notesTable[(y + noffset) % 12 + 1] .. tostring(math.floor((y + noffset) / 12))
+                            elseif preferences.scaleHighlightingType.value == 2 and noteIndexInScale((y + noffset) % 12) == 0 then
+                                key.text = "         " .. notesTable[(y + noffset) % 12 + 1] .. tostring(math.floor((y + noffset) / 12))
+                            elseif preferences.scaleHighlightingType.value == 3 and noteIndexInScale((y + noffset) % 12) == 9 then
+                                key.text = "         " .. notesTable[(y + noffset) % 12 + 1] .. tostring(math.floor((y + noffset) / 12))
+                            else
+                                key.text = ""
                             end
                             --reset key sub state button color
                             vbw["ks" .. ystring].visible = false
@@ -3102,6 +3146,33 @@ local function main_function()
                                             end
                                         },
                                     },
+                                    vb:space { height = 8 },
+                                    vb:row {
+                                        uniform = true,
+                                        vb:text {
+                                            text = "Scale highlighting:",
+                                        },
+                                        vb:popup {
+                                            items = {
+                                                "None",
+                                                "Major",
+                                                "Minor",
+                                                "Instrument",
+                                                "Auto",
+                                            },
+                                            bind = preferences.scaleHighlightingType,
+                                        },
+                                    },
+                                    vb:row {
+                                        vb:text {
+                                            text = "Key for selected scale:",
+                                            width = "50%"
+                                        },
+                                        vb:popup {
+                                            items = notesTable,
+                                            bind = preferences.keyForSelectedScale,
+                                        },
+                                    },
                                 },
                                 vb:column {
                                     style = "group",
@@ -3211,6 +3282,8 @@ local function main_function()
                                 preferences.velocityColorShadingAmount.value = defaultPreferences.velocityColorShadingAmount
                                 preferences.followPlayCursor.value = defaultPreferences.followPlayCursor
                                 preferences.showNoteHints.value = defaultPreferences.showNoteHints
+                                preferences.scaleHighlightingType.value = defaultPreferences.scaleHighlightingType
+                                preferences.keyForSelectedScale.value = defaultPreferences.keyForSelectedScale
                                 app:show_message("All preferences was set to default values.")
                             end
                             if oscClient then
