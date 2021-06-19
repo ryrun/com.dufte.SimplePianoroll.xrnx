@@ -1787,6 +1787,7 @@ local function fillPianoRoll()
                         current_note = note
                         current_note_string = note_string
                         current_note_len = 0
+                        current_note_end_vel = 0
                         current_note_step = s
                         current_note_line = i
                         current_note_vel = fromRenoiseHex(volume_string)
@@ -1878,6 +1879,7 @@ local function fillPianoRoll()
                     current_note = note
                     current_note_string = note_string
                     current_note_len = 0
+                    current_note_end_vel = 0
                     current_note_step = s
                     current_note_line = s + stepOffset
                     current_note_vel = fromRenoiseHex(volume_string)
