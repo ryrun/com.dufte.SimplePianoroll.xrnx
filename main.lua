@@ -157,6 +157,8 @@ local currentNoteEndVelocity = 255
 local currentNoteGhost
 local currentInstrument
 local currentGhostTrack
+local currentScale = 2
+local currentScaleOffset = 1
 
 local noteSelection = {}
 local lastSelectionClick
@@ -164,6 +166,7 @@ local lowesetNote
 local highestNote
 
 local noteData = {}
+local usedNoteIndices = {}
 
 --key states
 local keyControl = false
@@ -313,14 +316,22 @@ local function jumpToNoteInPattern(notedata)
     end
 end
 
+--check if a note index is in MajorScale
+local function noteIndexInMajorScale(noteIndex)
+    if noteIndex == 1 or noteIndex == 3 or noteIndex == 6 or noteIndex == 8 or noteIndex == 10 then
+        return false
+    end
+    return true
+end
+
 --returns note index of scale
 local function noteIndexInScale(note, forceMajorC)
     if not forceMajorC then
-        note = note - (preferences.keyForSelectedScale.value - 1)
-        if preferences.scaleHighlightingType.value == 1 then
+        note = note - (currentScaleOffset - 1)
+        if currentScale == 1 then
             --no scale
             return -1
-        elseif preferences.scaleHighlightingType.value == 3 then
+        elseif currentScale == 3 then
             --minor
             note = note - 3
         end
@@ -335,10 +346,10 @@ local function noteInScale(note, forceMajorC)
     if note == -1 then
         return true
     end
-    if note == 1 or note == 3 or note == 6 or note == 8 or note == 10 then
-        return false
+    if noteIndexInMajorScale(note) then
+        return true
     end
-    return true
+    return false
 end
 
 --returns index, when note is in seleciton
@@ -1713,6 +1724,100 @@ local function ghostTrack(trackIndex)
     end
 end
 
+--set scale highlighting, none, manual modes, instrument scale, automatic mode
+local function setScaleHighlighting(afterPianoRollRefresh)
+    --simple scale highlighting
+    if preferences.scaleHighlightingType.value == 1 and
+            (currentScale ~= 1 or currentScaleOffset ~= 1) then
+        currentScale = 1
+        currentScaleOffset = 1
+        return true
+    elseif (preferences.scaleHighlightingType.value == 2 or preferences.scaleHighlightingType.value == 3) and
+            (currentScale ~= preferences.scaleHighlightingType.value or currentScaleOffset ~= preferences.keyForSelectedScale.value)
+    then
+        currentScale = preferences.scaleHighlightingType.value
+        currentScaleOffset = preferences.keyForSelectedScale.value
+        return true
+    elseif preferences.scaleHighlightingType.value == 4 then
+        local idx = currentInstrument
+        if not idx then
+            idx = song.selected_instrument_index
+        end
+        local scale_key = song.instruments[idx].trigger_options.scale_key
+        local scale_mode = song.instruments[idx].trigger_options.scale_mode
+
+        if scale_mode == "Natural Major" then
+            if currentScale ~= 2 or currentScaleOffset ~= scale_key then
+                currentScale = 2
+                currentScaleOffset = scale_key
+                return true
+            end
+        elseif scale_mode == "Natural Minor" then
+            if currentScale ~= 3 or currentScaleOffset ~= scale_key then
+                currentScale = 3
+                currentScaleOffset = scale_key
+                return true
+            end
+        elseif currentScale ~= 2 or currentScaleOffset ~= 1 then
+            --switch to c major as default, when no scale is set
+            currentScale = 2
+            currentScaleOffset = 1
+            return true
+        end
+    elseif preferences.scaleHighlightingType.value == 5 then
+        --only process, after piano roll refresh
+        if afterPianoRollRefresh then
+            --loop through scales and choose one
+            local foundScaleKey
+            local lowErrorScaleKey
+            local minErrors = 255
+            local keyCount = 0
+            local errorCount = 0
+            for scaleKey = 0, 12 do
+                local allKeysInKey = true
+                for key in pairs(usedNoteIndices) do
+                    keyCount = keyCount + 1
+                    if not noteIndexInMajorScale((usedNoteIndices[key] - scaleKey) % 12) then
+                        allKeysInKey = false
+                        errorCount = errorCount + 1
+                    end
+                end
+                if allKeysInKey then
+                    foundScaleKey = scaleKey
+                    break
+                elseif errorCount > 0 and minErrors > errorCount then
+                    minErrors = errorCount
+                    lowErrorScaleKey = scaleKey
+                end
+            end
+            if keyCount > 2 then
+                if not foundScaleKey then
+                    foundScaleKey = lowErrorScaleKey
+                end
+                if foundScaleKey ~= nil then
+                    local ret = false
+                    if currentScale ~= 2 then
+                        currentScale = 2
+                        ret = true
+                    end
+                    if currentScaleOffset ~= (foundScaleKey + 1) then
+                        currentScaleOffset = (foundScaleKey + 1)
+                        ret = true
+                    end
+                    return ret
+                end
+            else
+                if (currentScale ~= 1 or currentScaleOffset ~= 1) then
+                    currentScale = 1
+                    currentScaleOffset = 1
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
 --reset pianoroll and enable notes
 local function fillPianoRoll()
     local track = song.selected_track
@@ -1737,7 +1842,12 @@ local function fillPianoRoll()
     noteButtons = {}
     noteOnStep = {}
     noteData = {}
+    usedNoteIndices = {}
     currentInstrument = nil
+    refreshPianoRollNeeded = false
+
+    --set scale for piano roll
+    setScaleHighlighting()
 
     --check if stepoffset is inside the grid, also setup stepSlider if needed
     if steps > gridWidth then
@@ -1799,6 +1909,8 @@ local function fillPianoRoll()
                         else
                             current_note_ghost = false
                         end
+                        --add current note to note index table for scale detection
+                        usedNoteIndices[i .. "_" .. c] = note % 12
                         break
                     elseif note == 120 then
                         break
@@ -1836,9 +1948,9 @@ local function fillPianoRoll()
                                 key.color = colorKeyWhite
                             end
                             --set root label
-                            if (preferences.scaleHighlightingType.value == 1 and noteIndexInScale((y + noffset) % 12, true) == 0) or
-                                    (preferences.scaleHighlightingType.value == 2 and noteIndexInScale((y + noffset) % 12) == 0) or
-                                    (preferences.scaleHighlightingType.value == 3 and noteIndexInScale((y + noffset) % 12) == 9)
+                            if (currentScale == 1 and noteIndexInScale((y + noffset) % 12, true) == 0) or
+                                    (currentScale == 2 and noteIndexInScale((y + noffset) % 12) == 0) or
+                                    (currentScale == 3 and noteIndexInScale((y + noffset) % 12) == 9)
                             then
                                 key.text = "         " .. notesTable[(y + noffset) % 12 + 1] .. tostring(math.floor((y + noffset) / 12))
                             else
@@ -1891,6 +2003,8 @@ local function fillPianoRoll()
                     else
                         current_note_ghost = false
                     end
+                    --add current note to note index table for scale detection
+                    usedNoteIndices[s .. "_" .. c] = note % 12
                 elseif note == 120 and current_note ~= nil then
                     enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, true, current_note_ghost)
                     current_note = nil
@@ -1922,6 +2036,11 @@ local function fillPianoRoll()
     --switch to instrument which is used in pattern
     if currentInstrument and currentInstrument ~= song.selected_instrument_index then
         song.selected_instrument_index = currentInstrument
+    end
+
+    --for automatic mode or empty patterns, set scale highlighting again, if needed
+    if setScaleHighlighting(true) then
+        refreshPianoRollNeeded = true
     end
 
     --enable buttons when something selected
@@ -2007,7 +2126,6 @@ local function appIdleEvent()
         if refreshPianoRollNeeded then
             fillPianoRoll()
             --print("fillPianoRoll time: " .. os.clock() - start)
-            refreshPianoRollNeeded = false
         end
 
         --refresh control, when needed
