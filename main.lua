@@ -214,16 +214,14 @@ local function dump(o)
     end
 end
 
---return hex value always als 2 digit hex value
---[[
-local function toHex(value)
-    value = string.format("%X", value)
-    if string.len(value) == 1 then
-        return "0" .. value
+--returns size of a table
+local function tableLength(T)
+    local count = 0
+    for _ in pairs(T) do
+        count = count + 1
     end
-    return value
+    return count
 end
-]]--
 
 --return special "hex" value which allow values like ZF
 local function toRenoiseHex(val)
@@ -1768,29 +1766,28 @@ local function setScaleHighlighting(afterPianoRollRefresh)
         --only process, after piano roll refresh
         if afterPianoRollRefresh then
             --loop through scales and choose one
-            local foundScaleKey
-            local lowErrorScaleKey
-            local minErrors = 255
-            local keyCount = 0
-            local errorCount = 0
-            for scaleKey = 0, 12 do
-                local allKeysInKey = true
-                for key in pairs(usedNoteIndices) do
-                    keyCount = keyCount + 1
-                    if not noteIndexInMajorScale((usedNoteIndices[key] - scaleKey) % 12) then
-                        allKeysInKey = false
-                        errorCount = errorCount + 1
+            local keyCount = tableLength(usedNoteIndices)
+            if keyCount > 2 then
+                local foundScaleKey
+                local lowErrorScaleKey
+                local minErrors = 255
+                local errorCount = 0
+                for scaleKey = 0, 12 do
+                    local allKeysInKey = true
+                    for key in pairs(usedNoteIndices) do
+                        if not noteIndexInMajorScale((usedNoteIndices[key] - scaleKey) % 12) then
+                            allKeysInKey = false
+                            errorCount = errorCount + 1
+                        end
+                    end
+                    if allKeysInKey then
+                        foundScaleKey = scaleKey
+                        break
+                    elseif errorCount > 0 and minErrors > errorCount then
+                        minErrors = errorCount
+                        lowErrorScaleKey = scaleKey
                     end
                 end
-                if allKeysInKey then
-                    foundScaleKey = scaleKey
-                    break
-                elseif errorCount > 0 and minErrors > errorCount then
-                    minErrors = errorCount
-                    lowErrorScaleKey = scaleKey
-                end
-            end
-            if keyCount > 2 then
                 if not foundScaleKey then
                     foundScaleKey = lowErrorScaleKey
                 end
