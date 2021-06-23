@@ -3430,28 +3430,30 @@ local function main_function()
                                 },
                             }, { "Close", "Reset to default", "Help / Feedback" })
                             if btn == "Reset to default" then
-                                preferences.gridStepSizeW.value = defaultPreferences.gridStepSizeW
-                                preferences.gridStepSizeH.value = defaultPreferences.gridStepSizeH
-                                preferences.gridSpacing.value = defaultPreferences.gridSpacing
-                                preferences.gridMargin.value = defaultPreferences.gridMargin
-                                preferences.gridWidth.value = defaultPreferences.gridWidth
-                                preferences.gridHeight.value = defaultPreferences.gridHeight
-                                preferences.triggerTime.value = defaultPreferences.triggerTime
-                                preferences.dblClickTime.value = defaultPreferences.dblClickTime
-                                preferences.forcePenMode.value = defaultPreferences.forcePenMode
-                                preferences.notePreview.value = defaultPreferences.notePreview
-                                preferences.enableOSCClient.value = defaultPreferences.enableOSCClient
-                                preferences.oscConnectionString.value = defaultPreferences.oscConnectionString
-                                preferences.applyVelocityColorShading.value = defaultPreferences.applyVelocityColorShading
-                                preferences.velocityColorShadingAmount.value = defaultPreferences.velocityColorShadingAmount
-                                preferences.followPlayCursor.value = defaultPreferences.followPlayCursor
-                                preferences.showNoteHints.value = defaultPreferences.showNoteHints
-                                preferences.scaleHighlightingType.value = defaultPreferences.scaleHighlightingType
-                                preferences.keyForSelectedScale.value = defaultPreferences.keyForSelectedScale
-                                preferences.addNoteOffToEmptyNoteColumns.value = defaultPreferences.addNoteOffToEmptyNoteColumns
-                                preferences.addNoteColumnsIfNeeded.value = defaultPreferences.addNoteColumnsIfNeeded
-                                preferences.keyboardStyle.value = defaultPreferences.keyboardStyle
-                                app:show_message("All preferences was set to default values.")
+                                if app:show_prompt("Reset to default", "Are you sure you want to reset all settings to their default values?", { "Yes", "No" }) == "Yes" then
+                                    preferences.gridStepSizeW.value = defaultPreferences.gridStepSizeW
+                                    preferences.gridStepSizeH.value = defaultPreferences.gridStepSizeH
+                                    preferences.gridSpacing.value = defaultPreferences.gridSpacing
+                                    preferences.gridMargin.value = defaultPreferences.gridMargin
+                                    preferences.gridWidth.value = defaultPreferences.gridWidth
+                                    preferences.gridHeight.value = defaultPreferences.gridHeight
+                                    preferences.triggerTime.value = defaultPreferences.triggerTime
+                                    preferences.dblClickTime.value = defaultPreferences.dblClickTime
+                                    preferences.forcePenMode.value = defaultPreferences.forcePenMode
+                                    preferences.notePreview.value = defaultPreferences.notePreview
+                                    preferences.enableOSCClient.value = defaultPreferences.enableOSCClient
+                                    preferences.oscConnectionString.value = defaultPreferences.oscConnectionString
+                                    preferences.applyVelocityColorShading.value = defaultPreferences.applyVelocityColorShading
+                                    preferences.velocityColorShadingAmount.value = defaultPreferences.velocityColorShadingAmount
+                                    preferences.followPlayCursor.value = defaultPreferences.followPlayCursor
+                                    preferences.showNoteHints.value = defaultPreferences.showNoteHints
+                                    preferences.scaleHighlightingType.value = defaultPreferences.scaleHighlightingType
+                                    preferences.keyForSelectedScale.value = defaultPreferences.keyForSelectedScale
+                                    preferences.addNoteOffToEmptyNoteColumns.value = defaultPreferences.addNoteOffToEmptyNoteColumns
+                                    preferences.addNoteColumnsIfNeeded.value = defaultPreferences.addNoteColumnsIfNeeded
+                                    preferences.keyboardStyle.value = defaultPreferences.keyboardStyle
+                                    app:show_message("All preferences was set to default values.")
+                                end
                             end
                             if btn == "Help / Feedback" then
                                 app:open_url("https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx/63034")
