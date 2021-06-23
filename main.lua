@@ -49,6 +49,7 @@ local defaultPreferences = {
     keyForSelectedScale = 1,
     addNoteOffToEmptyNoteColumns = true,
     addNoteColumnsIfNeeded = true,
+    keyboardStyle = 1,
 }
 
 --tool preferences
@@ -80,6 +81,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     showNoteHints = defaultPreferences.showNoteHints,
     addNoteOffToEmptyNoteColumns = defaultPreferences.addNoteOffToEmptyNoteColumns,
     addNoteColumnsIfNeeded = defaultPreferences.addNoteColumnsIfNeeded,
+    keyboardStyle = defaultPreferences.keyboardStyle,
     --scale highlighting settings
     scaleHighlightingType = defaultPreferences.scaleHighlightingType,
     keyForSelectedScale = defaultPreferences.keyForSelectedScale,
@@ -113,6 +115,7 @@ local pianoKeyWidth
 local colorWhiteKey = { { 44, 59, 68 }, { 52, 68, 78 } }
 local colorBlackKey = { { 30, 42, 52 }, { 35, 47, 57 } }
 local colorGhostNote = { 80, 97, 107 }
+local colorList = { 70, 79, 84 }
 local colorNote = { 170, 217, 179 }
 local colorNoteGhost = { 194, 177, 226 }
 local colorNoteHighlight = { 232, 204, 110 }
@@ -1954,12 +1957,19 @@ local function fillPianoRoll()
                             else
                                 key.color = colorKeyWhite
                             end
+                            if preferences.keyboardStyle.value == 2 then
+                                key.color = colorList
+                            end
                             --set root label
                             if ((currentScale == 1 or preferences.scaleHighlightingType.value == 5) and noteIndexInScale((y + noffset) % 12, true) == 0) or
                                     (preferences.scaleHighlightingType.value ~= 5 and currentScale == 2 and noteIndexInScale((y + noffset) % 12) == 0) or
                                     (preferences.scaleHighlightingType.value ~= 5 and currentScale == 3 and noteIndexInScale((y + noffset) % 12) == 9)
                             then
-                                key.text = "         " .. notesTable[(y + noffset) % 12 + 1] .. tostring(math.floor((y + noffset) / 12))
+                                if preferences.keyboardStyle.value == 2 then
+                                    key.text = notesTable[(y + noffset) % 12 + 1] .. tostring(math.floor((y + noffset) / 12)) .. "         "
+                                else
+                                    key.text = "         " .. notesTable[(y + noffset) % 12 + 1] .. tostring(math.floor((y + noffset) / 12))
+                                end
                             else
                                 key.text = ""
                             end
@@ -2089,7 +2099,9 @@ local function highlightNotesOnStep(step, highlight)
                             vbw["b" .. note.index].color = colorNoteVelocity(note.vel)
                         end
                     end
-                    if noteInScale(note.note, true) then
+                    if preferences.keyboardStyle.value == 2 then
+                        vbw["k" .. note.row].color = colorList
+                    elseif noteInScale(note.note, true) then
                         vbw["k" .. note.row].color = colorKeyWhite
                     else
                         vbw["k" .. note.row].color = colorKeyBlack
@@ -2606,7 +2618,9 @@ local function handleKeyEvent(key)
             row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
             triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], false)
             if row ~= nil then
-                if noteInScale(lastKeyboardNote[key.name]) then
+                if preferences.keyboardStyle.value == 2 then
+                    vbw["k" .. row].color = colorList
+                elseif noteInScale(lastKeyboardNote[key.name]) then
                     vbw["k" .. row].color = colorKeyWhite
                 else
                     vbw["k" .. row].color = colorKeyBlack
@@ -3295,6 +3309,19 @@ local function main_function()
                                             bind = preferences.keyForSelectedScale,
                                         },
                                     },
+                                    vb:row {
+                                        vb:text {
+                                            text = "Keyboard style:",
+                                            width = "50%"
+                                        },
+                                        vb:popup {
+                                            items = {
+                                                "Flat",
+                                                "List",
+                                            },
+                                            bind = preferences.keyboardStyle,
+                                        },
+                                    },
                                 },
                                 vb:column {
                                     style = "group",
@@ -3424,6 +3451,7 @@ local function main_function()
                                 preferences.keyForSelectedScale.value = defaultPreferences.keyForSelectedScale
                                 preferences.addNoteOffToEmptyNoteColumns.value = defaultPreferences.addNoteOffToEmptyNoteColumns
                                 preferences.addNoteColumnsIfNeeded.value = defaultPreferences.addNoteColumnsIfNeeded
+                                preferences.keyboardStyle.value = defaultPreferences.keyboardStyle
                                 app:show_message("All preferences was set to default values.")
                             end
                             if btn == "Help / Feedback" then
