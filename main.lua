@@ -3613,6 +3613,10 @@ tool:add_menu_entry {
 tool:add_keybinding {
     name = "Pattern Editor:Tools:Edit with Simple Pianoroll ...",
     invoke = function()
-        main_function()
+        if windowObj and windowObj.visible then
+            windowObj:close()
+        else
+            main_function()
+        end
     end
 }
