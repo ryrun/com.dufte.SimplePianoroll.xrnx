@@ -47,6 +47,8 @@ local defaultPreferences = {
     showNoteHints = true,
     scaleHighlightingType = 2,
     keyForSelectedScale = 1,
+    addNoteOffToEmptyNoteColumns = true,
+    addNoteColumnsIfNeeded = true,
 }
 
 --tool preferences
@@ -76,6 +78,8 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     --misc settings
     followPlayCursor = defaultPreferences.followPlayCursor,
     showNoteHints = defaultPreferences.showNoteHints,
+    addNoteOffToEmptyNoteColumns = defaultPreferences.addNoteOffToEmptyNoteColumns,
+    addNoteColumnsIfNeeded = defaultPreferences.addNoteColumnsIfNeeded,
     --scale highlighting settings
     scaleHighlightingType = defaultPreferences.scaleHighlightingType,
     keyForSelectedScale = defaultPreferences.keyForSelectedScale,
@@ -418,7 +422,11 @@ local function returnColumnWhenEnoughSpaceForNote(line, len)
         return column
     end
     --check if enough space for a new note
-    for c = 1, song.selected_track.max_note_columns do
+    local maxColumns = song.selected_track.visible_note_columns
+    if preferences.addNoteColumnsIfNeeded.value then
+        maxColumns = song.selected_track.max_note_columns
+    end
+    for c = 1, maxColumns do
         local validSpace = true
         --check for note on before
         if line > 1 then
@@ -448,14 +456,16 @@ end
 
 --adds note offs to all note columns where no note is at line 1, for looping porpuse
 local function addMissingNoteOffForColumns()
-    local track = song.selected_track
-    local columns = track.visible_note_columns
-    local lineValues = song.selected_pattern_track.lines
+    if preferences.addNoteOffToEmptyNoteColumns.value then
+        local track = song.selected_track
+        local columns = track.visible_note_columns
+        local lineValues = song.selected_pattern_track.lines
 
-    for c = 1, columns do
-        local note_column = lineValues[1]:note_column(c)
-        if note_column.note_value == 121 then
-            note_column.note_value = 120
+        for c = 1, columns do
+            local note_column = lineValues[1]:note_column(c)
+            if note_column.note_value == 121 then
+                note_column.note_value = 120
+            end
         end
     end
 end
@@ -3379,6 +3389,22 @@ local function main_function()
                                             text = "Show octaves and fifths of selected notes",
                                         },
                                     },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.addNoteColumnsIfNeeded,
+                                        },
+                                        vb:text {
+                                            text = "Automatically add note columns, when needed",
+                                        },
+                                    },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.addNoteOffToEmptyNoteColumns,
+                                        },
+                                        vb:text {
+                                            text = "Automatically add NoteOff's in empty note columns",
+                                        },
+                                    },
                                 },
                             }, { "Close", "Reset to default" })
                             if btn == "Reset to default" then
@@ -3400,6 +3426,8 @@ local function main_function()
                                 preferences.showNoteHints.value = defaultPreferences.showNoteHints
                                 preferences.scaleHighlightingType.value = defaultPreferences.scaleHighlightingType
                                 preferences.keyForSelectedScale.value = defaultPreferences.keyForSelectedScale
+                                preferences.addNoteOffToEmptyNoteColumns.value = defaultPreferences.addNoteOffToEmptyNoteColumns
+                                preferences.addNoteColumnsIfNeeded.value = defaultPreferences.addNoteColumnsIfNeeded
                                 app:show_message("All preferences was set to default values.")
                             end
                             if oscClient then
