@@ -1238,9 +1238,9 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
 end
 
 --convert the note value to a grid y position
-local function noteValue2GridRowOffset(noteValue)
+local function noteValue2GridRowOffset(noteValue, allowOutside)
     noteValue = noteValue + (-noteOffset) + 1
-    if noteValue >= 1 and noteValue <= gridHeight then
+    if (noteValue >= 1 and noteValue <= gridHeight) or allowOutside then
         return noteValue
     end
     return nil
@@ -1488,7 +1488,6 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
     end
     lowesetNote = math.min(lowesetNote, current_note)
     highestNote = math.max(highestNote, current_note)
-    --process only visible ones
     if current_note_rowIndex ~= nil then
         local noteOnStepIndex = current_note_step
         local current_note_index = tostring(current_note_step) .. "_" .. tostring(current_note_rowIndex) .. "_" .. tostring(column)
@@ -1550,8 +1549,8 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
             current_note_len = gridWidth
         end
 
-        --display note button, note len is greater 0
-        if current_note_len > 0 then
+        --display note button, note len is greater 0 and when the row is visible
+        if current_note_len > 0 and vbw["row" .. current_note_rowIndex] then
             local color = {}
             local temp = "noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ")"
             local spaceWidth = 0
@@ -2041,7 +2040,7 @@ local function fillPianoRoll()
                 current_note_vel = fromRenoiseHex(volume_string)
                 current_note_pan = fromRenoiseHex(panning_string)
                 current_note_dly = fromRenoiseHex(delay_string)
-                current_note_rowIndex = noteValue2GridRowOffset(current_note)
+                current_note_rowIndex = noteValue2GridRowOffset(current_note, true)
                 if instrument == 255 then
                     current_note_ghost = true
                 else
