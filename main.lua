@@ -3406,7 +3406,7 @@ local function main_function()
                                         },
                                     },
                                 },
-                            }, { "Close", "Reset to default" })
+                            }, { "Close", "Reset to default", "Help / Feedback" })
                             if btn == "Reset to default" then
                                 preferences.gridStepSizeW.value = defaultPreferences.gridStepSizeW
                                 preferences.gridStepSizeH.value = defaultPreferences.gridStepSizeH
@@ -3429,6 +3429,9 @@ local function main_function()
                                 preferences.addNoteOffToEmptyNoteColumns.value = defaultPreferences.addNoteOffToEmptyNoteColumns
                                 preferences.addNoteColumnsIfNeeded.value = defaultPreferences.addNoteColumnsIfNeeded
                                 app:show_message("All preferences was set to default values.")
+                            end
+                            if btn == "Help / Feedback" then
+                                app:open_url("https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx/63034")
                             end
                             if oscClient then
                                 oscClient:close()
