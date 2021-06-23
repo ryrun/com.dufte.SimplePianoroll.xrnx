@@ -1515,166 +1515,170 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
             column = column,
             ghst = ghost
         }
-        --fill noteOnStep not just note start, also the full length
-        if noteOnStepIndex then
-            for i = 0, current_note_len - 1 do
-                --only when velocity is not 0 (muted)
-                if current_note_vel > 0 then
-                    if noteOnStep[noteOnStepIndex + i] == nil then
-                        noteOnStep[noteOnStepIndex + i] = {}
+
+        --only process notes on steps and visibility, when there is a valid row
+        if vbw["row" .. current_note_rowIndex] then
+            --fill noteOnStep not just note start, also the full length
+            if noteOnStepIndex then
+                for i = 0, current_note_len - 1 do
+                    --only when velocity is not 0 (muted)
+                    if current_note_vel > 0 then
+                        if noteOnStep[noteOnStepIndex + i] == nil then
+                            noteOnStep[noteOnStepIndex + i] = {}
+                        end
+                        table.insert(noteOnStep[noteOnStepIndex + i], {
+                            index = current_note_index,
+                            step = current_note_step,
+                            row = current_note_rowIndex,
+                            note = current_note,
+                            len = current_note_len - i,
+                            vel = current_note_vel,
+                            ghst = ghost
+                        })
                     end
-                    table.insert(noteOnStep[noteOnStepIndex + i], {
-                        index = current_note_index,
-                        step = current_note_step,
-                        row = current_note_rowIndex,
-                        note = current_note,
-                        len = current_note_len - i,
-                        vel = current_note_vel,
-                        ghst = ghost
-                    })
-                end
-            end
-        end
-
-        --change note display len
-        if current_note_step < 1 then
-            current_note_len = current_note_len + (current_note_step - 1)
-        end
-        if current_note_step > gridWidth then
-            current_note_len = 0
-        elseif current_note_step + current_note_len > gridWidth and current_note_step <= gridWidth then
-            current_note_len = current_note_len - (current_note_step + current_note_len - gridWidth - 1)
-        end
-        if current_note_len > gridWidth then
-            current_note_len = gridWidth
-        end
-
-        --display note button, note len is greater 0 and when the row is visible
-        if current_note_len > 0 and vbw["row" .. current_note_rowIndex] then
-            local color = {}
-            local temp = "noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ")"
-            local spaceWidth = 0
-            local delayWidth = 0
-            local cutValue = 0
-
-            if song.selected_track.volume_column_visible and current_note_end_vel >= 192 and current_note_end_vel <= 207 then
-                cutValue = current_note_end_vel
-            end
-
-            if song.selected_track.panning_column_visible and current_note_pan >= 192 and current_note_pan <= 207 then
-                current_note_len = 1
-                cutValue = current_note_pan
-            end
-
-            if song.selected_track.volume_column_visible and current_note_vel >= 192 and current_note_vel <= 207 then
-                current_note_len = 1
-                cutValue = current_note_vel
-                --wenn note is cut and outside, dont render it
-                if stepOffset >= current_note_line then
-                    return
                 end
             end
 
-            local buttonWidth = (gridStepSizeW) * current_note_len
-            local buttonSpace = gridSpacing * (current_note_len - 1)
+            --change note display len
+            if current_note_step < 1 then
+                current_note_len = current_note_len + (current_note_step - 1)
+            end
+            if current_note_step > gridWidth then
+                current_note_len = 0
+            elseif current_note_step + current_note_len > gridWidth and current_note_step <= gridWidth then
+                current_note_len = current_note_len - (current_note_step + current_note_len - gridWidth - 1)
+            end
+            if current_note_len > gridWidth then
+                current_note_len = gridWidth
+            end
 
-            if cutValue > 0 then
-                cutValue = cutValue - 192
-                if cutValue < song.transport.tpl then
-                    buttonWidth = buttonWidth - ((gridStepSizeW - gridSpacing) / 100 * (100 / song.transport.tpl * (song.transport.tpl - cutValue)))
+            --display note button, note len is greater 0 and when the row is visible
+            if current_note_len > 0 then
+                local color = {}
+                local temp = "noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ")"
+                local spaceWidth = 0
+                local delayWidth = 0
+                local cutValue = 0
+
+                if song.selected_track.volume_column_visible and current_note_end_vel >= 192 and current_note_end_vel <= 207 then
+                    cutValue = current_note_end_vel
                 end
-            end
 
-            if current_note_vel == 0 then
-                color = colorNoteMuted
-            elseif ghost == true then
-                color = colorNoteGhost
-            else
-                color = colorNoteVelocity(current_note_vel)
-            end
-            for key in pairs(noteSelection) do
-                if noteSelection[key].line == current_note_line and noteSelection[key].column == column then
-                    color = colorNoteSelected
-                    --show note hints, when option is enabled
-                    if preferences.showNoteHints.value then
-                        --set select color to key sub state button
-                        vbw["ks" .. current_note_rowIndex].color = color
-                        vbw["ks" .. current_note_rowIndex].visible = true
-                        vbw["kss" .. current_note_rowIndex].visible = false
-                        for i = 1, 3, 1 do
-                            local idx
-                            for t = 1, 4, 1 do
-                                if t == 1 then
-                                    --octaves
-                                    idx = (current_note_rowIndex + (i * 12))
-                                elseif t == 2 then
-                                    --octaves
-                                    idx = (current_note_rowIndex - (i * 12))
-                                elseif t == 3 then
-                                    --fifths
-                                    idx = (current_note_rowIndex + (i * 12) - 5)
-                                elseif t == 4 then
-                                    --fifths
-                                    idx = (current_note_rowIndex - (i * 12) + 7)
-                                end
-                                if vbw["ks" .. idx] ~= nil and not vbw["ks" .. idx].visible then
-                                    vbw["ks" .. idx].color = colorKeyWhite
-                                    vbw["ks" .. idx].visible = true
-                                    vbw["kss" .. idx].visible = false
+                if song.selected_track.panning_column_visible and current_note_pan >= 192 and current_note_pan <= 207 then
+                    current_note_len = 1
+                    cutValue = current_note_pan
+                end
+
+                if song.selected_track.volume_column_visible and current_note_vel >= 192 and current_note_vel <= 207 then
+                    current_note_len = 1
+                    cutValue = current_note_vel
+                    --wenn note is cut and outside, dont render it
+                    if stepOffset >= current_note_line then
+                        return
+                    end
+                end
+
+                local buttonWidth = (gridStepSizeW) * current_note_len
+                local buttonSpace = gridSpacing * (current_note_len - 1)
+
+                if cutValue > 0 then
+                    cutValue = cutValue - 192
+                    if cutValue < song.transport.tpl then
+                        buttonWidth = buttonWidth - ((gridStepSizeW - gridSpacing) / 100 * (100 / song.transport.tpl * (song.transport.tpl - cutValue)))
+                    end
+                end
+
+                if current_note_vel == 0 then
+                    color = colorNoteMuted
+                elseif ghost == true then
+                    color = colorNoteGhost
+                else
+                    color = colorNoteVelocity(current_note_vel)
+                end
+                for key in pairs(noteSelection) do
+                    if noteSelection[key].line == current_note_line and noteSelection[key].column == column then
+                        color = colorNoteSelected
+                        --show note hints, when option is enabled
+                        if preferences.showNoteHints.value then
+                            --set select color to key sub state button
+                            vbw["ks" .. current_note_rowIndex].color = color
+                            vbw["ks" .. current_note_rowIndex].visible = true
+                            vbw["kss" .. current_note_rowIndex].visible = false
+                            for i = 1, 3, 1 do
+                                local idx
+                                for t = 1, 4, 1 do
+                                    if t == 1 then
+                                        --octaves
+                                        idx = (current_note_rowIndex + (i * 12))
+                                    elseif t == 2 then
+                                        --octaves
+                                        idx = (current_note_rowIndex - (i * 12))
+                                    elseif t == 3 then
+                                        --fifths
+                                        idx = (current_note_rowIndex + (i * 12) - 5)
+                                    elseif t == 4 then
+                                        --fifths
+                                        idx = (current_note_rowIndex - (i * 12) + 7)
+                                    end
+                                    if vbw["ks" .. idx] ~= nil and not vbw["ks" .. idx].visible then
+                                        vbw["ks" .. idx].color = colorKeyWhite
+                                        vbw["ks" .. idx].visible = true
+                                        vbw["kss" .. idx].visible = false
+                                    end
                                 end
                             end
                         end
+                        break
                     end
-                    break
                 end
-            end
 
-            local btn = vb:row {
-                margin = -gridMargin,
-                spacing = -gridSpacing,
-            }
+                local btn = vb:row {
+                    margin = -gridMargin,
+                    spacing = -gridSpacing,
+                }
 
-            if current_note_step > 1 then
-                spaceWidth = (gridStepSizeW * (current_note_step - 1)) - (gridSpacing * (current_note_step - 2))
-            end
-
-            if song.selected_track.delay_column_visible and current_note_dly > 0 and stepOffset < current_note_line then
-                delayWidth = math.max(math.floor((gridStepSizeW - gridSpacing) / 0xff * current_note_dly), 1)
-                spaceWidth = spaceWidth + delayWidth
-                buttonWidth = buttonWidth - delayWidth
-                if current_note_step < 2 then
-                    spaceWidth = spaceWidth + gridSpacing
+                if current_note_step > 1 then
+                    spaceWidth = (gridStepSizeW * (current_note_step - 1)) - (gridSpacing * (current_note_step - 2))
                 end
-            end
 
-            if spaceWidth > 0 then
-                btn:add_child(vb:space {
-                    width = spaceWidth,
+                if song.selected_track.delay_column_visible and current_note_dly > 0 and stepOffset < current_note_line then
+                    delayWidth = math.max(math.floor((gridStepSizeW - gridSpacing) / 0xff * current_note_dly), 1)
+                    spaceWidth = spaceWidth + delayWidth
+                    buttonWidth = buttonWidth - delayWidth
+                    if current_note_step < 2 then
+                        spaceWidth = spaceWidth + gridSpacing
+                    end
+                end
+
+                if spaceWidth > 0 then
+                    btn:add_child(vb:space {
+                        width = spaceWidth,
+                    });
+                end
+
+                --no note labels when to short
+                if buttonWidth - buttonSpace - 1 < 30 then
+                    current_note_string = ""
+                end
+
+                vbw["b" .. current_note_index] = nil
+                btn:add_child(vb:button {
+                    id = "b" .. current_note_index,
+                    height = gridStepSizeH,
+                    width = math.max(buttonWidth - buttonSpace - 1, 1),
+                    visible = true,
+                    color = color,
+                    notifier = loadstring(temp),
+                    text = current_note_string,
                 });
+
+                if not noteButtons[current_note_rowIndex] then
+                    noteButtons[current_note_rowIndex] = {}
+                end
+
+                table.insert(noteButtons[current_note_rowIndex], btn);
+                vbw["row" .. current_note_rowIndex]:add_child(btn)
             end
-
-            --no note labels when to short
-            if buttonWidth - buttonSpace - 1 < 30 then
-                current_note_string = ""
-            end
-
-            vbw["b" .. current_note_index] = nil
-            btn:add_child(vb:button {
-                id = "b" .. current_note_index,
-                height = gridStepSizeH,
-                width = math.max(buttonWidth - buttonSpace - 1, 1),
-                visible = true,
-                color = color,
-                notifier = loadstring(temp),
-                text = current_note_string,
-            });
-
-            if not noteButtons[current_note_rowIndex] then
-                noteButtons[current_note_rowIndex] = {}
-            end
-
-            table.insert(noteButtons[current_note_rowIndex], btn);
-            vbw["row" .. current_note_rowIndex]:add_child(btn)
         end
     end
 end
