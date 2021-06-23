@@ -2042,6 +2042,14 @@ local function fillPianoRoll()
         end
     end
 
+    --hide non used elements of the piano roll grid
+    for i = steps + 1, gridWidth do
+        vbw["s" .. i].visible = false
+        for y = 1, gridHeight do
+            vbw["p" .. i .. "_" .. y].visible = false
+        end
+    end
+
     --quirk? i need to visible and hide a note button to get fast vertical scroll
     if not vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible then
         vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible = true
