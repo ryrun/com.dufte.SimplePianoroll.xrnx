@@ -711,7 +711,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity)
         velocity = currentNoteVelocityPreview
     end
     if pressed == true then
-        print("play",instrument,note_value,velocity)
+        print("play", instrument, note_value, velocity)
         oscClient:send(renoise.Osc.Message("/renoise/trigger/note_on", { { tag = "i", value = instrument },
                                                                          { tag = "i", value = song.selected_track_index },
                                                                          { tag = "i", value = note_value },
@@ -1478,23 +1478,39 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
             ghst = ghost
         }
         --fill noteOnStep not just note start, also the full length
-        for i = 0, current_note_len - 1 do
-            --only when velocity is not 0 (muted)
-            if current_note_vel > 0 then
-                if noteOnStep[noteOnStepIndex + i] == nil then
-                    noteOnStep[noteOnStepIndex + i] = {}
+        if noteOnStepIndex then
+            for i = 0, current_note_len - 1 do
+                --only when velocity is not 0 (muted)
+                if current_note_vel > 0 then
+                    if noteOnStep[noteOnStepIndex + i] == nil then
+                        noteOnStep[noteOnStepIndex + i] = {}
+                    end
+                    table.insert(noteOnStep[noteOnStepIndex + i], {
+                        index = current_note_index,
+                        step = current_note_step,
+                        row = current_note_rowIndex,
+                        note = current_note,
+                        len = current_note_len - i,
+                        vel = current_note_vel,
+                        ghst = ghost
+                    })
                 end
-                table.insert(noteOnStep[noteOnStepIndex + i], {
-                    index = current_note_index,
-                    step = current_note_step,
-                    row = current_note_rowIndex,
-                    note = current_note,
-                    len = current_note_len - i,
-                    vel = current_note_vel,
-                    ghst = ghost
-                })
             end
         end
+
+        --change note display len
+        if current_note_step < 1 then
+            current_note_len = current_note_len + (current_note_step - 1)
+        end
+        if current_note_step > gridWidth then
+            current_note_len = 0
+        elseif current_note_step + current_note_len > gridWidth and current_note_step <= gridWidth then
+            current_note_len = current_note_len - (current_note_step + current_note_len - gridWidth - 1)
+        end
+        if current_note_len > gridWidth then
+            current_note_len = gridWidth
+        end
+
         --display note button, note len is greater 0
         if current_note_len > 0 then
             local color = {}
@@ -1902,49 +1918,15 @@ local function fillPianoRoll()
         local current_note_rowIndex
 
         --loop through lines as steps
-        for s = 1, gridWidth do
-            local stepString = tostring(s)
-
-            --check for notes outside the grid on left side
-            if s == 1 then
-                current_note_end_vel = nil
-                for i = stepOffset + 1, 1, -1 do
-                    local note_column = lineValues[i]:note_column(c)
-                    local note = note_column.note_value
-                    local instrument = note_column.instrument_value
-                    local note_string = note_column.note_string
-                    local volume_string = note_column.volume_string
-                    local panning_string = note_column.panning_string
-                    local delay_string = note_column.delay_string
-
-                    if note < 120 then
-                        lastColumnWithNotes = c
-                        current_note = note
-                        current_note_string = note_string
-                        current_note_len = 0
-                        current_note_end_vel = 0
-                        current_note_step = s
-                        current_note_line = i
-                        current_note_vel = fromRenoiseHex(volume_string)
-                        current_note_pan = fromRenoiseHex(panning_string)
-                        current_note_dly = fromRenoiseHex(delay_string)
-                        current_note_rowIndex = noteValue2GridRowOffset(current_note)
-                        if instrument == 255 then
-                            current_note_ghost = true
-                        else
-                            current_note_ghost = false
-                        end
-                        --add current note to note index table for scale detection
-                        usedNoteIndices[i .. "_" .. c] = note % 12
-                        break
-                    elseif note == 120 then
-                        break
-                    end
-                end
+        for line = 1, steps do
+            local s = line - stepOffset
+            local stepString
+            if line > stepOffset and line - stepOffset <= gridWidth then
+                stepString = tostring(s)
             end
 
             --only reset buttons on first column
-            if c == 1 then
+            if c == 1 and stepString then
                 local bar = calculateBarBeat(s + stepOffset)
 
                 for y = 1, gridHeight do
@@ -1995,55 +1977,54 @@ local function fillPianoRoll()
                 end
             end
             --render notes
-            if s <= stepsCount then
+            local note_column = lineValues[line]:note_column(c)
+            local note = note_column.note_value
+            local note_string = note_column.note_string
+            local volume_string = note_column.volume_string
+            local panning_string = note_column.panning_string
+            local delay_string = note_column.delay_string
+            local instrument = note_column.instrument_value
 
-                local note_column = lineValues[s + stepOffset]:note_column(c)
-                local note = note_column.note_value
-                local note_string = note_column.note_string
-                local volume_string = note_column.volume_string
-                local panning_string = note_column.panning_string
-                local delay_string = note_column.delay_string
-                local instrument = note_column.instrument_value
-
-                if note < 120 then
-                    if currentInstrument == nil and note_column.instrument_value < 255 then
-                        currentInstrument = note_column.instrument_value + 1
-                    end
-                    if current_note ~= nil then
-                        enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost)
-                    end
-                    lastColumnWithNotes = c
-                    current_note = note
-                    current_note_string = note_string
-                    current_note_len = 0
-                    current_note_end_vel = 0
-                    current_note_step = s
-                    current_note_line = s + stepOffset
-                    current_note_vel = fromRenoiseHex(volume_string)
-                    current_note_pan = fromRenoiseHex(panning_string)
-                    current_note_dly = fromRenoiseHex(delay_string)
-                    current_note_rowIndex = noteValue2GridRowOffset(current_note)
-                    if instrument == 255 then
-                        current_note_ghost = true
-                    else
-                        current_note_ghost = false
-                    end
-                    --add current note to note index table for scale detection
-                    usedNoteIndices[s .. "_" .. c] = note % 12
-                elseif note == 120 and current_note ~= nil then
-                    enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, true, current_note_ghost)
-                    current_note = nil
-                    current_note_len = 0
-                    current_note_rowIndex = nil
-                    current_note_ghost = nil
+            if note < 120 then
+                if currentInstrument == nil and note_column.instrument_value < 255 then
+                    currentInstrument = note_column.instrument_value + 1
+                end
+                if current_note ~= nil then
+                    enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost)
+                end
+                lastColumnWithNotes = c
+                current_note = note
+                current_note_string = note_string
+                current_note_len = 0
+                current_note_end_vel = 0
+                current_note_step = s
+                current_note_line = line
+                current_note_vel = fromRenoiseHex(volume_string)
+                current_note_pan = fromRenoiseHex(panning_string)
+                current_note_dly = fromRenoiseHex(delay_string)
+                current_note_rowIndex = noteValue2GridRowOffset(current_note)
+                if instrument == 255 then
+                    current_note_ghost = true
                 else
-                    current_note_end_vel = fromRenoiseHex(volume_string)
+                    current_note_ghost = false
                 end
-
-                if current_note_rowIndex ~= nil then
-                    current_note_len = current_note_len + 1
+                --add current note to note index table for scale detection
+                usedNoteIndices[line .. "_" .. c] = note % 12
+            elseif note == 120 and current_note ~= nil then
+                if not current_note_step and s then
+                    current_note_step = current_note_line - stepOffset
                 end
+                enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, true, current_note_ghost)
+                current_note = nil
+                current_note_len = 0
+                current_note_rowIndex = nil
+                current_note_ghost = nil
+            else
+                current_note_end_vel = fromRenoiseHex(volume_string)
+            end
 
+            if current_note_rowIndex ~= nil then
+                current_note_len = current_note_len + 1
             end
         end
         --pattern end, no note off, enable last note
