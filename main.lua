@@ -669,7 +669,7 @@ local function refreshNoteControls()
 end
 
 --simple note trigger
-local function triggerNoteOfCurrentInstrument(note_value, pressed)
+local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity)
     --if osc client is enabled
     if not preferences.enableOSCClient.value then
         return
@@ -707,11 +707,15 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed)
             return
         end
     end
+    if not velocity or velocity > 127 then
+        velocity = currentNoteVelocityPreview
+    end
     if pressed == true then
+        print("play",instrument,note_value,velocity)
         oscClient:send(renoise.Osc.Message("/renoise/trigger/note_on", { { tag = "i", value = instrument },
                                                                          { tag = "i", value = song.selected_track_index },
                                                                          { tag = "i", value = note_value },
-                                                                         { tag = "i", value = currentNoteVelocityPreview } }))
+                                                                         { tag = "i", value = velocity } }))
     elseif pressed == false then
         oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", { { tag = "i", value = instrument },
                                                                           { tag = "i", value = song.selected_track_index },
@@ -728,7 +732,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed)
         lastTriggerNote = { { tag = "i", value = instrument },
                             { tag = "i", value = song.selected_track_index },
                             { tag = "i", value = note_value },
-                            { tag = "i", value = currentNoteVelocityPreview } }
+                            { tag = "i", value = velocity } }
         --send note event to osc server
         oscClient:send(renoise.Osc.Message("/renoise/trigger/note_on", lastTriggerNote))
         --create a timer for note off
@@ -741,6 +745,21 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed)
         --start timer
         tool:add_timer(triggerTimer, preferences.triggerTime.value)
     end
+end
+
+--starts playing from specific line in pattern
+local function playPatternFromLine(line)
+    song.transport:stop()
+    --check for truncated notes, TODO currently not working OFF doesn't send note off, when no note on was before
+    --[[
+    for key in pairs(noteData) do
+        local note_data = noteData[key]
+        if line > note_data.line and line < note_data.line + note_data.len then
+            triggerNoteOfCurrentInstrument(note_data.note, true, note_data.vel)
+        end
+    end
+    ]]--
+    song.transport:start_at(line)
 end
 
 --move selected notes
@@ -1405,9 +1424,8 @@ function pianoGridClick(x, y)
         else
             --fast play from cursor
             if keyControl then
-                song.transport:stop()
                 lastPlaySelectionLine = x + stepOffset
-                song.transport:start_at(lastPlaySelectionLine)
+                playPatternFromLine(lastPlaySelectionLine)
             end
             lastSelectionClick = { x, y }
             --deselect selected notes
@@ -2119,8 +2137,7 @@ function setPlaybackPos(pos)
         addMissingNoteOffForColumns()
         refreshPianoRollNeeded = true
     else
-        song.transport:stop()
-        song.transport:start_at(pos + stepOffset)
+        playPatternFromLine(pos + stepOffset)
     end
 end
 
@@ -2594,11 +2611,9 @@ local function handleKeyEvent(key)
                 lastPlaySelectionLine = noteSelection[1].line
             end
             if lastPlaySelectionLine then
-                song.transport:stop()
-                song.transport:start_at(lastPlaySelectionLine)
+                playPatternFromLine(lastPlaySelectionLine)
             else
-                song.transport:stop()
-                song.transport:start_at(1)
+                playPatternFromLine(1)
             end
         end
         handled = true
