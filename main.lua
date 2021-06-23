@@ -185,6 +185,9 @@ local keyAlt = false
 --pen mode
 local penMode = false
 
+--step preview
+local stepPreview = false
+
 --table to save last playingh note for qwerty playing
 local lastKeyboardNote = {}
 
@@ -1248,6 +1251,23 @@ local function gridOffset2NoteValue(y)
     return y + noteOffset - 1
 end
 
+--color keyboard key
+local function setKeyboardKeyColor(row, note, pressed, highlighted)
+    if highlighted then
+        vbw["k" .. row].color = colorNoteHighlight
+    elseif not pressed then
+        if preferences.keyboardStyle.value == 2 then
+            vbw["k" .. row].color = colorList
+        elseif noteInScale(note, true) then
+            vbw["k" .. row].color = colorKeyWhite
+        else
+            vbw["k" .. row].color = colorKeyBlack
+        end
+    else
+        vbw["k" .. row].color = colorStepOn
+    end
+end
+
 --keyboard preview
 function keyClick(y, pressed)
     local note = gridOffset2NoteValue(y)
@@ -1337,104 +1357,121 @@ function noteClick(x, y, c)
 end
 
 --will be called, when an empty grid button was clicked
-function pianoGridClick(x, y)
-    local dbclk = dbclkDetector("p" .. tostring(x) .. "_" .. tostring(y))
-    --set paste cursor
-    pasteCursor = { x + stepOffset, gridOffset2NoteValue(y) }
-
-    if dbclk or keyAlt or penMode.value then
-        local steps = song.selected_pattern.number_of_lines
-        local column
-        local note_value
-        local noteoff = false
-        --move x by stepoffset
-        x = x + stepOffset
-        --check if current note length is too long for pattern size, reduce len if needed
-        if x + currentNoteLength > steps then
-            currentNoteLength = steps - x + 1
-            refreshControls = true
-        end
-        --disable edit mode because of side effects
-        song.transport.edit_mode = false
-        column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength)
-        --no column found
-        if column == nil then
-            --no space for this note
-            return false
-        end
-        --
-        setUndoDescription("Draw a note ...")
-        --add new note
-        note_value = gridOffset2NoteValue(y)
-        noteoff = addNoteToPattern(column, x, currentNoteLength, note_value, currentNoteVelocity, currentNoteEndVelocity, currentNotePan, currentNoteDelay, currentNoteGhost)
-        --
-        local note_data = {
-            line = x,
-            note = note_value,
-            vel = currentNoteVelocity,
-            end_vel = currentNoteEndVelocity,
-            dly = currentNoteDelay,
-            pan = currentNotePan,
-            len = currentNoteLength,
-            noteoff = noteoff,
-            column = column,
-            ghst = currentNoteGhost
-        }
-        --trigger preview notes
-        if preferences.notePreview.value then
-            triggerNoteOfCurrentInstrument(note_data.note)
-        end
-        --clear selection and add new note as new selection
-        noteSelection = {}
-        table.insert(noteSelection, note_data)
-        jumpToNoteInPattern(note_data)
-        --
-        addMissingNoteOffForColumns()
-        refreshPianoRollNeeded = true
-    else
-        --when a last click was saved and shift is pressing, than try to select notes
-        if (keyShift or keyRShift) and lastSelectionClick then
-            local lineValues = song.selected_pattern_track.lines
-            local columns = song.selected_track.visible_note_columns
-            local smin = math.min(x, lastSelectionClick[1])
-            local smax = math.max(x, lastSelectionClick[1])
-            local nmin = gridOffset2NoteValue(math.min(y, lastSelectionClick[2]))
-            local nmax = gridOffset2NoteValue(math.max(y, lastSelectionClick[2]))
-            --remove current note selection
-            noteSelection = {}
-            --loop through columns
-            for c = 1, columns do
-                --loop through lines as steps
-                for s = smin, smax do
-                    local note_column = lineValues[s + stepOffset]:note_column(c)
-                    local note = note_column.note_value
-                    --note inside the selection rect?
-                    if note >= nmin and note <= nmax then
-                        local note_data = noteData[tostring(s) .. "_" .. tostring(noteValue2GridRowOffset(note)) .. "_" .. tostring(c)]
-                        --note found?
-                        if note_data ~= nil then
-                            --add to selection table
-                            table.insert(noteSelection, note_data)
-                        end
-                    end
+function pianoGridClick(x, y, released)
+    if (keyControl and keyShift and not penMode.value) or (stepPreview and released) then
+        local line = x + stepOffset
+        stepPreview = not released
+        for key in pairs(noteData) do
+            local note_data = noteData[key]
+            if line >= note_data.line and line < note_data.line + note_data.len then
+                triggerNoteOfCurrentInstrument(note_data.note, not released, note_data.vel)
+                local row = noteValue2GridRowOffset(note_data.note)
+                if row ~= nil then
+                    setKeyboardKeyColor(row, note_data.note, not released, false)
                 end
             end
-            --piano refresh
-            lastSelectionClick = { x, y }
+        end
+        return
+    end
+    if released then
+        local dbclk = dbclkDetector("p" .. tostring(x) .. "_" .. tostring(y))
+        --set paste cursor
+        pasteCursor = { x + stepOffset, gridOffset2NoteValue(y) }
+
+        if dbclk or (keyAlt and not keyControl) or penMode.value then
+            local steps = song.selected_pattern.number_of_lines
+            local column
+            local note_value
+            local noteoff = false
+            --move x by stepoffset
+            x = x + stepOffset
+            --check if current note length is too long for pattern size, reduce len if needed
+            if x + currentNoteLength > steps then
+                currentNoteLength = steps - x + 1
+                refreshControls = true
+            end
+            --disable edit mode because of side effects
+            song.transport.edit_mode = false
+            column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength)
+            --no column found
+            if column == nil then
+                --no space for this note
+                return false
+            end
+            --
+            setUndoDescription("Draw a note ...")
+            --add new note
+            note_value = gridOffset2NoteValue(y)
+            noteoff = addNoteToPattern(column, x, currentNoteLength, note_value, currentNoteVelocity, currentNoteEndVelocity, currentNotePan, currentNoteDelay, currentNoteGhost)
+            --
+            local note_data = {
+                line = x,
+                note = note_value,
+                vel = currentNoteVelocity,
+                end_vel = currentNoteEndVelocity,
+                dly = currentNoteDelay,
+                pan = currentNotePan,
+                len = currentNoteLength,
+                noteoff = noteoff,
+                column = column,
+                ghst = currentNoteGhost
+            }
+            --trigger preview notes
+            if preferences.notePreview.value then
+                triggerNoteOfCurrentInstrument(note_data.note)
+            end
+            --clear selection and add new note as new selection
+            noteSelection = {}
+            table.insert(noteSelection, note_data)
+            jumpToNoteInPattern(note_data)
+            --
             addMissingNoteOffForColumns()
             refreshPianoRollNeeded = true
         else
-            --fast play from cursor
-            if keyControl then
-                lastPlaySelectionLine = x + stepOffset
-                playPatternFromLine(lastPlaySelectionLine)
-            end
-            lastSelectionClick = { x, y }
-            --deselect selected notes
-            if #noteSelection > 0 then
+            --when a last click was saved and shift is pressing, than try to select notes
+            if (keyShift or keyRShift) and lastSelectionClick then
+                local lineValues = song.selected_pattern_track.lines
+                local columns = song.selected_track.visible_note_columns
+                local smin = math.min(x, lastSelectionClick[1])
+                local smax = math.max(x, lastSelectionClick[1])
+                local nmin = gridOffset2NoteValue(math.min(y, lastSelectionClick[2]))
+                local nmax = gridOffset2NoteValue(math.max(y, lastSelectionClick[2]))
+                --remove current note selection
                 noteSelection = {}
-                refreshPianoRollNeeded = true
+                --loop through columns
+                for c = 1, columns do
+                    --loop through lines as steps
+                    for s = smin, smax do
+                        local note_column = lineValues[s + stepOffset]:note_column(c)
+                        local note = note_column.note_value
+                        --note inside the selection rect?
+                        if note >= nmin and note <= nmax then
+                            local note_data = noteData[tostring(s) .. "_" .. tostring(noteValue2GridRowOffset(note)) .. "_" .. tostring(c)]
+                            --note found?
+                            if note_data ~= nil then
+                                --add to selection table
+                                table.insert(noteSelection, note_data)
+                            end
+                        end
+                    end
+                end
+                --piano refresh
                 lastSelectionClick = { x, y }
+                addMissingNoteOffForColumns()
+                refreshPianoRollNeeded = true
+            else
+                --fast play from cursor
+                if keyControl then
+                    lastPlaySelectionLine = x + stepOffset
+                    playPatternFromLine(lastPlaySelectionLine)
+                end
+                lastSelectionClick = { x, y }
+                --deselect selected notes
+                if #noteSelection > 0 then
+                    noteSelection = {}
+                    refreshPianoRollNeeded = true
+                    lastSelectionClick = { x, y }
+                end
             end
         end
     end
@@ -1951,14 +1988,7 @@ local function fillPianoRoll()
                         --refresh keyboad
                         if s == 1 then
                             local key = vbw["k" .. ystring]
-                            if not noteInScale((y + noffset) % 12, true) then
-                                key.color = colorKeyBlack
-                            else
-                                key.color = colorKeyWhite
-                            end
-                            if preferences.keyboardStyle.value == 2 then
-                                key.color = colorList
-                            end
+                            setKeyboardKeyColor(ystring, (y + noffset) % 12, false, false)
                             --set root label
                             if ((currentScale == 1 or preferences.scaleHighlightingType.value == 5) and noteIndexInScale((y + noffset) % 12, true) == 0) or
                                     (preferences.scaleHighlightingType.value ~= 5 and currentScale == 2 and noteIndexInScale((y + noffset) % 12) == 0) or
@@ -2097,7 +2127,7 @@ local function highlightNotesOnStep(step, highlight)
                     if vbw["b" .. note.index].color[1] ~= colorNoteSelected[1] then
                         vbw["b" .. note.index].color = colorNoteHighlight
                     end
-                    vbw["k" .. note.row].color = colorNoteHighlight
+                    setKeyboardKeyColor(note.row, note.note, false, true)
                 else
                     if vbw["b" .. note.index].color[1] ~= colorNoteSelected[1] then
                         if note.ghst then
@@ -2106,13 +2136,7 @@ local function highlightNotesOnStep(step, highlight)
                             vbw["b" .. note.index].color = colorNoteVelocity(note.vel)
                         end
                     end
-                    if preferences.keyboardStyle.value == 2 then
-                        vbw["k" .. note.row].color = colorList
-                    elseif noteInScale(note.note, true) then
-                        vbw["k" .. note.row].color = colorKeyWhite
-                    else
-                        vbw["k" .. note.row].color = colorKeyBlack
-                    end
+                    setKeyboardKeyColor(note.row, note.note, false, false)
                 end
             end
         end
@@ -2625,13 +2649,7 @@ local function handleKeyEvent(key)
             row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
             triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], false)
             if row ~= nil then
-                if preferences.keyboardStyle.value == 2 then
-                    vbw["k" .. row].color = colorList
-                elseif noteInScale(lastKeyboardNote[key.name]) then
-                    vbw["k" .. row].color = colorKeyWhite
-                else
-                    vbw["k" .. row].color = colorKeyBlack
-                end
+                setKeyboardKeyColor(row, lastKeyboardNote[key.name], false, false)
             end
         elseif not handled and key.modifiers == "" then
             local note = key.note + (12 * song.transport.octave)
@@ -2639,7 +2657,7 @@ local function handleKeyEvent(key)
             row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
             triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], true)
             if row ~= nil then
-                vbw["k" .. row].color = colorStepOn
+                setKeyboardKeyColor(row, lastKeyboardNote[key.name], true, false)
             end
         end
         handled = true
@@ -2732,7 +2750,8 @@ local function main_function()
                 spacing = -gridSpacing,
             }
             for x = 1, gridWidth do
-                local temp = "pianoGridClick(" .. tostring(x) .. "," .. tostring(y) .. ")"
+                local temp = "pianoGridClick(" .. tostring(x) .. "," .. tostring(y) .. ",true)"
+                local temp2 = "pianoGridClick(" .. tostring(x) .. "," .. tostring(y) .. ",false)"
                 vb_temp = vb:button {
                     id = "p" .. tostring(x) .. "_" .. tostring(y),
                     height = gridStepSizeH,
@@ -2740,6 +2759,7 @@ local function main_function()
                     color = colorWhiteKey[1],
                     visible = false,
                     notifier = loadstring(temp),
+                    pressed = loadstring(temp2)
                 }
                 row:add_child(vb_temp)
                 --dummy for quirk?

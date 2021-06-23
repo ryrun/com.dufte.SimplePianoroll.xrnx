@@ -52,6 +52,7 @@ Just right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 |Select a note|Click on a note.<br>*It also reads out note length and velocity of the selected note and set these values for new notes.*|
 |Preview a note|Click on a note.|
 |Play from mouse cursor|While holding <kbd>ctrl</kbd>, click on a freespot in the grid|
+|Play all notes from mouse cursor|While holding <kbd>ctrl + shift</kbd>, click and hold on a freespot in the grid|
 |Select multiple individual notes|While holding <kbd>ctrl</kbd>, click on a note|
 |Deselect individual notes in selection|While holding <kbd>ctrl</kbd>, click on a selected note|
 |Deselect notes|Click on a free spot in the grid|
