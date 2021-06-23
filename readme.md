@@ -21,24 +21,26 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 * Ghost Track
 * Many useful keyboard shortcuts (inspired by FL and Reason)
 * Can display notes with note cut effects and delayed ones
-* and more...
+* Scale highlighting can be changed (None, Minor scale, Major scale, Instrument scale, Automatic scale)
+* Many useful options to change the behavior for your own taste
+* And more...
 
 ## Important
 
 * Dragging notes currently not possible, use arrow keys
-* Its using always the instrument, which is used in the pattern. In an empty pattern, its using the current active
+* It's using always the instrument, which is used in the pattern. In an empty pattern, its using the current active
   instrument
 
 ## Install
 
-Download latest version from official tool page:<br>https://www.renoise.com/tools/simple-pianoroll
+Download the latest version from official tool page:<br>https://www.renoise.com/tools/simple-pianoroll
 
 Alternative download the latest build here and drop it onto
 Renoise:<br>https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/out/com.duftetools.SimplePianoroll.xrnx
 
 ## How to edit a track
 
-Just right click on a track and choose "Edit with Simple Pianoroll ...":<br>
+Just right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/openit.gif?raw=true" width="300">
 
 ## Mouse actions
