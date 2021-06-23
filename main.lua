@@ -714,7 +714,6 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity)
         velocity = currentNoteVelocityPreview
     end
     if pressed == true then
-        print("play", instrument, note_value, velocity)
         oscClient:send(renoise.Osc.Message("/renoise/trigger/note_on", { { tag = "i", value = instrument },
                                                                          { tag = "i", value = song.selected_track_index },
                                                                          { tag = "i", value = note_value },
