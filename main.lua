@@ -2148,6 +2148,21 @@ local function appIdleEvent()
     --only process when window is created and visible
     if windowObj and windowObj.visible then
 
+        --refresh modifier states, when keys are pressed outside focus
+        local keyState = app.key_modifier_states
+        if (keyState["alt"] == "pressed" and keyAlt == false) or (keyState["alt"] == "released" and keyAlt == true) then
+            keyAlt = not keyAlt
+            refreshControls = true
+        end
+        if (keyState["control"] == "pressed" and keyControl == false) or (keyState["control"] == "released" and keyControl == true) then
+            keyControl = not keyControl
+            refreshControls = true
+        end
+        if (keyState["shift"] == "pressed" and keyShift == false) or (keyState["shift"] == "released" and keyShift == true) then
+            keyShift = not keyShift
+            refreshControls = true
+        end
+
         --refresh pianoroll, when needed
         if refreshPianoRollNeeded then
             fillPianoRoll()
