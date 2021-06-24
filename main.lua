@@ -184,6 +184,7 @@ local keyAlt = false
 
 --pen mode
 local penMode = false
+local audioPreviewMode = false
 
 --step preview
 local stepPreview = false
@@ -640,12 +641,18 @@ local function refreshNoteControls()
     else
         vbw.notepreview.color = colorDisableButton
     end
-    if penMode.value or keyAlt then
+    if penMode or (keyAlt and not keyControl and not keyShift) then
         vbw.mode_pen.color = colorNoteHighlight
         vbw.mode_select.color = colorDisableButton
+        vbw.mode_hear.color = colorDisableButton
+    elseif audioPreviewMode or (keyControl and keyShift and not keyAlt) then
+        vbw.mode_pen.color = colorDisableButton
+        vbw.mode_select.color = colorDisableButton
+        vbw.mode_hear.color = colorNoteHighlight
     else
         vbw.mode_pen.color = colorDisableButton
         vbw.mode_select.color = colorNoteHighlight
+        vbw.mode_hear.color = colorDisableButton
     end
 end
 
@@ -1296,7 +1303,7 @@ function noteClick(x, y, c)
         jumpToNoteInPattern(note_data)
     end
     --remove on dblclk or when in penmode
-    if dbclk or keyAlt or penMode.value then
+    if (dbclk or keyAlt or penMode) and not audioPreviewMode then
         --set clicked note as selected for remove function
         if note_data ~= nil then
             noteSelection = {}
@@ -1305,35 +1312,37 @@ function noteClick(x, y, c)
         end
     else
         if note_data ~= nil then
-            local deselect = false
-            --clear selection, when ctrl is not holded
-            if not keyControl then
-                noteSelection = {}
-            elseif #noteSelection > 0 then
-                --check if the note is in selection, then just deselect
-                for i = 1, #noteSelection do
-                    if noteSelection[i].line == note_data.line and noteSelection[i].len == note_data.len and noteSelection[i].column == note_data.column then
-                        deselect = true
-                        table.remove(noteSelection, i)
-                        break
+            if not audioPreviewMode then
+                local deselect = false
+                --clear selection, when ctrl is not holded
+                if not keyControl then
+                    noteSelection = {}
+                elseif #noteSelection > 0 then
+                    --check if the note is in selection, then just deselect
+                    for i = 1, #noteSelection do
+                        if noteSelection[i].line == note_data.line and noteSelection[i].len == note_data.len and noteSelection[i].column == note_data.column then
+                            deselect = true
+                            table.remove(noteSelection, i)
+                            break
+                        end
                     end
                 end
-            end
-            --when note was not deselected, then add this note to selection
-            if not deselect then
-                table.insert(noteSelection, note_data)
+                --when note was not deselected, then add this note to selection
+                if not deselect then
+                    table.insert(noteSelection, note_data)
+                end
+                refreshPianoRollNeeded = true
             end
             if preferences.notePreview.value then
                 triggerNoteOfCurrentInstrument(note_data.note)
             end
-            refreshPianoRollNeeded = true
         end
     end
 end
 
 --will be called, when an empty grid button was clicked
 function pianoGridClick(x, y, released)
-    if (keyControl and keyShift and not penMode.value) or (stepPreview and released) then
+    if ((keyControl and keyShift and not keyAlt) or audioPreviewMode) or (stepPreview and released) then
         local line = x + stepOffset
         stepPreview = not released
         for key in pairs(noteData) do
@@ -1353,7 +1362,7 @@ function pianoGridClick(x, y, released)
         --set paste cursor
         pasteCursor = { x + stepOffset, gridOffset2NoteValue(y) }
 
-        if dbclk or (keyAlt and not keyControl) or penMode.value then
+        if dbclk or (keyAlt and not keyControl and not keyShift) or penMode then
             local steps = song.selected_pattern.number_of_lines
             local column
             local note_value
@@ -1436,7 +1445,7 @@ function pianoGridClick(x, y, released)
                 refreshPianoRollNeeded = true
             else
                 --fast play from cursor
-                if keyControl then
+                if keyControl and not keyAlt and not keyShift then
                     lastPlaySelectionLine = x + stepOffset
                     playPatternFromLine(lastPlaySelectionLine)
                 end
@@ -2326,22 +2335,28 @@ local function handleKeyEvent(key)
     if key.name == "lalt" and key.state == "pressed" then
         keyAlt = true
         handled = true
-        if not penMode.value then
+        if not penMode then
             refreshControls = true
         end
     elseif key.name == "lalt" and key.state == "released" then
         keyAlt = false
         handled = true
-        if not penMode.value then
+        if not penMode then
             refreshControls = true
         end
     end
     if key.name == "lshift" and key.state == "pressed" then
         keyShift = true
         handled = true
+        if not audioPreviewMode then
+            refreshControls = true
+        end
     elseif key.name == "lshift" and key.state == "released" then
         keyShift = false
         handled = true
+        if not audioPreviewMode then
+            refreshControls = true
+        end
     end
     if key.name == "rshift" and key.state == "pressed" then
         keyRShift = true
@@ -2701,7 +2716,7 @@ local function main_function()
         --reset note selection
         noteSelection = {}
         --when needed set enable penmode
-        penMode = preferences.forcePenMode
+        penMode = preferences.forcePenMode.value
 
         local vb_temp
         local playCursor = vb:row {
@@ -2920,7 +2935,9 @@ local function main_function()
                     style = "panel",
                     vb:button {
                         id = "notecolumn_vel",
-                        text = "Vol",
+                        --text = "Vol",
+                        bitmap = "Icons/Transport_ViewVolumeColumn.bmp",
+                        width = 24,
                         tooltip = "Enable / disable note volume column",
                         color = colorDisableButton,
                         notifier = function()
@@ -3032,7 +3049,9 @@ local function main_function()
                     },
                     vb:button {
                         id = "notecolumn_pan",
-                        text = "Pan",
+                        --text = "Pan",
+                        bitmap = "Icons/Transport_ViewPanColumn.bmp",
+                        width = 24,
                         tooltip = "Enable / disable note pan column",
                         color = colorDisableButton,
                         notifier = function()
@@ -3099,7 +3118,9 @@ local function main_function()
                     },
                     vb:button {
                         id = "notecolumn_delay",
-                        text = "Dly",
+                        --text = "Dly",
+                        bitmap = "Icons/Transport_ViewDelayColumn.bmp",
+                        width = 24,
                         tooltip = "Enable / disable note delay column",
                         color = colorDisableButton,
                         notifier = function()
@@ -3493,8 +3514,8 @@ local function main_function()
                 vb:column {
                     vb:row {
                         height = (gridStepSizeH * 2) - gridSpacing + 2,
-                        spacing = 4,
-                        margin = 7,
+                        spacing = 1,
+                        margin = 4,
                         vb:row {
                             spacing = -3,
                             vb:button {
@@ -3502,16 +3523,29 @@ local function main_function()
                                 tooltip = "Select mode",
                                 id = "mode_select",
                                 notifier = function()
-                                    penMode.value = false
+                                    penMode = false
+                                    audioPreviewMode = false
                                     refreshControls = true
                                 end,
                             },
                             vb:button {
-                                text = "✎",
+                                --text = "✎",
+                                bitmap = "Icons/SampleEd_DrawTool.bmp",
                                 tooltip = "Pen mode",
                                 id = "mode_pen",
                                 notifier = function()
-                                    penMode.value = true
+                                    penMode = true
+                                    audioPreviewMode = false
+                                    refreshControls = true
+                                end,
+                            },
+                            vb:button {
+                                bitmap = "Icons/Browser_AudioFile.bmp",
+                                tooltip = "Audio preview mode",
+                                id = "mode_hear",
+                                notifier = function()
+                                    audioPreviewMode = true
+                                    penMode = false
                                     refreshControls = true
                                 end,
                             },
