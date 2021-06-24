@@ -2134,15 +2134,14 @@ end
 function setPlaybackPos(pos)
     --select all note events which are on specific pos
     if keyControl then
+        local line = pos + stepOffset
         if not keyShift then
             noteSelection = {}
         end
-        if noteOnStep[pos] then
-            for key in pairs(noteOnStep[pos]) do
-                local note_data = noteData[noteOnStep[pos][key].index]
-                if noteInSelection(note_data) == nil then
-                    table.insert(noteSelection, note_data)
-                end
+        for key in pairs(noteData) do
+            local note_data = noteData[key]
+            if line >= note_data.line and line < note_data.line + note_data.len then
+                table.insert(noteSelection, note_data)
             end
         end
         addMissingNoteOffForColumns()
