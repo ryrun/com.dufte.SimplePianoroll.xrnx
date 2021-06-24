@@ -646,15 +646,15 @@ local function refreshNoteControls()
     if penMode or (keyAlt and not keyControl and not keyShift and not audioPreviewMode) then
         vbw.mode_pen.color = colorNoteHighlight
         vbw.mode_select.color = colorDisableButton
-        vbw.mode_hear.color = colorDisableButton
+        vbw.mode_audiopreview.color = colorDisableButton
     elseif audioPreviewMode or (keyControl and keyShift and not keyAlt) then
         vbw.mode_pen.color = colorDisableButton
         vbw.mode_select.color = colorDisableButton
-        vbw.mode_hear.color = colorNoteHighlight
+        vbw.mode_audiopreview.color = colorNoteHighlight
     else
         vbw.mode_pen.color = colorDisableButton
         vbw.mode_select.color = colorNoteHighlight
-        vbw.mode_hear.color = colorDisableButton
+        vbw.mode_audiopreview.color = colorDisableButton
     end
 end
 
@@ -3555,7 +3555,7 @@ local function main_function()
                             vb:button {
                                 bitmap = "Icons/Browser_AudioFile.bmp",
                                 tooltip = "Audio preview mode",
-                                id = "mode_hear",
+                                id = "mode_audiopreview",
                                 notifier = function()
                                     audioPreviewMode = true
                                     penMode = false
