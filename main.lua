@@ -643,7 +643,7 @@ local function refreshNoteControls()
     else
         vbw.notepreview.color = colorDisableButton
     end
-    if penMode or (keyAlt and not keyControl and not keyShift) then
+    if penMode or (keyAlt and not keyControl and not keyShift and not audioPreviewMode) then
         vbw.mode_pen.color = colorNoteHighlight
         vbw.mode_select.color = colorDisableButton
         vbw.mode_hear.color = colorDisableButton
