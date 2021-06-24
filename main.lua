@@ -208,31 +208,6 @@ local function badTrackError()
     end
 end
 
---dump complex tables
-local function dump(o)
-    if type(o) == 'table' then
-        local s = '{ '
-        for k, v in pairs(o) do
-            if type(k) ~= 'number' then
-                k = '"' .. k .. '"'
-            end
-            s = s .. '[' .. k .. '] = ' .. dump(v) .. ','
-        end
-        return s .. '} '
-    else
-        return tostring(o)
-    end
-end
-
---returns size of a table
-local function tableLength(T)
-    local count = 0
-    for _ in pairs(T) do
-        count = count + 1
-    end
-    return count
-end
-
 --return special "hex" value which allow values like ZF
 local function toRenoiseHex(val)
     local t = string.format("%X", val)
@@ -1852,7 +1827,7 @@ local function setScaleHighlighting(afterPianoRollRefresh)
         --only process, after piano roll refresh
         if afterPianoRollRefresh then
             --loop through scales and choose one
-            local keyCount = tableLength(usedNoteIndices)
+            local keyCount = table.count(usedNoteIndices)
             if keyCount > 2 then
                 local foundScaleKey
                 local lowErrorScaleKey
