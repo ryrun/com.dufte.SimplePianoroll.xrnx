@@ -50,6 +50,7 @@ local defaultPreferences = {
     addNoteOffToEmptyNoteColumns = true,
     addNoteColumnsIfNeeded = true,
     keyboardStyle = 1,
+    noNotePreviewDuringSongPlayback = false,
 }
 
 --tool preferences
@@ -85,6 +86,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     --scale highlighting settings
     scaleHighlightingType = defaultPreferences.scaleHighlightingType,
     keyForSelectedScale = defaultPreferences.keyForSelectedScale,
+    noNotePreviewDuringSongPlayback = defaultPreferences.noNotePreviewDuringSongPlayback,
 }
 tool.preferences = preferences
 
@@ -657,10 +659,19 @@ local function refreshNoteControls()
 end
 
 --simple note trigger
-local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity)
+local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, newOrChanged)
     --if osc client is enabled
     if not preferences.enableOSCClient.value then
         return
+    end
+    --special handling of preview notes, won new notes or changed notes (transpose)
+    if newOrChanged then
+        if not preferences.notePreview.value then
+            return
+        end
+        if preferences.noNotePreviewDuringSongPlayback.value and song.transport.playing then
+            return
+        end
     end
     --when no instrument is set, use the current selected one
     local instrument = currentInstrument
@@ -843,9 +854,7 @@ local function transposeSelectedNotes(transpose, keepscale)
             noteSelection[key].note = 119
         end
         note_column.note_value = noteSelection[key].note
-        if preferences.notePreview.value then
-            triggerNoteOfCurrentInstrument(noteSelection[key].note)
-        end
+        triggerNoteOfCurrentInstrument(noteSelection[key].note, nil, nil, true)
     end
     refreshPianoRollNeeded = true
 end
@@ -1333,9 +1342,7 @@ function noteClick(x, y, c)
                 end
                 refreshPianoRollNeeded = true
             end
-            if preferences.notePreview.value then
-                triggerNoteOfCurrentInstrument(note_data.note)
-            end
+            triggerNoteOfCurrentInstrument(note_data.note, nil, nil, true)
         end
     end
 end
@@ -1401,9 +1408,7 @@ function pianoGridClick(x, y, released)
                 ghst = currentNoteGhost
             }
             --trigger preview notes
-            if preferences.notePreview.value then
-                triggerNoteOfCurrentInstrument(note_data.note)
-            end
+            triggerNoteOfCurrentInstrument(note_data.note, nil, nil, true)
             --clear selection and add new note as new selection
             noteSelection = {}
             table.insert(noteSelection, note_data)
@@ -3390,6 +3395,14 @@ local function main_function()
                                         },
                                     },
                                     vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.noNotePreviewDuringSongPlayback,
+                                        },
+                                        vb:text {
+                                            text = "No note preview during song playback",
+                                        },
+                                    },
+                                    vb:row {
                                         vb:text {
                                             text = "Note preview length (ms):",
                                         },
@@ -3493,6 +3506,7 @@ local function main_function()
                                     preferences.addNoteOffToEmptyNoteColumns.value = defaultPreferences.addNoteOffToEmptyNoteColumns
                                     preferences.addNoteColumnsIfNeeded.value = defaultPreferences.addNoteColumnsIfNeeded
                                     preferences.keyboardStyle.value = defaultPreferences.keyboardStyle
+                                    preferences.noNotePreviewDuringSongPlayback.value = defaultPreferences.noNotePreviewDuringSongPlayback
                                     app:show_message("All preferences was set to default values.")
                                 end
                             end
