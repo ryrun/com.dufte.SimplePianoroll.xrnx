@@ -3225,7 +3225,9 @@ local function main_function()
                     },
                     vb:button {
                         id = "ghosttrackswitch",
-                        text = "Switch",
+                        --text = "Switch",
+                        bitmap = "Icons/Transport_PlaybackSync.bmp",
+                        width = 24,
                         tooltip = "Switch to selected ghost track",
                         notifier = function()
                             if currentGhostTrack and currentGhostTrack ~= song.selected_track_index then
