@@ -3682,3 +3682,18 @@ tool:add_keybinding {
         end
     end
 }
+
+--add global key shortcut
+tool:add_keybinding {
+    name = "Global:Tools:Edit with Simple Pianoroll ...",
+    invoke = function()
+        if windowObj and windowObj.visible then
+            windowObj:close()
+        else
+            --focus pattern editor
+            app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_PATTERN_EDITOR
+            --create window
+            main_function()
+        end
+    end
+}
