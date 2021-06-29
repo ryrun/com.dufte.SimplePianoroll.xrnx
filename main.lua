@@ -3416,10 +3416,13 @@ local function main_function()
                                         },
                                     },
                                     vb:text {
-                                        text = "OSC connection string:",
+                                        text = "OSC connection string: [protocol]://[ip]:[port]",
                                     },
                                     vb:textfield {
                                         bind = preferences.oscConnectionString,
+                                    },
+                                    vb:text {
+                                        text = "Please check in the Renoise preferences in\nthe OSC section that the OSC server has\nbeen activated and is running with the same\nprotocol (UDP, TCP) and port settings\nas specified here."
                                     },
                                 },
                                 vb:column {
