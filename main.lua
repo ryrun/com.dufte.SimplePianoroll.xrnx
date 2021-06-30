@@ -1091,8 +1091,9 @@ local function duplicateSelectedNotes()
 end
 
 --change note size
-local function changeSizeSelectedNotes(len)
+local function changeSizeSelectedNotes(len, add)
     local column
+    local newLen = len
     --first notes first
     table.sort(noteSelection, function(a, b)
         return a.line < b.line
@@ -1105,16 +1106,20 @@ local function changeSizeSelectedNotes(len)
     for key in pairs(noteSelection) do
         --remove note
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
+        --add mode
+        if add then
+            newLen = math.max(noteSelection[key].len + len, 1)
+        end
         --search for valid column
-        column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line, len)
+        column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line, newLen)
         if column then
-            if noteSelection[key].len == 1 and len > 1 then
+            if noteSelection[key].len == 1 and newLen > 1 then
                 if toRenoiseHex(noteSelection[key].vel):sub(1, 1) == "C" then
                     noteSelection[key].end_vel = noteSelection[key].vel
                     noteSelection[key].vel = 255
                 end
             end
-            noteSelection[key].len = len
+            noteSelection[key].len = newLen
             noteSelection[key].column = column
         end
         noteSelection[key].noteoff = addNoteToPattern(
@@ -2027,7 +2032,7 @@ local function fillPianoRoll()
                 current_note = note
                 current_note_string = note_string
                 current_note_len = 0
-                current_note_end_vel = 0
+                current_note_end_vel = nil
                 current_note_step = s
                 current_note_line = line
                 current_note_vel = fromRenoiseHex(volume_string)
@@ -2624,13 +2629,18 @@ local function handleKeyEvent(key)
         if key.state == "released" then
             local steps = 1
             if keyShift or keyRShift then
-                steps = math.max(4)
+                steps = 4
             end
             if key.name == "left" then
                 steps = steps * -1
             end
             if #noteSelection > 0 then
-                moveSelectedNotes(steps)
+                if keyControl then
+                    steps = steps / math.abs(steps)
+                    changeSizeSelectedNotes(steps, true)
+                else
+                    moveSelectedNotes(steps)
+                end
             elseif stepSlider.value + steps <= stepSlider.max and stepSlider.value + steps >= stepSlider.min then
                 stepSlider.value = stepSlider.value + steps
             end

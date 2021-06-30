@@ -104,18 +104,20 @@ Info: Non handled keyboard events will be sent back to the host. So renoise defa
 |<kbd>alt + shift + m</kbd>|Unmute selected notes (remove volume value)|
 |<kbd>up</kbd>|Transpose note 1 semitone up|
 |<kbd>down</kbd>|Transpose note 1 semitone down|
-|<kbd>alt + up</kbd>|Transpose note 7 semitone up|
-|<kbd>alt + down</kbd>|Transpose note 7 semitone down|
-|<kbd>shift + up</kbd>|Transpose note 12 semitone up|
-|<kbd>shift + down</kbd>|Transpose note 12 semitone down|
+|<kbd>alt + up</kbd>|Transpose note 7 semitones up|
+|<kbd>alt + down</kbd>|Transpose note 7 semitones down|
+|<kbd>shift + up</kbd>|Transpose note 12 semitones up|
+|<kbd>shift + down</kbd>|Transpose note 12 semitones down|
 |<kbd>ctrl + up</kbd>|Transpose note 1 semitone up but stay in scale|
 |<kbd>ctrl + down</kbd>|Transpose note 1 semitone down but stay in scale|
 |<kbd>ctrl + shift + up</kbd>|Transpose note 12 semitone up but stay in scale|
 |<kbd>ctrl + shift + down</kbd>|Transpose note 12 semitone down but stay in scale|
 |<kbd>left</kbd>|Move note 1 step left|
 |<kbd>right</kbd>|Move note 1 step right|
-|<kbd>shift + left</kbd>|Move note 4 step left|
-|<kbd>shift + right</kbd>|Move note 4 step right|
+|<kbd>shift + left</kbd>|Move note 4 steps left|
+|<kbd>shift + right</kbd>|Move note 4 steps right|
+|<kbd>ctrl + left</kbd>|Increase note length by 1|
+|<kbd>ctrl + right</kbd>|Decrease note length by 1|
 |<kbd>shift + i</kbd>|Invert note selection|
 |<kbd>del</kbd>|Remove selected notes|
 |<kbd>esc</kbd>|Deselect all notes|
