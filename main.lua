@@ -36,6 +36,8 @@ local defaultPreferences = {
     gridWidth = 64,
     gridHeight = 42,
     triggerTime = 250,
+    keyInfoTime = 5000,
+    enableKeyInfo = false,
     dblClickTime = 400,
     forcePenMode = false,
     notePreview = true,
@@ -64,14 +66,15 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     --size of pianorollgrid
     gridWidth = defaultPreferences.gridWidth,
     gridHeight = defaultPreferences.gridHeight,
-    --note preview auto note off after x ms
+    --note preview
     triggerTime = defaultPreferences.triggerTime,
+    enableOSCClient = defaultPreferences.enableOSCClient,
+    noNotePreviewDuringSongPlayback = defaultPreferences.noNotePreviewDuringSongPlayback,
     --doubleclick time
     dblClickTime = defaultPreferences.dblClickTime,
     --button states
     forcePenMode = defaultPreferences.forcePenMode,
     notePreview = defaultPreferences.notePreview,
-    enableOSCClient = defaultPreferences.enableOSCClient,
     --oscsettingstring
     oscConnectionString = defaultPreferences.oscConnectionString,
     --velocity rendering
@@ -83,10 +86,11 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     addNoteOffToEmptyNoteColumns = defaultPreferences.addNoteOffToEmptyNoteColumns,
     addNoteColumnsIfNeeded = defaultPreferences.addNoteColumnsIfNeeded,
     keyboardStyle = defaultPreferences.keyboardStyle,
+    keyInfoTime = defaultPreferences.keyInfoTime,
+    enableKeyInfo = defaultPreferences.enableKeyInfo,
     --scale highlighting settings
     scaleHighlightingType = defaultPreferences.scaleHighlightingType,
     keyForSelectedScale = defaultPreferences.keyForSelectedScale,
-    noNotePreviewDuringSongPlayback = defaultPreferences.noNotePreviewDuringSongPlayback,
 }
 tool.preferences = preferences
 
@@ -176,6 +180,9 @@ local highestNote
 
 local noteData = {}
 local usedNoteIndices = {}
+
+local lastKeyInfoTime
+local lastKeyAction
 
 --key states
 local keyControl = false
@@ -1923,6 +1930,9 @@ local function fillPianoRoll()
     currentInstrument = nil
     refreshPianoRollNeeded = false
 
+    --show keyboard info bar
+    vbw["key_state_panel"].visible = preferences.enableKeyInfo.value
+
     --set scale for piano roll
     setScaleHighlighting()
 
@@ -2199,6 +2209,11 @@ local function appIdleEvent()
             refreshTimeline = false
         end
 
+        --key info state
+        if lastKeyInfoTime and lastKeyInfoTime + preferences.keyInfoTime.value < os.clock() then
+            vbw["key_state"].text = ""
+        end
+
         --refresh playback pos indicator
         local line = song.transport.playback_pos.line
         local seq = song.sequencer:pattern(song.transport.playback_pos.sequence)
@@ -2424,6 +2439,30 @@ local function handleKeyEvent(key)
         end
         handled = true
     end
+
+    if key.state == "pressed" then
+        lastKeyInfoTime = nil
+        lastKeyAction = nil
+        local keystatetext = ""
+        if key.modifiers ~= "" then
+            keystatetext = key.modifiers
+        end
+        if key.name == "lalt" or key.name == "lshift" or key.name == "lcontrol" or key.name == "ralt" or key.name == "rshift" or key.name == "rcontrol" then
+            --nothing
+        else
+            if keystatetext ~= "" then
+                keystatetext = keystatetext .. " + "
+            end
+            keystatetext = keystatetext .. key.name
+            lastKeyInfoTime = os.clock()
+        end
+        vbw["key_state"].text = string.upper(keystatetext)
+    elseif key.state == "released" then
+        if not lastKeyInfoTime then
+            vbw["key_state"].text = ""
+        end
+    end
+
     if key.name == "0" then
         if key.state == "released" then
             if key.modifiers == "control" then
@@ -2552,7 +2591,7 @@ local function handleKeyEvent(key)
                     return a.note < b.note
                 end)
                 pasteCursor = { pasteCursor[1], clipboard[1].note }
-                showStatus(#noteSelection .. " notes copied.")
+                showStatus(#noteSelection .. " notes copied.", true)
             end
         end
         handled = true
@@ -2575,7 +2614,7 @@ local function handleKeyEvent(key)
                 end)
                 pasteCursor = { pasteCursor[1], clipboard[1].note }
                 --set status
-                showStatus(#noteSelection .. " notes cut.")
+                showStatus(#noteSelection .. " notes cut.", true)
                 --remove selected notes
                 removeSelectedNotes(true)
             end
@@ -2585,7 +2624,7 @@ local function handleKeyEvent(key)
     if key.name == "v" and key.modifiers == "control" then
         if key.state == "released" then
             if #clipboard > 0 then
-                showStatus(#clipboard .. " notes pasted.")
+                showStatus(#clipboard .. " notes pasted.", true)
                 pasteNotesFromClipboard()
             end
             handled = true
@@ -2600,7 +2639,7 @@ local function handleKeyEvent(key)
                 local note_data = noteData[k]
                 table.insert(noteSelection, note_data)
             end
-            showStatus(#noteSelection .. " notes selected.")
+            showStatus(#noteSelection .. " notes selected.", true)
             refreshPianoRollNeeded = true
         end
         handled = true
@@ -3496,6 +3535,31 @@ local function main_function()
                                             text = "Automatically add NoteOff's in empty note columns",
                                         },
                                     },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.enableKeyInfo,
+                                        },
+                                        vb:text {
+                                            text = "Enable keyboard status bar",
+                                        },
+                                    },
+                                    vb:row {
+                                        vb:text {
+                                            text = "Max keyboard status bar display time (s):",
+                                        },
+                                        vb:valuebox {
+                                            steps = { 1, 2 },
+                                            min = 1,
+                                            max = 10,
+                                            bind = preferences.keyInfoTime,
+                                            tostring = function(v)
+                                                return string.format("%i", v)
+                                            end,
+                                            tonumber = function(v)
+                                                return tonumber(v)
+                                            end
+                                        },
+                                    },
                                 },
                             }, { "Close", "Reset to default", "Help / Feedback" })
                             if btn == "Reset to default" then
@@ -3522,6 +3586,8 @@ local function main_function()
                                     preferences.addNoteColumnsIfNeeded.value = defaultPreferences.addNoteColumnsIfNeeded
                                     preferences.keyboardStyle.value = defaultPreferences.keyboardStyle
                                     preferences.noNotePreviewDuringSongPlayback.value = defaultPreferences.noNotePreviewDuringSongPlayback
+                                    preferences.keyInfoTime.value = defaultPreferences.keyInfoTime
+                                    preferences.enableKeyInfo.value = defaultPreferences.enableKeyInfo
                                     app:show_message("All preferences was set to default values.")
                                 end
                             end
@@ -3636,6 +3702,29 @@ local function main_function()
                 },
                 stepSlider,
             },
+            vb:column {
+                id = "key_state_panel",
+                visible = false,
+                vb:space {
+                    height = 2,
+                },
+                vb:row {
+                    margin = 1,
+                    uniform = true,
+                    vb:bitmap {
+                        bitmap = "Icons/Transport_ComputerKeyboard.bmp",
+                        mode = "transparent",
+                        width = 20,
+                        height = 12,
+                    },
+                    vb:text {
+                        id = "key_state",
+                        text = "",
+                        font = "bold",
+                        style = "strong",
+                    },
+                }
+            }
         }
         --fill new created pianoroll, timeline and refresh controls
         refreshNoteControls()
