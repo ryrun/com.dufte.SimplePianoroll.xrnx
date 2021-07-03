@@ -3781,9 +3781,14 @@ tool:add_menu_entry {
         for s = 1, #song.sequencer.pattern_sequence do
             for t = 1, #song.tracks do
                 if song.sequencer:track_sequence_slot_is_selected(t, s) then
+                    --focus pattern editor
+                    app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_PATTERN_EDITOR
+                    --disable follow player
                     song.transport.follow_player = false
+                    --switch to sequence and track
                     song.selected_sequence_index  = s
                     song.selected_track_index = t
+                    --call default main_function
                     return main_function()
                 end
             end
