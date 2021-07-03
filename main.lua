@@ -3765,11 +3765,29 @@ local function main_function()
     end
 end
 
---add main function to context menu
+--add main function to context menu of pattern editor
 tool:add_menu_entry {
     name = "Pattern Editor:Edit with Simple Pianoroll ...",
     invoke = function()
         main_function()
+    end
+}
+
+--add main function to context menu of pattern matrix
+tool:add_menu_entry {
+    name = "Pattern Matrix:Edit with Simple Pianoroll ...",
+    invoke = function()
+        song = renoise.song()
+        for s = 1, #song.sequencer.pattern_sequence do
+            for t = 1, #song.tracks do
+                if song.sequencer:track_sequence_slot_is_selected(t, s) then
+                    song.transport.follow_player = false
+                    song.selected_sequence_index  = s
+                    song.selected_track_index = t
+                    return main_function()
+                end
+            end
+        end
     end
 }
 
