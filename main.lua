@@ -2669,10 +2669,9 @@ local function handleKeyEvent(key)
             end
             if #noteSelection > 0 then
                 transposeSelectedNotes(transpose, keyControl or keyRControl)
+                keyInfoText = "Transpose selected notes by " .. getSingularPlural(transpose, "semitone", "semitones", true)
                 if keyControl or keyRControl then
-                    keyInfoText = "Transpose selected notes in scale"
-                else
-                    keyInfoText = "Transpose selected notes by " .. getSingularPlural(transpose, "semitone", "semitones", true)
+                    keyInfoText = keyInfoText .. ", keep in scale"
                 end
             else
                 keyInfoText = "Move through the grid"
