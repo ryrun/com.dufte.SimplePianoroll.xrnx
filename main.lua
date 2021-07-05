@@ -254,6 +254,18 @@ local function fromRenoiseHex(val)
     return tonumber(tstart .. tend, 16)
 end
 
+--plurar text function
+local function getSingularPlural(val, singular, plural, addVal)
+    local b = ""
+    if addVal then
+        b = math.abs(val) .. " "
+    end
+    if math.abs(val) == 1 then
+        return b .. singular
+    end
+    return b .. plural
+end
+
 --change a value randomly
 local function randomizeValue(input, scale, min, max)
     local r = math.random(-scale, scale)
@@ -2336,6 +2348,7 @@ end
 --function for all keyboard shortcuts
 local function handleKeyEvent(key)
     local handled = false
+    local keyInfoText
 
     --focus pattern editor - https://forum.renoise.com/t/set-focus-from-lua-code/42281/3
     app.window.lock_keyboard_focus = false
@@ -2390,7 +2403,8 @@ local function handleKeyEvent(key)
         handled = true
     end
     if key.name == "del" then
-        if key.state == "released" then
+        if key.state == "presset" then
+            keyInfoText = "Delete selected note"
             if #noteSelection > 0 then
                 showStatus(#noteSelection .. " notes deleted.")
                 removeSelectedNotes()
@@ -2399,7 +2413,8 @@ local function handleKeyEvent(key)
         handled = true
     end
     if key.name == "esc" then
-        if key.state == "released" then
+        if key.state == "pressed" then
+            keyInfoText = "Deselect current note selection"
             if #noteSelection > 0 then
                 noteSelection = {}
                 refreshPianoRollNeeded = true
@@ -2408,9 +2423,10 @@ local function handleKeyEvent(key)
         handled = true
     end
     if key.name == "i" and key.modifiers == "shift" then
-        if key.state == "released" then
+        if key.state == "pressed" then
             if #noteSelection > 0 then
                 showStatus("Inverted note selection.")
+                keyInfoText = "Invert note selection"
                 local newSelection = {}
                 for k in pairs(noteData) do
                     if not noteInSelection(noteData[k]) then
@@ -2434,45 +2450,25 @@ local function handleKeyEvent(key)
                     key.name == "8" or
                     key.name == "9"
     ) then
-        if key.state == "released" then
+        if key.state == "pressed" then
             vbw.note_len.value = tonumber(key.name)
+            keyInfoText = "Change note length to " .. key.name
         end
         handled = true
     end
 
-    if key.state == "pressed" then
-        lastKeyInfoTime = nil
-        lastKeyAction = nil
-        local keystatetext = ""
-        if key.modifiers ~= "" then
-            keystatetext = key.modifiers
-        end
-        if key.name == "lalt" or key.name == "lshift" or key.name == "lcontrol" or key.name == "ralt" or key.name == "rshift" or key.name == "rcontrol" then
-            --nothing
-        else
-            if keystatetext ~= "" then
-                keystatetext = keystatetext .. " + "
-            end
-            keystatetext = keystatetext .. key.name
-            lastKeyInfoTime = os.clock()
-        end
-        vbw["key_state"].text = string.upper(keystatetext)
-    elseif key.state == "released" then
-        if not lastKeyInfoTime then
-            vbw["key_state"].text = ""
-        end
-    end
-
     if key.name == "0" then
-        if key.state == "released" then
+        if key.state == "pressed" then
             if key.modifiers == "control" then
                 if #noteSelection > 0 then
                     scaleNoteSelection(2)
+                    keyInfoText = "Grow note selection"
                 end
                 currentNoteLength = math.min(math.floor(currentNoteLength * 2), 256)
             elseif key.modifiers == "shift + control" then
                 if #noteSelection > 0 then
                     scaleNoteSelection(0.5)
+                    keyInfoText = "Shrink note selection"
                 end
                 currentNoteLength = math.max(math.floor(currentNoteLength / 2), 1)
             end
@@ -2481,7 +2477,7 @@ local function handleKeyEvent(key)
         handled = true
     end
     if key.name == "u" and key.modifiers == "control" then
-        if key.state == "released" then
+        if key.state == "pressed" then
             if #noteSelection == 0 then
                 for k in pairs(noteData) do
                     local note_data = noteData[k]
@@ -2496,13 +2492,14 @@ local function handleKeyEvent(key)
                     refreshPianoRollNeeded = true
                 else
                     showStatus((#noteSelection / 2) .. " notes chopped.")
+                    keyInfoText = "Chop selected notes"
                 end
             end
         end
         handled = true
     end
     if key.name == "m" and key.modifiers == "alt" then
-        if key.state == "released" then
+        if key.state == "pressed" then
             local selectall = false
             if #noteSelection == 0 then
                 for k in pairs(noteData) do
@@ -2513,26 +2510,29 @@ local function handleKeyEvent(key)
             end
             if #noteSelection > 0 then
                 changePropertiesOfSelectedNotes("mute", nil, nil, nil)
+                keyInfoText = "Mute selected notes"
                 showStatus(#noteSelection .. " notes was muted.")
                 --when all was automatically selected, deselect it
                 if selectall then
                     noteSelection = {}
+                    keyInfoText = "Mute all notes"
                 end
             end
         end
         handled = true
     end
     if key.name == "n" and key.modifiers == "alt" then
-        if key.state == "released" then
+        if key.state == "pressed" then
             if #noteSelection > 0 then
                 changePropertiesOfSelectedNotes(nil, nil, nil, nil, "matchingnotes")
+                keyInfoText = "Match notes"
                 showStatus(#noteSelection .. " notes was matched.")
             end
         end
         handled = true
     end
     if key.name == "m" and key.modifiers == "shift + alt" then
-        if key.state == "released" then
+        if key.state == "pressed" then
             local selectall = false
             if #noteSelection == 0 then
                 for k in pairs(noteData) do
@@ -2543,17 +2543,19 @@ local function handleKeyEvent(key)
             end
             if #noteSelection > 0 then
                 changePropertiesOfSelectedNotes("unmute", nil, nil, nil)
+                keyInfoText = "Unmute selected notes"
                 showStatus(#noteSelection .. " notes was unmuted.")
                 --when all was automatically selected, deselect it
                 if selectall then
                     noteSelection = {}
+                    keyInfoText = "Unmute all notes"
                 end
             end
         end
         handled = true
     end
     if key.name == "b" and key.modifiers == "control" then
-        if key.state == "released" then
+        if key.state == "pressed" then
             if #noteSelection == 0 then
                 --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
                 for k in pairs(noteData) do
@@ -2568,6 +2570,7 @@ local function handleKeyEvent(key)
                     noteSelection = {}
                     refreshPianoRollNeeded = true
                 else
+                    keyInfoText = "Duplicate notes"
                     showStatus(#noteSelection .. " notes duplicated.")
                 end
             end
@@ -2575,7 +2578,8 @@ local function handleKeyEvent(key)
         handled = true
     end
     if key.name == "c" and key.modifiers == "control" then
-        if key.state == "released" then
+        keyInfoText = "Copy selected notes"
+        if key.state == "pressed" then
             if #noteSelection > 0 then
                 clipboard = {}
                 for k in pairs(noteSelection) do
@@ -2588,7 +2592,10 @@ local function handleKeyEvent(key)
                 end)
                 pasteCursor = { clipboard[1].line + clipboard[1].len, 0 }
                 table.sort(clipboard, function(a, b)
-                    return a.note < b.note
+                    if a.line == b.line then
+                        return a.note < b.note
+                    end
+                    return a.line > b.line
                 end)
                 pasteCursor = { pasteCursor[1], clipboard[1].note }
                 showStatus(#noteSelection .. " notes copied.", true)
@@ -2597,7 +2604,8 @@ local function handleKeyEvent(key)
         handled = true
     end
     if key.name == "x" and key.modifiers == "control" then
-        if key.state == "released" then
+        keyInfoText = "Cut selected notes"
+        if key.state == "pressed" then
             if #noteSelection > 0 then
                 clipboard = {}
                 for k in pairs(noteSelection) do
@@ -2622,16 +2630,17 @@ local function handleKeyEvent(key)
         handled = true
     end
     if key.name == "v" and key.modifiers == "control" then
-        if key.state == "released" then
-            if #clipboard > 0 then
+        keyInfoText = "Paste notes"
+        if #clipboard > 0 then
+            if key.state == "pressed" then
                 showStatus(#clipboard .. " notes pasted.", true)
                 pasteNotesFromClipboard()
             end
-            handled = true
         end
+        handled = true
     end
     if key.name == "a" and key.modifiers == "control" then
-        if key.state == "released" then
+        if key.state == "pressed" then
             --clear current selection
             noteSelection = {}
             --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
@@ -2639,13 +2648,14 @@ local function handleKeyEvent(key)
                 local note_data = noteData[k]
                 table.insert(noteSelection, note_data)
             end
+            keyInfoText = "Select all notes"
             showStatus(#noteSelection .. " notes selected.", true)
             refreshPianoRollNeeded = true
         end
         handled = true
     end
     if (key.name == "up" or key.name == "down") then
-        if key.state == "released" then
+        if key.state == "pressed" then
             local transpose = 1
             if keyAlt then
                 transpose = 7
@@ -2658,14 +2668,22 @@ local function handleKeyEvent(key)
             end
             if #noteSelection > 0 then
                 transposeSelectedNotes(transpose, keyControl or keyRControl)
-            elseif noteSlider.value + transpose <= noteSlider.max and noteSlider.value + transpose >= noteSlider.min then
-                noteSlider.value = noteSlider.value + transpose
+                if keyControl or keyRControl then
+                    keyInfoText = "Transpose selected notes in scale"
+                else
+                    keyInfoText = "Transpose selected notes by " .. getSingularPlural(transpose, "semitone", "semitones", true)
+                end
+            else
+                keyInfoText = "Move through the grid"
+                if noteSlider.value + transpose <= noteSlider.max and noteSlider.value + transpose >= noteSlider.min then
+                    noteSlider.value = noteSlider.value + transpose
+                end
             end
         end
         handled = true
     end
     if (key.name == "left" or key.name == "right") then
-        if key.state == "released" then
+        if key.state == "pressed" then
             local steps = 1
             if keyShift or keyRShift then
                 steps = 4
@@ -2677,18 +2695,23 @@ local function handleKeyEvent(key)
                 if keyControl then
                     steps = steps / math.abs(steps)
                     changeSizeSelectedNotes(steps, true)
+                    keyInfoText = "Change note length of selected notes"
                 else
                     moveSelectedNotes(steps)
+                    keyInfoText = "Move selected notes by " .. getSingularPlural(steps, "step", "steps", true)
                 end
-            elseif stepSlider.value + steps <= stepSlider.max and stepSlider.value + steps >= stepSlider.min then
-                stepSlider.value = stepSlider.value + steps
+            else
+                keyInfoText = "Move through the grid"
+                if stepSlider.value + steps <= stepSlider.max and stepSlider.value + steps >= stepSlider.min then
+                    stepSlider.value = stepSlider.value + steps
+                end
             end
         end
         handled = true
     end
     --play selection
     if key.name == "space" and key.modifiers == "control" then
-        if key.state == "released" then
+        if key.state == "pressed" then
             if #noteSelection > 0 then
                 table.sort(noteSelection, function(a, b)
                     return a.line < b.line
@@ -2700,6 +2723,7 @@ local function handleKeyEvent(key)
             else
                 playPatternFromLine(1)
             end
+            keyInfoText = "Start song from last play selection"
         end
         handled = true
     end
@@ -2720,9 +2744,37 @@ local function handleKeyEvent(key)
             if row ~= nil then
                 setKeyboardKeyColor(row, lastKeyboardNote[key.name], true, false)
             end
+            keyInfoText = "Play a note"
         end
         handled = true
     end
+
+    if key.state == "pressed" then
+        lastKeyInfoTime = nil
+        lastKeyAction = nil
+        local keystatetext = ""
+        if key.modifiers ~= "" then
+            keystatetext = key.modifiers
+        end
+        if key.name == "lalt" or key.name == "lshift" or key.name == "lcontrol" or key.name == "ralt" or key.name == "rshift" or key.name == "rcontrol" then
+            --nothing
+        else
+            if keystatetext ~= "" then
+                keystatetext = keystatetext .. " + "
+            end
+            keystatetext = keystatetext .. key.name
+            lastKeyInfoTime = os.clock()
+        end
+        vbw["key_state"].text = string.upper(keystatetext)
+        if keyInfoText then
+            vbw["key_state"].text = vbw["key_state"].text .. "   ⵈ   " .. keyInfoText
+        end
+    elseif key.state == "released" then
+        if not lastKeyInfoTime then
+            vbw["key_state"].text = ""
+        end
+    end
+
     return handled
 end
 
@@ -3754,7 +3806,7 @@ local function main_function()
                 return key
             end
         end, {
-            send_key_repeat = false,
+            send_key_repeat = true,
             send_key_release = true,
         })
     else
@@ -3786,7 +3838,7 @@ tool:add_menu_entry {
                     --disable follow player
                     song.transport.follow_player = false
                     --switch to sequence and track
-                    song.selected_sequence_index  = s
+                    song.selected_sequence_index = s
                     song.selected_track_index = t
                     --call default main_function
                     return main_function()
