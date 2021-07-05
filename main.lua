@@ -2748,13 +2748,17 @@ local function handleKeyEvent(key)
             if row ~= nil then
                 setKeyboardKeyColor(row, lastKeyboardNote[key.name], false, false)
             end
+            lastKeyboardNote[key.name] = nil
         elseif not handled and key.modifiers == "" then
             local note = key.note + (12 * song.transport.octave)
-            lastKeyboardNote[key.name] = note
-            row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
-            triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], true)
-            if row ~= nil then
-                setKeyboardKeyColor(row, lastKeyboardNote[key.name], true, false)
+            --only play note, when its not already playing (fix for key repeat)
+            if not lastKeyboardNote[key.name] then
+                lastKeyboardNote[key.name] = note
+                row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
+                triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], true)
+                if row ~= nil then
+                    setKeyboardKeyColor(row, lastKeyboardNote[key.name], true, false)
+                end
             end
             keyInfoText = "Play a note"
         end
