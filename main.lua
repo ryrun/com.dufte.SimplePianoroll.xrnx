@@ -190,6 +190,7 @@ local keyRControl = false
 local keyShift = false
 local keyRShift = false
 local keyAlt = false
+local lastKeyPress
 
 --pen mode
 local penMode = false
@@ -2350,6 +2351,17 @@ end
 local function handleKeyEvent(key)
     local handled = false
     local keyInfoText
+    local isModifierKey = false
+
+    --check if current key is a modifier
+    if key.name == "lalt" or key.name == "lshift" or key.name == "lcontrol" or key.name == "ralt" or key.name == "rshift" or key.name == "rcontrol" then
+        isModifierKey = true
+    end
+
+    --ignore press events from last key event with modifiers
+    if lastKeyPress and lastKeyPress == key.name and key.state == "pressed" and key.modifiers == "" then
+        return false
+    end
 
     --focus pattern editor - https://forum.renoise.com/t/set-focus-from-lua-code/42281/3
     app.window.lock_keyboard_focus = false
@@ -2756,7 +2768,7 @@ local function handleKeyEvent(key)
         if key.modifiers ~= "" then
             keystatetext = key.modifiers
         end
-        if key.name == "lalt" or key.name == "lshift" or key.name == "lcontrol" or key.name == "ralt" or key.name == "rshift" or key.name == "rcontrol" then
+        if isModifierKey then
             --nothing
         else
             if keystatetext ~= "" then
@@ -2764,12 +2776,20 @@ local function handleKeyEvent(key)
             end
             keystatetext = keystatetext .. key.name
             lastKeyInfoTime = os.clock()
+            --save last key nmame, when modifier was used
+            if key.modifiers ~= "" then
+                lastKeyPress = key.name
+            end
         end
         vbw["key_state"].text = string.upper(keystatetext)
         if keyInfoText then
             vbw["key_state"].text = vbw["key_state"].text .. "   ⵈ   " .. keyInfoText
         end
     elseif key.state == "released" then
+        if lastKeyPress and not isModifierKey then
+            --reset last key press, when release event was received
+            lastKeyPress = nil
+        end
         if not lastKeyInfoTime then
             vbw["key_state"].text = ""
         end
