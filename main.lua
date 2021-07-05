@@ -913,6 +913,7 @@ local function pasteNotesFromClipboard()
             clipboard[key].note = clipboard[key].note + noteoffset
         else
             showStatus("Not enough space to paste notes here.")
+            refreshPianoRollNeeded = true
             return false
         end
         clipboard[key].noteoff = addNoteToPattern(
@@ -2403,8 +2404,8 @@ local function handleKeyEvent(key)
         handled = true
     end
     if key.name == "del" then
-        if key.state == "presset" then
-            keyInfoText = "Delete selected note"
+        if key.state == "pressed" then
+            keyInfoText = "Delete selected notes"
             if #noteSelection > 0 then
                 showStatus(#noteSelection .. " notes deleted.")
                 removeSelectedNotes()
@@ -2595,7 +2596,7 @@ local function handleKeyEvent(key)
                     if a.line == b.line then
                         return a.note < b.note
                     end
-                    return a.line > b.line
+                    return a.line < b.line
                 end)
                 pasteCursor = { pasteCursor[1], clipboard[1].note }
                 showStatus(#noteSelection .. " notes copied.", true)
