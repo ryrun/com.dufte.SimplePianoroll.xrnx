@@ -1154,9 +1154,6 @@ local function changeSizeSelectedNotes(len, add)
                 noteSelection[key].dly,
                 noteSelection[key].ghst
         )
-        if not column then
-            break
-        end
     end
     addMissingNoteOffForColumns()
     refreshPianoRollNeeded = true
