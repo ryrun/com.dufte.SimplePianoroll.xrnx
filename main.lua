@@ -2592,7 +2592,7 @@ local function handleKeyEvent(key)
     end
     if key.name == "c" and key.modifiers == "control" then
         keyInfoText = "Copy selected notes"
-        if key.state == "pressed" then
+        if key.state == "pressed" and not key.repeated then
             if #noteSelection > 0 then
                 clipboard = {}
                 for k in pairs(noteSelection) do
@@ -2618,7 +2618,7 @@ local function handleKeyEvent(key)
     end
     if key.name == "x" and key.modifiers == "control" then
         keyInfoText = "Cut selected notes"
-        if key.state == "pressed" then
+        if key.state == "pressed" and not key.repeated then
             if #noteSelection > 0 then
                 clipboard = {}
                 for k in pairs(noteSelection) do
@@ -2742,23 +2742,20 @@ local function handleKeyEvent(key)
     --loving tracker computer keyboard note playing <3 (returning it back to host is buggy, so do your own)
     if key.note then
         local row
-        if key.state == "released" and lastKeyboardNote[key.name] ~= nil then
+        if not key.repeated and key.state == "released" and lastKeyboardNote[key.name] ~= nil then
             row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
             triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], false)
             if row ~= nil then
                 setKeyboardKeyColor(row, lastKeyboardNote[key.name], false, false)
             end
             lastKeyboardNote[key.name] = nil
-        elseif not handled and key.modifiers == "" then
+        elseif not key.repeated and key.state == "pressed" and key.modifiers == "" then
             local note = key.note + (12 * song.transport.octave)
-            --only play note, when its not already playing (fix for key repeat)
-            if not lastKeyboardNote[key.name] then
-                lastKeyboardNote[key.name] = note
-                row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
-                triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], true)
-                if row ~= nil then
-                    setKeyboardKeyColor(row, lastKeyboardNote[key.name], true, false)
-                end
+            lastKeyboardNote[key.name] = note
+            row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
+            triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], true)
+            if row ~= nil then
+                setKeyboardKeyColor(row, lastKeyboardNote[key.name], true, false)
             end
             keyInfoText = "Play a note"
         end
