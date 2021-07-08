@@ -1569,6 +1569,7 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                 local color = {}
                 local temp = "noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ")"
                 local spaceWidth = 0
+                local retriggerWidth = 0
                 local delayWidth = 0
                 local cutValue = 0
 
@@ -1576,17 +1577,25 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                     cutValue = current_note_end_vel
                 end
 
-                if song.selected_track.panning_column_visible and current_note_pan >= 192 and current_note_pan <= 207 then
-                    current_note_len = 1
-                    cutValue = current_note_pan
+                if song.selected_track.volume_column_visible then
+                    if current_note_vel >= 192 and current_note_vel <= 207 then
+                        current_note_len = 1
+                        cutValue = current_note_vel
+                        --wenn note is cut and outside, dont render it
+                        if stepOffset >= current_note_line then
+                            return
+                        end
+                    elseif current_note_vel >= 432 and current_note_vel <= 447 then
+                        retriggerWidth = current_note_vel
+                    end
                 end
 
-                if song.selected_track.volume_column_visible and current_note_vel >= 192 and current_note_vel <= 207 then
-                    current_note_len = 1
-                    cutValue = current_note_vel
-                    --wenn note is cut and outside, dont render it
-                    if stepOffset >= current_note_line then
-                        return
+                if song.selected_track.panning_column_visible then
+                    if current_note_pan >= 192 and current_note_pan <= 207 then
+                        current_note_len = 1
+                        cutValue = current_note_pan
+                    elseif current_note_pan >= 432 and current_note_pan <= 447 then
+                        retriggerWidth = current_note_pan
                     end
                 end
 
@@ -1668,8 +1677,16 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                     });
                 end
 
+                --recalc retrigger value, reset it to 0, when greater than tpl
+                if retriggerWidth > 0 then
+                    retriggerWidth = retriggerWidth - 432
+                    if retriggerWidth >= song.transport.tpl then
+                        retriggerWidth = 0
+                    end
+                end
+
                 --no note labels when to short
-                if buttonWidth - buttonSpace - 1 < 30 then
+                if buttonWidth - buttonSpace - 1 < 30 or (retriggerWidth > 0 and buttonWidth - buttonSpace - 1 < 38) then
                     current_note_string = ""
                 end
 
@@ -1690,6 +1707,29 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
 
                 table.insert(noteButtons[current_note_rowIndex], btn);
                 vbw["row" .. current_note_rowIndex]:add_child(btn)
+
+                --display retrigger effect
+                if retriggerWidth > 0 then
+                    for spc = retriggerWidth, song.transport.tpl - 1, retriggerWidth do
+                        local retrigger = vb:row {
+                            margin = -gridMargin,
+                            spacing = -gridSpacing,
+                        }
+                        if spaceWidth > 0 then
+                            retrigger:add_child(vb:space {
+                                width = spaceWidth + (((gridStepSizeW - 3) / song.transport.tpl) * spc),
+                            });
+                        end
+                        retrigger:add_child(vb:button {
+                            height = gridStepSizeH,
+                            width = 3,
+                            visible = true,
+                            active = false,
+                        });
+                        table.insert(noteButtons[current_note_rowIndex], retrigger);
+                        vbw["row" .. current_note_rowIndex]:add_child(retrigger)
+                    end
+                end
             end
         end
     end
