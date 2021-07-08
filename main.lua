@@ -2460,9 +2460,15 @@ local function handleKeyEvent(key)
                     key.name == "8" or
                     key.name == "9"
     ) then
-        if key.state == "pressed" then
-            vbw.note_len.value = tonumber(key.name)
+        if key.state == "pressed" and not key.repeated then
             keyInfoText = "Change note length to " .. key.name
+            if #noteSelection > 0 then
+                currentNoteLength = tonumber(key.name)
+                changeSizeSelectedNotes(currentNoteLength)
+                refreshControls = true
+            else
+                vbw.note_len.value = tonumber(key.name)
+            end
         end
         handled = true
     end
