@@ -1686,7 +1686,7 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                 end
 
                 --no note labels when to short
-                if buttonWidth - buttonSpace - 1 < 30 or (retriggerWidth > 0 and buttonWidth - buttonSpace - 1 < 38) then
+                if buttonWidth - buttonSpace - 1 < 30 or (retriggerWidth > 0 and buttonWidth - buttonSpace - 1 < 52) then
                     current_note_string = ""
                 end
 
