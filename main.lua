@@ -1717,15 +1717,23 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                         }
                         if spaceWidth > 0 then
                             retrigger:add_child(vb:space {
-                                width = spaceWidth + (((gridStepSizeW - 3) / song.transport.tpl) * spc),
+                                width = spaceWidth + (((gridStepSizeW - 3) / song.transport.tpl) * (spc + 1)),
                             });
                         end
-                        retrigger:add_child(vb:button {
-                            height = gridStepSizeH,
-                            width = 3,
-                            visible = true,
-                            active = false,
-                        });
+                        retrigger:add_child(
+                                vb:row {
+                                    spacing = -2,
+                                    vb:space {
+                                        width = 1
+                                    },
+                                    vb:button {
+                                        height = gridStepSizeH,
+                                        width = 2,
+                                        visible = true,
+                                        active = false,
+                                    }
+                                }
+                        );
                         table.insert(noteButtons[current_note_rowIndex], retrigger);
                         vbw["row" .. current_note_rowIndex]:add_child(retrigger)
                     end
