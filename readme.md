@@ -25,6 +25,26 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 * Many useful options to change the behavior for your own taste
 * And more...
 
+### Note rendering in piano roll
+
+It supports to render different note column effects.
+
+#### Note overlapping
+
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/noteoverlapping.png?raw=true" width="300">
+
+#### Note cut fx
+
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/notecutfx.png?raw=true" width="300">
+
+#### Note retrigger fx
+
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/noteretriggerfx.png?raw=true" width="300">
+
+#### Note delay
+
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/notedelay.png?raw=true" width="300">
+
 ## Important
 
 * Dragging notes currently not possible, use arrow keys
@@ -38,10 +58,17 @@ Download the latest version from official tool page:<br>https://www.renoise.com/
 Alternative download the latest build here and drop it onto
 Renoise:<br>https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/out/com.duftetools.SimplePianoroll.xrnx
 
-## How to edit a track
+## How to use it
 
-Just right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
+### In Pattern Editor
+
+Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/openit.gif?raw=true" width="300">
+
+### In Pattern Matrix
+
+Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/editviamatrix.gif?raw=true" width="300">
 
 ## Mouse actions
 
