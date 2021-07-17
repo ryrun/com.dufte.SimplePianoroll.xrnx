@@ -36,7 +36,7 @@ local defaultPreferences = {
     gridWidth = 64,
     gridHeight = 42,
     triggerTime = 250,
-    keyInfoTime = 5000,
+    keyInfoTime = 3,
     enableKeyInfo = false,
     dblClickTime = 400,
     forcePenMode = false,
@@ -53,6 +53,8 @@ local defaultPreferences = {
     addNoteColumnsIfNeeded = true,
     keyboardStyle = 1,
     noNotePreviewDuringSongPlayback = false,
+    highlightEntireLineOfPlayedNote = true,
+    rowHighlightingAmount = 0.15,
 }
 
 --tool preferences
@@ -80,6 +82,9 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     --velocity rendering
     applyVelocityColorShading = defaultPreferences.applyVelocityColorShading,
     velocityColorShadingAmount = defaultPreferences.velocityColorShadingAmount,
+    --highlighting playing note rows
+    highlightEntireLineOfPlayedNote = defaultPreferences.highlightEntireLineOfPlayedNote,
+    rowHighlightingAmount = defaultPreferences.rowHighlightingAmount,
     --misc settings
     followPlayCursor = defaultPreferences.followPlayCursor,
     showNoteHints = defaultPreferences.showNoteHints,
@@ -136,6 +141,9 @@ local colorPan = { 138, 187, 122 }
 local colorDelay = { 71, 194, 236 }
 local colorDisableButton = { 66, 66, 66 }
 
+--temp table to backup colors
+local defaultColor = {}
+
 --note trigger vars
 local oscClient
 local lastTriggerNote
@@ -151,6 +159,7 @@ local refreshTimeline = false
 
 --table to save note indices per step for highlighting
 local noteOnStep = {}
+local highlightedRows = {}
 
 --table for save used notes for faster overlapping detection
 local noteButtons = {}
@@ -290,14 +299,20 @@ local function calculateBarBeat(line, returnbeat, lpb)
     return math.ceil((line - (lpb * 4)) / (lpb * 4)) + 1
 end
 
+--shade color
+local function shadeColor(color, shade)
+    local newColor = {}
+    newColor[1] = color[1] * (1 - shade)
+    newColor[2] = color[2] * (1 - shade)
+    newColor[3] = color[3] * (1 - shade)
+    return newColor
+end
+
 --simple function for coloring velocity
 local function colorNoteVelocity(vel)
     local color = {}
     if vel < 0x7f and preferences.applyVelocityColorShading.value then
-        local shade = (preferences.velocityColorShadingAmount.value / 0x7f * (0x7f - vel))
-        color[1] = colorNote[1] * (1 - shade)
-        color[2] = colorNote[2] * (1 - shade)
-        color[3] = colorNote[3] * (1 - shade)
+        color = shadeColor(colorNote, preferences.velocityColorShadingAmount.value / 0x7f * (0x7f - vel))
     else
         color = colorNote
     end
@@ -1862,6 +1877,7 @@ local function ghostTrack(trackIndex)
                 local p = vbw["p" .. s .. "_" .. rowoffset]
                 if p then
                     p.color = colorGhostNote
+                    defaultColor["p" .. s .. "_" .. rowoffset] = p.color
                 end
             end
         end
@@ -1986,6 +2002,8 @@ local function fillPianoRoll()
     noteOnStep = {}
     noteData = {}
     usedNoteIndices = {}
+    highlightedRows = {}
+    defaultColor = {}
     currentInstrument = nil
     refreshPianoRollNeeded = false
 
@@ -2046,6 +2064,7 @@ local function fillPianoRoll()
                     end
                     if s <= stepsCount then
                         p.color = color
+                        defaultColor["p" .. index] = color
                         p.visible = true
                         --refresh step indicator
                         if y == 1 then
@@ -2184,16 +2203,17 @@ end
 
 --highlight each note on the current playback pos
 local function highlightNotesOnStep(step, highlight)
+    local rows = {}
     if noteOnStep[step] ~= nil and #noteOnStep[step] > 0 then
         for i = 1, #noteOnStep[step] do
             --when notes are on current step and not selected
             if noteOnStep[step][i] ~= nil then
                 local note = noteOnStep[step][i]
+                rows[note.row] = note.note
                 if highlight then
                     if vbw["b" .. note.index].color[1] ~= colorNoteSelected[1] then
                         vbw["b" .. note.index].color = colorNoteHighlight
                     end
-                    setKeyboardKeyColor(note.row, note.note, false, true)
                 else
                     if vbw["b" .. note.index].color[1] ~= colorNoteSelected[1] then
                         if note.ghst then
@@ -2202,7 +2222,23 @@ local function highlightNotesOnStep(step, highlight)
                             vbw["b" .. note.index].color = colorNoteVelocity(note.vel)
                         end
                     end
-                    setKeyboardKeyColor(note.row, note.note, false, false)
+                end
+            end
+        end
+    end
+    --color rows and keyboard
+    for key in pairs(rows) do
+        setKeyboardKeyColor(key, rows[key], false, highlight)
+        if preferences.highlightEntireLineOfPlayedNote.value then
+            if highlight and highlightedRows[key] == nil then
+                highlightedRows[key] = true
+                for l = 1, gridWidth do
+                    vbw["p" .. l .. "_" .. key].color = shadeColor(vbw["p" .. l .. "_" .. key].color, -preferences.rowHighlightingAmount.value)
+                end
+            elseif not highlight and highlightedRows[key] then
+                highlightedRows[key] = nil
+                for l = 1, gridWidth do
+                    vbw["p" .. l .. "_" .. key].color = defaultColor["p" .. l .. "_" .. key]
                 end
             end
         end
@@ -2301,7 +2337,7 @@ local function appIdleEvent()
             else
                 lastStepOn = nil
             end
-        elseif lastStepOn and song.selected_pattern_index ~= seq then
+        elseif lastStepOn and (song.selected_pattern_index ~= seq or not song.transport.playing) then
             vbw["s" .. tostring(lastStepOn)].color = colorStepOff
             highlightNotesOnStep(lastStepOn, false)
             lastStepOn = nil
@@ -3502,6 +3538,32 @@ local function main_function()
                                     },
                                     vb:space { height = 8 },
                                     vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.highlightEntireLineOfPlayedNote
+                                        },
+                                        vb:text {
+                                            text = "Highlight the entire line of the played note",
+                                        },
+                                    },
+                                    vb:row {
+                                        vb:text {
+                                            text = "Highlighting amount:",
+                                        },
+                                        vb:valuebox {
+                                            steps = { 0.01, 0.1 },
+                                            min = 0.1,
+                                            max = 1,
+                                            bind = preferences.rowHighlightingAmount,
+                                            tostring = function(v)
+                                                return string.format("%.2f", v)
+                                            end,
+                                            tonumber = function(v)
+                                                return tonumber(v)
+                                            end
+                                        },
+                                    },
+                                    vb:space { height = 8 },
+                                    vb:row {
                                         uniform = true,
                                         vb:text {
                                             text = "Scale highlighting:",
@@ -3711,6 +3773,8 @@ local function main_function()
                                     preferences.noNotePreviewDuringSongPlayback.value = defaultPreferences.noNotePreviewDuringSongPlayback
                                     preferences.keyInfoTime.value = defaultPreferences.keyInfoTime
                                     preferences.enableKeyInfo.value = defaultPreferences.enableKeyInfo
+                                    preferences.highlightEntireLineOfPlayedNote.value = defaultPreferences.highlightEntireLineOfPlayedNote
+                                    preferences.rowHighlightingAmount.value = defaultPreferences.rowHighlightingAmount
                                     app:show_message("All preferences was set to default values.")
                                 end
                             end
