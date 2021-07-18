@@ -1297,6 +1297,20 @@ local function setKeyboardKeyColor(row, note, pressed, highlighted)
     end
 end
 
+--highlight entire row
+local function highlightNoteRow(row, highlighted)
+    if preferences.highlightEntireLineOfPlayingNote.value then
+        for l = 1, math.min(song.selected_pattern.number_of_lines, gridWidth) do
+            local pB = vbw["p" .. l .. "_" .. row]
+            if highlighted then
+                pB.color = shadeColor(pB.color, -preferences.rowHighlightingAmount.value)
+            else
+                pB.color = defaultColor["p" .. l .. "_" .. row]
+            end
+        end
+    end
+end
+
 --keyboard preview
 function keyClick(y, pressed)
     local note = gridOffset2NoteValue(y)
@@ -2002,7 +2016,6 @@ local function fillPianoRoll()
     noteOnStep = {}
     noteData = {}
     usedNoteIndices = {}
-    highlightedRows = {}
     defaultColor = {}
     currentInstrument = nil
     refreshPianoRollNeeded = false
@@ -2227,22 +2240,9 @@ local function highlightNotesOnStep(step, highlight)
         end
     end
     --color rows and keyboard
-    local gW = math.min(song.selected_pattern.number_of_lines, gridWidth)
     for key in pairs(rows) do
         setKeyboardKeyColor(key, rows[key], false, highlight)
-        if preferences.highlightEntireLineOfPlayingNote.value then
-            if highlight and highlightedRows[key] == nil then
-                highlightedRows[key] = true
-                for l = 1, gW do
-                    vbw["p" .. l .. "_" .. key].color = shadeColor(vbw["p" .. l .. "_" .. key].color, -preferences.rowHighlightingAmount.value)
-                end
-            elseif not highlight and highlightedRows[key] then
-                highlightedRows[key] = nil
-                for l = 1, gW do
-                    vbw["p" .. l .. "_" .. key].color = defaultColor["p" .. l .. "_" .. key]
-                end
-            end
-        end
+        highlightNoteRow(key, highlight)
     end
 end
 
