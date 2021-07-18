@@ -1745,7 +1745,11 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                 --display retrigger effect
                 if retriggerWidth > 0 then
                     spaceWidth = math.max(spaceWidth, 4)
-                    for spc = retriggerWidth, song.transport.tpl - 1, retriggerWidth do
+                    local rTpl = song.transport.tpl - 1
+                    if cutValue > 0 and cutValue < song.transport.tpl and current_note_len == 1 then
+                        rTpl = rTpl + (cutValue - 0xf)
+                    end
+                    for spc = retriggerWidth, rTpl, retriggerWidth do
                         local retrigger = vb:row {
                             margin = -gridMargin,
                             spacing = -gridSpacing,
