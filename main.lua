@@ -1337,68 +1337,79 @@ function keyClick(y, pressed)
 end
 
 --will be called, when a note was clicked
-function noteClick(x, y, c)
+function noteClick(x, y, c, released)
     local index = tostring(x) .. "_" .. tostring(y) .. "_" .. tostring(c)
-    local dbclk = dbclkDetector("b" .. index)
     local note_data = noteData[index]
-    --always set note date for the next new note
-    if note_data ~= nil then
-        currentNoteGhost = note_data.ghst
-        currentNoteLength = note_data.len
-        currentNoteVelocity = note_data.vel
-        if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
-            currentNoteVelocityPreview = currentNoteVelocity
-        else
-            currentNoteVelocityPreview = 127
+    local row = noteValue2GridRowOffset(note_data.note)
+
+    if not keyAlt and not penMode then
+        triggerNoteOfCurrentInstrument(note_data.note, not released, note_data.vel)
+        if row ~= nil then
+            setKeyboardKeyColor(row, note_data.note, not released, false)
+            highlightNoteRow(row, not released)
         end
-        if note_data.len > 1 then
-            currentNoteEndVelocity = note_data.end_vel
-        else
-            if toRenoiseHex(note_data.vel):sub(1, 1) == "C" then
-                currentNoteVelocity = 255
-                currentNoteEndVelocity = note_data.vel
-            else
-                currentNoteEndVelocity = 255
-            end
-        end
-        currentNotePan = note_data.pan
-        currentNoteDelay = note_data.dly
-        refreshControls = true
-        --always jump to the note
-        jumpToNoteInPattern(note_data)
     end
-    --remove on dblclk or when in penmode
-    if (dbclk or keyAlt or penMode) and not audioPreviewMode then
-        --set clicked note as selected for remove function
+
+    if released then
+        local dbclk = dbclkDetector("b" .. index)
+        --always set note date for the next new note
         if note_data ~= nil then
-            noteSelection = {}
-            table.insert(noteSelection, note_data)
-            removeSelectedNotes()
+            currentNoteGhost = note_data.ghst
+            currentNoteLength = note_data.len
+            currentNoteVelocity = note_data.vel
+            if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
+                currentNoteVelocityPreview = currentNoteVelocity
+            else
+                currentNoteVelocityPreview = 127
+            end
+            if note_data.len > 1 then
+                currentNoteEndVelocity = note_data.end_vel
+            else
+                if toRenoiseHex(note_data.vel):sub(1, 1) == "C" then
+                    currentNoteVelocity = 255
+                    currentNoteEndVelocity = note_data.vel
+                else
+                    currentNoteEndVelocity = 255
+                end
+            end
+            currentNotePan = note_data.pan
+            currentNoteDelay = note_data.dly
+            refreshControls = true
+            --always jump to the note
+            jumpToNoteInPattern(note_data)
         end
-    else
-        if note_data ~= nil then
-            if not audioPreviewMode then
-                local deselect = false
-                --clear selection, when ctrl is not holded
-                if not keyControl then
-                    noteSelection = {}
-                elseif #noteSelection > 0 then
-                    --check if the note is in selection, then just deselect
-                    for i = 1, #noteSelection do
-                        if noteSelection[i].line == note_data.line and noteSelection[i].len == note_data.len and noteSelection[i].column == note_data.column then
-                            deselect = true
-                            table.remove(noteSelection, i)
-                            break
+        --remove on dblclk or when in penmode
+        if (dbclk or keyAlt or penMode) and not audioPreviewMode then
+            --set clicked note as selected for remove function
+            if note_data ~= nil then
+                noteSelection = {}
+                table.insert(noteSelection, note_data)
+                removeSelectedNotes()
+            end
+        else
+            if note_data ~= nil then
+                if not audioPreviewMode then
+                    local deselect = false
+                    --clear selection, when ctrl is not holded
+                    if not keyControl then
+                        noteSelection = {}
+                    elseif #noteSelection > 0 then
+                        --check if the note is in selection, then just deselect
+                        for i = 1, #noteSelection do
+                            if noteSelection[i].line == note_data.line and noteSelection[i].len == note_data.len and noteSelection[i].column == note_data.column then
+                                deselect = true
+                                table.remove(noteSelection, i)
+                                break
+                            end
                         end
                     end
+                    --when note was not deselected, then add this note to selection
+                    if not deselect then
+                        table.insert(noteSelection, note_data)
+                    end
+                    refreshPianoRollNeeded = true
                 end
-                --when note was not deselected, then add this note to selection
-                if not deselect then
-                    table.insert(noteSelection, note_data)
-                end
-                refreshPianoRollNeeded = true
             end
-            triggerNoteOfCurrentInstrument(note_data.note, nil, nil, true)
         end
     end
 end
@@ -1601,7 +1612,8 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
             --display note button, note len is greater 0 and when the row is visible
             if current_note_len > 0 then
                 local color = {}
-                local temp = "noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ")"
+                local temp = "noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ",true)"
+                local temp2 = "noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ",false)"
                 local spaceWidth = 0
                 local retriggerWidth = 0
                 local delayWidth = 0
@@ -1731,8 +1743,9 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                     width = math.max(buttonWidth - buttonSpace - 1, 1),
                     visible = true,
                     color = color,
-                    notifier = loadstring(temp),
                     text = current_note_string,
+                    notifier = loadstring(temp),
+                    pressed = loadstring(temp2)
                 });
 
                 if not noteButtons[current_note_rowIndex] then
