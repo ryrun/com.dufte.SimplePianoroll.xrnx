@@ -1328,6 +1328,10 @@ function keyClick(y, pressed)
         addMissingNoteOffForColumns()
         refreshPianoRollNeeded = true
     else
+        local row = noteValue2GridRowOffset(note)
+        if row ~= nil then
+            highlightNoteRow(row, pressed)
+        end
         triggerNoteOfCurrentInstrument(note, pressed)
     end
 end
@@ -1411,6 +1415,7 @@ function pianoGridClick(x, y, released)
                 local row = noteValue2GridRowOffset(note_data.note)
                 if row ~= nil then
                     setKeyboardKeyColor(row, note_data.note, not released, false)
+                    highlightNoteRow(row, not released)
                 end
             end
         end
@@ -2834,6 +2839,7 @@ local function handleKeyEvent(key)
             triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], false)
             if row ~= nil then
                 setKeyboardKeyColor(row, lastKeyboardNote[key.name], false, false)
+                highlightNoteRow(row, false)
             end
             lastKeyboardNote[key.name] = nil
         elseif not key.repeated and key.state == "pressed" and key.modifiers == "" then
@@ -2843,6 +2849,7 @@ local function handleKeyEvent(key)
             triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], true)
             if row ~= nil then
                 setKeyboardKeyColor(row, lastKeyboardNote[key.name], true, false)
+                highlightNoteRow(row, true)
             end
             keyInfoText = "Play a note"
         end
