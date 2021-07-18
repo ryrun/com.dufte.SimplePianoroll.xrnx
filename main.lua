@@ -53,7 +53,7 @@ local defaultPreferences = {
     addNoteColumnsIfNeeded = true,
     keyboardStyle = 1,
     noNotePreviewDuringSongPlayback = false,
-    highlightEntireLineOfPlayedNote = true,
+    highlightEntireLineOfPlayingNote = true,
     rowHighlightingAmount = 0.15,
 }
 
@@ -83,7 +83,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     applyVelocityColorShading = defaultPreferences.applyVelocityColorShading,
     velocityColorShadingAmount = defaultPreferences.velocityColorShadingAmount,
     --highlighting playing note rows
-    highlightEntireLineOfPlayedNote = defaultPreferences.highlightEntireLineOfPlayedNote,
+    highlightEntireLineOfPlayingNote = defaultPreferences.highlightEntireLineOfPlayingNote,
     rowHighlightingAmount = defaultPreferences.rowHighlightingAmount,
     --misc settings
     followPlayCursor = defaultPreferences.followPlayCursor,
@@ -161,7 +161,7 @@ local refreshTimeline = false
 local noteOnStep = {}
 local highlightedRows = {}
 
---table for save used notes for faster overlapping detection
+--table for save used notes
 local noteButtons = {}
 
 --table for clipboard function
@@ -208,7 +208,7 @@ local audioPreviewMode = false
 --step preview
 local stepPreview = false
 
---table to save last playingh note for qwerty playing
+--table to save last playing note for qwerty playing
 local lastKeyboardNote = {}
 
 --show some text in Renoise status bar
@@ -264,7 +264,7 @@ local function fromRenoiseHex(val)
     return tonumber(tstart .. tend, 16)
 end
 
---plurar text function
+--plural text function
 local function getSingularPlural(val, singular, plural, addVal)
     local b = ""
     if addVal then
@@ -337,7 +337,7 @@ local function jumpToNoteInPattern(notedata)
     end
 end
 
---check if a note index is in MajorScale
+--check if a note index is in major scale
 local function noteIndexInMajorScale(noteIndex)
     if noteIndex == 1 or noteIndex == 3 or noteIndex == 6 or noteIndex == 8 or noteIndex == 10 then
         return false
@@ -345,7 +345,7 @@ local function noteIndexInMajorScale(noteIndex)
     return true
 end
 
---returns note index of scale
+--return note index of scale
 local function noteIndexInScale(note, forceMajorC)
     if not forceMajorC then
         note = note - (currentScaleOffset - 1)
@@ -361,7 +361,7 @@ local function noteIndexInScale(note, forceMajorC)
     return note
 end
 
---returns true, when note in scale
+--return true, when note in scale
 local function noteInScale(note, forceMajorC)
     note = noteIndexInScale(note, forceMajorC)
     if note == -1 then
@@ -373,7 +373,7 @@ local function noteInScale(note, forceMajorC)
     return false
 end
 
---returns index, when note is in seleciton
+--return index, when note is in selection
 local function noteInSelection(notedata)
     local ret
     for i = 1, #noteSelection do
@@ -386,7 +386,7 @@ local function noteInSelection(notedata)
     return ret
 end
 
---return true, when a noteOff was set
+--return true, when a note off was set
 local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly, ghst)
     local noteoff = false
     local lineValues = song.selected_pattern_track.lines
@@ -473,7 +473,7 @@ local function returnColumnWhenEnoughSpaceForNote(line, len)
     return column
 end
 
---adds note offs to all note columns where no note is at line 1, for looping porpuse
+--add note off's to all note columns where no note is at line 1 for looping porpuse
 local function addMissingNoteOffForColumns()
     if preferences.addNoteOffToEmptyNoteColumns.value then
         local track = song.selected_track
@@ -699,7 +699,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
     if not preferences.enableOSCClient.value then
         return
     end
-    --special handling of preview notes, won new notes or changed notes (transpose)
+    --special handling of preview notes, on new notes or changed notes (transpose)
     if newOrChanged then
         if not preferences.notePreview.value then
             return
@@ -780,7 +780,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
     end
 end
 
---starts playing from specific line in pattern
+--start playing from specific line in pattern
 local function playPatternFromLine(line)
     song.transport:stop()
     --check for truncated notes, TODO currently not working OFF doesn't send note off, when no note on was before
@@ -2229,7 +2229,7 @@ local function highlightNotesOnStep(step, highlight)
     --color rows and keyboard
     for key in pairs(rows) do
         setKeyboardKeyColor(key, rows[key], false, highlight)
-        if preferences.highlightEntireLineOfPlayedNote.value then
+        if preferences.highlightEntireLineOfPlayingNote.value then
             if highlight and highlightedRows[key] == nil then
                 highlightedRows[key] = true
                 for l = 1, gridWidth do
@@ -3539,10 +3539,10 @@ local function main_function()
                                     vb:space { height = 8 },
                                     vb:row {
                                         vb:checkbox {
-                                            bind = preferences.highlightEntireLineOfPlayedNote
+                                            bind = preferences.highlightEntireLineOfPlayingNote
                                         },
                                         vb:text {
-                                            text = "Highlight the entire line of the played note",
+                                            text = "Highlight the entire line of the playing note",
                                         },
                                     },
                                     vb:row {
@@ -3551,7 +3551,7 @@ local function main_function()
                                         },
                                         vb:valuebox {
                                             steps = { 0.01, 0.1 },
-                                            min = 0.1,
+                                            min = 0.05,
                                             max = 1,
                                             bind = preferences.rowHighlightingAmount,
                                             tostring = function(v)
@@ -3773,7 +3773,7 @@ local function main_function()
                                     preferences.noNotePreviewDuringSongPlayback.value = defaultPreferences.noNotePreviewDuringSongPlayback
                                     preferences.keyInfoTime.value = defaultPreferences.keyInfoTime
                                     preferences.enableKeyInfo.value = defaultPreferences.enableKeyInfo
-                                    preferences.highlightEntireLineOfPlayedNote.value = defaultPreferences.highlightEntireLineOfPlayedNote
+                                    preferences.highlightEntireLineOfPlayingNote.value = defaultPreferences.highlightEntireLineOfPlayingNote
                                     preferences.rowHighlightingAmount.value = defaultPreferences.rowHighlightingAmount
                                     app:show_message("All preferences was set to default values.")
                                 end
