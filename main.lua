@@ -1577,7 +1577,14 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
         if vbw["row" .. current_note_rowIndex] then
             --fill noteOnStep not just note start, also the full length
             if noteOnStepIndex then
-                for i = 0, current_note_len - 1 do
+                local len = current_note_len - 1
+                --when cut value is set, then change note length to 1
+                if (song.selected_track.volume_column_visible and current_note_vel >= 192 and current_note_vel <= 207) or
+                        (song.selected_track.panning_column_visible and current_note_pan >= 192 and current_note_pan <= 207)
+                then
+                    len = 0
+                end
+                for i = 0, len do
                     --only when velocity is not 0 (muted)
                     if current_note_vel > 0 then
                         if noteOnStep[noteOnStepIndex + i] == nil then
