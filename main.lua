@@ -3573,7 +3573,7 @@ local function main_function()
                                             bind = preferences.highlightEntireLineOfPlayingNote
                                         },
                                         vb:text {
-                                            text = "Highlight the entire line of the playing note",
+                                            text = "Highlight the entire row of a playing note",
                                         },
                                     },
                                     vb:row {
