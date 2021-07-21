@@ -1303,7 +1303,7 @@ local function highlightNoteRow(row, highlighted)
         for l = 1, math.min(song.selected_pattern.number_of_lines, gridWidth) do
             local pB = vbw["p" .. l .. "_" .. row]
             if highlighted then
-                pB.color = shadeColor(pB.color, -preferences.rowHighlightingAmount.value)
+                pB.color = shadeColor(defaultColor["p" .. l .. "_" .. row], -preferences.rowHighlightingAmount.value)
             else
                 pB.color = defaultColor["p" .. l .. "_" .. row]
             end
