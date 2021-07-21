@@ -2040,12 +2040,24 @@ local function fillPianoRoll()
     local noffset = noteOffset - 1
     local blackKey
     local lastColumnWithNotes
+    local highlightedRows = {}
 
     --remove old notes
     for y = 1, gridHeight do
         if noteButtons[y] then
             for key in pairs(noteButtons[y]) do
                 vbw["row" .. y]:remove_child(noteButtons[y][key])
+            end
+        end
+    end
+
+    --check highlighted rows
+    if lastStepOn and noteOnStep[lastStepOn] ~= nil and #noteOnStep[lastStepOn] > 0 then
+        for i = 1, #noteOnStep[lastStepOn] do
+            --when notes are on current step and not selected
+            if noteOnStep[lastStepOn][i] ~= nil then
+                local note = noteOnStep[lastStepOn][i]
+                highlightedRows[note.row] = note.note
             end
         end
     end
@@ -2115,8 +2127,12 @@ local function fillPianoRoll()
                         color = colorBlackKey[bar % 2 + 1]
                     end
                     if s <= stepsCount then
-                        p.color = color
                         defaultColor["p" .. index] = color
+                        if highlightedRows[y] then
+                            p.color = shadeColor(color, -preferences.rowHighlightingAmount.value)
+                        else
+                            p.color = color
+                        end
                         p.visible = true
                         --refresh step indicator
                         if y == 1 then
