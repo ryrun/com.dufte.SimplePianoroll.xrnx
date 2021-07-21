@@ -123,6 +123,7 @@ local gridHeight
 local pianoKeyWidth
 
 --colors
+local colorDefault = { 0, 0, 0 }
 local colorWhiteKey = { { 44, 59, 68 }, { 52, 68, 78 } }
 local colorBlackKey = { { 30, 42, 52 }, { 35, 47, 57 } }
 local colorGhostNote = { 80, 97, 107 }
@@ -139,7 +140,6 @@ local colorKeyBlack = { 20, 20, 20 }
 local colorVelocity = { 212, 188, 36 }
 local colorPan = { 138, 187, 122 }
 local colorDelay = { 71, 194, 236 }
-local colorDisableButton = { 66, 66, 66 }
 
 --temp table to backup colors
 local defaultColor = {}
@@ -159,7 +159,6 @@ local refreshTimeline = false
 
 --table to save note indices per step for highlighting
 local noteOnStep = {}
-local highlightedRows = {}
 
 --table for save used notes
 local noteButtons = {}
@@ -576,7 +575,7 @@ local function refreshNoteControls()
     if currentNoteGhost == true then
         vbw.note_ghost.color = colorNoteGhost
     else
-        vbw.note_ghost.color = colorDisableButton
+        vbw.note_ghost.color = colorDefault
     end
 
     if song.selected_track.volume_column_visible then
@@ -608,7 +607,7 @@ local function refreshNoteControls()
         vbw.note_end_vel_clear.active = true
     else
         -- velocity column not visible
-        vbw.notecolumn_vel.color = colorDisableButton
+        vbw.notecolumn_vel.color = colorDefault
         currentNoteVelocityPreview = 127
         vbw.note_vel.value = -1
         vbw.note_end_vel.value = -1
@@ -634,7 +633,7 @@ local function refreshNoteControls()
             vbw.note_pan_humanize.active = false
         end
     else
-        vbw.notecolumn_pan.color = colorDisableButton
+        vbw.notecolumn_pan.color = colorDefault
         vbw.note_pan.value = -1
         vbw.note_pan.active = false
         vbw.note_pan_clear.active = false
@@ -652,7 +651,7 @@ local function refreshNoteControls()
             vbw.note_dly_humanize.active = false
         end
     else
-        vbw.notecolumn_delay.color = colorDisableButton
+        vbw.notecolumn_delay.color = colorDefault
         vbw.note_dly.value = 0
         vbw.note_dly.active = false
         vbw.note_dly_clear.active = false
@@ -676,21 +675,33 @@ local function refreshNoteControls()
     if preferences.notePreview.value then
         vbw.notepreview.color = colorNoteHighlight
     else
-        vbw.notepreview.color = colorDisableButton
+        vbw.notepreview.color = colorDefault
     end
     if penMode or (keyAlt and not keyControl and not keyShift and not audioPreviewMode) then
         vbw.mode_pen.color = colorNoteHighlight
-        vbw.mode_select.color = colorDisableButton
-        vbw.mode_audiopreview.color = colorDisableButton
+        vbw.mode_select.color = colorDefault
+        vbw.mode_audiopreview.color = colorDefault
     elseif audioPreviewMode or (keyControl and keyShift and not keyAlt) then
-        vbw.mode_pen.color = colorDisableButton
-        vbw.mode_select.color = colorDisableButton
+        vbw.mode_pen.color = colorDefault
+        vbw.mode_select.color = colorDefault
         vbw.mode_audiopreview.color = colorNoteHighlight
     else
-        vbw.mode_pen.color = colorDisableButton
+        vbw.mode_pen.color = colorDefault
         vbw.mode_select.color = colorNoteHighlight
-        vbw.mode_audiopreview.color = colorDisableButton
+        vbw.mode_audiopreview.color = colorDefault
     end
+
+    if song.transport.loop_pattern then
+        vbw.loopbutton.color = colorStepOn
+    else
+        vbw.loopbutton.color = colorDefault
+    end
+    if song.transport.playing then
+        vbw.playbutton.color = colorStepOn
+    else
+        vbw.playbutton.color = colorDefault
+    end
+
 end
 
 --simple note trigger
@@ -2450,6 +2461,9 @@ local function appNewDoc()
     song.selected_track.volume_column_visible_observable:add_notifier(obsColumnRefresh)
     song.selected_track.panning_column_visible_observable:add_notifier(obsColumnRefresh)
     song.selected_track.delay_column_visible_observable:add_notifier(obsColumnRefresh)
+    --transport observable
+    song.transport.loop_pattern_observable:add_notifier(obsColumnRefresh)
+    song.transport.playing_observable:add_notifier(obsColumnRefresh)
     --clear selection and refresh piano roll
     obsPianoRefresh()
     obsColumnRefresh()
@@ -3117,6 +3131,37 @@ local function main_function()
                 spacing = 6,
                 vb:row {
                     margin = 3,
+                    spacing = -3,
+                    style = "panel",
+                    vb:button {
+                        id = "playbutton",
+                        bitmap = "Icons/Transport_Play.bmp",
+                        width = 24,
+                        tooltip = "Start playing song or pattern",
+                        notifier = function()
+                            song.transport:start(renoise.Transport.PLAYMODE_RESTART_PATTERN)
+                        end
+                    },
+                    vb:button {
+                        id = "loopbutton",
+                        bitmap = "Icons/Transport_LoopPattern.bmp",
+                        width = 24,
+                        tooltip = "Loop current pattern",
+                        notifier = function()
+                            song.transport.loop_pattern = not song.transport.loop_pattern
+                        end
+                    },
+                    vb:button {
+                        bitmap = "Icons/Transport_Stop.bmp",
+                        width = 24,
+                        tooltip = "Stop playing",
+                        notifier = function()
+                            song.transport:stop()
+                        end
+                    },
+                },
+                vb:row {
+                    margin = 3,
                     spacing = 3,
                     style = "panel",
                     vb:text {
@@ -3182,7 +3227,6 @@ local function main_function()
                         bitmap = "Icons/Transport_ViewVolumeColumn.bmp",
                         width = 24,
                         tooltip = "Enable / disable note volume column",
-                        color = colorDisableButton,
                         notifier = function()
                             if song.selected_track.volume_column_visible then
                                 song.selected_track.volume_column_visible = false
@@ -3296,7 +3340,6 @@ local function main_function()
                         bitmap = "Icons/Transport_ViewPanColumn.bmp",
                         width = 24,
                         tooltip = "Enable / disable note pan column",
-                        color = colorDisableButton,
                         notifier = function()
                             if song.selected_track.panning_column_visible then
                                 song.selected_track.panning_column_visible = false
@@ -3365,7 +3408,6 @@ local function main_function()
                         bitmap = "Icons/Transport_ViewDelayColumn.bmp",
                         width = 24,
                         tooltip = "Enable / disable note delay column",
-                        color = colorDisableButton,
                         notifier = function()
                             if song.selected_track.delay_column_visible then
                                 song.selected_track.delay_column_visible = false
@@ -3428,7 +3470,6 @@ local function main_function()
                         id = "note_ghost",
                         text = "Ghost note",
                         tooltip = "Enable / disable to draw ghost notes",
-                        color = colorDisableButton,
                         notifier = function()
                             if currentNoteGhost then
                                 currentNoteGhost = false
