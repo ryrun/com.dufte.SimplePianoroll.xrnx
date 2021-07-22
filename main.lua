@@ -55,6 +55,8 @@ local defaultPreferences = {
     noNotePreviewDuringSongPlayback = false,
     highlightEntireLineOfPlayingNote = true,
     rowHighlightingAmount = 0.15,
+    oddBarsShadingAmount = 0.11,
+    outOfNoteScaleShadingAmount = 0.2,
 }
 
 --tool preferences
@@ -96,6 +98,9 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     --scale highlighting settings
     scaleHighlightingType = defaultPreferences.scaleHighlightingType,
     keyForSelectedScale = defaultPreferences.keyForSelectedScale,
+    --shading in piano grid
+    oddBarsShadingAmount = defaultPreferences.oddBarsShadingAmount,
+    outOfNoteScaleShadingAmount = defaultPreferences.outOfNoteScaleShadingAmount,
 }
 tool.preferences = preferences
 
@@ -124,8 +129,7 @@ local pianoKeyWidth
 
 --colors
 local colorDefault = { 0, 0, 0 }
-local colorWhiteKey = { { 44, 59, 68 }, { 52, 68, 78 } }
-local colorBlackKey = { { 30, 42, 52 }, { 35, 47, 57 } }
+local colorBaseGridColor = { 52, 68, 78 }
 local colorGhostNote = { 80, 97, 107 }
 local colorList = { 70, 79, 84 }
 local colorNote = { 170, 217, 179 }
@@ -140,6 +144,10 @@ local colorKeyBlack = { 20, 20, 20 }
 local colorVelocity = { 212, 188, 36 }
 local colorPan = { 138, 187, 122 }
 local colorDelay = { 71, 194, 236 }
+
+--calculated colors
+local colorWhiteKey = {}
+local colorBlackKey = {}
 
 --temp table to backup colors
 local defaultColor = {}
@@ -2042,6 +2050,10 @@ local function fillPianoRoll()
     local lastColumnWithNotes
     local highlightedRows = {}
 
+    --prepare shading colors
+    colorWhiteKey = { shadeColor(colorBaseGridColor, preferences.oddBarsShadingAmount.value), colorBaseGridColor }
+    colorBlackKey = { shadeColor(colorWhiteKey[1], preferences.outOfNoteScaleShadingAmount.value), shadeColor(colorWhiteKey[2], preferences.outOfNoteScaleShadingAmount.value) }
+
     --remove old notes
     for y = 1, gridHeight do
         if noteButtons[y] then
@@ -3600,20 +3612,55 @@ local function main_function()
                                     },
                                     vb:space { height = 8 },
                                     vb:row {
-                                        vb:checkbox {
-                                            bind = preferences.applyVelocityColorShading
-                                        },
                                         vb:text {
-                                            text = "Shade note color according to velocity",
+                                            text = "Shading amount of out of scale notes:",
+                                        },
+                                        vb:valuebox {
+                                            steps = { 0.01, 0.1 },
+                                            min = 0.01,
+                                            max = 1,
+                                            bind = preferences.outOfNoteScaleShadingAmount,
+                                            tostring = function(v)
+                                                return string.format("%.2f", v)
+                                            end,
+                                            tonumber = function(v)
+                                                return tonumber(v)
+                                            end
                                         },
                                     },
                                     vb:row {
                                         vb:text {
-                                            text = "Shade amount:",
+                                            text = "Shading amount of odd bars:",
                                         },
                                         vb:valuebox {
                                             steps = { 0.01, 0.1 },
-                                            min = 0.1,
+                                            min = 0.01,
+                                            max = 1,
+                                            bind = preferences.oddBarsShadingAmount,
+                                            tostring = function(v)
+                                                return string.format("%.2f", v)
+                                            end,
+                                            tonumber = function(v)
+                                                return tonumber(v)
+                                            end
+                                        },
+                                    },
+                                    vb:space { height = 8 },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.applyVelocityColorShading
+                                        },
+                                        vb:text {
+                                            text = "Shading note color according to velocity",
+                                        },
+                                    },
+                                    vb:row {
+                                        vb:text {
+                                            text = "Shading amount:",
+                                        },
+                                        vb:valuebox {
+                                            steps = { 0.01, 0.1 },
+                                            min = 0.01,
                                             max = 1,
                                             bind = preferences.velocityColorShadingAmount,
                                             tostring = function(v)
@@ -3639,7 +3686,7 @@ local function main_function()
                                         },
                                         vb:valuebox {
                                             steps = { 0.01, 0.1 },
-                                            min = 0.05,
+                                            min = 0.01,
                                             max = 1,
                                             bind = preferences.rowHighlightingAmount,
                                             tostring = function(v)
@@ -3863,6 +3910,8 @@ local function main_function()
                                     preferences.enableKeyInfo.value = defaultPreferences.enableKeyInfo
                                     preferences.highlightEntireLineOfPlayingNote.value = defaultPreferences.highlightEntireLineOfPlayingNote
                                     preferences.rowHighlightingAmount.value = defaultPreferences.rowHighlightingAmount
+                                    preferences.oddBarsShadingAmount.value = defaultPreferences.oddBarsShadingAmount
+                                    preferences.outOfNoteScaleShadingAmount.value = defaultPreferences.outOfNoteScaleShadingAmount
                                     app:show_message("All preferences was set to default values.")
                                 end
                             end
