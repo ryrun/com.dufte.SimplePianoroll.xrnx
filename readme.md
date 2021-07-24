@@ -56,7 +56,7 @@ It supports to render different note column effects.
 Download the latest version from official tool page:<br>https://www.renoise.com/tools/simple-pianoroll
 
 Alternative download the latest build here and drop it onto
-Renoise:<br>https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/out/com.duftetools.SimplePianoroll.xrnx
+Renoise (beta build):<br>https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/out/com.duftetools.SimplePianoroll.xrnx
 
 ## How to use it
 
