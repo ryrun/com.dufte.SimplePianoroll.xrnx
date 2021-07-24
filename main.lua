@@ -4031,7 +4031,7 @@ local function main_function()
         fillPianoRoll()
         --center note view
         if lowestNote ~= nil then
-            local nOffset = math.floor((lowestNote + highestNote) / 2) - (gridHeight / 2)
+            local nOffset = math.floor(((lowestNote + highestNote) / 2) - (gridHeight / 2))
             if nOffset < 0 then
                 nOffset = 0
             elseif nOffset > noteSlider.max then
