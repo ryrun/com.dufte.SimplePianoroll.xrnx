@@ -191,7 +191,7 @@ local currentScaleOffset = 1
 
 local noteSelection = {}
 local lastSelectionClick
-local lowesetNote
+local lowestNote
 local highestNote
 
 local noteData = {}
@@ -1556,13 +1556,13 @@ end
 --enable a note button, when its visible, set correct length of the button
 local function enableNoteButton(column, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, noteoff, ghost)
     --save highest and lowest note
-    if lowesetNote == nil then
-        lowesetNote = current_note
+    if lowestNote == nil then
+        lowestNote = current_note
     end
     if highestNote == nil then
         highestNote = current_note
     end
-    lowesetNote = math.min(lowesetNote, current_note)
+    lowestNote = math.min(lowestNote, current_note)
     highestNote = math.max(highestNote, current_note)
     if current_note_rowIndex ~= nil then
         local noteOnStepIndex = current_note_step
@@ -2996,7 +2996,7 @@ local function main_function()
         currentGhostTrack = nil
         noteButtons = {}
         --reset lowest / highest note for center view
-        lowesetNote = nil
+        lowestNote = nil
         highestNote = nil
         --reset note selection
         noteSelection = {}
@@ -3884,34 +3884,9 @@ local function main_function()
                             }, { "Close", "Reset to default", "Help / Feedback" })
                             if btn == "Reset to default" then
                                 if app:show_prompt("Reset to default", "Are you sure you want to reset all settings to their default values?", { "Yes", "No" }) == "Yes" then
-                                    preferences.gridStepSizeW.value = defaultPreferences.gridStepSizeW
-                                    preferences.gridStepSizeH.value = defaultPreferences.gridStepSizeH
-                                    preferences.gridSpacing.value = defaultPreferences.gridSpacing
-                                    preferences.gridMargin.value = defaultPreferences.gridMargin
-                                    preferences.gridWidth.value = defaultPreferences.gridWidth
-                                    preferences.gridHeight.value = defaultPreferences.gridHeight
-                                    preferences.triggerTime.value = defaultPreferences.triggerTime
-                                    preferences.dblClickTime.value = defaultPreferences.dblClickTime
-                                    preferences.forcePenMode.value = defaultPreferences.forcePenMode
-                                    preferences.notePreview.value = defaultPreferences.notePreview
-                                    preferences.enableOSCClient.value = defaultPreferences.enableOSCClient
-                                    preferences.oscConnectionString.value = defaultPreferences.oscConnectionString
-                                    preferences.applyVelocityColorShading.value = defaultPreferences.applyVelocityColorShading
-                                    preferences.velocityColorShadingAmount.value = defaultPreferences.velocityColorShadingAmount
-                                    preferences.followPlayCursor.value = defaultPreferences.followPlayCursor
-                                    preferences.showNoteHints.value = defaultPreferences.showNoteHints
-                                    preferences.scaleHighlightingType.value = defaultPreferences.scaleHighlightingType
-                                    preferences.keyForSelectedScale.value = defaultPreferences.keyForSelectedScale
-                                    preferences.addNoteOffToEmptyNoteColumns.value = defaultPreferences.addNoteOffToEmptyNoteColumns
-                                    preferences.addNoteColumnsIfNeeded.value = defaultPreferences.addNoteColumnsIfNeeded
-                                    preferences.keyboardStyle.value = defaultPreferences.keyboardStyle
-                                    preferences.noNotePreviewDuringSongPlayback.value = defaultPreferences.noNotePreviewDuringSongPlayback
-                                    preferences.keyInfoTime.value = defaultPreferences.keyInfoTime
-                                    preferences.enableKeyInfo.value = defaultPreferences.enableKeyInfo
-                                    preferences.highlightEntireLineOfPlayingNote.value = defaultPreferences.highlightEntireLineOfPlayingNote
-                                    preferences.rowHighlightingAmount.value = defaultPreferences.rowHighlightingAmount
-                                    preferences.oddBarsShadingAmount.value = defaultPreferences.oddBarsShadingAmount
-                                    preferences.outOfNoteScaleShadingAmount.value = defaultPreferences.outOfNoteScaleShadingAmount
+                                    for key in pairs(defaultPreferences) do
+                                        preferences[key].value = defaultPreferences[key]
+                                    end
                                     app:show_message("All preferences was set to default values.")
                                 end
                             end
@@ -4055,8 +4030,8 @@ local function main_function()
         fillTimeline()
         fillPianoRoll()
         --center note view
-        if lowesetNote ~= nil then
-            local nOffset = math.floor((lowesetNote + highestNote) / 2) - (gridHeight / 2)
+        if lowestNote ~= nil then
+            local nOffset = math.floor((lowestNote + highestNote) / 2) - (gridHeight / 2)
             if nOffset < 0 then
                 nOffset = 0
             elseif nOffset > noteSlider.max then
