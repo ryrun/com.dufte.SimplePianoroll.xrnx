@@ -1564,6 +1564,7 @@ end
 
 --enable a note button, when its visible, set correct length of the button
 local function enableNoteButton(column, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, noteoff, ghost)
+    local isOnStep = false
     --save highest and lowest note
     if lowestNote == nil then
         lowestNote = current_note
@@ -1627,6 +1628,9 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                             vel = current_note_vel,
                             ghst = ghost
                         })
+                        if song.transport.playing and song.transport.playback_pos.line - stepOffset == noteOnStepIndex + i then
+                            isOnStep = true
+                        end
                     end
                 end
             end
@@ -1705,6 +1709,8 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
 
                 if current_note_vel == 0 then
                     color = colorNoteMuted
+                elseif isOnStep == true then
+                    color = colorNoteHighlight
                 elseif ghost == true then
                     color = colorNoteGhost
                 else
@@ -2064,6 +2070,75 @@ local function setScaleHighlighting(afterPianoRollRefresh)
     return false
 end
 
+--highlight each note on the current playback pos
+local function highlightNotesOnStep(step, highlight)
+    local rows = {}
+    if noteOnStep[step] ~= nil and #noteOnStep[step] > 0 then
+        for i = 1, #noteOnStep[step] do
+            --when notes are on current step and not selected
+            if noteOnStep[step][i] ~= nil then
+                local note = noteOnStep[step][i]
+                rows[note.row] = note.note
+                if highlight then
+                    if vbw["b" .. note.index].color[1] ~= colorNoteSelected[1] then
+                        vbw["b" .. note.index].color = colorNoteHighlight
+                    end
+                else
+                    if vbw["b" .. note.index].color[1] ~= colorNoteSelected[1] then
+                        if note.ghst then
+                            vbw["b" .. note.index].color = colorNoteGhost
+                        else
+                            vbw["b" .. note.index].color = colorNoteVelocity(note.vel)
+                        end
+                    end
+                end
+            end
+        end
+    end
+    --color rows and keyboard
+    for key in pairs(rows) do
+        setKeyboardKeyColor(key, rows[key], false, highlight)
+        highlightNoteRow(key, highlight)
+    end
+end
+
+--refresh playback pos indicator
+local function refreshPlaybackPosIndicator()
+    local line = song.transport.playback_pos.line
+    local seq = song.sequencer:pattern(song.transport.playback_pos.sequence)
+    if song.selected_pattern_index == seq and lastStepOn ~= line and song.transport.playing then
+        if lastStepOn then
+            vbw["s" .. tostring(lastStepOn)].color = colorStepOff
+            highlightNotesOnStep(lastStepOn, false)
+            lastStepOn = nil
+        end
+        lastStepOn = line - stepOffset
+
+        if preferences.followPlayCursor.value and song.transport.follow_player and (lastStepOn > gridWidth or lastStepOn < 0) then
+            --follow play cursor, when enabled
+            local v = stepSlider.value + (gridWidth * (lastStepOn / gridWidth)) - 1
+            if v > stepSlider.max then
+                v = stepSlider.max
+            end
+            if v < stepSlider.min then
+                v = stepSlider.min
+            end
+            lastStepOn = nil
+            stepSlider.value = v
+        elseif lastStepOn > 0 and lastStepOn <= gridWidth then
+            --highlight when inside the grid
+            vbw["s" .. tostring(lastStepOn)].color = colorStepOn
+            highlightNotesOnStep(lastStepOn, true)
+        else
+            lastStepOn = nil
+        end
+    elseif lastStepOn and (song.selected_pattern_index ~= seq or not song.transport.playing) then
+        vbw["s" .. tostring(lastStepOn)].color = colorStepOff
+        highlightNotesOnStep(lastStepOn, false)
+        lastStepOn = nil
+    end
+end
+
 --reset pianoroll and enable notes
 local function fillPianoRoll()
     local track = song.selected_track
@@ -2074,24 +2149,12 @@ local function fillPianoRoll()
     local noffset = noteOffset - 1
     local blackKey
     local lastColumnWithNotes
-    local highlightedRows = {}
 
     --remove old notes
     for y = 1, gridHeight do
         if noteButtons[y] then
             for key in pairs(noteButtons[y]) do
                 vbw["row" .. y]:remove_child(noteButtons[y][key])
-            end
-        end
-    end
-
-    --check highlighted rows
-    if lastStepOn and noteOnStep[lastStepOn] ~= nil and #noteOnStep[lastStepOn] > 0 then
-        for i = 1, #noteOnStep[lastStepOn] do
-            --when notes are on current step and not selected
-            if noteOnStep[lastStepOn][i] ~= nil then
-                local note = noteOnStep[lastStepOn][i]
-                highlightedRows[note.row] = note.note
             end
         end
     end
@@ -2104,6 +2167,7 @@ local function fillPianoRoll()
     defaultColor = {}
     currentInstrument = nil
     refreshPianoRollNeeded = false
+    lastStepOn = nil
 
     --show keyboard info bar
     vbw["key_state_panel"].visible = preferences.enableKeyInfo.value
@@ -2162,15 +2226,12 @@ local function fillPianoRoll()
                     end
                     if s <= stepsCount then
                         defaultColor["p" .. index] = color
-                        if highlightedRows[y] then
-                            p.color = shadeColor(color, -preferences.rowHighlightingAmount.value)
-                        else
-                            p.color = color
-                        end
+                        p.color = color
                         p.visible = true
                         --refresh step indicator
                         if y == 1 then
                             vbw["s" .. stepString].visible = true
+                            vbw["s" .. stepString].color = colorStepOff
                         end
                         --refresh keyboad
                         if s == 1 then
@@ -2301,38 +2362,9 @@ local function fillPianoRoll()
     else
         vbw.ghosttrackswitch.active = false
     end
-end
 
---highlight each note on the current playback pos
-local function highlightNotesOnStep(step, highlight)
-    local rows = {}
-    if noteOnStep[step] ~= nil and #noteOnStep[step] > 0 then
-        for i = 1, #noteOnStep[step] do
-            --when notes are on current step and not selected
-            if noteOnStep[step][i] ~= nil then
-                local note = noteOnStep[step][i]
-                rows[note.row] = note.note
-                if highlight then
-                    if vbw["b" .. note.index].color[1] ~= colorNoteSelected[1] then
-                        vbw["b" .. note.index].color = colorNoteHighlight
-                    end
-                else
-                    if vbw["b" .. note.index].color[1] ~= colorNoteSelected[1] then
-                        if note.ghst then
-                            vbw["b" .. note.index].color = colorNoteGhost
-                        else
-                            vbw["b" .. note.index].color = colorNoteVelocity(note.vel)
-                        end
-                    end
-                end
-            end
-        end
-    end
-    --color rows and keyboard
-    for key in pairs(rows) do
-        setKeyboardKeyColor(key, rows[key], false, highlight)
-        highlightNoteRow(key, highlight)
-    end
+    --refresh playback pos indicator
+    refreshPlaybackPosIndicator()
 end
 
 --set playback pos via playback pos indicator
@@ -2399,39 +2431,7 @@ local function appIdleEvent()
         end
 
         --refresh playback pos indicator
-        local line = song.transport.playback_pos.line
-        local seq = song.sequencer:pattern(song.transport.playback_pos.sequence)
-        if song.selected_pattern_index == seq and lastStepOn ~= line and song.transport.playing then
-            if lastStepOn then
-                vbw["s" .. tostring(lastStepOn)].color = colorStepOff
-                highlightNotesOnStep(lastStepOn, false)
-                lastStepOn = nil
-            end
-            lastStepOn = line - stepOffset
-
-            if preferences.followPlayCursor.value and song.transport.follow_player and (lastStepOn > gridWidth or lastStepOn < 0) then
-                --follow play cursor, when enabled
-                local v = stepSlider.value + (gridWidth * (lastStepOn / gridWidth)) - 1
-                if v > stepSlider.max then
-                    v = stepSlider.max
-                end
-                if v < stepSlider.min then
-                    v = stepSlider.min
-                end
-                lastStepOn = nil
-                stepSlider.value = v
-            elseif lastStepOn > 0 and lastStepOn <= gridWidth then
-                --highlight when inside the grid
-                vbw["s" .. tostring(lastStepOn)].color = colorStepOn
-                highlightNotesOnStep(lastStepOn, true)
-            else
-                lastStepOn = nil
-            end
-        elseif lastStepOn and (song.selected_pattern_index ~= seq or not song.transport.playing) then
-            vbw["s" .. tostring(lastStepOn)].color = colorStepOff
-            highlightNotesOnStep(lastStepOn, false)
-            lastStepOn = nil
-        end
+        refreshPlaybackPosIndicator()
 
         --block loop, create an index for comparison, because obserable's are missing here
         local currentblockloop = tostring(song.transport.loop_block_enabled)
