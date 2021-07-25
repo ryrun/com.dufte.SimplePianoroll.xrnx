@@ -326,6 +326,13 @@ local function colorNoteVelocity(vel)
     return color
 end
 
+--init dynamic calculated colors
+local function initColors()
+    --prepare shading colors
+    colorWhiteKey = { shadeColor(colorBaseGridColor, preferences.oddBarsShadingAmount.value), colorBaseGridColor }
+    colorBlackKey = { shadeColor(colorWhiteKey[1], preferences.outOfNoteScaleShadingAmount.value), shadeColor(colorWhiteKey[2], preferences.outOfNoteScaleShadingAmount.value) }
+end
+
 --jump to the note position in pattern
 local function jumpToNoteInPattern(notedata)
     --only when not playing or follow player
@@ -1333,6 +1340,8 @@ end
 --keyboard preview
 function keyClick(y, pressed)
     local note = gridOffset2NoteValue(y)
+    --disable edit mode
+    song.transport.edit_mode = false
     --select all note events which have the specific note
     if keyControl then
         if not keyShift then
@@ -1657,6 +1666,8 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                         if stepOffset >= current_note_line then
                             return
                         end
+                    elseif current_note_vel >= 416 and current_note_vel <= 431 then
+                        delayWidth = current_note_vel
                     elseif current_note_vel >= 432 and current_note_vel <= 447 then
                         retriggerWidth = current_note_vel
                     end
@@ -1666,6 +1677,8 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                     if current_note_pan >= 192 and current_note_pan <= 207 then
                         current_note_len = 1
                         cutValue = current_note_pan
+                    elseif current_note_pan >= 416 and current_note_pan <= 431 then
+                        delayWidth = current_note_pan
                     elseif current_note_pan >= 432 and current_note_pan <= 447 then
                         retriggerWidth = current_note_pan
                     end
@@ -1673,6 +1686,15 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
 
                 local buttonWidth = (gridStepSizeW) * current_note_len
                 local buttonSpace = gridSpacing * (current_note_len - 1)
+
+                if delayWidth > 0 then
+                    delayWidth = delayWidth - 416
+                    if delayWidth < song.transport.tpl then
+                        delayWidth = math.floor(0xff / song.transport.tpl * delayWidth)
+                    else
+                        delayWidth = 0
+                    end
+                end
 
                 if cutValue > 0 then
                     cutValue = cutValue - 192
@@ -1734,8 +1756,12 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                     spaceWidth = (gridStepSizeW * (current_note_step - 1)) - (gridSpacing * (current_note_step - 2))
                 end
 
-                if song.selected_track.delay_column_visible and current_note_dly > 0 and stepOffset < current_note_line then
-                    delayWidth = math.max(math.floor((gridStepSizeW - gridSpacing) / 0xff * current_note_dly), 1)
+                if song.selected_track.delay_column_visible and current_note_dly > 0 then
+                    delayWidth = math.max(current_note_dly, delayWidth)
+                end
+
+                if delayWidth > 0 and stepOffset < current_note_line then
+                    delayWidth = math.max(math.floor((gridStepSizeW - gridSpacing) / 0xff * delayWidth), 1)
                     spaceWidth = spaceWidth + delayWidth
                     buttonWidth = buttonWidth - delayWidth
                     if current_note_step < 2 then
@@ -2049,10 +2075,6 @@ local function fillPianoRoll()
     local blackKey
     local lastColumnWithNotes
     local highlightedRows = {}
-
-    --prepare shading colors
-    colorWhiteKey = { shadeColor(colorBaseGridColor, preferences.oddBarsShadingAmount.value), colorBaseGridColor }
-    colorBlackKey = { shadeColor(colorWhiteKey[1], preferences.outOfNoteScaleShadingAmount.value), shadeColor(colorWhiteKey[2], preferences.outOfNoteScaleShadingAmount.value) }
 
     --remove old notes
     for y = 1, gridHeight do
@@ -2980,6 +3002,9 @@ local function main_function()
         vb = renoise.ViewBuilder()
         vbw = vb.views
 
+        --init colors
+        initColors()
+
         --setup grid settings
         gridStepSizeW = defaultPreferences.gridStepSizeW
         gridStepSizeH = defaultPreferences.gridStepSizeH
@@ -3899,6 +3924,8 @@ local function main_function()
                             end
                             refreshControls = true
                             refreshPianoRollNeeded = true
+                            --apply new highlighting colors
+                            initColors()
                         end,
                     },
                 }
