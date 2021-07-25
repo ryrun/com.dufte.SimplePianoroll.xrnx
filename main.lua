@@ -1307,19 +1307,14 @@ local function gridOffset2NoteValue(y)
 end
 
 --color keyboard key
-local function setKeyboardKeyColor(row, note, pressed, highlighted)
+local function setKeyboardKeyColor(row, pressed, highlighted)
+    local idx = "k" .. row
     if highlighted then
-        vbw["k" .. row].color = colorNoteHighlight
+        vbw[idx].color = colorNoteHighlight
     elseif not pressed then
-        if preferences.keyboardStyle.value == 2 then
-            vbw["k" .. row].color = colorList
-        elseif noteInScale(note, true) then
-            vbw["k" .. row].color = colorKeyWhite
-        else
-            vbw["k" .. row].color = colorKeyBlack
-        end
+        vbw[idx].color = defaultColor[idx]
     else
-        vbw["k" .. row].color = colorStepOn
+        vbw[idx].color = colorStepOn
     end
 end
 
@@ -1373,7 +1368,7 @@ function noteClick(x, y, c, released)
     if not keyAlt and not penMode then
         triggerNoteOfCurrentInstrument(note_data.note, not released, note_data.vel)
         if row ~= nil then
-            setKeyboardKeyColor(row, note_data.note, not released, false)
+            setKeyboardKeyColor(row, not released, false)
             highlightNoteRow(row, not released)
         end
     end
@@ -1453,7 +1448,7 @@ function pianoGridClick(x, y, released)
                 triggerNoteOfCurrentInstrument(note_data.note, not released, note_data.vel)
                 local row = noteValue2GridRowOffset(note_data.note)
                 if row ~= nil then
-                    setKeyboardKeyColor(row, note_data.note, not released, false)
+                    setKeyboardKeyColor(row, not released, false)
                     highlightNoteRow(row, not released)
                 end
             end
@@ -2078,17 +2073,18 @@ local function highlightNotesOnStep(step, highlight)
             --when notes are on current step and not selected
             if noteOnStep[step][i] ~= nil then
                 local note = noteOnStep[step][i]
+                local idx = "b" .. note.index
                 rows[note.row] = note.note
                 if highlight then
-                    if vbw["b" .. note.index].color[1] ~= colorNoteSelected[1] then
-                        vbw["b" .. note.index].color = colorNoteHighlight
+                    if vbw[idx].color[1] ~= colorNoteSelected[1] then
+                        vbw[idx].color = colorNoteHighlight
                     end
                 else
-                    if vbw["b" .. note.index].color[1] ~= colorNoteSelected[1] then
+                    if vbw[idx].color[1] ~= colorNoteSelected[1] then
                         if note.ghst then
-                            vbw["b" .. note.index].color = colorNoteGhost
+                            vbw[idx].color = colorNoteGhost
                         else
-                            vbw["b" .. note.index].color = colorNoteVelocity(note.vel)
+                            vbw[idx].color = colorNoteVelocity(note.vel)
                         end
                     end
                 end
@@ -2097,7 +2093,7 @@ local function highlightNotesOnStep(step, highlight)
     end
     --color rows and keyboard
     for key in pairs(rows) do
-        setKeyboardKeyColor(key, rows[key], false, highlight)
+        setKeyboardKeyColor(key, false, highlight)
         highlightNoteRow(key, highlight)
     end
 end
@@ -2235,8 +2231,16 @@ local function fillPianoRoll()
                         end
                         --refresh keyboad
                         if s == 1 then
-                            local key = vbw["k" .. ystring]
-                            setKeyboardKeyColor(ystring, (y + noffset) % 12, false, false)
+                            local idx = "k" .. ystring
+                            local key = vbw[idx]
+                            if preferences.keyboardStyle.value == 2 then
+                                defaultColor[idx] = colorList
+                            elseif noteInScale((y + noffset) % 12, true) then
+                                defaultColor[idx] = colorKeyWhite
+                            else
+                                defaultColor[idx] = colorKeyBlack
+                            end
+                            key.color = defaultColor[idx]
                             --set root label
                             if ((currentScale == 1 or preferences.scaleHighlightingType.value == 5) and noteIndexInScale((y + noffset) % 12, true) == 0) or
                                     (preferences.scaleHighlightingType.value ~= 5 and currentScale == 2 and noteIndexInScale((y + noffset) % 12) == 0) or
@@ -2925,7 +2929,7 @@ local function handleKeyEvent(key)
             row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
             triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], false)
             if row ~= nil then
-                setKeyboardKeyColor(row, lastKeyboardNote[key.name], false, false)
+                setKeyboardKeyColor(row, false, false)
                 highlightNoteRow(row, false)
             end
             lastKeyboardNote[key.name] = nil
@@ -2935,7 +2939,7 @@ local function handleKeyEvent(key)
             row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
             triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], true)
             if row ~= nil then
-                setKeyboardKeyColor(row, lastKeyboardNote[key.name], true, false)
+                setKeyboardKeyColor(row, true, false)
                 highlightNoteRow(row, true)
             end
             keyInfoText = "Play a note"
