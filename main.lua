@@ -2343,7 +2343,9 @@ local function fillPianoRoll()
 
     --switch to instrument which is used in pattern
     if currentInstrument and currentInstrument ~= song.selected_instrument_index then
-        song.selected_instrument_index = currentInstrument
+        if currentInstrument < #song.instruments then
+            song.selected_instrument_index = currentInstrument
+        end
     end
 
     --for automatic mode or empty patterns, set scale highlighting again, if needed
