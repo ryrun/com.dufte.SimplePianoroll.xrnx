@@ -57,6 +57,7 @@ local defaultPreferences = {
     rowHighlightingAmount = 0.15,
     oddBarsShadingAmount = 0.11,
     outOfNoteScaleShadingAmount = 0.2,
+    azertyMode = false,
 }
 
 --tool preferences
@@ -101,6 +102,8 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     --shading in piano grid
     oddBarsShadingAmount = defaultPreferences.oddBarsShadingAmount,
     outOfNoteScaleShadingAmount = defaultPreferences.outOfNoteScaleShadingAmount,
+    --special keyboard mode
+    azertyMode = defaultPreferences.azertyMode,
 }
 tool.preferences = preferences
 
@@ -2524,11 +2527,45 @@ local function appNewDoc()
     refreshTimeline = true
 end
 
+--convert some keys to qwerty layout
+local function azertyMode(key)
+    if key.name == "&" then
+        key.name = "1"
+    elseif key.name == "é" then
+        key.name = "2"
+    elseif key.name == "\"" then
+        key.name = "3"
+    elseif key.name == "'" then
+        key.name = "4"
+    elseif key.name == "(" then
+        key.name = "5"
+    elseif key.name == "-" then
+        key.name = "6"
+    elseif key.name == "è" then
+        key.name = "7"
+    elseif key.name == "_" then
+        key.name = "8"
+    elseif key.name == "ç" then
+        key.name = "9"
+    elseif key.name == "à" then
+        key.name = "0"
+    end
+    return key
+end
+
 --function for all keyboard shortcuts
-local function handleKeyEvent(key)
+local function handleKeyEvent(keyEvent)
     local handled = false
     local keyInfoText
     local isModifierKey = false
+    local key = {}
+
+    --convert number keys from azerty to qwerty
+    if preferences.azertyMode.value then
+        key = azertyMode(keyEvent)
+    else
+        key = keyEvent
+    end
 
     --check if current key is a modifier
     if key.name == "lalt" or key.name == "lshift" or key.name == "lcontrol" or key.name == "ralt" or key.name == "rshift" or key.name == "rcontrol" then
@@ -2947,12 +2984,12 @@ local function handleKeyEvent(key)
         handled = true
     end
 
-    if key.state == "pressed" then
+    if keyEvent.state == "pressed" then
         lastKeyInfoTime = nil
         lastKeyAction = nil
         local keystatetext = ""
-        if key.modifiers ~= "" then
-            keystatetext = key.modifiers
+        if keyEvent.modifiers ~= "" then
+            keystatetext = keyEvent.modifiers
         end
         if isModifierKey then
             --nothing
@@ -2960,18 +2997,18 @@ local function handleKeyEvent(key)
             if keystatetext ~= "" then
                 keystatetext = keystatetext .. " + "
             end
-            keystatetext = keystatetext .. key.name
+            keystatetext = keystatetext .. keyEvent.name
             lastKeyInfoTime = os.clock()
             --save last key nmame, when modifier was used
-            if key.modifiers ~= "" then
-                lastKeyPress = key.name
+            if keyEvent.modifiers ~= "" then
+                lastKeyPress = keyEvent.name
             end
         end
         vbw["key_state"].text = string.upper(keystatetext)
         if keyInfoText then
             vbw["key_state"].text = vbw["key_state"].text .. "   ⵈ   " .. keyInfoText
         end
-    elseif key.state == "released" then
+    elseif keyEvent.state == "released" then
         if lastKeyPress and not isModifierKey then
             --reset last key press, when release event was received
             lastKeyPress = nil
@@ -3882,6 +3919,14 @@ local function main_function()
                                         },
                                         vb:text {
                                             text = "Automatically add NoteOff's in empty note columns",
+                                        },
+                                    },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.azertyMode,
+                                        },
+                                        vb:text {
+                                            text = "Enable AZERTY keyboard mode",
                                         },
                                     },
                                     vb:row {
