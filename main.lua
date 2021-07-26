@@ -2531,6 +2531,7 @@ end
 
 --convert some keys to qwerty layout
 local function azertyMode(key)
+    key = table.copy(key)
     if key.name == "&" then
         key.name = "1"
     elseif key.name == "é" then
@@ -3009,6 +3010,9 @@ local function handleKeyEvent(keyEvent)
         vbw["key_state"].text = string.upper(keystatetext)
         if keyInfoText then
             vbw["key_state"].text = vbw["key_state"].text .. "   ⵈ   " .. keyInfoText
+        end
+        if preferences.azertyMode.value then
+            vbw["key_state"].text = vbw["key_state"].text .. " (AZERTY)"
         end
     elseif keyEvent.state == "released" then
         if lastKeyPress and not isModifierKey then
