@@ -89,7 +89,9 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 
 ## Keyboard actions
 
-Info: Non handled keyboard events will be sent back to the host. So renoise default keyboard shortcuts should work.
+**Info:** Non handled keyboard events will be sent back to the host. So renoise default keyboard shortcuts should work.
+
+**About AZERTY keyboard layout:** AZERTY mode in the preferences will internally convert non number keys to number keys. So you don't need to hold <kbd>shift</kbd>.
 
 ### Nothing selected
 
