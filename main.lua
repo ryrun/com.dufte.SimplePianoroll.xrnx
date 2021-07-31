@@ -286,6 +286,16 @@ local function getSingularPlural(val, singular, plural, addVal)
     return b .. plural
 end
 
+--simple minMax
+local function forceValueToRange(val, min, max)
+    if val >= max then
+        val = max
+    elseif val <= min then
+        val = min
+    end
+    return val
+end
+
 --change a value randomly
 local function randomizeValue(input, scale, min, max)
     local r = math.random(-scale, scale)
@@ -2644,16 +2654,16 @@ local function handleKeyEvent(keyEvent)
             key.modifiers = "shift"
         end
         if keyAlt then
-            if key.modifiers then
+            if key.modifiers ~= "" then
                 key.modifiers = key.modifiers .. " + "
             end
-            key.modifiers = "alt"
+            key.modifiers = key.modifiers .. "alt"
         end
         if keyControl then
-            if key.modifiers then
+            if key.modifiers ~= "" then
                 key.modifiers = key.modifiers .. " + "
             end
-            key.modifiers = "control"
+            key.modifiers = key.modifiers .. "control"
         end
     end
 
@@ -2927,15 +2937,22 @@ local function handleKeyEvent(keyEvent)
             keyInfoText = "Move through the grid"
             if keyAlt then
                 steps = steps * -1
-                if stepSlider.value + steps <= stepSlider.max and stepSlider.value + steps >= stepSlider.min then
-                    stepSlider.value = stepSlider.value + steps
-                end
+                stepSlider.value = forceValueToRange(stepSlider.value + steps, stepSlider.min, stepSlider.max)
             else
-                if noteSlider.value + steps <= noteSlider.max and noteSlider.value + steps >= noteSlider.min then
-                    noteSlider.value = noteSlider.value + steps
-                end
+                noteSlider.value = forceValueToRange(noteSlider.value + steps, noteSlider.min, noteSlider.max)
             end
         end
+    end
+    if (key.name == "next" or key.name == "prior") then
+        if key.state == "pressed" and key.modifiers == "" then
+            local steps = 16
+            if key.name == "next" then
+                steps = steps * -1
+            end
+            keyInfoText = "Move through the grid"
+            noteSlider.value = forceValueToRange(noteSlider.value + steps, noteSlider.min, noteSlider.max)
+        end
+        handled = true
     end
     if (key.name == "up" or key.name == "down") then
         if key.state == "pressed" then
@@ -2957,9 +2974,7 @@ local function handleKeyEvent(keyEvent)
                 end
             else
                 keyInfoText = "Move through the grid"
-                if noteSlider.value + transpose <= noteSlider.max and noteSlider.value + transpose >= noteSlider.min then
-                    noteSlider.value = noteSlider.value + transpose
-                end
+                noteSlider.value = forceValueToRange(noteSlider.value + transpose, noteSlider.min, noteSlider.max)
             end
         end
         handled = true
