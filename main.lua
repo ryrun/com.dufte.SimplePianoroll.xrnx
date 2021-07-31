@@ -58,6 +58,7 @@ local defaultPreferences = {
     oddBarsShadingAmount = 0.11,
     outOfNoteScaleShadingAmount = 0.2,
     azertyMode = false,
+    scrollWheelSpeed = 2,
 }
 
 --tool preferences
@@ -104,6 +105,8 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     outOfNoteScaleShadingAmount = defaultPreferences.outOfNoteScaleShadingAmount,
     --special keyboard mode
     azertyMode = defaultPreferences.azertyMode,
+    --scroll wheel settings
+    scrollWheelSpeed = defaultPreferences.scrollWheelSpeed,
 }
 tool.preferences = preferences
 
@@ -2929,9 +2932,9 @@ local function handleKeyEvent(keyEvent)
     end
     if (key.name == "scrollup" or key.name == "scrolldown") then
         if key.state == "pressed" then
-            local steps = 1
+            local steps = preferences.scrollWheelSpeed.value
             if keyShift or keyRShift then
-                steps = 4
+                steps = steps * 2
             end
             if key.name == "scrolldown" then
                 steps = steps * -1
@@ -3928,6 +3931,23 @@ local function main_function()
                                             min = 50,
                                             max = 2000,
                                             bind = preferences.dblClickTime,
+                                        },
+                                    },
+                                    vb:row {
+                                        vb:text {
+                                            text = "Scroll wheel speed:",
+                                        },
+                                        vb:valuebox {
+                                            steps = { 1, 2 },
+                                            min = 1,
+                                            max = 6,
+                                            bind = preferences.scrollWheelSpeed,
+                                            tostring = function(v)
+                                                return string.format("%i", v)
+                                            end,
+                                            tonumber = function(v)
+                                                return tonumber(v)
+                                            end
                                         },
                                     },
                                     vb:row {
