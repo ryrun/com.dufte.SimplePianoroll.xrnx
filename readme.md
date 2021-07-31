@@ -47,9 +47,8 @@ It supports to render different note column effects.
 
 ## Important
 
-* Dragging notes currently not possible, use arrow keys
-* It's using always the instrument, which is used in the pattern. In an empty pattern, its using the current active
-  instrument
+* Dragging notes is currently not possible, please use the arrow keys.
+* You draw notes with the instrument, which is used in the current track of the pattern. In empty track's, it's using the current selected one.
 
 ## Install
 
@@ -86,6 +85,8 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 |Rectangle select notes|First click on a free spot in the grid to set the first corner, then hold <kbd>shift</kbd> and click another free spot and it will select all notes inside this rectangle
 |Select all notes with a specific note value|Hold <kbd>ctrl</kbd> and click one of the notes in the piano keyboard control
 |Select all notes with on a specific position|Hold <kbd>ctrl</kbd> and click one of the position indicators above the piano grid
+|Scroll vertically|Use your mouse wheel above the piano roll grid or the piano roll keys on the left. Scroll speed can be increased by holding the <kbd>shift</kbd> key. 
+|Scroll horizontally|Use your mouse wheel and hold <kbd>alt</kbd> above the piano roll grid or the piano roll keys on the left. Scroll speed can be increased by holding the <kbd>shift</kbd> key.
 
 ## Keyboard actions
 
