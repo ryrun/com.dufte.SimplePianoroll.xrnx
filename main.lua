@@ -2187,6 +2187,9 @@ local function fillPianoRoll()
         stepOffset = 0
     end
 
+    --set new width for scrollpad under grid buttons
+    vbw.sw2.width = gridStepSizeW * (math.min(steps, gridWidth) + 2) - (gridSpacing * (math.min(steps, gridWidth) + 2)) + 2
+
     --loop through columns
     for c = 1, columns do
         local current_note
@@ -2632,6 +2635,28 @@ local function handleKeyEvent(keyEvent)
         keyRShift = false
         handled = true
     end
+
+    --convert scrollwheel events
+    if key.name == "scrollup" or key.name == "scrolldown" then
+        key.state = "pressed"
+        key.modifiers = ""
+        if keyShift or keyRShift then
+            key.modifiers = "shift"
+        end
+        if keyAlt then
+            if key.modifiers then
+                key.modifiers = key.modifiers .. " + "
+            end
+            key.modifiers = "alt"
+        end
+        if keyControl then
+            if key.modifiers then
+                key.modifiers = key.modifiers .. " + "
+            end
+            key.modifiers = "control"
+        end
+    end
+
     if key.name == "del" then
         if key.state == "pressed" then
             keyInfoText = "Delete selected notes"
@@ -2889,6 +2914,28 @@ local function handleKeyEvent(keyEvent)
             refreshPianoRollNeeded = true
         end
         handled = true
+    end
+    if (key.name == "scrollup" or key.name == "scrolldown") then
+        if key.state == "pressed" then
+            local steps = 1
+            if keyShift or keyRShift then
+                steps = 4
+            end
+            if key.name == "scrolldown" then
+                steps = steps * -1
+            end
+            keyInfoText = "Move through the grid"
+            if keyAlt then
+                steps = steps * -1
+                if stepSlider.value + steps <= stepSlider.max and stepSlider.value + steps >= stepSlider.min then
+                    stepSlider.value = stepSlider.value + steps
+                end
+            else
+                if noteSlider.value + steps <= noteSlider.max and noteSlider.value + steps >= noteSlider.min then
+                    noteSlider.value = noteSlider.value + steps
+                end
+            end
+        end
     end
     if (key.name == "up" or key.name == "down") then
         if key.state == "pressed" then
@@ -3658,27 +3705,6 @@ local function main_function()
                                             bind = preferences.gridHeight,
                                         },
                                     },
-                                    --[[
-                                    vb:text {
-                                        text = "Grid step size:",
-                                    },
-                                    vb:row {
-                                        uniform = true,
-                                        vb:valuebox {
-                                            steps = { 1, 2 },
-                                            min = 10,
-                                            max = 40,
-                                            bind = preferences.gridStepSizeW,
-                                        },
-                                        vb:text { text = "x", align = "center", },
-                                        vb:valuebox {
-                                            steps = { 1, 2 },
-                                            min = 10,
-                                            max = 40,
-                                            bind = preferences.gridStepSizeH,
-                                        },
-                                    },
-                                    ]]--
                                     vb:text {
                                         text = "Grid size settings takes effect,\nwhen the piano roll will be reopened.",
                                     },
@@ -4037,7 +4063,25 @@ local function main_function()
                     },
                     vb:row {
                         noteSlider,
-                        whiteKeys,
+                        vb:row {
+                            spacing = -pianoKeyWidth + 1,
+                            vb:valuebox {
+                                id = "sw1",
+                                width = pianoKeyWidth,
+                                height = (gridStepSizeH - 2.9) * (gridHeight + 1),
+                                min = -1,
+                                max = 1,
+                                notifier = function(number)
+                                    if number > 0 then
+                                        handleKeyEvent({ name = "scrollup" })
+                                    elseif number < 0 then
+                                        handleKeyEvent({ name = "scrolldown" })
+                                    end
+                                    vbw.sw1.value = 0
+                                end,
+                            },
+                            whiteKeys,
+                        },
                     }
                 },
                 vb:column {
@@ -4073,7 +4117,31 @@ local function main_function()
                             },
                             timeline,
                         },
-                        pianorollColumns,
+                        vb:row {
+                            spacing = -(gridStepSizeW * gridWidth - (gridSpacing * (gridWidth))),
+                            vb:row {
+                                spacing = -(gridStepSizeW * (gridWidth + 2) - (gridSpacing * (gridWidth + 2))) - 2,
+                                vb:space {
+                                    width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)),
+                                },
+                                vb:valuebox {
+                                    id = "sw2",
+                                    width = gridStepSizeW * (gridWidth + 2) - (gridSpacing * (gridWidth + 2)) + 2,
+                                    height = (gridStepSizeH - 2.9) * (gridHeight + 1),
+                                    min = -1,
+                                    max = 1,
+                                    notifier = function(number)
+                                        if number > 0 then
+                                            handleKeyEvent({ name = "scrollup" })
+                                        elseif number < 0 then
+                                            handleKeyEvent({ name = "scrolldown" })
+                                        end
+                                        vbw.sw2.value = 0
+                                    end,
+                                },
+                            },
+                            pianorollColumns,
+                        },
                     },
                 },
             },
