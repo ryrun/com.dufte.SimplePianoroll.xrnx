@@ -2202,9 +2202,6 @@ local function fillPianoRoll()
         stepOffset = 0
     end
 
-    --set new width for scrollpad under grid buttons
-    vbw.sw2.width = gridStepSizeW * (math.min(steps, gridWidth) + 2) - (gridSpacing * (math.min(steps, gridWidth) + 2)) + 2
-
     --loop through columns
     for c = 1, columns do
         local current_note
@@ -2248,6 +2245,7 @@ local function fillPianoRoll()
                         --refresh step indicator
                         if y == 1 then
                             vbw["s" .. stepString].visible = true
+                            vbw["sw" .. stepString].visible = true
                             vbw["s" .. stepString].color = colorStepOff
                         end
                         --refresh keyboad
@@ -2348,6 +2346,7 @@ local function fillPianoRoll()
     --hide non used elements of the piano roll grid
     for i = steps + 1, gridWidth do
         vbw["s" .. i].visible = false
+        vbw["sw" .. i].visible = false
         for y = 1, gridHeight do
             vbw["p" .. i .. "_" .. y].visible = false
         end
@@ -3094,6 +3093,16 @@ local function handleKeyEvent(keyEvent)
     return handled
 end
 
+--handle scroll wheel value boxes
+local function handleSrollWheel(number, id)
+    if number > 0 then
+        handleKeyEvent({ name = "scrollup" })
+    elseif number < 0 then
+        handleKeyEvent({ name = "scrolldown" })
+    end
+    vbw[id].value = 0
+end
+
 --edit in pianoroll main function
 local function main_function()
     --setup observers
@@ -3291,6 +3300,26 @@ local function main_function()
         timeline:add_child(vb:space {
             width = 6,
         })
+
+        --another quirk, instead of using jsut one valuebox, i need a valuebox for each column
+        --its alot faster scrolling without stuttering, it seems a big valuebox slows down the rendering
+        local scrollwheelgrid = vb:row {
+            style = "plain",
+            spacing = -gridSpacing,
+        }
+        for i = 1, gridWidth do
+            local temp = vb:valuebox {
+                id = "sw" .. i,
+                width = gridStepSizeW,
+                height = (gridStepSizeH - 2.9) * (gridHeight + 1),
+                min = -1,
+                max = 1,
+                notifier = function(number)
+                    handleSrollWheel(number, "sw" .. i)
+                end,
+            }
+            scrollwheelgrid:add_child(temp)
+        end
 
         windowContent = vb:column {
             vb:row {
@@ -4103,18 +4132,13 @@ local function main_function()
                         vb:row {
                             spacing = -pianoKeyWidth + 1,
                             vb:valuebox {
-                                id = "sw1",
+                                id = "swk",
                                 width = pianoKeyWidth,
                                 height = (gridStepSizeH - 2.9) * (gridHeight + 1),
                                 min = -1,
                                 max = 1,
                                 notifier = function(number)
-                                    if number > 0 then
-                                        handleKeyEvent({ name = "scrollup" })
-                                    elseif number < 0 then
-                                        handleKeyEvent({ name = "scrolldown" })
-                                    end
-                                    vbw.sw1.value = 0
+                                    handleSrollWheel(number, "swk")
                                 end,
                             },
                             vb:column {
@@ -4172,24 +4196,12 @@ local function main_function()
                         vb:row {
                             spacing = -(gridStepSizeW * gridWidth - (gridSpacing * (gridWidth))),
                             vb:row {
-                                spacing = -(gridStepSizeW * (gridWidth + 2) - (gridSpacing * (gridWidth + 2))) - 2,
+                                spacing = -(gridStepSizeW * (gridWidth) - (gridSpacing * (gridWidth))) - 4,
                                 vb:space {
                                     width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)),
                                 },
-                                vb:valuebox {
-                                    id = "sw2",
-                                    width = gridStepSizeW * (gridWidth + 2) - (gridSpacing * (gridWidth + 2)) + 2,
-                                    height = (gridStepSizeH - 2.9) * (gridHeight + 1),
-                                    min = -1,
-                                    max = 1,
-                                    notifier = function(number)
-                                        if number > 0 then
-                                            handleKeyEvent({ name = "scrollup" })
-                                        elseif number < 0 then
-                                            handleKeyEvent({ name = "scrolldown" })
-                                        end
-                                        vbw.sw2.value = 0
-                                    end,
+                                vb:row {
+                                    scrollwheelgrid,
                                 },
                             },
                             vb:column {
