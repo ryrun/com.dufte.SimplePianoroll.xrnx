@@ -101,6 +101,8 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 |<kbd>down</kbd>|Move in the grid downwards|
 |<kbd>left</kbd>|Move in the grid leftwards|
 |<kbd>right</kbd>|Move in the grid rightwards|
+|<kbd>page up</kbd>|Move in the grid 16 steps upwards|
+|<kbd>page down</kbd>|Move in the grid 16 steps downwards|
 |<kbd>shift + up</kbd>|Move in the grid 12 steps upwards|
 |<kbd>shift + down</kbd>|Move in the grid 12 steps downwards|
 |<kbd>shift + left</kbd>|Move in the grid 4 steps leftwards|
