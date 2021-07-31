@@ -130,6 +130,8 @@ local gridWidth
 local gridHeight
 local pianoKeyWidth
 
+local gridSpace = {}
+
 --colors
 local colorDefault = { 0, 0, 0 }
 local colorBaseGridColor = { 52, 68, 78 }
@@ -321,11 +323,11 @@ end
 
 --shade color
 local function shadeColor(color, shade)
-    local newColor = {}
-    newColor[1] = color[1] * (1 - shade)
-    newColor[2] = color[2] * (1 - shade)
-    newColor[3] = color[3] * (1 - shade)
-    return newColor
+    return {
+        color[1] * (1 - shade),
+        color[2] * (1 - shade),
+        color[3] * (1 - shade)
+    }
 end
 
 --simple function for coloring velocity
@@ -1335,11 +1337,11 @@ end
 local function highlightNoteRow(row, highlighted)
     if preferences.highlightEntireLineOfPlayingNote.value then
         for l = 1, math.min(song.selected_pattern.number_of_lines, gridWidth) do
-            local pB = vbw["p" .. l .. "_" .. row]
+            local idx = "p" .. l .. "_" .. row
             if highlighted then
-                pB.color = shadeColor(defaultColor["p" .. l .. "_" .. row], -preferences.rowHighlightingAmount.value)
+                vbw[idx].color = shadeColor(defaultColor[idx], -preferences.rowHighlightingAmount.value)
             else
-                pB.color = defaultColor["p" .. l .. "_" .. row]
+                vbw[idx].color = defaultColor[idx]
             end
         end
     end
