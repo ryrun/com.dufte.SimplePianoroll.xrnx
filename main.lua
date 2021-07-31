@@ -4080,7 +4080,22 @@ local function main_function()
                                     vbw.sw1.value = 0
                                 end,
                             },
-                            whiteKeys,
+                            vb:column {
+                                spacing = -1,
+                                whiteKeys,
+                                vb:row {
+                                    style = "panel",
+                                    vb:bitmap {
+                                        width = pianoKeyWidth - 2,
+                                        height = gridStepSizeH + 1,
+                                        mode = "transparent",
+                                        bitmap = "Icons/Browser_RenoiseInstrumentFile.bmp",
+                                        notifier = function()
+                                            --nothing
+                                        end
+                                    }
+                                }
+                            }
                         },
                     }
                 },
@@ -4140,7 +4155,33 @@ local function main_function()
                                     end,
                                 },
                             },
-                            pianorollColumns,
+                            vb:column {
+                                spacing = -1,
+                                pianorollColumns,
+                                vb:row {
+                                    style = "panel",
+                                    spacing = -(gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2),
+                                    vb:bitmap {
+                                        width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2,
+                                        height = gridStepSizeH + 1,
+                                        bitmap = "Icons/SwitchOff.bmp",
+                                        mode = "transparent",
+                                        notifier = function()
+                                            --nothing
+                                        end
+                                    },
+                                    vb:column {
+                                        id = "key_state_panel",
+                                        visible = false,
+                                        vb:text {
+                                            id = "key_state",
+                                            text = "",
+                                            font = "bold",
+                                            style = "strong",
+                                        },
+                                    }
+                                }
+                            }
                         },
                     },
                 },
@@ -4151,29 +4192,6 @@ local function main_function()
                 },
                 stepSlider,
             },
-            vb:column {
-                id = "key_state_panel",
-                visible = false,
-                vb:space {
-                    height = 2,
-                },
-                vb:row {
-                    margin = 1,
-                    uniform = true,
-                    vb:bitmap {
-                        bitmap = "Icons/Transport_ComputerKeyboard.bmp",
-                        mode = "transparent",
-                        width = 20,
-                        height = 12,
-                    },
-                    vb:text {
-                        id = "key_state",
-                        text = "",
-                        font = "bold",
-                        style = "strong",
-                    },
-                }
-            }
         }
         --fill new created pianoroll, timeline and refresh controls
         refreshNoteControls()
