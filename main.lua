@@ -4144,6 +4144,9 @@ local function main_function()
                             vb:column {
                                 spacing = -1,
                                 whiteKeys,
+                                vb:space {
+                                    height = 2
+                                },
                                 vb:row {
                                     style = "panel",
                                     vb:bitmap {
@@ -4207,6 +4210,9 @@ local function main_function()
                             vb:column {
                                 spacing = -1,
                                 pianorollColumns,
+                                vb:space {
+                                    height = 2
+                                },
                                 vb:row {
                                     style = "panel",
                                     spacing = -(gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2),
