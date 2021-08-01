@@ -603,6 +603,8 @@ end
 
 --refresh all controls
 local function refreshNoteControls()
+    local track = song.selected_track
+
     vbw.note_len.value = currentNoteLength
 
     if currentNoteGhost == true then
@@ -735,6 +737,14 @@ local function refreshNoteControls()
         vbw.playbutton.color = colorDefault
     end
 
+    --set color indicator to current track color and name
+    vbw.trackcolor.color = track.color
+    vbw.trackcolor.tooltip = track.name
+    if string.len(track.name) > 9 then
+        vbw.trackname.text = string.sub(track.name,1,8) .. "…"
+    else
+        vbw.trackname.text = track.name
+    end
 end
 
 --simple note trigger
@@ -2547,6 +2557,8 @@ local function appNewDoc()
     song.selected_track.volume_column_visible_observable:add_notifier(obsColumnRefresh)
     song.selected_track.panning_column_visible_observable:add_notifier(obsColumnRefresh)
     song.selected_track.delay_column_visible_observable:add_notifier(obsColumnRefresh)
+    song.selected_track.name_observable:add_notifier(obsColumnRefresh)
+    song.selected_track.color_observable:add_notifier(obsColumnRefresh)
     --transport observable
     song.transport.loop_pattern_observable:add_notifier(obsColumnRefresh)
     song.transport.playing_observable:add_notifier(obsColumnRefresh)
@@ -3173,7 +3185,7 @@ local function main_function()
                 },
                 vb:button {
                     id = "s" .. tostring(x),
-                    height = 9,
+                    height = 10,
                     width = gridStepSizeW - 4,
                     color = colorStepOff,
                     visible = false,
@@ -4089,9 +4101,11 @@ local function main_function()
             vb:row {
                 vb:column {
                     vb:row {
-                        height = (gridStepSizeH * 2) - gridSpacing + 2,
-                        spacing = 1,
-                        margin = 4,
+                        spacing = 3,
+                        margin = -1,
+                        vb:space {
+                            width = 2,
+                        },
                         vb:row {
                             spacing = -3,
                             vb:button {
@@ -4136,69 +4150,99 @@ local function main_function()
                             end,
                         },
                     },
+                    vb:space {
+                        height = 4,
+                    },
                     vb:row {
                         noteSlider,
-                        vb:row {
-                            spacing = -pianoKeyWidth + 1,
-                            vb:valuebox {
-                                id = "swk",
+                        vb:column {
+                            vb:row {
+                                spacing = -pianoKeyWidth,
                                 width = pianoKeyWidth,
-                                height = (gridStepSizeH - 2.9) * (gridHeight + 1),
-                                min = -1,
-                                max = 1,
-                                notifier = function(number)
-                                    handleSrollWheel(number, "swk")
-                                end,
-                            },
-                            vb:column {
-                                spacing = -1,
-                                whiteKeys,
+                                margin = -1,
                                 vb:space {
-                                    height = 2
+                                    width = pianoKeyWidth + 1,
                                 },
-                                vb:row {
-                                    style = "panel",
-                                    spacing = -pianoKeyWidth,
-                                    vb:bitmap {
-                                        width = pianoKeyWidth - 2,
-                                        height = gridStepSizeH + 1,
-                                        bitmap = "Icons/SwitchOff.bmp",
-                                        mode = "transparent",
-                                        notifier = function()
-                                            --nothing
-                                        end
+                                vb:button {
+                                    id = "trackcolor",
+                                    height = gridStepSizeH,
+                                    color = { 44, 77, 66 },
+                                    active = false,
+                                    width = pianoKeyWidth,
+                                },
+                                vb:text {
+                                    id = "trackname",
+                                    width = pianoKeyWidth,
+                                    font = "mono",
+                                    align = "center",
+                                    style = "strong",
+                                },
+                                vb:space {
+                                    width = pianoKeyWidth,
+                                },
+                            },
+                            vb:row {
+                                spacing = -pianoKeyWidth + 1,
+                                vb:valuebox {
+                                    id = "swk",
+                                    width = pianoKeyWidth,
+                                    height = (gridStepSizeH - 2.9) * (gridHeight + 1),
+                                    min = -1,
+                                    max = 1,
+                                    notifier = function(number)
+                                        handleSrollWheel(number, "swk")
+                                    end,
+                                },
+                                vb:column {
+                                    spacing = -1,
+                                    whiteKeys,
+                                    vb:space {
+                                        height = 2
                                     },
-                                    vb:column {
-                                        vb:space {
-                                          height = 1,
+                                    vb:row {
+                                        style = "panel",
+                                        spacing = -pianoKeyWidth,
+                                        vb:bitmap {
+                                            width = pianoKeyWidth - 2,
+                                            height = gridStepSizeH + 1,
+                                            bitmap = "Icons/SwitchOff.bmp",
+                                            mode = "transparent",
+                                            notifier = function()
+                                                --nothing
+                                            end
                                         },
-                                        vb:row {
-                                            spacing = 2,
+                                        vb:column {
                                             vb:space {
-                                                width = 2,
+                                                height = 1,
                                             },
-                                            vb:bitmap {
-                                                bitmap = "Icons/Transport_ChordModeOff.bmp",
-                                                mode = "transparent",
-                                                tooltip = "Active scale. This can be changed via preferences.",
-                                            },
-                                            vb:text {
-                                                id = "currentscale",
-                                                text = "C Maj",
-                                                font = "mono",
-                                                style = "strong",
+                                            vb:row {
+                                                spacing = 2,
+                                                vb:space {
+                                                    width = 2,
+                                                },
+                                                vb:bitmap {
+                                                    bitmap = "Icons/Transport_ChordModeOff.bmp",
+                                                    mode = "transparent",
+                                                    tooltip = "Active scale. This can be changed via preferences.",
+                                                },
+                                                vb:text {
+                                                    id = "currentscale",
+                                                    text = "C Maj",
+                                                    font = "mono",
+                                                    style = "strong",
+                                                },
                                             },
                                         },
-                                    },
+                                    }
                                 }
-                            }
+                            },
                         },
-                    }
+                    },
                 },
                 vb:column {
                     vb:column {
                         vb:space {
-                            height = 3,
+                            height = 4,
                         },
                         playCursor,
                         vb:space {
