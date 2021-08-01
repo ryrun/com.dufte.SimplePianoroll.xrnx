@@ -4223,7 +4223,7 @@ local function main_function()
                                                 vb:bitmap {
                                                     bitmap = "Icons/Transport_ChordModeOff.bmp",
                                                     mode = "transparent",
-                                                    tooltip = "Active scale. This can be changed via preferences.",
+                                                    tooltip = "Active scale highlighting. This can be changed via preferences.",
                                                 },
                                                 vb:text {
                                                     id = "currentscale",
