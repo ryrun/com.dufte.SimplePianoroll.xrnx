@@ -1641,7 +1641,9 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                             vel = current_note_vel,
                             ghst = ghost
                         })
-                        if song.transport.playing and song.transport.playback_pos.line - stepOffset == noteOnStepIndex + i then
+                        if song.transport.playing
+                                and song.transport.playback_pos.line - stepOffset == noteOnStepIndex + i
+                                and song.selected_pattern_index == song.sequencer:pattern(song.transport.playback_pos.sequence) then
                             isOnStep = true
                         end
                     end
