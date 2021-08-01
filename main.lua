@@ -2942,20 +2942,18 @@ local function handleKeyEvent(keyEvent)
     if (key.name == "scrollup" or key.name == "scrolldown") then
         if key.state == "pressed" then
             local steps = preferences.scrollWheelSpeed.value
-            if keyShift or keyRShift then
-                steps = steps * 2
-            end
             if key.name == "scrolldown" then
                 steps = steps * -1
             end
             keyInfoText = "Move through the grid"
-            if keyAlt then
+            if (keyAlt or keyShift or keyRShift) and not keyControl then
                 steps = steps * -1
                 stepSlider.value = forceValueToRange(stepSlider.value + steps, stepSlider.min, stepSlider.max)
-            else
+            elseif not keyAlt and not keyControl and not keyShift and not keyRShift then
                 noteSlider.value = forceValueToRange(noteSlider.value + steps, noteSlider.min, noteSlider.max)
             end
         end
+        handled = true
     end
     if (key.name == "next" or key.name == "prior") then
         if key.state == "pressed" and key.modifiers == "" then
