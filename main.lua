@@ -1994,18 +1994,19 @@ end
 
 --set scale highlighting, none, manual modes, instrument scale, automatic mode
 local function setScaleHighlighting(afterPianoRollRefresh)
+    local ret = false
     --simple scale highlighting
     if preferences.scaleHighlightingType.value == 1 and
             (currentScale ~= 1 or currentScaleOffset ~= 1) then
         currentScale = 1
         currentScaleOffset = 1
-        return true
+        ret = true
     elseif (preferences.scaleHighlightingType.value == 2 or preferences.scaleHighlightingType.value == 3) and
             (currentScale ~= preferences.scaleHighlightingType.value or currentScaleOffset ~= preferences.keyForSelectedScale.value)
     then
         currentScale = preferences.scaleHighlightingType.value
         currentScaleOffset = preferences.keyForSelectedScale.value
-        return true
+        ret = true
     elseif preferences.scaleHighlightingType.value == 4 then
         local idx = currentInstrument
         if not idx then
@@ -2018,19 +2019,19 @@ local function setScaleHighlighting(afterPianoRollRefresh)
             if currentScale ~= 2 or currentScaleOffset ~= scale_key then
                 currentScale = 2
                 currentScaleOffset = scale_key
-                return true
+                ret = true
             end
         elseif scale_mode == "Natural Minor" then
             if currentScale ~= 3 or currentScaleOffset ~= scale_key then
                 currentScale = 3
                 currentScaleOffset = scale_key
-                return true
+                ret = true
             end
         elseif currentScale ~= 2 or currentScaleOffset ~= 1 then
             --switch to c major as default, when no scale is set
             currentScale = 2
             currentScaleOffset = 1
-            return true
+            ret = true
         end
     elseif preferences.scaleHighlightingType.value == 5 then
         --only process, after piano roll refresh
@@ -2062,7 +2063,6 @@ local function setScaleHighlighting(afterPianoRollRefresh)
                     foundScaleKey = lowErrorScaleKey
                 end
                 if foundScaleKey ~= nil then
-                    local ret = false
                     if currentScale ~= 2 then
                         currentScale = 2
                         ret = true
@@ -2071,18 +2071,26 @@ local function setScaleHighlighting(afterPianoRollRefresh)
                         currentScaleOffset = (foundScaleKey + 1)
                         ret = true
                     end
-                    return ret
                 end
             else
                 if (currentScale ~= 1 or currentScaleOffset ~= 1) then
                     currentScale = 1
                     currentScaleOffset = 1
-                    return true
+                    ret = true
                 end
             end
         end
     end
-    return false
+    if ret then
+        if currentScale == 1 then
+            vbw["currentscale"].text = "None"
+        elseif currentScale == 2 then
+            vbw["currentscale"].text = notesTable[currentScaleOffset] .. " Maj"
+        elseif currentScale == 3 then
+            vbw["currentscale"].text = notesTable[currentScaleOffset] .. " Min"
+        end
+    end
+    return ret
 end
 
 --highlight each note on the current playback pos
@@ -4151,15 +4159,38 @@ local function main_function()
                                 },
                                 vb:row {
                                     style = "panel",
+                                    spacing = -pianoKeyWidth,
                                     vb:bitmap {
                                         width = pianoKeyWidth - 2,
                                         height = gridStepSizeH + 1,
+                                        bitmap = "Icons/SwitchOff.bmp",
                                         mode = "transparent",
-                                        bitmap = "Icons/Browser_RenoiseInstrumentFile.bmp",
                                         notifier = function()
                                             --nothing
                                         end
-                                    }
+                                    },
+                                    vb:column {
+                                        vb:space {
+                                          height = 1,
+                                        },
+                                        vb:row {
+                                            spacing = 2,
+                                            vb:space {
+                                                width = 2,
+                                            },
+                                            vb:bitmap {
+                                                bitmap = "Icons/Transport_ChordModeOff.bmp",
+                                                mode = "transparent",
+                                                tooltip = "Active scale. This can be changed via preferences.",
+                                            },
+                                            vb:text {
+                                                id = "currentscale",
+                                                text = "C Maj",
+                                                font = "mono",
+                                                style = "strong",
+                                            },
+                                        },
+                                    },
                                 }
                             }
                         },
