@@ -2945,11 +2945,12 @@ local function handleKeyEvent(keyEvent)
             if key.name == "scrolldown" then
                 steps = steps * -1
             end
-            keyInfoText = "Move through the grid"
             if (keyAlt or keyShift or keyRShift) and not keyControl then
+                keyInfoText = "Move through the grid"
                 steps = steps * -1
                 stepSlider.value = forceValueToRange(stepSlider.value + steps, stepSlider.min, stepSlider.max)
             elseif not keyAlt and not keyControl and not keyShift and not keyRShift then
+                keyInfoText = "Move through the grid"
                 noteSlider.value = forceValueToRange(noteSlider.value + steps, noteSlider.min, noteSlider.max)
             end
         end
