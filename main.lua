@@ -707,22 +707,17 @@ local function refreshNoteControls()
         vbw.ghosttracks.value = currentGhostTrack
     end
 
-    if preferences.notePreview.value then
-        vbw.notepreview.color = colorNoteHighlight
-    else
-        vbw.notepreview.color = colorDefault
-    end
     if penMode or (keyAlt and not keyControl and not keyShift and not audioPreviewMode) then
-        vbw.mode_pen.color = colorNoteHighlight
+        vbw.mode_pen.color = colorStepOn
         vbw.mode_select.color = colorDefault
         vbw.mode_audiopreview.color = colorDefault
     elseif audioPreviewMode or (keyControl and keyShift and not keyAlt) then
         vbw.mode_pen.color = colorDefault
         vbw.mode_select.color = colorDefault
-        vbw.mode_audiopreview.color = colorNoteHighlight
+        vbw.mode_audiopreview.color = colorStepOn
     else
         vbw.mode_pen.color = colorDefault
-        vbw.mode_select.color = colorNoteHighlight
+        vbw.mode_select.color = colorStepOn
         vbw.mode_audiopreview.color = colorDefault
     end
 
@@ -741,7 +736,7 @@ local function refreshNoteControls()
     vbw.trackcolor.color = track.color
     vbw.trackcolor.tooltip = track.name
     if string.len(track.name) > 9 then
-        vbw.trackname.text = string.sub(track.name,1,8) .. "…"
+        vbw.trackname.text = string.sub(track.name, 1, 8) .. "…"
     else
         vbw.trackname.text = track.name
     end
@@ -3185,7 +3180,7 @@ local function main_function()
                 },
                 vb:button {
                     id = "s" .. tostring(x),
-                    height = 10,
+                    height = 9,
                     width = gridStepSizeW - 4,
                     color = colorStepOff,
                     visible = false,
@@ -3375,6 +3370,44 @@ local function main_function()
                         notifier = function()
                             song.transport:stop()
                         end
+                    },
+                },
+                vb:row {
+                    margin = 3,
+                    spacing = -3,
+                    style = "panel",
+                    vb:button {
+                        text = "↖",
+                        width = 24,
+                        tooltip = "Select mode",
+                        id = "mode_select",
+                        notifier = function()
+                            penMode = false
+                            audioPreviewMode = false
+                            refreshControls = true
+                        end,
+                    },
+                    vb:button {
+                        bitmap = "Icons/SampleEd_DrawTool.bmp",
+                        width = 24,
+                        tooltip = "Pen mode",
+                        id = "mode_pen",
+                        notifier = function()
+                            penMode = true
+                            audioPreviewMode = false
+                            refreshControls = true
+                        end,
+                    },
+                    vb:button {
+                        bitmap = "Icons/Browser_AudioFile.bmp",
+                        width = 24,
+                        tooltip = "Audio preview mode",
+                        id = "mode_audiopreview",
+                        notifier = function()
+                            audioPreviewMode = true
+                            penMode = false
+                            refreshControls = true
+                        end,
                     },
                 },
                 vb:row {
@@ -3685,7 +3718,7 @@ local function main_function()
                     },
                     vb:button {
                         id = "note_ghost",
-                        text = "Ghost note",
+                        text = "G",
                         tooltip = "Enable / disable to draw ghost notes",
                         notifier = function()
                             if currentNoteGhost then
@@ -4100,58 +4133,8 @@ local function main_function()
             },
             vb:row {
                 vb:column {
-                    vb:row {
-                        spacing = 3,
-                        margin = -1,
-                        vb:space {
-                            width = 2,
-                        },
-                        vb:row {
-                            spacing = -3,
-                            vb:button {
-                                text = "↖",
-                                tooltip = "Select mode",
-                                id = "mode_select",
-                                notifier = function()
-                                    penMode = false
-                                    audioPreviewMode = false
-                                    refreshControls = true
-                                end,
-                            },
-                            vb:button {
-                                --text = "✎",
-                                bitmap = "Icons/SampleEd_DrawTool.bmp",
-                                tooltip = "Pen mode",
-                                id = "mode_pen",
-                                notifier = function()
-                                    penMode = true
-                                    audioPreviewMode = false
-                                    refreshControls = true
-                                end,
-                            },
-                            vb:button {
-                                bitmap = "Icons/Browser_AudioFile.bmp",
-                                tooltip = "Audio preview mode",
-                                id = "mode_audiopreview",
-                                notifier = function()
-                                    audioPreviewMode = true
-                                    penMode = false
-                                    refreshControls = true
-                                end,
-                            },
-                        },
-                        vb:button {
-                            text = "♬",
-                            tooltip = "Enable / disable note preview",
-                            id = "notepreview",
-                            notifier = function()
-                                preferences.notePreview.value = not preferences.notePreview.value
-                                refreshControls = true
-                            end,
-                        },
-                    },
                     vb:space {
-                        height = 4,
+                        height = 15,
                     },
                     vb:row {
                         noteSlider,
@@ -4165,13 +4148,14 @@ local function main_function()
                                 },
                                 vb:button {
                                     id = "trackcolor",
-                                    height = gridStepSizeH,
+                                    height = gridStepSizeH + 3,
                                     color = { 44, 77, 66 },
                                     active = false,
                                     width = pianoKeyWidth,
                                 },
                                 vb:text {
                                     id = "trackname",
+                                    height = gridStepSizeH + 3,
                                     width = pianoKeyWidth,
                                     font = "mono",
                                     align = "center",
@@ -4242,7 +4226,7 @@ local function main_function()
                 vb:column {
                     vb:column {
                         vb:space {
-                            height = 4,
+                            height = 3,
                         },
                         playCursor,
                         vb:space {
