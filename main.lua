@@ -53,7 +53,7 @@ local defaultPreferences = {
     addNoteColumnsIfNeeded = true,
     keyboardStyle = 1,
     noNotePreviewDuringSongPlayback = false,
-    highlightEntireLineOfPlayingNote = true,
+    highlightEntireLineOfPlayingNote = false,
     rowHighlightingAmount = 0.15,
     oddBarsShadingAmount = 0.11,
     outOfNoteScaleShadingAmount = 0.2,
@@ -3882,7 +3882,7 @@ local function main_function()
                                             bind = preferences.highlightEntireLineOfPlayingNote
                                         },
                                         vb:text {
-                                            text = "Highlight the entire row of a playing note",
+                                            text = "Highlight the entire row of a playing note (slow)",
                                         },
                                     },
                                     vb:row {
