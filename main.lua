@@ -698,7 +698,11 @@ local function refreshNoteControls()
         if i == song.selected_track_index then
             ghostTracks[i] = "---"
         else
-            ghostTracks[i] = song:track(i).name
+            if song:track(i).type == renoise.Track.TRACK_TYPE_GROUP then
+                ghostTracks[i] = "Group: " .. song:track(i).name
+            else
+                ghostTracks[i] = song:track(i).name
+            end
         end
     end
     vbw.ghosttracks.items = ghostTracks
@@ -2397,7 +2401,7 @@ local function fillPianoRoll()
     end
 
     --render ghost notes, only when index is not the current track
-    if currentGhostTrack and currentGhostTrack ~= song.selected_track_index then
+    if currentGhostTrack and currentGhostTrack ~= song.selected_track_index and song:track(currentGhostTrack).type == renoise.Track.TRACK_TYPE_SEQUENCER then
         vbw.ghosttrackswitch.active = true
         ghostTrack(currentGhostTrack)
     else
