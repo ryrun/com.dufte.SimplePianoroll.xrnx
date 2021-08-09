@@ -137,6 +137,7 @@ local gridSpace = {}
 
 --colors
 local colorDefault = { 0, 0, 0 }
+local colorDisabled = { 55, 55, 55 }
 local colorBaseGridColor = { 52, 68, 78 }
 local colorGhostNote = { 80, 97, 107 }
 local colorList = { 70, 79, 84 }
@@ -1466,6 +1467,11 @@ end
 
 --will be called, when an empty grid button was clicked
 function pianoGridClick(x, y, released)
+    --ignore clicks outside pattern
+    if x + stepOffset > song.selected_pattern.number_of_lines then
+        return false
+    end
+
     if ((keyControl and keyShift and not keyAlt) or audioPreviewMode) or (stepPreview and released) then
         local line = x + stepOffset
         stepPreview = not released
@@ -2181,6 +2187,7 @@ local function fillPianoRoll()
     local stepsCount = math.min(steps, gridWidth)
     local noffset = noteOffset - 1
     local blackKey
+    local temp
     local lastColumnWithNotes
 
     --remove old notes
@@ -2260,11 +2267,9 @@ local function fillPianoRoll()
                     if s <= stepsCount then
                         defaultColor["p" .. index] = color
                         p.color = color
-                        p.visible = true
                         --refresh step indicator
                         if y == 1 then
-                            vbw["s" .. stepString].visible = true
-                            vbw["sw" .. stepString].visible = true
+                            vbw["s" .. stepString].active = true
                             vbw["s" .. stepString].color = colorStepOff
                         end
                         --refresh keyboad
@@ -2295,12 +2300,6 @@ local function fillPianoRoll()
                             --reset key sub state button color
                             vbw["ks" .. ystring].visible = false
                             vbw["kss" .. ystring].visible = true
-                        end
-                    else
-                        p.visible = false
-                        --refresh step indicator
-                        if y == 1 then
-                            vbw["s" .. stepString].visible = false
                         end
                     end
                 end
@@ -2363,11 +2362,14 @@ local function fillPianoRoll()
     end
 
     --hide non used elements of the piano roll grid
-    for i = steps + 1, gridWidth do
-        vbw["s" .. i].visible = false
-        vbw["sw" .. i].visible = false
-        for y = 1, gridHeight do
-            vbw["p" .. i .. "_" .. y].visible = false
+    for y = 1, gridHeight do
+        temp = shadeColor(defaultColor["p1_" .. y], 0.4)
+        for i = steps + 1, gridWidth do
+            if y == 1 then
+                vbw["s" .. i].active = false
+                vbw["s" .. i].color = colorDisabled
+            end
+            vbw["p" .. i .. "_" .. y].color = temp
         end
     end
 
@@ -3187,7 +3189,7 @@ local function main_function()
                     height = 9,
                     width = gridStepSizeW - 4,
                     color = colorStepOff,
-                    visible = false,
+                    active = false,
                     notifier = loadstring(temp),
                 },
                 vb:space {
@@ -3218,7 +3220,6 @@ local function main_function()
                     height = gridStepSizeH,
                     width = gridStepSizeW,
                     color = colorWhiteKey[1],
-                    visible = false,
                     notifier = loadstring(temp),
                     pressed = loadstring(temp2)
                 }
@@ -3309,17 +3310,21 @@ local function main_function()
 
         local timeline = vb:row {
             style = "plain",
+            width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
+            spacing = -(gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6),
         }
+        timeline:add_child(vb:space {
+            width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
+        })
+        local timeline_row = vb:row {}
         for i = 1, gridWidth do
             local temp = vb:text {
                 id = "timeline" .. i,
                 visible = false,
             }
-            timeline:add_child(temp)
+            timeline_row:add_child(temp)
         end
-        timeline:add_child(vb:space {
-            width = 6,
-        })
+        timeline:add_child(timeline_row)
 
         --another quirk, instead of using jsut one valuebox, i need a valuebox for each column
         --its alot faster scrolling without stuttering, it seems a big valuebox slows down the rendering
