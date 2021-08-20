@@ -1394,10 +1394,12 @@ function noteClick(x, y, c, released)
     local row = noteValue2GridRowOffset(note_data.note)
 
     if not keyAlt and not penMode then
-        triggerNoteOfCurrentInstrument(note_data.note, not released, note_data.vel)
-        if row ~= nil then
-            setKeyboardKeyColor(row, not released, false)
-            highlightNoteRow(row, not released)
+        if preferences.noNotePreviewDuringSongPlayback.value and not song.transport.playing then
+            triggerNoteOfCurrentInstrument(note_data.note, not released, note_data.vel)
+            if row ~= nil then
+                setKeyboardKeyColor(row, not released, false)
+                highlightNoteRow(row, not released)
+            end
         end
     end
 
