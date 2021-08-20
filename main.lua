@@ -3061,6 +3061,9 @@ local function handleKeyEvent(keyEvent)
                 highlightNoteRow(row, false)
             end
             lastKeyboardNote[key.name] = nil
+            if key.modifiers == "" then
+                handled = true
+            end
         elseif not key.repeated and key.state == "pressed" and key.modifiers == "" then
             local note = key.note + (12 * song.transport.octave)
             lastKeyboardNote[key.name] = note
@@ -3071,8 +3074,8 @@ local function handleKeyEvent(keyEvent)
                 highlightNoteRow(row, true)
             end
             keyInfoText = "Play a note"
+            handled = true
         end
-        handled = true
     end
 
     if keyEvent.state == "pressed" then
@@ -3111,6 +3114,8 @@ local function handleKeyEvent(keyEvent)
             vbw["key_state"].text = ""
         end
     end
+
+    print(handled)
 
     return handled
 end
