@@ -229,7 +229,7 @@ local xypadpos = {
     scaling = false, --are we scaling currently?
     threshold = 0.1, --change how the
     pickuptiming = 0.025, --time before trackpad reacts
-    scalethreshold = 0.3, --0.3 = 70% of the last part of a note in grid will trigger scale mode
+    scalethreshold = 0.2, --0.3 = 70% of the last part of a note in grid will trigger scale mode
     scalethresholdshortnotes = 0.4, --increase the value abit, so it still can be moved easily
 }
 
@@ -1543,7 +1543,7 @@ function noteClick(x, y, c, released)
                             end
                         end
                         noteSelection = {}
-                    elseif #noteSelection > 0 then
+                    elseif #noteSelection > 0 and keyControl and keyAlt then
                         --check if the note is in selection, then just deselect
                         for i = 1, #noteSelection do
                             if noteSelection[i].line == note_data.line and noteSelection[i].len == note_data.len and noteSelection[i].column == note_data.column then

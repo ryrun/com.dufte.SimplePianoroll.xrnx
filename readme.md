@@ -76,13 +76,15 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 |Add notes|Double click on a free spot in the grid<br>Alternative: While hold <kbd>alt</kbd> its just one click|
 |Remove notes|Double click on a note<br>Alternative: While hold <kbd>alt</kbd> its just one click|
 |Select a note|Click on a note.<br>*It also reads out note length and velocity of the selected note and set these values for new notes.*|
-|Preview a note|Click on a note.|
+|Move one note or multiple notes|Click and drag a note. It will also move all selected notes, too.|
+|Change note length|Click and hold the end of a note and move the mouse to the right. It will also increase the length of all selected notes. To decrease the note length, just move the mouse to the left| 
+|Preview a note|Click on a note or use preview mode|
 |Play from mouse cursor|While holding <kbd>ctrl</kbd>, click on a freespot in the grid|
 |Play all notes from mouse cursor|While holding <kbd>ctrl + shift</kbd>, click and hold on a freespot in the grid|
 |Select multiple individual notes|While holding <kbd>ctrl</kbd>, click on a note|
-|Deselect individual notes in selection|While holding <kbd>ctrl</kbd>, click on a selected note|
+|Deselect individual notes in selection|While holding <kbd>ctrl + alt</kbd>, click on a selected note|
 |Deselect notes|Click on a free spot in the grid|
-|Rectangle select notes|First click on a free spot in the grid to set the first corner, then hold <kbd>shift</kbd> and click another free spot and it will select all notes inside this rectangle
+|Rectangle select notes|Click and hold left mouse button on a free spot, it starts to select all notes inside mouse position and start point
 |Select all notes with a specific note value|Hold <kbd>ctrl</kbd> and click one of the notes in the piano keyboard control
 |Select all notes with on a specific position|Hold <kbd>ctrl</kbd> and click one of the position indicators above the piano grid
 |Scroll vertically|Use your mouse wheel above the piano roll grid or the piano roll keys on the left. 
