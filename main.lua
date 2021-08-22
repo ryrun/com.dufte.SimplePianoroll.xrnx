@@ -216,6 +216,16 @@ local keyShift = false
 local keyRShift = false
 local keyAlt = false
 local lastKeyPress
+local xypadpos = {
+    x = 0,
+    y = 0,
+    nx = 0,
+    ny = 0,
+    nlen = 0,
+    time = 0,
+    scalemode = false,
+    scaling = false
+}
 
 --pen mode
 local penMode = false
@@ -1393,6 +1403,24 @@ function noteClick(x, y, c, released)
     local note_data = noteData[index]
     local row = noteValue2GridRowOffset(note_data.note)
 
+    --mouse drag support, very very hacky
+    if not released and not audioPreviewMode then
+        for i = 1, gridWidth do
+            vbw["p" .. i .. "_" .. y].active = false
+        end
+        vbw["bbb" .. index]:remove_child(vbw["b" .. index])
+        vbw["bbb" .. index]:add_child(vbw["b" .. index])
+        xypadpos.nx = x
+        xypadpos.ny = y
+        xypadpos.nlen = note_data.len
+        xypadpos.scalemode = false
+        xypadpos.scaling = false
+        xypadpos.time = os.clock()
+        xypadpos.max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
+        triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true)
+        return
+    end
+
     if not keyAlt and not penMode then
         if preferences.noNotePreviewDuringSongPlayback.value and not song.transport.playing then
             triggerNoteOfCurrentInstrument(note_data.note, not released, note_data.vel)
@@ -1445,6 +1473,13 @@ function noteClick(x, y, c, released)
                     local deselect = false
                     --clear selection, when ctrl is not holded
                     if not keyControl then
+                        if #noteSelection > 0 then
+                            for i = 1, #noteSelection do
+                                if noteSelection[i].line == note_data.line and noteSelection[i].len == note_data.len and noteSelection[i].column == note_data.column then
+                                    return
+                                end
+                            end
+                        end
                         noteSelection = {}
                     elseif #noteSelection > 0 then
                         --check if the note is in selection, then just deselect
@@ -1827,16 +1862,22 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                 end
 
                 vbw["b" .. current_note_index] = nil
-                btn:add_child(vb:button {
-                    id = "b" .. current_note_index,
-                    height = gridStepSizeH,
-                    width = math.max(buttonWidth - buttonSpace - 1, 1),
-                    visible = true,
-                    color = color,
-                    text = current_note_string,
-                    notifier = loadstring(temp),
-                    pressed = loadstring(temp2)
-                });
+                vbw["bbb" .. current_note_index] = nil
+                btn:add_child(
+                        vb:row {
+                            id = "bbb" .. current_note_index,
+                            vb:button {
+                                id = "b" .. current_note_index,
+                                height = gridStepSizeH,
+                                width = math.max(buttonWidth - buttonSpace - 1, 1),
+                                visible = true,
+                                color = color,
+                                text = current_note_string,
+                                notifier = loadstring(temp),
+                                pressed = loadstring(temp2)
+                            },
+                        }
+                );
 
                 if not noteButtons[current_note_rowIndex] then
                     noteButtons[current_note_rowIndex] = {}
@@ -2261,6 +2302,7 @@ local function fillPianoRoll()
                     local index = stepString .. "_" .. ystring
                     local p = vbw["p" .. index]
                     local color = colorWhiteKey[bar % 2 + 1]
+                    p.active = true
                     blackKey = not noteInScale((y + noffset) % 12)
                     --color black notes
                     if blackKey then
@@ -2696,6 +2738,33 @@ local function handleKeyEvent(keyEvent)
         end
     end
 
+    --convert mouse move events
+    if key.name == "mousemoveup" or
+            key.name == "mousemovedown" or
+            key.name == "mousemoveleft" or
+            key.name == "mousemoveright" or
+            key.name == "mousescaleleft" or
+            key.name == "mousescaleright"
+    then
+        key.state = "pressed"
+        key.modifiers = ""
+        if keyShift or keyRShift then
+            key.modifiers = "shift"
+        end
+        if keyAlt then
+            if key.modifiers ~= "" then
+                key.modifiers = key.modifiers .. " + "
+            end
+            key.modifiers = key.modifiers .. "alt"
+        end
+        if keyControl then
+            if key.modifiers ~= "" then
+                key.modifiers = key.modifiers .. " + "
+            end
+            key.modifiers = key.modifiers .. "control"
+        end
+    end
+
     if key.name == "del" then
         if key.state == "pressed" then
             keyInfoText = "Delete selected notes"
@@ -2982,6 +3051,22 @@ local function handleKeyEvent(keyEvent)
         end
         handled = true
     end
+    if (key.name == "mousemoveup" or key.name == "mousemovedown") then
+        if key.state == "pressed" then
+            local transpose = 1
+            if key.name == "mousemovedown" then
+                transpose = transpose * -1
+            end
+            if #noteSelection > 0 then
+                transposeSelectedNotes(transpose, keyControl or keyRControl)
+                keyInfoText = "Transpose selected notes by " .. getSingularPlural(transpose, "semitone", "semitones", true)
+                if keyControl or keyRControl then
+                    keyInfoText = keyInfoText .. ", keep in scale"
+                end
+            end
+        end
+        handled = true
+    end
     if (key.name == "up" or key.name == "down") then
         if key.state == "pressed" then
             local transpose = 1
@@ -3003,6 +3088,33 @@ local function handleKeyEvent(keyEvent)
             else
                 keyInfoText = "Move through the grid"
                 noteSlider.value = forceValueToRange(noteSlider.value + transpose, noteSlider.min, noteSlider.max)
+            end
+        end
+        handled = true
+    end
+    if (key.name == "mousemoveleft" or key.name == "mousemoveright") then
+        if key.state == "pressed" then
+            local steps = 1
+            if key.name == "mousemoveleft" then
+                steps = steps * -1
+            end
+            if #noteSelection > 0 then
+                moveSelectedNotes(steps)
+                keyInfoText = "Move selected notes by " .. getSingularPlural(steps, "step", "steps", true)
+            end
+        end
+        handled = true
+    end
+    if (key.name == "mousescaleleft" or key.name == "mousescaleright") then
+        if key.state == "pressed" then
+            local steps = 1
+            if key.name == "mousescaleleft" then
+                steps = steps * -1
+            end
+            if #noteSelection > 0 then
+                steps = steps / math.abs(steps)
+                changeSizeSelectedNotes(steps, true)
+                keyInfoText = "Change note length of selected notes"
             end
         end
         handled = true
@@ -3116,9 +3228,6 @@ local function handleKeyEvent(keyEvent)
             vbw["key_state"].text = ""
         end
     end
-
-    print(handled)
-
     return handled
 end
 
@@ -4282,6 +4391,79 @@ local function main_function()
                                 vb:row {
                                     scrollwheelgrid,
                                 },
+                            },
+                            vb:xypad {
+                                id = "xypad",
+                                width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)),
+                                height = (gridStepSizeH - 3) * gridHeight,
+                                min = { x = 1, y = 1 },
+                                max = { x = gridWidth + 1, y = gridHeight + 1 },
+                                notifier = function(val)
+                                    --mouse dragging and scaling
+                                    local threshold = 0.1
+                                    local pickuptiming = 0.025
+                                    local scalethreshold = 0.3
+                                    if xypadpos.nlen == 1 then
+                                        scalethreshold = 0.6
+                                    end
+                                    if xypadpos.time > os.clock() - pickuptiming then
+                                        xypadpos.x = math.floor(val.x)
+                                        xypadpos.y = math.floor(val.y)
+                                        xypadpos.scale = false
+                                        xypadpos.scaling = false
+                                        if val.x - xypadpos.nx - (xypadpos.nlen - 1) > scalethreshold then
+                                            xypadpos.scale = true
+                                        end
+                                    else
+                                        if val.x > xypadpos.max then
+                                            val.x = xypadpos.max
+                                        end
+                                        --when scale mode is active, scale notes
+                                        if xypadpos.scale then
+                                            if xypadpos.x - math.floor(val.x + threshold) > 0 then
+                                                handleKeyEvent({ name = "mousescaleleft" })
+                                                xypadpos.x = xypadpos.x - 1
+                                                xypadpos.scaling = true
+                                            end
+                                            if xypadpos.x - math.floor(val.x - threshold) < 0 then
+                                                handleKeyEvent({ name = "mousescaleright" })
+                                                xypadpos.x = xypadpos.x + 1
+                                                xypadpos.scaling = true
+                                            end
+                                            if not xypadpos.scaling then
+                                                --when note wasn't scaled, then switch to move mode
+                                                if xypadpos.y - math.floor(val.y + threshold) > 0 then
+                                                    xypadpos.scale = false
+                                                end
+                                                if xypadpos.y - math.floor(val.y - threshold) < 0 then
+                                                    xypadpos.scale = false
+                                                end
+                                            end
+                                        end
+                                        --when move note is active, move notes
+                                        if not xypadpos.scale then
+                                            if xypadpos.x - math.floor(val.x + threshold) > 0 then
+                                                handleKeyEvent({ name = "mousemoveleft" })
+                                                xypadpos.x = xypadpos.x - 1
+                                            end
+                                            if xypadpos.x - math.floor(val.x - threshold) < 0 then
+                                                handleKeyEvent({ name = "mousemoveright" })
+                                                xypadpos.x = xypadpos.x + 1
+                                            end
+                                            if xypadpos.y - math.floor(val.y + threshold) > 0 then
+                                                handleKeyEvent({ name = "mousemovedown" })
+                                                xypadpos.y = xypadpos.y - 1
+                                            end
+                                            if xypadpos.y - math.floor(val.y - threshold) < 0 then
+                                                handleKeyEvent({ name = "mousemoveup" })
+                                                xypadpos.y = xypadpos.y + 1
+                                            end
+                                        end
+                                        if refreshPianoRollNeeded then
+                                            fillPianoRoll()
+                                        end
+                                    end
+                                end
                             },
                             vb:column {
                                 spacing = -1,
