@@ -4332,6 +4332,9 @@ local function main_function()
                                             end
                                         },
                                     },
+                                    vb:text {
+                                        text = "IMPORTANT: To improve mouse control, please disable\nthe mouse warping option in the Renoise preferences\nin section GUI."
+                                    },
                                 },
                             }, { "Close", "Reset to default", "Help / Feedback" })
                             if btn == "Reset to default" then
