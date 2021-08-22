@@ -217,14 +217,18 @@ local keyRShift = false
 local keyAlt = false
 local lastKeyPress
 local xypadpos = {
-    x = 0,
-    y = 0,
-    nx = 0,
-    ny = 0,
-    nlen = 0,
-    time = 0,
-    scalemode = false,
-    scaling = false
+    x = 0,--click pos x
+    y = 0, --click pos y
+    nx = 0, --note x pos
+    ny = 0, --note y pos
+    nlen = 0, --note len
+    time = 0, --click time
+    scalemode = false, --is scale mode active?
+    scaling = false, --are we scaling currently?
+    threshold = 0.1, --change how the
+    pickuptiming = 0.025, --time before trackpad reacts
+    scalethreshold = 0.3, --0.3 = 70% of the last part of a note in grid will trigger scale mode
+    scalethresholdshortnotes = 0.4, --increase the value abit, so it still can be moved easily
 }
 
 --pen mode
@@ -4400,13 +4404,11 @@ local function main_function()
                                 max = { x = gridWidth + 1, y = gridHeight + 1 },
                                 notifier = function(val)
                                     --mouse dragging and scaling
-                                    local threshold = 0.1
-                                    local pickuptiming = 0.025
-                                    local scalethreshold = 0.3
+                                    local scalethreshold = xypadpos.scalethreshold
                                     if xypadpos.nlen == 1 then
-                                        scalethreshold = 0.6
+                                        scalethreshold = xypadpos.scalethresholdshortnotes
                                     end
-                                    if xypadpos.time > os.clock() - pickuptiming then
+                                    if xypadpos.time > os.clock() - xypadpos.pickuptiming then
                                         xypadpos.x = math.floor(val.x)
                                         xypadpos.y = math.floor(val.y)
                                         xypadpos.scale = false
@@ -4415,46 +4417,51 @@ local function main_function()
                                             xypadpos.scale = true
                                         end
                                     else
+                                        --prevent moving and scaling outside the grid
                                         if val.x > xypadpos.max then
                                             val.x = xypadpos.max
                                         end
                                         --when scale mode is active, scale notes
                                         if xypadpos.scale then
-                                            if xypadpos.x - math.floor(val.x + threshold) > 0 then
+                                            --prevet scaling into negative values
+                                            if val.x < xypadpos.nx then
+                                                val.x = xypadpos.nx
+                                            end
+                                            if xypadpos.x - math.floor(val.x + xypadpos.threshold) > 0 then
                                                 handleKeyEvent({ name = "mousescaleleft" })
                                                 xypadpos.x = xypadpos.x - 1
                                                 xypadpos.scaling = true
                                             end
-                                            if xypadpos.x - math.floor(val.x - threshold) < 0 then
+                                            if xypadpos.x - math.floor(val.x - xypadpos.threshold) < 0 then
                                                 handleKeyEvent({ name = "mousescaleright" })
                                                 xypadpos.x = xypadpos.x + 1
                                                 xypadpos.scaling = true
                                             end
                                             if not xypadpos.scaling then
                                                 --when note wasn't scaled, then switch to move mode
-                                                if xypadpos.y - math.floor(val.y + threshold) > 0 then
+                                                if xypadpos.y - math.floor(val.y + xypadpos.threshold) > 0 then
                                                     xypadpos.scale = false
                                                 end
-                                                if xypadpos.y - math.floor(val.y - threshold) < 0 then
+                                                if xypadpos.y - math.floor(val.y - xypadpos.threshold) < 0 then
                                                     xypadpos.scale = false
                                                 end
                                             end
                                         end
                                         --when move note is active, move notes
                                         if not xypadpos.scale then
-                                            if xypadpos.x - math.floor(val.x + threshold) > 0 then
+                                            if xypadpos.x - math.floor(val.x + xypadpos.threshold) > 0 then
                                                 handleKeyEvent({ name = "mousemoveleft" })
                                                 xypadpos.x = xypadpos.x - 1
                                             end
-                                            if xypadpos.x - math.floor(val.x - threshold) < 0 then
+                                            if xypadpos.x - math.floor(val.x - xypadpos.threshold) < 0 then
                                                 handleKeyEvent({ name = "mousemoveright" })
                                                 xypadpos.x = xypadpos.x + 1
                                             end
-                                            if xypadpos.y - math.floor(val.y + threshold) > 0 then
+                                            if xypadpos.y - math.floor(val.y + xypadpos.threshold) > 0 then
                                                 handleKeyEvent({ name = "mousemovedown" })
                                                 xypadpos.y = xypadpos.y - 1
                                             end
-                                            if xypadpos.y - math.floor(val.y - threshold) < 0 then
+                                            if xypadpos.y - math.floor(val.y - xypadpos.threshold) < 0 then
                                                 handleKeyEvent({ name = "mousemoveup" })
                                                 xypadpos.y = xypadpos.y + 1
                                             end
