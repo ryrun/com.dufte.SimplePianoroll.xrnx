@@ -1580,7 +1580,7 @@ function pianoGridClick(x, y, released)
         return
     end
 
-    if not released and not checkMode("preview") then
+    if not released and not checkMode("preview") and not keyControl then
         --remove and add the clicked button, disable all buttons in the row, so the xypad in the background can receive the click event
         --remove/add trick from joule: https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
         for i = 1, gridWidth do
