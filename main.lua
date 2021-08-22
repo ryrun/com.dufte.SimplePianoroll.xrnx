@@ -225,6 +225,7 @@ local xypadpos = {
     time = 0, --click time
     notemode = false, --when note mode is active
     scalemode = false, --is scale mode active?
+    resetscale = false,
     scaling = false, --are we scaling currently?
     threshold = 0.1, --change how the
     pickuptiming = 0.025, --time before trackpad reacts
@@ -1255,6 +1256,11 @@ local function changeSizeSelectedNotes(len, add)
         )
     end
     addMissingNoteOffForColumns()
+    --set current scale length as new current length
+    if #noteSelection == 1 then
+        currentNoteLength = newLen
+        refreshControls = true
+    end
     refreshPianoRollNeeded = true
     return true
 end
@@ -1459,6 +1465,8 @@ function noteClick(x, y, c, released)
 
     --mouse drag support, very very hacky
     if not released and not checkMode("preview") then
+        --remove and add the clicked button, disable underlaying buttons, so the xypad in the background can receive the click event
+        --remove/add trick from joule: https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
         for i = 1, gridWidth do
             vbw["p" .. i .. "_" .. y].active = false
         end
@@ -1565,6 +1573,8 @@ function pianoGridClick(x, y, released)
     end
 
     if not released and not checkMode("preview") then
+        --remove and add the clicked button, disable all buttons in the row, so the xypad in the background can receive the click event
+        --remove/add trick from joule: https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
         for i = 1, gridWidth do
             vbw["p" .. i .. "_" .. y].active = false
         end
@@ -1574,6 +1584,7 @@ function pianoGridClick(x, y, released)
             xypadpos.nx = x
             xypadpos.ny = y
             xypadpos.scalemode = true
+            xypadpos.resetscale = true
             xypadpos.notemode = true
             xypadpos.time = os.clock()
         else
@@ -1581,7 +1592,9 @@ function pianoGridClick(x, y, released)
             xypadpos.ny = y
             xypadpos.notemode = false
         end
+        --disabled button need to be enabled again outside this call when just one click was triggered, use idle function
         refreshPianoRollNeeded = true
+        return
     end
 
     if checkMode("preview") or (stepPreview and released) then
@@ -3151,6 +3164,9 @@ local function handleKeyEvent(keyEvent)
             end
             if #noteSelection > 0 then
                 steps = steps / math.abs(steps)
+                if #noteSelection == 1 and key.resetScale then
+                    changeSizeSelectedNotes(1)
+                end
                 changeSizeSelectedNotes(steps, true)
                 keyInfoText = "Change note length of selected notes"
             end
@@ -3306,14 +3322,16 @@ local function handleXypad(val)
                     val.x = xypadpos.nx
                 end
                 if xypadpos.x - math.floor(val.x + xypadpos.threshold) > 0 then
-                    handleKeyEvent({ name = "mousescaleleft" })
+                    handleKeyEvent({ name = "mousescaleleft", resetScale = xypadpos.resetscale })
                     xypadpos.x = xypadpos.x - 1
                     xypadpos.scaling = true
+                    xypadpos.resetscale = false
                 end
                 if xypadpos.x - math.floor(val.x - xypadpos.threshold) < 0 then
-                    handleKeyEvent({ name = "mousescaleright" })
+                    handleKeyEvent({ name = "mousescaleright", resetScale = xypadpos.resetscale })
                     xypadpos.x = xypadpos.x + 1
                     xypadpos.scaling = true
+                    xypadpos.resetscale = false
                 end
                 if not xypadpos.scaling then
                     --when note wasn't scaled, then switch to move mode
