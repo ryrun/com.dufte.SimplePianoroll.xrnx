@@ -225,8 +225,8 @@ local xypadpos = {
     time = 0, --click time
     notemode = false, --when note mode is active
     scalemode = false, --is scale mode active?
-    resetscale = false,
     scaling = false, --are we scaling currently?
+    resetscale = false,
     threshold = 0.1, --change how the
     pickuptiming = 0.025, --time before trackpad reacts
     scalethreshold = 0.2, --0.3 = 70% of the last part of a note in grid will trigger scale mode
@@ -3257,7 +3257,7 @@ local function handleXypad(val)
                     val.x = xypadpos.nx
                 end
                 if xypadpos.x - math.floor(val.x + xypadpos.threshold) > 0 then
-                    if #noteSelection == 1 and xypadpos.resetScale then
+                    if #noteSelection == 1 and xypadpos.resetscale then
                         changeSizeSelectedNotes(1)
                     end
                     for d = math.abs(xypadpos.x - math.floor(val.x + xypadpos.threshold)), 1, -1 do
@@ -3270,7 +3270,7 @@ local function handleXypad(val)
                     end
                 end
                 if xypadpos.x - math.floor(val.x - xypadpos.threshold) < 0 then
-                    if #noteSelection == 1 and xypadpos.resetScale then
+                    if #noteSelection == 1 and xypadpos.resetscale then
                         changeSizeSelectedNotes(1)
                     end
                     for d = math.abs(xypadpos.x - math.floor(val.x - xypadpos.threshold)), 1, -1 do
