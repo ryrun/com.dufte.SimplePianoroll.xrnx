@@ -199,7 +199,7 @@ local currentScale = 2
 local currentScaleOffset = 1
 
 local noteSelection = {}
-local lastSelectionClick
+local rectangleSelect = nil
 local lowestNote
 local highestNote
 
@@ -217,12 +217,13 @@ local keyRShift = false
 local keyAlt = false
 local lastKeyPress
 local xypadpos = {
-    x = 0,--click pos x
+    x = 0, --click pos x
     y = 0, --click pos y
     nx = 0, --note x pos
     ny = 0, --note y pos
     nlen = 0, --note len
     time = 0, --click time
+    notemode = false, --when note mode is active
     scalemode = false, --is scale mode active?
     scaling = false, --are we scaling currently?
     threshold = 0.1, --change how the
@@ -364,6 +365,21 @@ local function initColors()
     --prepare shading colors
     colorWhiteKey = { shadeColor(colorBaseGridColor, preferences.oddBarsShadingAmount.value), colorBaseGridColor }
     colorBlackKey = { shadeColor(colorWhiteKey[1], preferences.outOfNoteScaleShadingAmount.value), shadeColor(colorWhiteKey[2], preferences.outOfNoteScaleShadingAmount.value) }
+end
+
+--check mode
+local function checkMode(mode)
+    if mode == "preview" then
+        if audioPreviewMode or (keyControl and keyShift and not keyAlt) then
+            return true
+        end
+    end
+    if mode == "pen" then
+        if penMode or (not keyControl and not keyShift and keyAlt) then
+            return true
+        end
+    end
+    return false
 end
 
 --jump to the note position in pattern
@@ -726,11 +742,11 @@ local function refreshNoteControls()
         vbw.ghosttracks.value = currentGhostTrack
     end
 
-    if penMode or (keyAlt and not keyControl and not keyShift and not audioPreviewMode) then
+    if checkMode("pen") then
         vbw.mode_pen.color = colorStepOn
         vbw.mode_select.color = colorDefault
         vbw.mode_audiopreview.color = colorDefault
-    elseif audioPreviewMode or (keyControl and keyShift and not keyAlt) then
+    elseif checkMode("preview") then
         vbw.mode_pen.color = colorDefault
         vbw.mode_select.color = colorDefault
         vbw.mode_audiopreview.color = colorStepOn
@@ -1374,6 +1390,40 @@ local function highlightNoteRow(row, highlighted)
     end
 end
 
+local function selectRectangle(x, y, x2, y2)
+    local lineValues = song.selected_pattern_track.lines
+    local columns = song.selected_track.visible_note_columns
+    local smin = math.min(x, x2)
+    local smax = math.max(x, x2)
+    local nmin = gridOffset2NoteValue(math.min(y, y2))
+    local nmax = gridOffset2NoteValue(math.max(y, y2))
+    --remove current note selection
+    noteSelection = {}
+    --loop through columns
+    for c = 1, columns do
+        --loop through lines as steps
+        for s = smin, smax do
+            local linVal = lineValues[s + stepOffset]
+            if linVal then
+                local note_column = linVal:note_column(c)
+                local note = note_column.note_value
+                --note inside the selection rect?
+                if note >= nmin and note <= nmax then
+                    local note_data = noteData[tostring(s) .. "_" .. tostring(noteValue2GridRowOffset(note)) .. "_" .. tostring(c)]
+                    --note found?
+                    if note_data ~= nil then
+                        --add to selection table
+                        table.insert(noteSelection, note_data)
+                    end
+                end
+            end
+        end
+    end
+    --piano refresh
+    addMissingNoteOffForColumns()
+    refreshPianoRollNeeded = true
+end
+
 --keyboard preview
 function keyClick(y, pressed)
     local note = gridOffset2NoteValue(y)
@@ -1408,7 +1458,7 @@ function noteClick(x, y, c, released)
     local row = noteValue2GridRowOffset(note_data.note)
 
     --mouse drag support, very very hacky
-    if not released and not audioPreviewMode then
+    if not released and not checkMode("preview") then
         for i = 1, gridWidth do
             vbw["p" .. i .. "_" .. y].active = false
         end
@@ -1419,13 +1469,13 @@ function noteClick(x, y, c, released)
         xypadpos.nlen = note_data.len
         xypadpos.scalemode = false
         xypadpos.scaling = false
+        xypadpos.notemode = true
         xypadpos.time = os.clock()
-        xypadpos.max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
         triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true)
         return
     end
 
-    if not keyAlt and not penMode then
+    if checkMode("preview") then
         if preferences.noNotePreviewDuringSongPlayback.value and not song.transport.playing then
             triggerNoteOfCurrentInstrument(note_data.note, not released, note_data.vel)
             if row ~= nil then
@@ -1464,7 +1514,7 @@ function noteClick(x, y, c, released)
             jumpToNoteInPattern(note_data)
         end
         --remove on dblclk or when in penmode
-        if (dbclk or keyAlt or penMode) and not audioPreviewMode then
+        if checkMode("pen") or dbclk then
             --set clicked note as selected for remove function
             if note_data ~= nil then
                 noteSelection = {}
@@ -1473,7 +1523,7 @@ function noteClick(x, y, c, released)
             end
         else
             if note_data ~= nil then
-                if not audioPreviewMode then
+                if not checkMode("preview") then
                     local deselect = false
                     --clear selection, when ctrl is not holded
                     if not keyControl then
@@ -1508,12 +1558,33 @@ end
 
 --will be called, when an empty grid button was clicked
 function pianoGridClick(x, y, released)
+    local index = tostring(x) .. "_" .. tostring(y)
     --ignore clicks outside pattern
     if x + stepOffset > song.selected_pattern.number_of_lines then
-        return false
+        return
     end
 
-    if ((keyControl and keyShift and not keyAlt) or audioPreviewMode) or (stepPreview and released) then
+    if not released and not checkMode("preview") then
+        for i = 1, gridWidth do
+            vbw["p" .. i .. "_" .. y].active = false
+        end
+        vbw["ppp" .. index]:remove_child(vbw["p" .. index])
+        vbw["ppp" .. index]:add_child(vbw["p" .. index])
+        if checkMode("pen") then
+            xypadpos.nx = x
+            xypadpos.ny = y
+            xypadpos.scalemode = true
+            xypadpos.notemode = true
+            xypadpos.time = os.clock()
+        else
+            xypadpos.nx = x
+            xypadpos.ny = y
+            xypadpos.notemode = false
+        end
+        refreshPianoRollNeeded = true
+    end
+
+    if checkMode("preview") or (stepPreview and released) then
         local line = x + stepOffset
         stepPreview = not released
         for key in pairs(noteData) do
@@ -1530,11 +1601,11 @@ function pianoGridClick(x, y, released)
         return
     end
     if released then
-        local dbclk = dbclkDetector("p" .. tostring(x) .. "_" .. tostring(y))
+        local dbclk = dbclkDetector("p" .. index)
         --set paste cursor
         pasteCursor = { x + stepOffset, gridOffset2NoteValue(y) }
 
-        if dbclk or (keyAlt and not keyControl and not keyShift) or penMode then
+        if dbclk or checkMode("pen") then
             local steps = song.selected_pattern.number_of_lines
             local column
             local note_value
@@ -1582,50 +1653,15 @@ function pianoGridClick(x, y, released)
             addMissingNoteOffForColumns()
             refreshPianoRollNeeded = true
         else
-            --when a last click was saved and shift is pressing, than try to select notes
-            if (keyShift or keyRShift) and lastSelectionClick then
-                local lineValues = song.selected_pattern_track.lines
-                local columns = song.selected_track.visible_note_columns
-                local smin = math.min(x, lastSelectionClick[1])
-                local smax = math.max(x, lastSelectionClick[1])
-                local nmin = gridOffset2NoteValue(math.min(y, lastSelectionClick[2]))
-                local nmax = gridOffset2NoteValue(math.max(y, lastSelectionClick[2]))
-                --remove current note selection
+            --fast play from cursor
+            if keyControl and not keyAlt and not keyShift then
+                lastPlaySelectionLine = x + stepOffset
+                playPatternFromLine(lastPlaySelectionLine)
+            end
+            --deselect selected notes
+            if #noteSelection > 0 then
                 noteSelection = {}
-                --loop through columns
-                for c = 1, columns do
-                    --loop through lines as steps
-                    for s = smin, smax do
-                        local note_column = lineValues[s + stepOffset]:note_column(c)
-                        local note = note_column.note_value
-                        --note inside the selection rect?
-                        if note >= nmin and note <= nmax then
-                            local note_data = noteData[tostring(s) .. "_" .. tostring(noteValue2GridRowOffset(note)) .. "_" .. tostring(c)]
-                            --note found?
-                            if note_data ~= nil then
-                                --add to selection table
-                                table.insert(noteSelection, note_data)
-                            end
-                        end
-                    end
-                end
-                --piano refresh
-                lastSelectionClick = { x, y }
-                addMissingNoteOffForColumns()
                 refreshPianoRollNeeded = true
-            else
-                --fast play from cursor
-                if keyControl and not keyAlt and not keyShift then
-                    lastPlaySelectionLine = x + stepOffset
-                    playPatternFromLine(lastPlaySelectionLine)
-                end
-                lastSelectionClick = { x, y }
-                --deselect selected notes
-                if #noteSelection > 0 then
-                    noteSelection = {}
-                    refreshPianoRollNeeded = true
-                    lastSelectionClick = { x, y }
-                end
             end
         end
     end
@@ -2503,6 +2539,12 @@ local function appIdleEvent()
             refreshControls = true
         end
 
+        --when selection
+        if rectangleSelect ~= nil then
+            selectRectangle(rectangleSelect[1], rectangleSelect[2], rectangleSelect[3], rectangleSelect[4])
+            rectangleSelect = nil
+        end
+
         --refresh pianoroll, when needed
         if refreshPianoRollNeeded then
             fillPianoRoll()
@@ -2690,28 +2732,20 @@ local function handleKeyEvent(keyEvent)
     if key.name == "lalt" and key.state == "pressed" then
         keyAlt = true
         handled = true
-        if not penMode then
-            refreshControls = true
-        end
+        refreshControls = true
     elseif key.name == "lalt" and key.state == "released" then
         keyAlt = false
         handled = true
-        if not penMode then
-            refreshControls = true
-        end
+        refreshControls = true
     end
     if key.name == "lshift" and key.state == "pressed" then
         keyShift = true
         handled = true
-        if not audioPreviewMode then
-            refreshControls = true
-        end
+        refreshControls = true
     elseif key.name == "lshift" and key.state == "released" then
         keyShift = false
         handled = true
-        if not audioPreviewMode then
-            refreshControls = true
-        end
+        refreshControls = true
     end
     if key.name == "rshift" and key.state == "pressed" then
         keyRShift = true
@@ -3245,6 +3279,84 @@ local function handleSrollWheel(number, id)
     vbw[id].value = 0
 end
 
+--handle xy pad events
+local function handleXypad(val)
+    if xypadpos.notemode then
+        --mouse dragging and scaling
+        local scalethreshold = xypadpos.scalethreshold
+        local max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
+        if xypadpos.nlen == 1 then
+            scalethreshold = xypadpos.scalethresholdshortnotes
+        end
+        if xypadpos.time > os.clock() - xypadpos.pickuptiming then
+            xypadpos.x = math.floor(val.x)
+            xypadpos.y = math.floor(val.y)
+            if val.x - xypadpos.nx - (xypadpos.nlen - 1) > scalethreshold then
+                xypadpos.scalemode = true
+            end
+        else
+            --prevent moving and scaling outside the grid
+            if val.x > max then
+                val.x = max
+            end
+            --when scale mode is active, scale notes
+            if xypadpos.scalemode then
+                --prevet scaling into negative values
+                if val.x < xypadpos.nx then
+                    val.x = xypadpos.nx
+                end
+                if xypadpos.x - math.floor(val.x + xypadpos.threshold) > 0 then
+                    handleKeyEvent({ name = "mousescaleleft" })
+                    xypadpos.x = xypadpos.x - 1
+                    xypadpos.scaling = true
+                end
+                if xypadpos.x - math.floor(val.x - xypadpos.threshold) < 0 then
+                    handleKeyEvent({ name = "mousescaleright" })
+                    xypadpos.x = xypadpos.x + 1
+                    xypadpos.scaling = true
+                end
+                if not xypadpos.scaling then
+                    --when note wasn't scaled, then switch to move mode
+                    if xypadpos.y - math.floor(val.y + xypadpos.threshold) > 0 then
+                        xypadpos.scalemode = false
+                    end
+                    if xypadpos.y - math.floor(val.y - xypadpos.threshold) < 0 then
+                        xypadpos.scalemode = false
+                    end
+                end
+            end
+            --when move note is active, move notes
+            if not xypadpos.scalemode then
+                if xypadpos.x - math.floor(val.x + xypadpos.threshold) > 0 then
+                    handleKeyEvent({ name = "mousemoveleft" })
+                    xypadpos.x = xypadpos.x - 1
+                end
+                if xypadpos.x - math.floor(val.x - xypadpos.threshold) < 0 then
+                    handleKeyEvent({ name = "mousemoveright" })
+                    xypadpos.x = xypadpos.x + 1
+                end
+                if xypadpos.y - math.floor(val.y + xypadpos.threshold) > 0 then
+                    handleKeyEvent({ name = "mousemovedown" })
+                    xypadpos.y = xypadpos.y - 1
+                end
+                if xypadpos.y - math.floor(val.y - xypadpos.threshold) < 0 then
+                    handleKeyEvent({ name = "mousemoveup" })
+                    xypadpos.y = xypadpos.y + 1
+                end
+            end
+            if refreshPianoRollNeeded then
+                fillPianoRoll()
+            end
+        end
+    else
+        if xypadpos.x ~= math.floor(val.x) or xypadpos.y ~= math.floor(val.y) then
+            xypadpos.x = math.floor(val.x)
+            xypadpos.y = math.floor(val.y)
+            rectangleSelect = { xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny }
+        end
+    end
+end
+
 --edit in pianoroll main function
 local function main_function()
     --setup observers
@@ -3281,7 +3393,6 @@ local function main_function()
 
         lastStepOn = nil
         stepOffset = 0
-        lastSelectionClick = nil
         noteOffset = 28 -- default offset
         currentGhostTrack = nil
         noteButtons = {}
@@ -3335,13 +3446,16 @@ local function main_function()
             for x = 1, gridWidth do
                 local temp = "pianoGridClick(" .. tostring(x) .. "," .. tostring(y) .. ",true)"
                 local temp2 = "pianoGridClick(" .. tostring(x) .. "," .. tostring(y) .. ",false)"
-                vb_temp = vb:button {
-                    id = "p" .. tostring(x) .. "_" .. tostring(y),
-                    height = gridStepSizeH,
-                    width = gridStepSizeW,
-                    color = colorWhiteKey[1],
-                    notifier = loadstring(temp),
-                    pressed = loadstring(temp2)
+                vb_temp = vb:row {
+                    id = "ppp" .. tostring(x) .. "_" .. tostring(y),
+                    vb:button {
+                        id = "p" .. tostring(x) .. "_" .. tostring(y),
+                        height = gridStepSizeH,
+                        width = gridStepSizeW,
+                        color = colorWhiteKey[1],
+                        notifier = loadstring(temp),
+                        pressed = loadstring(temp2)
+                    }
                 }
                 row:add_child(vb_temp)
                 --dummy for quirk?
@@ -4403,73 +4517,7 @@ local function main_function()
                                 min = { x = 1, y = 1 },
                                 max = { x = gridWidth + 1, y = gridHeight + 1 },
                                 notifier = function(val)
-                                    --mouse dragging and scaling
-                                    local scalethreshold = xypadpos.scalethreshold
-                                    if xypadpos.nlen == 1 then
-                                        scalethreshold = xypadpos.scalethresholdshortnotes
-                                    end
-                                    if xypadpos.time > os.clock() - xypadpos.pickuptiming then
-                                        xypadpos.x = math.floor(val.x)
-                                        xypadpos.y = math.floor(val.y)
-                                        xypadpos.scale = false
-                                        xypadpos.scaling = false
-                                        if val.x - xypadpos.nx - (xypadpos.nlen - 1) > scalethreshold then
-                                            xypadpos.scale = true
-                                        end
-                                    else
-                                        --prevent moving and scaling outside the grid
-                                        if val.x > xypadpos.max then
-                                            val.x = xypadpos.max
-                                        end
-                                        --when scale mode is active, scale notes
-                                        if xypadpos.scale then
-                                            --prevet scaling into negative values
-                                            if val.x < xypadpos.nx then
-                                                val.x = xypadpos.nx
-                                            end
-                                            if xypadpos.x - math.floor(val.x + xypadpos.threshold) > 0 then
-                                                handleKeyEvent({ name = "mousescaleleft" })
-                                                xypadpos.x = xypadpos.x - 1
-                                                xypadpos.scaling = true
-                                            end
-                                            if xypadpos.x - math.floor(val.x - xypadpos.threshold) < 0 then
-                                                handleKeyEvent({ name = "mousescaleright" })
-                                                xypadpos.x = xypadpos.x + 1
-                                                xypadpos.scaling = true
-                                            end
-                                            if not xypadpos.scaling then
-                                                --when note wasn't scaled, then switch to move mode
-                                                if xypadpos.y - math.floor(val.y + xypadpos.threshold) > 0 then
-                                                    xypadpos.scale = false
-                                                end
-                                                if xypadpos.y - math.floor(val.y - xypadpos.threshold) < 0 then
-                                                    xypadpos.scale = false
-                                                end
-                                            end
-                                        end
-                                        --when move note is active, move notes
-                                        if not xypadpos.scale then
-                                            if xypadpos.x - math.floor(val.x + xypadpos.threshold) > 0 then
-                                                handleKeyEvent({ name = "mousemoveleft" })
-                                                xypadpos.x = xypadpos.x - 1
-                                            end
-                                            if xypadpos.x - math.floor(val.x - xypadpos.threshold) < 0 then
-                                                handleKeyEvent({ name = "mousemoveright" })
-                                                xypadpos.x = xypadpos.x + 1
-                                            end
-                                            if xypadpos.y - math.floor(val.y + xypadpos.threshold) > 0 then
-                                                handleKeyEvent({ name = "mousemovedown" })
-                                                xypadpos.y = xypadpos.y - 1
-                                            end
-                                            if xypadpos.y - math.floor(val.y - xypadpos.threshold) < 0 then
-                                                handleKeyEvent({ name = "mousemoveup" })
-                                                xypadpos.y = xypadpos.y + 1
-                                            end
-                                        end
-                                        if refreshPianoRollNeeded then
-                                            fillPianoRoll()
-                                        end
-                                    end
+                                    handleXypad(val)
                                 end
                             },
                             vb:column {
