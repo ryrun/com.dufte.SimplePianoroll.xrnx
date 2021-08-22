@@ -883,6 +883,7 @@ end
 --move selected notes
 local function moveSelectedNotes(steps)
     local column
+    local state = true
     --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
     if steps < 0 then
         --left one notes first
@@ -921,15 +922,18 @@ local function moveSelectedNotes(steps)
                 noteSelection[key].ghst
         )
         if not column then
+            state = false
             break
         end
     end
     refreshPianoRollNeeded = true
+    return state
 end
 
 --transpose each selected notes
 local function transposeSelectedNotes(transpose, keepscale)
     local lineValues = song.selected_pattern_track.lines
+    local ret = true
     --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
     if transpose > 0 then
         --higher one notes first
@@ -962,8 +966,10 @@ local function transposeSelectedNotes(transpose, keepscale)
         transposeVal = noteSelection[key].note + transposeVal
         --outside the not range skip the whole tansposing
         if transposeVal < 0 then
+            ret = false
             break
         elseif transposeVal >= 120 then
+            ret = false
             break
         end
         --default transpose note
@@ -977,6 +983,7 @@ local function transposeSelectedNotes(transpose, keepscale)
         triggerNoteOfCurrentInstrument(noteSelection[key].note, nil, nil, true)
     end
     refreshPianoRollNeeded = true
+    return ret
 end
 
 --paste notes from clipboard
@@ -3102,22 +3109,6 @@ local function handleKeyEvent(keyEvent)
         end
         handled = true
     end
-    if (key.name == "mousemoveup" or key.name == "mousemovedown") then
-        if key.state == "pressed" then
-            local transpose = 1
-            if key.name == "mousemovedown" then
-                transpose = transpose * -1
-            end
-            if #noteSelection > 0 then
-                transposeSelectedNotes(transpose, keyControl or keyRControl)
-                keyInfoText = "Transpose selected notes by " .. getSingularPlural(transpose, "semitone", "semitones", true)
-                if keyControl or keyRControl then
-                    keyInfoText = keyInfoText .. ", keep in scale"
-                end
-            end
-        end
-        handled = true
-    end
     if (key.name == "up" or key.name == "down") then
         if key.state == "pressed" then
             local transpose = 1
@@ -3139,19 +3130,6 @@ local function handleKeyEvent(keyEvent)
             else
                 keyInfoText = "Move through the grid"
                 noteSlider.value = forceValueToRange(noteSlider.value + transpose, noteSlider.min, noteSlider.max)
-            end
-        end
-        handled = true
-    end
-    if (key.name == "mousemoveleft" or key.name == "mousemoveright") then
-        if key.state == "pressed" then
-            local steps = 1
-            if key.name == "mousemoveleft" then
-                steps = steps * -1
-            end
-            if #noteSelection > 0 then
-                moveSelectedNotes(steps)
-                keyInfoText = "Move selected notes by " .. getSingularPlural(steps, "step", "steps", true)
             end
         end
         handled = true
@@ -3346,20 +3324,36 @@ local function handleXypad(val)
             --when move note is active, move notes
             if not xypadpos.scalemode then
                 if xypadpos.x - math.floor(val.x + xypadpos.threshold) > 0 then
-                    handleKeyEvent({ name = "mousemoveleft" })
-                    xypadpos.x = xypadpos.x - 1
+                    for d = math.abs(xypadpos.x - math.floor(val.x + xypadpos.threshold)), 1, -1 do
+                        if moveSelectedNotes(-d) then
+                            xypadpos.x = xypadpos.x - d
+                            break
+                        end
+                    end
                 end
                 if xypadpos.x - math.floor(val.x - xypadpos.threshold) < 0 then
-                    handleKeyEvent({ name = "mousemoveright" })
-                    xypadpos.x = xypadpos.x + 1
+                    for d = math.abs(xypadpos.x - math.floor(val.x - xypadpos.threshold)), 1, -1 do
+                        if moveSelectedNotes(d) then
+                            xypadpos.x = xypadpos.x + d
+                            break
+                        end
+                    end
                 end
                 if xypadpos.y - math.floor(val.y + xypadpos.threshold) > 0 then
-                    handleKeyEvent({ name = "mousemovedown" })
-                    xypadpos.y = xypadpos.y - 1
+                    for d = math.abs(xypadpos.y - math.floor(val.y + xypadpos.threshold)), 1, -1 do
+                        if transposeSelectedNotes(-d, keyControl or keyRControl) then
+                            xypadpos.y = xypadpos.y - d
+                            break
+                        end
+                    end
                 end
                 if xypadpos.y - math.floor(val.y - xypadpos.threshold) < 0 then
-                    handleKeyEvent({ name = "mousemoveup" })
-                    xypadpos.y = xypadpos.y + 1
+                    for d = math.abs(xypadpos.y - math.floor(val.y - xypadpos.threshold)), 1, -1 do
+                        if transposeSelectedNotes(d, keyControl or keyRControl) then
+                            xypadpos.y = xypadpos.y + d
+                            break
+                        end
+                    end
                 end
             end
             if refreshPianoRollNeeded then
