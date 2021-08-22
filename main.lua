@@ -1220,6 +1220,7 @@ end
 
 --change note size
 local function changeSizeSelectedNotes(len, add)
+    local ret = true
     local column
     local newLen = len
     --first notes first
@@ -1249,6 +1250,8 @@ local function changeSizeSelectedNotes(len, add)
             end
             noteSelection[key].len = newLen
             noteSelection[key].column = column
+        else
+            ret = false
         end
         noteSelection[key].noteoff = addNoteToPattern(
                 noteSelection[key].column,
@@ -1269,7 +1272,7 @@ local function changeSizeSelectedNotes(len, add)
         refreshControls = true
     end
     refreshPianoRollNeeded = true
-    return true
+    return ret
 end
 
 --change note properties
@@ -2796,33 +2799,6 @@ local function handleKeyEvent(keyEvent)
         end
     end
 
-    --convert mouse move events
-    if key.name == "mousemoveup" or
-            key.name == "mousemovedown" or
-            key.name == "mousemoveleft" or
-            key.name == "mousemoveright" or
-            key.name == "mousescaleleft" or
-            key.name == "mousescaleright"
-    then
-        key.state = "pressed"
-        key.modifiers = ""
-        if keyShift or keyRShift then
-            key.modifiers = "shift"
-        end
-        if keyAlt then
-            if key.modifiers ~= "" then
-                key.modifiers = key.modifiers .. " + "
-            end
-            key.modifiers = key.modifiers .. "alt"
-        end
-        if keyControl then
-            if key.modifiers ~= "" then
-                key.modifiers = key.modifiers .. " + "
-            end
-            key.modifiers = key.modifiers .. "control"
-        end
-    end
-
     if key.name == "del" then
         if key.state == "pressed" then
             keyInfoText = "Delete selected notes"
@@ -3134,23 +3110,6 @@ local function handleKeyEvent(keyEvent)
         end
         handled = true
     end
-    if (key.name == "mousescaleleft" or key.name == "mousescaleright") then
-        if key.state == "pressed" then
-            local steps = 1
-            if key.name == "mousescaleleft" then
-                steps = steps * -1
-            end
-            if #noteSelection > 0 then
-                steps = steps / math.abs(steps)
-                if #noteSelection == 1 and key.resetScale then
-                    changeSizeSelectedNotes(1)
-                end
-                changeSizeSelectedNotes(steps, true)
-                keyInfoText = "Change note length of selected notes"
-            end
-        end
-        handled = true
-    end
     if (key.name == "left" or key.name == "right") then
         if key.state == "pressed" then
             local steps = 1
@@ -3300,16 +3259,30 @@ local function handleXypad(val)
                     val.x = xypadpos.nx
                 end
                 if xypadpos.x - math.floor(val.x + xypadpos.threshold) > 0 then
-                    handleKeyEvent({ name = "mousescaleleft", resetScale = xypadpos.resetscale })
-                    xypadpos.x = xypadpos.x - 1
-                    xypadpos.scaling = true
-                    xypadpos.resetscale = false
+                    if #noteSelection == 1 and xypadpos.resetScale then
+                        changeSizeSelectedNotes(1)
+                    end
+                    for d = math.abs(xypadpos.x - math.floor(val.x + xypadpos.threshold)), 1, -1 do
+                        if changeSizeSelectedNotes(-d, true) then
+                            xypadpos.x = xypadpos.x - d
+                            xypadpos.scaling = true
+                            xypadpos.resetscale = false
+                            break
+                        end
+                    end
                 end
                 if xypadpos.x - math.floor(val.x - xypadpos.threshold) < 0 then
-                    handleKeyEvent({ name = "mousescaleright", resetScale = xypadpos.resetscale })
-                    xypadpos.x = xypadpos.x + 1
-                    xypadpos.scaling = true
-                    xypadpos.resetscale = false
+                    if #noteSelection == 1 and xypadpos.resetScale then
+                        changeSizeSelectedNotes(1)
+                    end
+                    for d = math.abs(xypadpos.x - math.floor(val.x - xypadpos.threshold)), 1, -1 do
+                        if changeSizeSelectedNotes(d, true) then
+                            xypadpos.x = xypadpos.x + d
+                            xypadpos.scaling = true
+                            xypadpos.resetscale = false
+                            break
+                        end
+                    end
                 end
                 if not xypadpos.scaling then
                     --when note wasn't scaled, then switch to move mode
