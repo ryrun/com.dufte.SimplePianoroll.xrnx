@@ -4,9 +4,9 @@
 
 ## Video on Youtube
 
-Showing version 0.7 in action:
+Showing version 2.0 in action:
 
-[<img src="https://img.youtube.com/vi/zUIjN6Wwrgs/0.jpg" width="300">](https://www.youtube.com/watch?v=zUIjN6Wwrgs)
+[<img src="https://img.youtube.com/vi/EZJcpnwaY1I/0.jpg" width="300">](https://www.youtube.com/watch?v=EZJcpnwaY1I)
 
 ## Thread on official Renoise forum
 
