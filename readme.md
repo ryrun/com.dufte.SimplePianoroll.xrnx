@@ -1,6 +1,6 @@
 # Simple Pianoroll Tool for Renoise
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pianorollanim.gif?raw=true" width="754">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pianorollanim2.gif?raw=true" width="754">
 
 ## Video on Youtube
 
