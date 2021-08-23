@@ -15,6 +15,8 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 ## Features
 
 * Piano roll workflow (inspired by FL piano roll)
+* Mouse support for note moving, sclaing and drawing
+* Mouse scroll support for scrolling through grid
 * It supports Renoise's native HDPI support
 * Polyphony support (automatically adds note column, if needed)
 * Note preview via Renoise inbuild OSC Server
@@ -47,7 +49,7 @@ It supports to render different note column effects.
 
 ## Important
 
-* Dragging notes is currently not possible, please use the arrow keys.
+* To improve mouse handline, please disable mouse warping in Renoise preferences
 * You draw notes with the instrument, which is used in the current track of the pattern. In empty track's, it's using the current selected one.
 
 ## Install
@@ -76,7 +78,7 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 |Add notes|Double click on a free spot in the grid<br>Alternative: While hold <kbd>alt</kbd> its just one click|
 |Remove notes|Double click on a note<br>Alternative: While hold <kbd>alt</kbd> its just one click|
 |Select a note|Click on a note.<br>*It also reads out note length and velocity of the selected note and set these values for new notes.*|
-|Move one note or multiple notes|Click and drag a note. It will also move all selected notes, too.|
+|Move one note or multiple notes|Click and drag a note. It will also move all selected notes, too. Hold <kbd>ctrl</kbd> during moving will force note movement in scale.|
 |Change note length|Click and hold the end of a note and move the mouse to the right. It will also increase the length of all selected notes. To decrease the note length, just move the mouse to the left| 
 |Preview a note|Click on a note or use preview mode|
 |Play from mouse cursor|While holding <kbd>ctrl</kbd>, click on a freespot in the grid|

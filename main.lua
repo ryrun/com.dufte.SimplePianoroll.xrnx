@@ -133,8 +133,6 @@ local gridWidth
 local gridHeight
 local pianoKeyWidth
 
-local gridSpace = {}
-
 --colors
 local colorDefault = { 0, 0, 0 }
 local colorDisabled = { 55, 55, 55 }
