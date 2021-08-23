@@ -15,7 +15,7 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 ## Features
 
 * Piano roll workflow (inspired by FL piano roll)
-* Mouse support for note moving, sclaing and drawing
+* Mouse support for note moving, scaling and drawing
 * Mouse scroll support for scrolling through grid
 * It supports Renoise's native HDPI support
 * Polyphony support (automatically adds note column, if needed)
