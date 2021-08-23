@@ -1485,6 +1485,7 @@ function noteClick(x, y, c, released)
         xypadpos.nlen = note_data.len
         xypadpos.scalemode = false
         xypadpos.scaling = false
+        xypadpos.resetscale = false
         xypadpos.notemode = true
         xypadpos.time = os.clock()
         triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true)
