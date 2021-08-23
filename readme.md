@@ -49,7 +49,7 @@ It supports to render different note column effects.
 
 ## Important
 
-* To improve mouse handline, please disable mouse warping in Renoise preferences
+* To improve mouse handling, please disable mouse warping in Renoise preferences
 * You draw notes with the instrument, which is used in the current track of the pattern. In empty track's, it's using the current selected one.
 
 ## Install
