@@ -221,6 +221,8 @@ local xypadpos = {
     ny = 0, --note y pos
     nlen = 0, --note len
     time = 0, --click time
+    lastx = 0,
+    lasty = 0,
     notemode = false, --when note mode is active
     scalemode = false, --is scale mode active?
     scaling = false, --are we scaling currently?
@@ -932,7 +934,6 @@ local function moveSelectedNotes(steps)
             break
         end
     end
-    refreshPianoRollNeeded = true
     return state
 end
 
@@ -988,7 +989,6 @@ local function transposeSelectedNotes(transpose, keepscale)
         note_column.note_value = noteSelection[key].note
         triggerNoteOfCurrentInstrument(noteSelection[key].note, nil, nil, true)
     end
-    refreshPianoRollNeeded = true
     return ret
 end
 
@@ -1277,7 +1277,6 @@ local function changeSizeSelectedNotes(len, add)
         currentNoteLength = newLen
         refreshControls = true
     end
-    refreshPianoRollNeeded = true
     return ret
 end
 
@@ -1696,7 +1695,7 @@ function pianoGridClick(x, y, released)
 end
 
 --enable a note button, when its visible, set correct length of the button
-local function enableNoteButton(column, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, noteoff, ghost)
+local function enableNoteButton(column, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, noteoff, ghost, quickRefresh)
     local isOnStep = false
     --save highest and lowest note
     if lowestNote == nil then
@@ -1855,7 +1854,7 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                     if noteSelection[key].line == current_note_line and noteSelection[key].column == column then
                         color = colorNoteSelected
                         --show note hints, when option is enabled
-                        if preferences.showNoteHints.value then
+                        if preferences.showNoteHints.value and not quickRefresh then
                             --set select color to key sub state button
                             vbw["ks" .. current_note_rowIndex].color = color
                             vbw["ks" .. current_note_rowIndex].visible = true
@@ -2290,7 +2289,7 @@ local function refreshPlaybackPosIndicator()
 end
 
 --reset pianoroll and enable notes
-local function fillPianoRoll()
+local function fillPianoRoll(quickRefresh)
     local track = song.selected_track
     local steps = song.selected_pattern.number_of_lines
     local lineValues = song.selected_pattern_track.lines
@@ -2314,17 +2313,18 @@ local function fillPianoRoll()
     noteButtons = {}
     noteOnStep = {}
     noteData = {}
-    usedNoteIndices = {}
-    defaultColor = {}
-    currentInstrument = nil
-    refreshPianoRollNeeded = false
-    lastStepOn = nil
 
-    --show keyboard info bar
-    vbw["key_state_panel"].visible = preferences.enableKeyInfo.value
-
-    --set scale for piano roll
-    setScaleHighlighting()
+    if not quickRefresh then
+        currentInstrument = nil
+        usedNoteIndices = {}
+        defaultColor = {}
+        lastStepOn = nil
+        refreshPianoRollNeeded = false
+        --show keyboard info bar
+        vbw["key_state_panel"].visible = preferences.enableKeyInfo.value
+        --set scale for piano roll
+        setScaleHighlighting()
+    end
 
     --check if stepoffset is inside the grid, also setup stepSlider if needed
     if steps > gridWidth then
@@ -2362,7 +2362,7 @@ local function fillPianoRoll()
             end
 
             --only reset buttons on first column
-            if c == 1 and stepString then
+            if c == 1 and stepString and not quickRefresh then
                 local bar = calculateBarBeat(s + stepOffset)
 
                 for y = 1, gridHeight do
@@ -2430,7 +2430,7 @@ local function fillPianoRoll()
                     currentInstrument = note_column.instrument_value + 1
                 end
                 if current_note ~= nil then
-                    enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost)
+                    enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost, quickRefresh)
                 end
                 lastColumnWithNotes = c
                 current_note = note
@@ -2454,7 +2454,7 @@ local function fillPianoRoll()
                 if not current_note_step and s then
                     current_note_step = current_note_line - stepOffset
                 end
-                enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, true, current_note_ghost)
+                enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, true, current_note_ghost, quickRefresh)
                 current_note = nil
                 current_note_len = 0
                 current_note_rowIndex = nil
@@ -2469,8 +2469,13 @@ local function fillPianoRoll()
         end
         --pattern end, no note off, enable last note
         if current_note ~= nil then
-            enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost)
+            enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost, quickRefresh)
         end
+    end
+
+    --nothing else to do in quick refresh
+    if quickRefresh then
+        return
     end
 
     --hide non used elements of the piano roll grid
@@ -3239,6 +3244,7 @@ end
 
 --handle xy pad events
 local function handleXypad(val)
+    local quickRefresh = false
     if xypadpos.notemode then
         --mouse dragging and scaling
         local scalethreshold = xypadpos.scalethreshold
@@ -3272,6 +3278,7 @@ local function handleXypad(val)
                             xypadpos.x = xypadpos.x - d
                             xypadpos.scaling = true
                             xypadpos.resetscale = false
+                            quickRefresh = true
                             break
                         end
                     end
@@ -3285,6 +3292,7 @@ local function handleXypad(val)
                             xypadpos.x = xypadpos.x + d
                             xypadpos.scaling = true
                             xypadpos.resetscale = false
+                            quickRefresh = true
                             break
                         end
                     end
@@ -3301,41 +3309,45 @@ local function handleXypad(val)
             end
             --when move note is active, move notes
             if not xypadpos.scalemode then
-                if xypadpos.x - math.floor(val.x + xypadpos.threshold) > 0 then
+                if xypadpos.x - math.floor(val.x + xypadpos.threshold) > 0 and math.floor(val.x + xypadpos.threshold) ~= xypadpos.lastx then
                     for d = math.abs(xypadpos.x - math.floor(val.x + xypadpos.threshold)), 1, -1 do
                         if moveSelectedNotes(-d) then
+                            quickRefresh = true
                             xypadpos.x = xypadpos.x - d
                             break
                         end
                     end
-                end
-                if xypadpos.x - math.floor(val.x - xypadpos.threshold) < 0 then
+                    xypadpos.lastx = math.floor(val.x + xypadpos.threshold)
+                elseif xypadpos.x - math.floor(val.x - xypadpos.threshold) < 0 and math.floor(val.x - xypadpos.threshold) ~= xypadpos.lastx then
                     for d = math.abs(xypadpos.x - math.floor(val.x - xypadpos.threshold)), 1, -1 do
                         if moveSelectedNotes(d) then
+                            quickRefresh = true
                             xypadpos.x = xypadpos.x + d
                             break
                         end
                     end
+                    xypadpos.lastx = math.floor(val.x - xypadpos.threshold)
                 end
                 if xypadpos.y - math.floor(val.y + xypadpos.threshold) > 0 then
                     for d = math.abs(xypadpos.y - math.floor(val.y + xypadpos.threshold)), 1, -1 do
                         if transposeSelectedNotes(-d, keyControl or keyRControl) then
+                            quickRefresh = true
                             xypadpos.y = xypadpos.y - d
                             break
                         end
                     end
-                end
-                if xypadpos.y - math.floor(val.y - xypadpos.threshold) < 0 then
+                elseif xypadpos.y - math.floor(val.y - xypadpos.threshold) < 0 then
                     for d = math.abs(xypadpos.y - math.floor(val.y - xypadpos.threshold)), 1, -1 do
                         if transposeSelectedNotes(d, keyControl or keyRControl) then
+                            quickRefresh = true
                             xypadpos.y = xypadpos.y + d
                             break
                         end
                     end
                 end
             end
-            if refreshPianoRollNeeded then
-                fillPianoRoll()
+            if quickRefresh then
+                fillPianoRoll(true)
             end
         end
     else
