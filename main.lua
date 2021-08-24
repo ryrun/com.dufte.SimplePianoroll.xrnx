@@ -241,6 +241,14 @@ local stepPreview = false
 --table to save last playing note for qwerty playing
 local lastKeyboardNote = {}
 
+--force value between and inclusive min/max values
+function math.clamp(val, min, max)
+    if min > max then
+        min, max = max, min
+    end
+    return math.max(min, math.min(max, val))
+end
+
 --show some text in Renoise status bar
 local function showStatus(status)
     app:show_status("Simple Pianoroll: " .. status)
@@ -3370,12 +3378,16 @@ local function main_function()
         gridSpacing = preferences.gridSpacing.value
         gridMargin = preferences.gridMargin.value
         gridWidth = preferences.gridWidth.value
-        gridHeight = preferences.gridHeight.value
         pianoKeyWidth = preferences.gridStepSizeW.value * 3
+
+        --limit gridHeight
+        preferences.gridHeight.value = math.clamp(preferences.gridHeight.value, 16, 64)
+        gridHeight = preferences.gridHeight.value
 
         lastStepOn = nil
         stepOffset = 0
-        noteOffset = 28 -- default offset
+        noteOffset = math.clamp(28, 0, 119 - gridHeight) -- default offset
+
         currentGhostTrack = nil
         noteButtons = {}
         --reset lowest / highest note for center view
@@ -4029,7 +4041,7 @@ local function main_function()
                                         vb:valuebox {
                                             steps = { 1, 2 },
                                             min = 16,
-                                            max = 256,
+                                            max = 64,
                                             bind = preferences.gridHeight,
                                         },
                                     },
