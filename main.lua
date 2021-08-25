@@ -46,7 +46,6 @@ local defaultPreferences = {
     applyVelocityColorShading = true,
     velocityColorShadingAmount = 0.4,
     followPlayCursor = true,
-    showNoteHints = true,
     scaleHighlightingType = 2,
     keyForSelectedScale = 1,
     addNoteOffToEmptyNoteColumns = true,
@@ -91,7 +90,6 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     rowHighlightingAmount = defaultPreferences.rowHighlightingAmount,
     --misc settings
     followPlayCursor = defaultPreferences.followPlayCursor,
-    showNoteHints = defaultPreferences.showNoteHints,
     addNoteOffToEmptyNoteColumns = defaultPreferences.addNoteOffToEmptyNoteColumns,
     addNoteColumnsIfNeeded = defaultPreferences.addNoteColumnsIfNeeded,
     keyboardStyle = defaultPreferences.keyboardStyle,
@@ -1696,6 +1694,10 @@ end
 
 --enable a note button, when its visible, set correct length of the button
 local function enableNoteButton(column, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, noteoff, ghost, quickRefresh)
+    local l_song = song
+    local l_song_transport = l_song.transport
+    local l_song_st = l_song.selected_track
+    local l_vbw = vbw
     local isOnStep = false
     --save highest and lowest note
     if lowestNote == nil then
@@ -1735,13 +1737,13 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
         }
 
         --only process notes on steps and visibility, when there is a valid row
-        if vbw["row" .. current_note_rowIndex] then
+        if l_vbw["row" .. current_note_rowIndex] then
             --fill noteOnStep not just note start, also the full length
             if noteOnStepIndex then
                 local len = current_note_len - 1
                 --when cut value is set, then change note length to 1
-                if (song.selected_track.volume_column_visible and current_note_vel >= 192 and current_note_vel <= 207) or
-                        (song.selected_track.panning_column_visible and current_note_pan >= 192 and current_note_pan <= 207)
+                if (l_song_st.volume_column_visible and current_note_vel >= 192 and current_note_vel <= 207) or
+                        (l_song_st.panning_column_visible and current_note_pan >= 192 and current_note_pan <= 207)
                 then
                     len = 0
                 end
@@ -1760,9 +1762,9 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                             vel = current_note_vel,
                             ghst = ghost
                         })
-                        if song.transport.playing
-                                and song.transport.playback_pos.line - stepOffset == noteOnStepIndex + i
-                                and song.selected_pattern_index == song.sequencer:pattern(song.transport.playback_pos.sequence) then
+                        if l_song_transport.playing
+                                and l_song_transport.playback_pos.line - stepOffset == noteOnStepIndex + i
+                                and l_song.selected_pattern_index == l_song.sequencer:pattern(l_song_transport.playback_pos.sequence) then
                             isOnStep = true
                         end
                     end
@@ -1785,18 +1787,16 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
             --display note button, note len is greater 0 and when the row is visible
             if current_note_len > 0 then
                 local color = {}
-                local temp = "noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ",true)"
-                local temp2 = "noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ",false)"
                 local spaceWidth = 0
                 local retriggerWidth = 0
                 local delayWidth = 0
                 local cutValue = 0
 
-                if song.selected_track.volume_column_visible and current_note_end_vel >= 192 and current_note_end_vel <= 207 then
+                if l_song_st.volume_column_visible and current_note_end_vel >= 192 and current_note_end_vel <= 207 then
                     cutValue = current_note_end_vel
                 end
 
-                if song.selected_track.volume_column_visible then
+                if l_song_st.volume_column_visible then
                     if current_note_vel >= 192 and current_note_vel <= 207 then
                         current_note_len = 1
                         cutValue = current_note_vel
@@ -1811,7 +1811,7 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                     end
                 end
 
-                if song.selected_track.panning_column_visible then
+                if l_song_st.panning_column_visible then
                     if current_note_pan >= 192 and current_note_pan <= 207 then
                         current_note_len = 1
                         cutValue = current_note_pan
@@ -1827,8 +1827,8 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
 
                 if delayWidth > 0 then
                     delayWidth = delayWidth - 416
-                    if delayWidth < song.transport.tpl then
-                        delayWidth = math.floor(0xff / song.transport.tpl * delayWidth)
+                    if delayWidth < l_song_transport.tpl then
+                        delayWidth = math.floor(0xff / l_song_transport.tpl * delayWidth)
                     else
                         delayWidth = 0
                     end
@@ -1836,8 +1836,8 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
 
                 if cutValue > 0 then
                     cutValue = cutValue - 192
-                    if cutValue < song.transport.tpl then
-                        buttonWidth = buttonWidth - ((gridStepSizeW - gridSpacing) / 100 * (100 / song.transport.tpl * (song.transport.tpl - cutValue)))
+                    if cutValue < l_song_transport.tpl then
+                        buttonWidth = buttonWidth - ((gridStepSizeW - gridSpacing) / 100 * (100 / l_song_transport.tpl * (l_song_transport.tpl - cutValue)))
                     end
                 end
 
@@ -1850,41 +1850,8 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                 else
                     color = colorNoteVelocity(current_note_vel)
                 end
-                for key in pairs(noteSelection) do
-                    if noteSelection[key].line == current_note_line and noteSelection[key].column == column then
-                        color = colorNoteSelected
-                        --show note hints, when option is enabled
-                        if preferences.showNoteHints.value and not quickRefresh then
-                            --set select color to key sub state button
-                            vbw["ks" .. current_note_rowIndex].color = color
-                            vbw["ks" .. current_note_rowIndex].visible = true
-                            vbw["kss" .. current_note_rowIndex].visible = false
-                            for i = 1, 3, 1 do
-                                local idx
-                                for t = 1, 4, 1 do
-                                    if t == 1 then
-                                        --octaves
-                                        idx = (current_note_rowIndex + (i * 12))
-                                    elseif t == 2 then
-                                        --octaves
-                                        idx = (current_note_rowIndex - (i * 12))
-                                    elseif t == 3 then
-                                        --fifths
-                                        idx = (current_note_rowIndex + (i * 12) - 5)
-                                    elseif t == 4 then
-                                        --fifths
-                                        idx = (current_note_rowIndex - (i * 12) + 7)
-                                    end
-                                    if vbw["ks" .. idx] ~= nil and not vbw["ks" .. idx].visible then
-                                        vbw["ks" .. idx].color = colorKeyWhite
-                                        vbw["ks" .. idx].visible = true
-                                        vbw["kss" .. idx].visible = false
-                                    end
-                                end
-                            end
-                        end
-                        break
-                    end
+                if noteInSelection(noteData[current_note_index]) ~= nil then
+                    color = colorNoteSelected
                 end
 
                 local btn = vb:row {
@@ -1896,7 +1863,7 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                     spaceWidth = (gridStepSizeW * (current_note_step - 1)) - (gridSpacing * (current_note_step - 2))
                 end
 
-                if song.selected_track.delay_column_visible and current_note_dly > 0 then
+                if l_song_st.delay_column_visible and current_note_dly > 0 then
                     delayWidth = math.max(current_note_dly, delayWidth)
                 end
 
@@ -1918,7 +1885,7 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                 --recalc retrigger value, reset it to 0, when greater than tpl
                 if retriggerWidth > 0 then
                     retriggerWidth = retriggerWidth - 432
-                    if retriggerWidth >= song.transport.tpl then
+                    if retriggerWidth >= l_song_transport.tpl then
                         retriggerWidth = 0
                     end
                 end
@@ -1928,8 +1895,8 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                     current_note_string = ""
                 end
 
-                vbw["b" .. current_note_index] = nil
-                vbw["bbb" .. current_note_index] = nil
+                l_vbw["b" .. current_note_index] = nil
+                l_vbw["bbb" .. current_note_index] = nil
                 btn:add_child(
                         vb:row {
                             id = "bbb" .. current_note_index,
@@ -1940,8 +1907,8 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                                 visible = true,
                                 color = color,
                                 text = current_note_string,
-                                notifier = loadstring(temp),
-                                pressed = loadstring(temp2)
+                                notifier = loadstring("noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ",true)"),
+                                pressed = loadstring("noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ",false)")
                             },
                         }
                 );
@@ -1951,13 +1918,13 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                 end
 
                 table.insert(noteButtons[current_note_rowIndex], btn);
-                vbw["row" .. current_note_rowIndex]:add_child(btn)
+                l_vbw["row" .. current_note_rowIndex]:add_child(btn)
 
                 --display retrigger effect
                 if retriggerWidth > 0 then
                     spaceWidth = math.max(spaceWidth, 4)
-                    local rTpl = song.transport.tpl - 1
-                    if cutValue > 0 and cutValue < song.transport.tpl and current_note_len == 1 then
+                    local rTpl = l_song_transport.tpl - 1
+                    if cutValue > 0 and cutValue < l_song_transport.tpl and current_note_len == 1 then
                         rTpl = rTpl + (cutValue - 0xf)
                     end
                     for spc = retriggerWidth, rTpl, retriggerWidth do
@@ -1966,7 +1933,7 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                             spacing = -gridSpacing,
                         }
                         retrigger:add_child(vb:space {
-                            width = spaceWidth + (((gridStepSizeW - 3) / song.transport.tpl) * (spc + 1)),
+                            width = spaceWidth + (((gridStepSizeW - 3) / l_song_transport.tpl) * (spc + 1)),
                         });
                         retrigger:add_child(
                                 vb:row {
@@ -1983,7 +1950,7 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                                 }
                         );
                         table.insert(noteButtons[current_note_rowIndex], retrigger);
-                        vbw["row" .. current_note_rowIndex]:add_child(retrigger)
+                        l_vbw["row" .. current_note_rowIndex]:add_child(retrigger)
                     end
                 end
             end
@@ -2290,9 +2257,12 @@ end
 
 --reset pianoroll and enable notes
 local function fillPianoRoll(quickRefresh)
-    local track = song.selected_track
-    local steps = song.selected_pattern.number_of_lines
-    local lineValues = song.selected_pattern_track.lines
+    local l_vbw = vbw
+    local l_song = song
+    local track = l_song.selected_track
+    local steps = l_song.selected_pattern.number_of_lines
+    local lpb = l_song.transport.lpb
+    local lineValues = l_song.selected_pattern_track.lines
     local columns = track.visible_note_columns
     local stepsCount = math.min(steps, gridWidth)
     local noffset = noteOffset - 1
@@ -2304,7 +2274,7 @@ local function fillPianoRoll(quickRefresh)
     for y = 1, gridHeight do
         if noteButtons[y] then
             for key in pairs(noteButtons[y]) do
-                vbw["row" .. y]:remove_child(noteButtons[y][key])
+                l_vbw["row" .. y]:remove_child(noteButtons[y][key])
             end
         end
     end
@@ -2321,7 +2291,7 @@ local function fillPianoRoll(quickRefresh)
         lastStepOn = nil
         refreshPianoRollNeeded = false
         --show keyboard info bar
-        vbw["key_state_panel"].visible = preferences.enableKeyInfo.value
+        l_vbw["key_state_panel"].visible = preferences.enableKeyInfo.value
         --set scale for piano roll
         setScaleHighlighting()
     end
@@ -2362,13 +2332,13 @@ local function fillPianoRoll(quickRefresh)
             end
 
             --only reset buttons on first column
-            if c == 1 and stepString and not quickRefresh then
-                local bar = calculateBarBeat(s + stepOffset)
+            if not quickRefresh and c == 1 and stepString then
+                local bar = calculateBarBeat(s + stepOffset, false, lpb)
 
                 for y = 1, gridHeight do
                     local ystring = tostring(y)
                     local index = stepString .. "_" .. ystring
-                    local p = vbw["p" .. index]
+                    local p = l_vbw["p" .. index]
                     local color = colorWhiteKey[bar % 2 + 1]
                     p.active = true
                     blackKey = not noteInScale((y + noffset) % 12)
@@ -2381,13 +2351,13 @@ local function fillPianoRoll(quickRefresh)
                         p.color = color
                         --refresh step indicator
                         if y == 1 then
-                            vbw["s" .. stepString].active = true
-                            vbw["s" .. stepString].color = colorStepOff
+                            l_vbw["s" .. stepString].active = true
+                            l_vbw["s" .. stepString].color = colorStepOff
                         end
                         --refresh keyboad
                         if s == 1 then
                             local idx = "k" .. ystring
-                            local key = vbw[idx]
+                            local key = l_vbw[idx]
                             if preferences.keyboardStyle.value == 2 then
                                 defaultColor[idx] = colorList
                             elseif noteInScale((y + noffset) % 12, true) then
@@ -2410,8 +2380,8 @@ local function fillPianoRoll(quickRefresh)
                                 key.text = ""
                             end
                             --reset key sub state button color
-                            vbw["ks" .. ystring].visible = false
-                            vbw["kss" .. ystring].visible = true
+                            l_vbw["ks" .. ystring].visible = false
+                            l_vbw["kss" .. ystring].visible = true
                         end
                     end
                 end
@@ -2483,23 +2453,23 @@ local function fillPianoRoll(quickRefresh)
         temp = shadeColor(defaultColor["p1_" .. y], 0.4)
         for i = steps + 1, gridWidth do
             if y == 1 then
-                vbw["s" .. i].active = false
-                vbw["s" .. i].color = colorDisabled
+                l_vbw["s" .. i].active = false
+                l_vbw["s" .. i].color = colorDisabled
             end
-            vbw["p" .. i .. "_" .. y].color = temp
+            l_vbw["p" .. i .. "_" .. y].color = temp
         end
     end
 
     --quirk? i need to visible and hide a note button to get fast vertical scroll
-    if not vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible then
-        vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible = true
-        vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible = false
+    if not l_vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible then
+        l_vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible = true
+        l_vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible = false
     end
 
     --switch to instrument which is used in pattern
-    if currentInstrument and currentInstrument ~= song.selected_instrument_index then
-        if currentInstrument < #song.instruments then
-            song.selected_instrument_index = currentInstrument
+    if currentInstrument and currentInstrument ~= l_song.selected_instrument_index then
+        if currentInstrument < #l_song.instruments then
+            l_song.selected_instrument_index = currentInstrument
         end
     end
 
@@ -2510,21 +2480,21 @@ local function fillPianoRoll(quickRefresh)
 
     --enable buttons when something selected
     if #noteSelection > 0 then
-        vbw.note_vel_humanize.active = vbw.note_vel_clear.active
-        vbw.note_pan_humanize.active = vbw.note_pan_clear.active
-        vbw.note_dly_humanize.active = vbw.note_dly_clear.active
+        l_vbw.note_vel_humanize.active = vbw.note_vel_clear.active
+        l_vbw.note_pan_humanize.active = vbw.note_pan_clear.active
+        l_vbw.note_dly_humanize.active = vbw.note_dly_clear.active
     else
-        vbw.note_vel_humanize.active = false
-        vbw.note_pan_humanize.active = false
-        vbw.note_dly_humanize.active = false
+        l_vbw.note_vel_humanize.active = false
+        l_vbw.note_pan_humanize.active = false
+        l_vbw.note_dly_humanize.active = false
     end
 
     --render ghost notes, only when index is not the current track
-    if currentGhostTrack and currentGhostTrack ~= song.selected_track_index and song:track(currentGhostTrack).type == renoise.Track.TRACK_TYPE_SEQUENCER then
-        vbw.ghosttrackswitch.active = true
+    if currentGhostTrack and currentGhostTrack ~= l_song.selected_track_index and l_song:track(currentGhostTrack).type == renoise.Track.TRACK_TYPE_SEQUENCER then
+        l_vbw.ghosttrackswitch.active = true
         ghostTrack(currentGhostTrack)
     else
-        vbw.ghosttrackswitch.active = false
+        l_vbw.ghosttrackswitch.active = false
     end
 
     --refresh playback pos indicator
@@ -2570,12 +2540,6 @@ local function appIdleEvent()
         if (keyState["shift"] == "pressed" and keyShift == false) or (keyState["shift"] == "released" and keyShift == true) then
             keyShift = not keyShift
             refreshControls = true
-        end
-
-        --when selection
-        if rectangleSelect ~= nil then
-            selectRectangle(rectangleSelect[1], rectangleSelect[2], rectangleSelect[3], rectangleSelect[4])
-            rectangleSelect = nil
         end
 
         --refresh pianoroll, when needed
@@ -3346,16 +3310,18 @@ local function handleXypad(val)
                     end
                 end
             end
-            if quickRefresh then
-                fillPianoRoll(true)
-            end
+
         end
     else
         if xypadpos.x ~= math.floor(val.x) or xypadpos.y ~= math.floor(val.y) then
             xypadpos.x = math.floor(val.x)
             xypadpos.y = math.floor(val.y)
-            rectangleSelect = { xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny }
+            selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny)
+            quickRefresh = true
         end
+    end
+    if quickRefresh then
+        fillPianoRoll(true)
     end
 end
 
@@ -4296,14 +4262,6 @@ local function main_function()
                                         },
                                         vb:text {
                                             text = "Follow play cursor, when enabled in Renoise",
-                                        },
-                                    },
-                                    vb:row {
-                                        vb:checkbox {
-                                            bind = preferences.showNoteHints,
-                                        },
-                                        vb:text {
-                                            text = "Show octaves and fifths of selected notes",
                                         },
                                     },
                                     vb:row {
