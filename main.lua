@@ -1587,10 +1587,6 @@ end
 --will be called, when an empty grid button was clicked
 function pianoGridClick(x, y, released)
     local index = tostring(x) .. "_" .. tostring(y)
-    --ignore clicks outside pattern
-    if x + stepOffset > song.selected_pattern.number_of_lines then
-        return
-    end
 
     if not released and not checkMode("preview") and not keyControl then
         --remove and add the clicked button, disable all buttons in the row, so the xypad in the background can receive the click event
@@ -1614,6 +1610,16 @@ function pianoGridClick(x, y, released)
         end
         --disabled button need to be enabled again outside this call when just one click was triggered, use idle function
         refreshPianoRollNeeded = true
+        return
+    end
+
+    --ignore clicks outside pattern
+    if x + stepOffset > song.selected_pattern.number_of_lines then
+        --deselect selected notes
+        if #noteSelection > 0 then
+            noteSelection = {}
+            refreshPianoRollNeeded = true
+        end
         return
     end
 
