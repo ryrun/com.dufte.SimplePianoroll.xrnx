@@ -212,6 +212,8 @@ local keyShift = false
 local keyRShift = false
 local keyAlt = false
 local lastKeyPress
+
+--mouse handling vars
 local xypadpos = {
     x = 0, --click pos x
     y = 0, --click pos y
@@ -1593,6 +1595,10 @@ function pianoGridClick(x, y, released)
         --remove/add trick from joule: https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
         for i = 1, gridWidth do
             vbw["p" .. i .. "_" .. y].active = false
+            --prevent accidentally note drawing "twins", when piano grid buttons overlap
+            if vbw["p" .. i .. "_" .. y + 1] then
+                vbw["p" .. i .. "_" .. y + 1].active = false
+            end
         end
         vbw["ppp" .. index]:remove_child(vbw["p" .. index])
         vbw["ppp" .. index]:add_child(vbw["p" .. index])
