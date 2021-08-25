@@ -224,6 +224,7 @@ local xypadpos = {
     notemode = false, --when note mode is active
     scalemode = false, --is scale mode active?
     scaling = false, --are we scaling currently?
+    duplicate = false, --for duplicate shortcut state var
     resetscale = false,
     threshold = 0.1, --change how the
     pickuptiming = 0.025, --time before trackpad reacts
@@ -1176,7 +1177,7 @@ local function chopSelectedNotes()
 end
 
 --duplicate content
-local function duplicateSelectedNotes()
+local function duplicateSelectedNotes(noOffset)
     local offset
     local column
     --first notes first
@@ -1193,7 +1194,13 @@ local function duplicateSelectedNotes()
     --disable edit mode to prevent side effects
     song.transport.edit_mode = false
     --
-    setUndoDescription("Duplicate notes to right ...")
+    --remove offset to duplicate on same pos
+    if noOffset then
+        offset = 0
+        setUndoDescription("Duplicate notes ...")
+    else
+        setUndoDescription("Duplicate notes to right ...")
+    end
     --go through selection
     for key in pairs(noteSelection) do
         --search for valid column
@@ -1492,6 +1499,7 @@ function noteClick(x, y, c, released)
         xypadpos.scaling = false
         xypadpos.resetscale = false
         xypadpos.notemode = true
+        xypadpos.duplicate = keyShift
         xypadpos.time = os.clock()
         triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true)
         return
@@ -3274,6 +3282,10 @@ local function handleXypad(val)
             --when move note is active, move notes
             if not xypadpos.scalemode then
                 if xypadpos.x - math.floor(val.x + xypadpos.threshold) > 0 and math.floor(val.x + xypadpos.threshold) ~= xypadpos.lastx then
+                    if xypadpos.duplicate then
+                        duplicateSelectedNotes(0)
+                        xypadpos.duplicate = false
+                    end
                     for d = math.abs(xypadpos.x - math.floor(val.x + xypadpos.threshold)), 1, -1 do
                         if moveSelectedNotes(-d) then
                             quickRefresh = true
@@ -3283,6 +3295,10 @@ local function handleXypad(val)
                     end
                     xypadpos.lastx = math.floor(val.x + xypadpos.threshold)
                 elseif xypadpos.x - math.floor(val.x - xypadpos.threshold) < 0 and math.floor(val.x - xypadpos.threshold) ~= xypadpos.lastx then
+                    if xypadpos.duplicate then
+                        duplicateSelectedNotes(0)
+                        xypadpos.duplicate = false
+                    end
                     for d = math.abs(xypadpos.x - math.floor(val.x - xypadpos.threshold)), 1, -1 do
                         if moveSelectedNotes(d) then
                             quickRefresh = true
@@ -3293,6 +3309,10 @@ local function handleXypad(val)
                     xypadpos.lastx = math.floor(val.x - xypadpos.threshold)
                 end
                 if xypadpos.y - math.floor(val.y + xypadpos.threshold) > 0 then
+                    if xypadpos.duplicate then
+                        duplicateSelectedNotes(0)
+                        xypadpos.duplicate = false
+                    end
                     for d = math.abs(xypadpos.y - math.floor(val.y + xypadpos.threshold)), 1, -1 do
                         if transposeSelectedNotes(-d, keyControl or keyRControl) then
                             quickRefresh = true
@@ -3301,6 +3321,10 @@ local function handleXypad(val)
                         end
                     end
                 elseif xypadpos.y - math.floor(val.y - xypadpos.threshold) < 0 then
+                    if xypadpos.duplicate then
+                        duplicateSelectedNotes(0)
+                        xypadpos.duplicate = false
+                    end
                     for d = math.abs(xypadpos.y - math.floor(val.y - xypadpos.threshold)), 1, -1 do
                         if transposeSelectedNotes(d, keyControl or keyRControl) then
                             quickRefresh = true
