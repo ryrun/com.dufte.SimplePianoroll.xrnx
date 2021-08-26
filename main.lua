@@ -3272,7 +3272,7 @@ local function handleXypad(val)
         if xypadpos.time > os.clock() - xypadpos.pickuptiming then
             xypadpos.x = math.floor(val.x)
             xypadpos.y = math.floor(val.y)
-            if val.x - xypadpos.nx - (xypadpos.nlen - 1) > scalethreshold then
+            if val.x - xypadpos.nx - (xypadpos.nlen - 1) > scalethreshold and not xypadpos.duplicate then
                 xypadpos.scalemode = true
             end
         else
