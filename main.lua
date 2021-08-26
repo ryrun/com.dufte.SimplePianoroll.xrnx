@@ -1445,7 +1445,7 @@ local function selectRectangle(x, y, x2, y2)
                 if note >= nmin and note <= nmax then
                     local note_data = noteData[tostring(s) .. "_" .. tostring(noteValue2GridRowOffset(note)) .. "_" .. tostring(c)]
                     --note found?
-                    if note_data ~= nil then
+                    if note_data ~= nil and s + note_data.len - 1 <= smax then
                         --add to selection table
                         table.insert(noteSelection, note_data)
                     end
