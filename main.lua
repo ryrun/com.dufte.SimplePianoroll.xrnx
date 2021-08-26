@@ -385,7 +385,7 @@ local function checkMode(mode)
         end
     end
     if mode == "pen" then
-        if penMode or (not keyControl and not keyShift and keyAlt) then
+        if (penMode and not keyAlt) or (not keyControl and not keyShift and keyAlt and not penMode) then
             return true
         end
     end
@@ -1507,7 +1507,7 @@ function noteClick(x, y, c, released)
         xypadpos.scaling = false
         xypadpos.resetscale = false
         xypadpos.notemode = true
-        xypadpos.duplicate = keyShift
+        xypadpos.duplicate = keyShift and not checkMode("pen")
         xypadpos.time = os.clock()
         triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true)
         return
