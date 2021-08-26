@@ -905,8 +905,9 @@ local function moveSelectedNotes(steps)
             return a.line > b.line
         end)
     end
-    --disable edit mode to prevent side effects
+    --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
+    song.transport.follow_player = false
     --
     setUndoDescription("Move notes ...")
     --go through selection
@@ -954,8 +955,9 @@ local function transposeSelectedNotes(transpose, keepscale)
             return a.note < b.note
         end)
     end
-    --disable edit mode to prevent side effects
+    --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
+    song.transport.follow_player = false
     --
     setUndoDescription("Transpose notes ...")
     --go through selection
@@ -998,8 +1000,9 @@ local function pasteNotesFromClipboard()
     local column
     local noteoffset = 0
     local lineoffset = 0
-    --disable edit mode to prevent side effects
+    --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
+    song.transport.follow_player = false
     --describe undo for renoise
     setUndoDescription("Paste notes from clipboard ...")
     if #pasteCursor > 0 then
@@ -1193,8 +1196,9 @@ local function duplicateSelectedNotes(noOffset)
     end)
     --get offset
     offset = (noteSelection[1].line + noteSelection[1].len) - offset
-    --disable edit mode to prevent side effects
+    --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
+    song.transport.follow_player = false
     --
     --remove offset to duplicate on same pos
     if noOffset then
@@ -1240,8 +1244,9 @@ local function changeSizeSelectedNotes(len, add)
     table.sort(noteSelection, function(a, b)
         return a.line < b.line
     end)
-    --disable edit mode to prevent side effects
+    --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
+    song.transport.follow_player = false
     --
     setUndoDescription("Change note lengths ...")
     --go through selection
@@ -1306,8 +1311,9 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
     else
         setUndoDescription("Change note properties ...")
     end
-    --disable edit mode to prevent side effects
+    --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
+    song.transport.follow_player = false
     --go through selection
     for key in pairs(noteSelection) do
         local selection = noteSelection[key]
