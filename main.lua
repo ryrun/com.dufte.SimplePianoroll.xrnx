@@ -2813,6 +2813,33 @@ local function handleKeyEvent(keyEvent)
         end
         handled = true
     end
+    if key.name == "f1" then
+        if key.state == "pressed" then
+            keyInfoText = "Select mode"
+            penMode = false
+            audioPreviewMode = false
+            refreshControls = true
+        end
+        handled = true
+    end
+    if key.name == "f2" then
+        if key.state == "pressed" then
+            keyInfoText = "Pen mode"
+            penMode = true
+            audioPreviewMode = false
+            refreshControls = true
+        end
+        handled = true
+    end
+    if key.name == "f3" then
+        if key.state == "pressed" then
+            keyInfoText = "Audio preview mode"
+            penMode = false
+            audioPreviewMode = true
+            refreshControls = true
+        end
+        handled = true
+    end
     if key.name == "i" and key.modifiers == "shift" then
         if key.state == "pressed" then
             if #noteSelection > 0 then
@@ -3630,7 +3657,7 @@ local function main_function()
                     vb:button {
                         text = "↖",
                         width = 24,
-                        tooltip = "Select mode",
+                        tooltip = "Select mode (F1)",
                         id = "mode_select",
                         notifier = function()
                             penMode = false
@@ -3641,7 +3668,7 @@ local function main_function()
                     vb:button {
                         bitmap = "Icons/SampleEd_DrawTool.bmp",
                         width = 24,
-                        tooltip = "Pen mode",
+                        tooltip = "Pen mode (F2)",
                         id = "mode_pen",
                         notifier = function()
                             penMode = true
@@ -3652,7 +3679,7 @@ local function main_function()
                     vb:button {
                         bitmap = "Icons/Browser_AudioFile.bmp",
                         width = 24,
-                        tooltip = "Audio preview mode",
+                        tooltip = "Audio preview mode (F3)",
                         id = "mode_audiopreview",
                         notifier = function()
                             audioPreviewMode = true

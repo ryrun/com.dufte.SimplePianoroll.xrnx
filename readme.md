@@ -103,6 +103,9 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 
 |Keys|Description|
 |---|---|
+|<kbd>F1</kbd>|Switch to select tool|
+|<kbd>F2</kbd>|Switch to pen tool|
+|<kbd>F3</kbd>|Switch to audio preview tool|
 |<kbd>up</kbd>|Move in the grid upwards|
 |<kbd>down</kbd>|Move in the grid downwards|
 |<kbd>left</kbd>|Move in the grid leftwards|
