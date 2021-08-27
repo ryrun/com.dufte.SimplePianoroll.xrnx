@@ -1345,10 +1345,10 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
             end
         end
         if pan ~= nil then
-            if tostring(vel) == "h" then
-                if note.panning_volume <= 127 then
-                    note.panning_volume = randomizeValue(note.panning_volume, 2, 1, 127)
-                    selection.pan = note.panning_volume
+            if tostring(pan) == "h" then
+                if note.panning_value <= 127 then
+                    note.panning_value = randomizeValue(note.panning_value, 2, 1, 127)
+                    selection.pan = note.panning_value
                 end
             else
                 note.panning_string = toRenoiseHex(pan)
