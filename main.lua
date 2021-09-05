@@ -1493,11 +1493,23 @@ function noteClick(x, y, c, released)
 
     --mouse drag support, very very hacky
     if not released and not checkMode("preview") then
-        --remove and add the clicked button, disable underlaying buttons, so the xypad in the background can receive the click event
-        --remove/add trick from joule: https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
+        --disable grid buttons, so these doesn't receive click events
         for i = 1, gridWidth do
             vbw["p" .. i .. "_" .. y].active = false
         end
+        --disable all notes on step, so other notes doesn't receive click events
+        for i = 1, note_data.len do
+            local ns = noteOnStep[x + (i - 1)]
+            if ns ~= nil and #ns > 0 then
+                for i = 1, #ns do
+                    if ns[i] ~= nil and ns[i].note == note_data.note and ns[i].index ~= index then
+                        vbw["b" .. ns[i].index].active = false
+                    end
+                end
+            end
+        end
+        --remove and add the clicked button, disable underlaying buttons, so the xypad in the background can receive the click event
+        --remove/add trick from joule: https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
         vbw["bbb" .. index]:remove_child(vbw["b" .. index])
         vbw["bbb" .. index]:add_child(vbw["b" .. index])
         xypadpos.nx = x
@@ -1510,6 +1522,7 @@ function noteClick(x, y, c, released)
         xypadpos.duplicate = keyShift and not checkMode("pen")
         xypadpos.time = os.clock()
         triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true)
+        --refreshPianoRollNeeded = true
         return
     end
 
