@@ -4748,9 +4748,8 @@ tool:add_keybinding {
     end
 }
 
---add global key shortcut
 tool:add_keybinding {
-    name = "Global:Simple Pianoroll:Open current plugin instrument editor ...",
+    name = "Global:Simple Pianoroll:Open/Close current plugin instrument editor ...",
     invoke = function()
         if not currentInstrument then
             currentInstrument = song.selected_instrument_index
@@ -4761,5 +4760,16 @@ tool:add_keybinding {
                 plugin.plugin_device.external_editor_visible = not plugin.plugin_device.external_editor_visible
             end
         end
+    end
+}
+
+tool:add_keybinding {
+    name = "Global:Simple Pianoroll:Close piano roll and switch to mixer view ...",
+    invoke = function()
+        if windowObj and windowObj.visible then
+            windowObj:close()
+        end
+        app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_MIXER
+        app.window.active_lower_frame = renoise.ApplicationWindow.LOWER_FRAME_TRACK_DSPS
     end
 }
