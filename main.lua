@@ -785,6 +785,16 @@ local function refreshNoteControls()
     else
         vbw.trackname.text = track.name
     end
+    if track.solo_state then
+        vbw.solo.color = colorStepOn
+    else
+        vbw.solo.color = colorDefault
+    end
+    if track.mute_state == 3 then
+        vbw.mute.color = colorStepOn
+    else
+        vbw.mute.color = colorDefault
+    end
 end
 
 --simple note trigger
@@ -2686,6 +2696,8 @@ local function appNewDoc()
     song.selected_track.delay_column_visible_observable:add_notifier(obsColumnRefresh)
     song.selected_track.name_observable:add_notifier(obsColumnRefresh)
     song.selected_track.color_observable:add_notifier(obsColumnRefresh)
+    song.selected_track.mute_state_observable:add_notifier(obsColumnRefresh)
+    song.selected_track.solo_state_observable:add_notifier(obsColumnRefresh)
     --transport observable
     song.transport.loop_pattern_observable:add_notifier(obsColumnRefresh)
     song.transport.playing_observable:add_notifier(obsColumnRefresh)
@@ -4425,36 +4437,65 @@ local function main_function()
             },
             vb:row {
                 vb:column {
-                    vb:space {
-                        height = 15,
-                    },
                     vb:row {
                         noteSlider,
                         vb:column {
-                            vb:row {
-                                spacing = -pianoKeyWidth,
-                                width = pianoKeyWidth,
-                                margin = -1,
-                                vb:space {
-                                    width = pianoKeyWidth + 1,
-                                },
-                                vb:button {
-                                    id = "trackcolor",
-                                    height = gridStepSizeH + 3,
-                                    color = { 44, 77, 66 },
-                                    active = false,
+                            vb:column {
+                                spacing = -1,
+                                vb:row {
+                                    spacing = -pianoKeyWidth,
                                     width = pianoKeyWidth,
+                                    margin = -1,
+                                    vb:space {
+                                        width = pianoKeyWidth + 1,
+                                    },
+                                    vb:button {
+                                        id = "trackcolor",
+                                        height = gridStepSizeH + 3,
+                                        color = { 44, 77, 66 },
+                                        active = false,
+                                        width = pianoKeyWidth,
+                                    },
+                                    vb:text {
+                                        id = "trackname",
+                                        height = gridStepSizeH + 3,
+                                        width = pianoKeyWidth,
+                                        font = "mono",
+                                        align = "center",
+                                        style = "strong",
+                                    },
+                                    vb:space {
+                                        width = pianoKeyWidth,
+                                    },
                                 },
-                                vb:text {
-                                    id = "trackname",
-                                    height = gridStepSizeH + 3,
-                                    width = pianoKeyWidth,
-                                    font = "mono",
-                                    align = "center",
-                                    style = "strong",
-                                },
-                                vb:space {
-                                    width = pianoKeyWidth,
+                                vb:row {
+                                    spacing = -4,
+                                    vb:button {
+                                        id = "mute",
+                                        text = "M",
+                                        tooltip = "Mute/Unmute current track",
+                                        height = gridStepSizeH,
+                                        width = pianoKeyWidth / 2 + 2,
+                                        notifier = function()
+                                            if song.selected_track.mute_state == 3 then
+                                                song.selected_track:unmute()
+                                            else
+                                                song.selected_track:mute()
+                                            end
+                                            refreshControls = true
+                                        end
+                                    },
+                                    vb:button {
+                                        id = "solo",
+                                        text = "S",
+                                        height = gridStepSizeH,
+                                        tooltip = "Solo/Unsolo current track",
+                                        width = pianoKeyWidth / 2 + 2,
+                                        notifier = function()
+                                            song.selected_track:solo()
+                                            refreshControls = true
+                                        end
+                                    },
                                 },
                             },
                             vb:row {
@@ -4518,7 +4559,7 @@ local function main_function()
                 vb:column {
                     vb:column {
                         vb:space {
-                            height = 3,
+                            height = 5,
                         },
                         playCursor,
                         vb:space {
