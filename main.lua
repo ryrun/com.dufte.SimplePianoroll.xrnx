@@ -4751,7 +4751,7 @@ tool:add_keybinding {
 tool:add_keybinding {
     name = "Global:Simple Pianoroll:Open/Close current plugin instrument editor ...",
     invoke = function()
-        if not currentInstrument then
+        if not currentInstrument or not (windowObj and windowObj.visible) then
             currentInstrument = song.selected_instrument_index
         end
         if currentInstrument and song.instruments[currentInstrument] then
