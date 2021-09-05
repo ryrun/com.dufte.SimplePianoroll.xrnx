@@ -4758,6 +4758,8 @@ tool:add_keybinding {
             local plugin = song.instruments[currentInstrument].plugin_properties
             if plugin and plugin.plugin_device and plugin.plugin_device.external_editor_available then
                 plugin.plugin_device.external_editor_visible = not plugin.plugin_device.external_editor_visible
+            else
+                showStatus("Current instrument doesn't have an editor window.")
             end
         end
     end
