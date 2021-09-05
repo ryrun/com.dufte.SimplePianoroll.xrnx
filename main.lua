@@ -4772,6 +4772,6 @@ tool:add_keybinding {
             windowObj:close()
         end
         app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_MIXER
-        app.window.active_lower_frame = renoise.ApplicationWindow.LOWER_FRAME_TRACK_DSPS
+        --app.window.active_lower_frame = renoise.ApplicationWindow.LOWER_FRAME_TRACK_DSPS
     end
 }
