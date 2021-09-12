@@ -1901,6 +1901,13 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                 end
                 if noteInSelection(noteData[current_note_index]) ~= nil then
                     color = colorNoteSelected
+                    if #noteSelection == 1 then
+                        currentNotePan = current_note_pan
+                        currentNoteVelocity = current_note_vel
+                        currentNoteEndVelocity = current_note_end_vel
+                        currentNoteDelay = current_note_dly
+                        refreshControls = true
+                    end
                 end
 
                 local btn = vb:row {
