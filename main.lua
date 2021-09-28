@@ -58,6 +58,7 @@ local defaultPreferences = {
     outOfNoteScaleShadingAmount = 0.2,
     azertyMode = false,
     scrollWheelSpeed = 2,
+    clickAreaSizeForScaling = 50,
 }
 
 --tool preferences
@@ -105,6 +106,8 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     azertyMode = defaultPreferences.azertyMode,
     --scroll wheel settings
     scrollWheelSpeed = defaultPreferences.scrollWheelSpeed,
+    --clicksize from 1 block
+    clickAreaSizeForScaling = defaultPreferences.clickAreaSizeForScaling,
 }
 tool.preferences = preferences
 
@@ -230,8 +233,7 @@ local xypadpos = {
     resetscale = false,
     threshold = 0.1, --change how the
     pickuptiming = 0.025, --time before trackpad reacts
-    scalethreshold = 0.2, --0.3 = 70% of the last part of a note in grid will trigger scale mode
-    scalethresholdshortnotes = 0.4, --increase the value abit, so it still can be moved easily
+    scalethreshold = 0.2,
 }
 
 --pen mode
@@ -1525,6 +1527,7 @@ function noteClick(x, y, c, released)
         xypadpos.nx = x
         xypadpos.ny = y
         xypadpos.nlen = note_data.len
+        xypadpos.scalethreshold = note_data.len - 1 + 1 * ((100 - preferences.clickAreaSizeForScaling.value) / 100)
         xypadpos.scalemode = false
         xypadpos.scaling = false
         xypadpos.resetscale = false
@@ -3296,15 +3299,11 @@ local function handleXypad(val)
     local quickRefresh = false
     if xypadpos.notemode then
         --mouse dragging and scaling
-        local scalethreshold = xypadpos.scalethreshold
         local max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
-        if xypadpos.nlen == 1 then
-            scalethreshold = xypadpos.scalethresholdshortnotes
-        end
         if xypadpos.time > os.clock() - xypadpos.pickuptiming then
             xypadpos.x = math.floor(val.x)
             xypadpos.y = math.floor(val.y)
-            if val.x - xypadpos.nx - (xypadpos.nlen - 1) > scalethreshold and not xypadpos.duplicate then
+            if val.x - xypadpos.nx > xypadpos.scalethreshold and not xypadpos.duplicate then
                 xypadpos.scalemode = true
             end
         else
@@ -4406,6 +4405,23 @@ local function main_function()
                                             min = 1,
                                             max = 10,
                                             bind = preferences.keyInfoTime,
+                                            tostring = function(v)
+                                                return string.format("%i", v)
+                                            end,
+                                            tonumber = function(v)
+                                                return tonumber(v)
+                                            end
+                                        },
+                                    },
+                                    vb:row {
+                                        vb:text {
+                                            text = "Click area size for scaling (%):",
+                                        },
+                                        vb:valuebox {
+                                            steps = { 1, 2 },
+                                            min = 1,
+                                            max = 75,
+                                            bind = preferences.clickAreaSizeForScaling,
                                             tostring = function(v)
                                                 return string.format("%i", v)
                                             end,
