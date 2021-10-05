@@ -59,6 +59,7 @@ local defaultPreferences = {
     azertyMode = false,
     scrollWheelSpeed = 2,
     clickAreaSizeForScaling = 50,
+    disableKeyHandler = false,
 }
 
 --tool preferences
@@ -108,6 +109,8 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     scrollWheelSpeed = defaultPreferences.scrollWheelSpeed,
     --clicksize from 1 block
     clickAreaSizeForScaling = defaultPreferences.clickAreaSizeForScaling,
+    --disable key disableKeyHandler
+    disableKeyHandler = defaultPreferences.disableKeyHandler,
 }
 tool.preferences = preferences
 
@@ -2751,6 +2754,10 @@ local function handleKeyEvent(keyEvent)
     local isModifierKey = false
     local key = {}
 
+    if preferences.disableKeyHandler.value then
+        return false
+    end
+
     --convert number keys from azerty to qwerty
     if preferences.azertyMode.value then
         key = azertyMode(keyEvent)
@@ -4378,6 +4385,14 @@ local function main_function()
                                         },
                                         vb:text {
                                             text = "Automatically add NoteOff's in empty note columns",
+                                        },
+                                    },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.disableKeyHandler,
+                                        },
+                                        vb:text {
+                                            text = "Disable all keyboard shortcuts",
                                         },
                                     },
                                     vb:row {
