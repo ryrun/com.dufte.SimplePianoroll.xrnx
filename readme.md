@@ -84,9 +84,9 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 |Play from mouse cursor|While holding <kbd>ctrl</kbd>, click on a freespot in the grid|
 |Play all notes from mouse cursor|While holding <kbd>ctrl + shift</kbd>, click and hold on a freespot in the grid|
 |Select multiple individual notes|While holding <kbd>ctrl</kbd>, click on a note|
-|Deselect individual notes in selection|While holding <kbd>ctrl + alt</kbd>, click on a selected note|
+|Deselect individual notes in selection|While holding <kbd>ctrl</kbd>, click on a selected note|
 |Deselect notes|Click on a free spot in the grid|
-|Rectangle select notes|Click and hold left mouse button on a free spot, it starts to select all notes inside mouse position and start point
+|Rectangle select notes|Click and hold left mouse button on a free spot, it starts to select all notes inside mouse position and start point. When you hold <kbd>shift</kbd>, the notes will be added to the current selection.
 |Select all notes with a specific note value|Hold <kbd>ctrl</kbd> and click one of the notes in the piano keyboard control
 |Select all notes with on a specific position|Hold <kbd>ctrl</kbd> and click one of the position indicators above the piano grid
 |Duplicate selected notes|Hold <kbd>shift</kbd> and start dragging the selection to duplicate the notes

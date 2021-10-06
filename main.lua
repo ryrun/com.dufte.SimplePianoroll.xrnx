@@ -201,7 +201,6 @@ local currentScale = 2
 local currentScaleOffset = 1
 
 local noteSelection = {}
-local rectangleSelect = nil
 local lowestNote
 local highestNote
 
@@ -1439,7 +1438,8 @@ local function highlightNoteRow(row, highlighted)
     end
 end
 
-local function selectRectangle(x, y, x2, y2)
+--add notes from a rectangle to the selection
+local function selectRectangle(x, y, x2, y2, addToSelection)
     local lineValues = song.selected_pattern_track.lines
     local columns = song.selected_track.visible_note_columns
     local smin = math.min(x, x2)
@@ -1447,7 +1447,9 @@ local function selectRectangle(x, y, x2, y2)
     local nmin = gridOffset2NoteValue(math.min(y, y2))
     local nmax = gridOffset2NoteValue(math.max(y, y2))
     --remove current note selection
-    noteSelection = {}
+    if not addToSelection then
+        noteSelection = {}
+    end
     --loop through columns
     for c = 1, columns do
         --loop through lines as steps
@@ -1460,7 +1462,7 @@ local function selectRectangle(x, y, x2, y2)
                 if note >= nmin and note <= nmax then
                     local note_data = noteData[tostring(s) .. "_" .. tostring(noteValue2GridRowOffset(note)) .. "_" .. tostring(c)]
                     --note found?
-                    if note_data ~= nil and s + note_data.len - 1 <= smax then
+                    if note_data ~= nil and s + note_data.len - 1 <= smax and not noteInSelection(note_data) then
                         --add to selection table
                         table.insert(noteSelection, note_data)
                     end
@@ -1591,7 +1593,7 @@ function noteClick(x, y, c, released)
                 if not checkMode("preview") then
                     local deselect = false
                     --clear selection, when ctrl is not holded
-                    if not keyControl then
+                    if not keyControl and not keyShift then
                         if #noteSelection > 0 then
                             for i = 1, #noteSelection do
                                 if noteSelection[i].line == note_data.line and noteSelection[i].len == note_data.len and noteSelection[i].column == note_data.column then
@@ -1600,7 +1602,7 @@ function noteClick(x, y, c, released)
                             end
                         end
                         noteSelection = {}
-                    elseif #noteSelection > 0 and keyControl and keyAlt then
+                    elseif #noteSelection > 0 and keyControl then
                         --check if the note is in selection, then just deselect
                         for i = 1, #noteSelection do
                             if noteSelection[i].line == note_data.line and noteSelection[i].len == note_data.len and noteSelection[i].column == note_data.column then
@@ -1611,7 +1613,7 @@ function noteClick(x, y, c, released)
                         end
                     end
                     --when note was not deselected, then add this note to selection
-                    if not deselect then
+                    if not deselect and not noteInSelection(note_data) then
                         table.insert(noteSelection, note_data)
                     end
                     refreshPianoRollNeeded = true
@@ -1740,7 +1742,9 @@ function pianoGridClick(x, y, released)
             end
             --deselect selected notes
             if #noteSelection > 0 then
-                noteSelection = {}
+                if not keyShift then
+                    noteSelection = {}
+                end
                 refreshPianoRollNeeded = true
             end
         end
@@ -3423,7 +3427,7 @@ local function handleXypad(val)
         if xypadpos.x ~= math.floor(val.x) or xypadpos.y ~= math.floor(val.y) then
             xypadpos.x = math.floor(val.x)
             xypadpos.y = math.floor(val.y)
-            selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny)
+            selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, keyShift)
             quickRefresh = true
         end
     end
