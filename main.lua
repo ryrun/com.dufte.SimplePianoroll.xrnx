@@ -2663,6 +2663,27 @@ local function lineNotifier()
     refreshPianoRollNeeded = true
 end
 
+--number of lines refresh, fix missing note off, when pattern length get increased
+local function numberOfLinesNotifier()
+    --fix missing note off
+    local lineValues = song.selected_pattern_track.lines
+    for key in pairs(noteData) do
+        local note_data = noteData[key]
+        if not note_data.noteoff then
+            local linVal = lineValues[note_data.line + note_data.len]
+            if linVal then
+                local note_column = linVal:note_column(note_data.column)
+                if note_column.note_value == 121 then
+                    note_column.note_value = 120
+                    note_data.noteoff = true
+                end
+            end
+        end
+    end
+    refreshTimeline = true
+    obsPianoRefresh()
+end
+
 --on each new song, reset pianoroll and setup locals
 local function appNewDoc()
     --close window, when a new song was opened
@@ -2681,12 +2702,18 @@ local function appNewDoc()
         if not song.selected_pattern:has_line_notifier(lineNotifier) then
             song.selected_pattern:add_line_notifier(lineNotifier)
         end
+        if not song.selected_pattern.number_of_lines_observable:has_notifier(numberOfLinesNotifier) then
+            song.selected_pattern.number_of_lines_observable:add_notifier(numberOfLinesNotifier)
+        end
         pasteCursor = {}
         stepSlider.value = 0
         refreshPianoRollNeeded = true
         refreshTimeline = true
     end)
     song.selected_pattern:add_line_notifier(lineNotifier)
+    if not song.selected_pattern.number_of_lines_observable:has_notifier(numberOfLinesNotifier) then
+        song.selected_pattern.number_of_lines_observable:add_notifier(numberOfLinesNotifier)
+    end
     song.selected_track_observable:add_notifier(function()
         if song.selected_track.type ~= renoise.Track.TRACK_TYPE_SEQUENCER and windowObj and windowObj.visible then
             badTrackError()
@@ -2702,11 +2729,6 @@ local function appNewDoc()
         end
         pasteCursor = {}
         refreshControls = true
-    end)
-    --add some observers for the current track
-    song.selected_pattern.number_of_lines_observable:add_notifier(function()
-        refreshTimeline = true
-        obsPianoRefresh()
     end)
     song.selected_track.volume_column_visible_observable:add_notifier(obsColumnRefresh)
     song.selected_track.panning_column_visible_observable:add_notifier(obsColumnRefresh)
