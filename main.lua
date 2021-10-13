@@ -60,6 +60,7 @@ local defaultPreferences = {
     scrollWheelSpeed = 2,
     clickAreaSizeForScaling = 50,
     disableKeyHandler = false,
+    shadingType = 1,
 }
 
 --tool preferences
@@ -87,6 +88,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     --velocity rendering
     applyVelocityColorShading = defaultPreferences.applyVelocityColorShading,
     velocityColorShadingAmount = defaultPreferences.velocityColorShadingAmount,
+    shadingType = defaultPreferences.shadingType,
     --highlighting playing note rows
     highlightEntireLineOfPlayingNote = defaultPreferences.highlightEntireLineOfPlayingNote,
     rowHighlightingAmount = defaultPreferences.rowHighlightingAmount,
@@ -363,11 +365,24 @@ local function shadeColor(color, shade)
     }
 end
 
+--alphablend colors
+local function alphablendColors(color1, color2, alphablend)
+    return {
+        color2[1] * (1 - alphablend) + color1[1] * alphablend,
+        color2[2] * (1 - alphablend) + color1[2] * alphablend,
+        color2[3] * (1 - alphablend) + color1[3] * alphablend
+    }
+end
+
 --simple function for coloring velocity
 local function colorNoteVelocity(vel)
     local color = {}
     if vel < 0x7f and preferences.applyVelocityColorShading.value then
-        color = shadeColor(colorNote, preferences.velocityColorShadingAmount.value / 0x7f * (0x7f - vel))
+        if preferences.shadingType.value == 2 then
+            color = alphablendColors(colorBaseGridColor, colorNote, preferences.velocityColorShadingAmount.value / 0x7f * (0x7f - vel))
+        else
+            color = shadeColor(colorNote, preferences.velocityColorShadingAmount.value / 0x7f * (0x7f - vel))
+        end
     else
         color = colorNote
     end
@@ -4205,7 +4220,20 @@ local function main_function()
                                     },
                                     vb:row {
                                         vb:text {
-                                            text = "Shading amount:",
+                                            text = "Shading mode type:",
+                                        },
+                                        vb:popup {
+                                            width = 110,
+                                            items = {
+                                                "Shading",
+                                                "Alpha blending",
+                                            },
+                                            bind = preferences.shadingType,
+                                        },
+                                    },
+                                    vb:row {
+                                        vb:text {
+                                            text = "Shading / alpha blending amount:",
                                         },
                                         vb:valuebox {
                                             steps = { 0.01, 0.1 },
