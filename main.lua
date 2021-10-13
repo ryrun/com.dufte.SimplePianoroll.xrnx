@@ -1363,6 +1363,9 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
             else
                 note.volume_string = toRenoiseHex(vel)
                 selection.vel = vel
+                if selection.len == 1 then
+                    selection.end_vel = vel
+                end
             end
         end
         if end_vel ~= nil then
@@ -1371,6 +1374,7 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
                 note_end.volume_string = toRenoiseHex(selection.end_vel)
             else
                 note.volume_string = toRenoiseHex(selection.end_vel)
+                selection.vel = end_vel
             end
         end
         if pan ~= nil then
