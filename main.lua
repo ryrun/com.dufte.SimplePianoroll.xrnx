@@ -175,6 +175,7 @@ local blockloopidx
 
 --main flag for refreshing pianoroll
 local refreshPianoRollNeeded = false
+local blockLineModifier = false
 local refreshControls = false
 local refreshTimeline = false
 
@@ -230,6 +231,7 @@ local xypadpos = {
     time = 0, --click time
     lastx = 0,
     lasty = 0,
+    lastval = nil,
     notemode = false, --when note mode is active
     scalemode = false, --is scale mode active?
     scaling = false, --are we scaling currently?
@@ -1412,8 +1414,12 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
             note.instrument_value = currentInstrument - 1
         end
     end
-    addMissingNoteOffForColumns()
-    refreshPianoRollNeeded = true
+    if tostring(special) == "quick" then
+        --no refresh, important for mouse dragging feature
+    else
+        addMissingNoteOffForColumns()
+        refreshPianoRollNeeded = true
+    end
     return true
 end
 
@@ -1556,6 +1562,7 @@ function noteClick(x, y, c, released)
         xypadpos.scaling = false
         xypadpos.resetscale = false
         xypadpos.notemode = true
+        xypadpos.lastval = nil
         xypadpos.duplicate = keyShift and not checkMode("pen")
         xypadpos.time = os.clock()
         triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true)
@@ -2355,6 +2362,12 @@ local function fillPianoRoll(quickRefresh)
     local temp
     local lastColumnWithNotes
 
+    --disable line modifier block and force a quick refresh
+    if blockLineModifier then
+        quickRefresh = true
+        blockLineModifier = false
+    end
+
     --remove old notes
     for y = 1, gridHeight do
         if noteButtons[y] then
@@ -2679,7 +2692,10 @@ end
 
 --will be called when something in the pattern will be changed
 local function lineNotifier()
-    refreshPianoRollNeeded = true
+    --when global flag is set, then piano roll refresh on specific events will be blocked
+    if not blockLineModifier then
+        refreshPianoRollNeeded = true
+    end
 end
 
 --number of lines refresh, fix missing note off, when pattern length get increased
@@ -3370,29 +3386,35 @@ local function handleXypad(val)
                     val.x = xypadpos.nx
                 end
                 if xypadpos.x - math.floor(val.x + xypadpos.threshold) > 0 then
+                    blockLineModifier = true
+                    quickRefresh = true
                     if #noteSelection == 1 and xypadpos.resetscale then
+                        --when a new len will be drawn, then reset len to 1
                         changeSizeSelectedNotes(1)
+                        --and remove delay
+                        changePropertiesOfSelectedNotes(nil, nil, 0, nil, "quick")
                     end
                     for d = math.abs(xypadpos.x - math.floor(val.x + xypadpos.threshold)), 1, -1 do
                         if changeSizeSelectedNotes(-d, true) then
                             xypadpos.x = xypadpos.x - d
                             xypadpos.scaling = true
                             xypadpos.resetscale = false
-                            quickRefresh = true
                             break
                         end
                     end
                 end
                 if xypadpos.x - math.floor(val.x - xypadpos.threshold) < 0 then
+                    blockLineModifier = true
+                    quickRefresh = true
                     if #noteSelection == 1 and xypadpos.resetscale then
                         changeSizeSelectedNotes(1)
+                        changePropertiesOfSelectedNotes(nil, nil, 0, nil, "quick")
                     end
                     for d = math.abs(xypadpos.x - math.floor(val.x - xypadpos.threshold)), 1, -1 do
                         if changeSizeSelectedNotes(d, true) then
                             xypadpos.x = xypadpos.x + d
                             xypadpos.scaling = true
                             xypadpos.resetscale = false
-                            quickRefresh = true
                             break
                         end
                     end
@@ -3409,55 +3431,71 @@ local function handleXypad(val)
             end
             --when move note is active, move notes
             if not xypadpos.scalemode then
-                if xypadpos.x - math.floor(val.x + xypadpos.threshold) > 0 and math.floor(val.x + xypadpos.threshold) ~= xypadpos.lastx then
-                    if xypadpos.duplicate then
-                        duplicateSelectedNotes(0)
-                        xypadpos.duplicate = false
-                    end
-                    for d = math.abs(xypadpos.x - math.floor(val.x + xypadpos.threshold)), 1, -1 do
-                        if moveSelectedNotes(-d) then
+                if keyAlt then
+                    if song.selected_track.delay_column_visible then
+                        local val = math.clamp(0, 0xff, math.floor((val.x - xypadpos.x) * 0xff))
+                        if xypadpos.lastval ~= val then
+                            blockLineModifier = true
                             quickRefresh = true
-                            xypadpos.x = xypadpos.x - d
-                            break
+                            changePropertiesOfSelectedNotes(nil, nil, val, nil, "quick")
+                            xypadpos.lastval = val
                         end
                     end
-                    xypadpos.lastx = math.floor(val.x + xypadpos.threshold)
-                elseif xypadpos.x - math.floor(val.x - xypadpos.threshold) < 0 and math.floor(val.x - xypadpos.threshold) ~= xypadpos.lastx then
-                    if xypadpos.duplicate then
-                        duplicateSelectedNotes(0)
-                        xypadpos.duplicate = false
-                    end
-                    for d = math.abs(xypadpos.x - math.floor(val.x - xypadpos.threshold)), 1, -1 do
-                        if moveSelectedNotes(d) then
-                            quickRefresh = true
-                            xypadpos.x = xypadpos.x + d
-                            break
+                else
+                    if xypadpos.x - math.floor(val.x + xypadpos.threshold) > 0 and math.floor(val.x + xypadpos.threshold) ~= xypadpos.lastx then
+                        if xypadpos.duplicate then
+                            duplicateSelectedNotes(0)
+                            xypadpos.duplicate = false
                         end
-                    end
-                    xypadpos.lastx = math.floor(val.x - xypadpos.threshold)
-                end
-                if xypadpos.y - math.floor(val.y + xypadpos.threshold) > 0 then
-                    if xypadpos.duplicate then
-                        duplicateSelectedNotes(0)
-                        xypadpos.duplicate = false
-                    end
-                    for d = math.abs(xypadpos.y - math.floor(val.y + xypadpos.threshold)), 1, -1 do
-                        if transposeSelectedNotes(-d, keyControl or keyRControl) then
+                        for d = math.abs(xypadpos.x - math.floor(val.x + xypadpos.threshold)), 1, -1 do
+                            blockLineModifier = true
                             quickRefresh = true
-                            xypadpos.y = xypadpos.y - d
-                            break
+                            if moveSelectedNotes(-d) then
+                                xypadpos.x = xypadpos.x - d
+                                break
+                            end
                         end
-                    end
-                elseif xypadpos.y - math.floor(val.y - xypadpos.threshold) < 0 then
-                    if xypadpos.duplicate then
-                        duplicateSelectedNotes(0)
-                        xypadpos.duplicate = false
-                    end
-                    for d = math.abs(xypadpos.y - math.floor(val.y - xypadpos.threshold)), 1, -1 do
-                        if transposeSelectedNotes(d, keyControl or keyRControl) then
+                        xypadpos.lastx = math.floor(val.x + xypadpos.threshold)
+                    elseif xypadpos.x - math.floor(val.x - xypadpos.threshold) < 0 and math.floor(val.x - xypadpos.threshold) ~= xypadpos.lastx then
+                        if xypadpos.duplicate then
+                            duplicateSelectedNotes(0)
+                            xypadpos.duplicate = false
+                        end
+                        for d = math.abs(xypadpos.x - math.floor(val.x - xypadpos.threshold)), 1, -1 do
+                            blockLineModifier = true
                             quickRefresh = true
-                            xypadpos.y = xypadpos.y + d
-                            break
+                            if moveSelectedNotes(d) then
+                                xypadpos.x = xypadpos.x + d
+                                break
+                            end
+                        end
+                        xypadpos.lastx = math.floor(val.x - xypadpos.threshold)
+                    end
+                    if xypadpos.y - math.floor(val.y + xypadpos.threshold) > 0 then
+                        if xypadpos.duplicate then
+                            duplicateSelectedNotes(0)
+                            xypadpos.duplicate = false
+                        end
+                        for d = math.abs(xypadpos.y - math.floor(val.y + xypadpos.threshold)), 1, -1 do
+                            blockLineModifier = true
+                            quickRefresh = true
+                            if transposeSelectedNotes(-d, keyControl or keyRControl) then
+                                xypadpos.y = xypadpos.y - d
+                                break
+                            end
+                        end
+                    elseif xypadpos.y - math.floor(val.y - xypadpos.threshold) < 0 then
+                        if xypadpos.duplicate then
+                            duplicateSelectedNotes(0)
+                            xypadpos.duplicate = false
+                        end
+                        for d = math.abs(xypadpos.y - math.floor(val.y - xypadpos.threshold)), 1, -1 do
+                            blockLineModifier = true
+                            quickRefresh = true
+                            if transposeSelectedNotes(d, keyControl or keyRControl) then
+                                xypadpos.y = xypadpos.y + d
+                                break
+                            end
                         end
                     end
                 end
