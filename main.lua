@@ -1612,12 +1612,15 @@ function noteClick(x, y, c, released)
         if checkMode("pen") or dbclk then
             --set clicked note as selected for remove function
             if note_data ~= nil then
-                noteSelection = {}
-                table.insert(noteSelection, note_data)
                 if preferences.disableAltClickNoteRemove.value and keyAlt then
                     --dont delete notes, when use altKey in non pen mode
+                    if not noteInSelection(note_data) then
+                        table.insert(noteSelection, note_data)
+                    end
                     refreshPianoRollNeeded = true
                 else
+                    noteSelection = {}
+                    table.insert(noteSelection, note_data)
                     removeSelectedNotes()
                 end
             end
