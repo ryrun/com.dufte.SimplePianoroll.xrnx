@@ -61,6 +61,7 @@ local defaultPreferences = {
     clickAreaSizeForScaling = 50,
     disableKeyHandler = false,
     shadingType = 1,
+    disableAltClickNoteRemove = false,
 }
 
 --tool preferences
@@ -113,6 +114,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     clickAreaSizeForScaling = defaultPreferences.clickAreaSizeForScaling,
     --disable key disableKeyHandler
     disableKeyHandler = defaultPreferences.disableKeyHandler,
+    disableAltClickNoteRemove = defaultPreferences.disableAltClickNoteRemove,
 }
 tool.preferences = preferences
 
@@ -1612,7 +1614,12 @@ function noteClick(x, y, c, released)
             if note_data ~= nil then
                 noteSelection = {}
                 table.insert(noteSelection, note_data)
-                removeSelectedNotes()
+                if preferences.disableAltClickNoteRemove.value and keyAlt then
+                    --dont delete notes, when use altKey in non pen mode
+                    refreshPianoRollNeeded = true
+                else
+                    removeSelectedNotes()
+                end
             end
         else
             if note_data ~= nil then
@@ -3433,12 +3440,12 @@ local function handleXypad(val)
             if not xypadpos.scalemode then
                 if keyAlt then
                     if song.selected_track.delay_column_visible then
-                        local val = math.clamp(0, 0xff, math.floor((val.x - xypadpos.x) * 0xff))
-                        if xypadpos.lastval ~= val then
+                        local v = math.clamp(0, 0xff, math.floor((val.x - xypadpos.x) * 0xff))
+                        if xypadpos.lastval ~= v then
                             blockLineModifier = true
                             quickRefresh = true
-                            changePropertiesOfSelectedNotes(nil, nil, val, nil, "quick")
-                            xypadpos.lastval = val
+                            changePropertiesOfSelectedNotes(nil, nil, v, nil, "quick")
+                            xypadpos.lastval = v
                         end
                     end
                 else
@@ -4481,6 +4488,14 @@ local function main_function()
                                         },
                                         vb:text {
                                             text = "Automatically add NoteOff's in empty note columns",
+                                        },
+                                    },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.disableAltClickNoteRemove,
+                                        },
+                                        vb:text {
+                                            text = "Disable alt key click note remove",
                                         },
                                     },
                                     vb:row {
