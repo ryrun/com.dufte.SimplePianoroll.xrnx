@@ -529,7 +529,7 @@ local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly,
 end
 
 --search for a column, which have enough space for the line and length of a new note
-local function returnColumnWhenEnoughSpaceForNote(line, len)
+local function returnColumnWhenEnoughSpaceForNote(line, len, dly)
     local lineValues = song.selected_pattern_track.lines
     local column
     --note outside the grid?
@@ -556,9 +556,19 @@ local function returnColumnWhenEnoughSpaceForNote(line, len)
         end
         --check for note on in
         for i = line, line + len - 1 do
+            --no note off allowed to overwrite, when delay is set
+            if i == line and dly and dly > 0 and lineValues[i]:note_column(c).note_value == 120 then
+                validSpace = false
+                break
+            end
             if lineValues[i]:note_column(c).note_value < 120 then
                 validSpace = false
+                break
             end
+        end
+        --check for note on with delay, note off is needed
+        if lineValues[line + len - 1]:note_column(c).note_value < 120 and lineValues[line + len - 1]:note_column(c).delay_value > 0 then
+            validSpace = false
         end
         --found valid space, break the loop
         if validSpace then
@@ -948,7 +958,7 @@ local function moveSelectedNotes(steps)
         --remove note
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
         --search for valid column
-        column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line + steps, noteSelection[key].len)
+        column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line + steps, noteSelection[key].len, noteSelection[key].dly)
         if column then
             noteSelection[key].line = noteSelection[key].line + steps
             noteSelection[key].column = column
@@ -1057,7 +1067,7 @@ local function pasteNotesFromClipboard()
     --go through clipboard
     for key in pairs(clipboard) do
         --search for valid column
-        column = returnColumnWhenEnoughSpaceForNote(clipboard[key].line + lineoffset, clipboard[key].len)
+        column = returnColumnWhenEnoughSpaceForNote(clipboard[key].line + lineoffset, clipboard[key].len, clipboard[key].dly)
         if column then
             clipboard[key].column = column
             clipboard[key].line = clipboard[key].line + lineoffset
@@ -1116,7 +1126,7 @@ local function scaleNoteSelection(times)
         --change len and position
         local len = math.max(math.floor(noteSelection[key].len * times), 1)
         local line = math.floor((noteSelection[key].line - first_line) * times) + first_line
-        local column = returnColumnWhenEnoughSpaceForNote(line, len)
+        local column = returnColumnWhenEnoughSpaceForNote(line, len, noteSelection[key].dly)
         if column then
             if noteSelection[key].len == 1 and len > 1 then
                 if toRenoiseHex(noteSelection[key].vel):sub(1, 1) == "C" then
@@ -1174,7 +1184,7 @@ local function chopSelectedNotes()
                 },
             }) do
                 --search for valid column
-                local column = returnColumnWhenEnoughSpaceForNote(v.line, v.len)
+                local column = returnColumnWhenEnoughSpaceForNote(v.line, v.len, noteSelection[key].dly)
                 if not column then
                     showStatus("Not enough space to chop notes here.")
                     return false
@@ -1243,7 +1253,7 @@ local function duplicateSelectedNotes(noOffset)
     --go through selection
     for key in pairs(noteSelection) do
         --search for valid column
-        column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line + offset, noteSelection[key].len)
+        column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line + offset, noteSelection[key].len, noteSelection[key].dly)
         if column then
             noteSelection[key].column = column
             noteSelection[key].line = noteSelection[key].line + offset
@@ -1291,7 +1301,7 @@ local function changeSizeSelectedNotes(len, add)
             newLen = math.max(noteSelection[key].len + len, 1)
         end
         --search for valid column
-        column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line, newLen)
+        column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line, newLen, noteSelection[key].dly)
         if column then
             if noteSelection[key].len == 1 and newLen > 1 then
                 if toRenoiseHex(noteSelection[key].vel):sub(1, 1) == "C" then
@@ -1395,10 +1405,51 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
         if dly ~= nil then
             if tostring(dly) == "h" then
                 if note.delay_value <= 127 then
-                    note.delay_value = randomizeValue(note.delay_value, 2, 0, 127)
+                    dly = randomizeValue(note.delay_value, 2, 0, 127)
                     selection.dly = note.delay_value
+                else
+                    dly = nil
                 end
-            else
+            end
+            if dly then
+                --when a note get a delay value, check if an off is before or no notes, otherwise
+                --search for a new column, because the note before will not be played correctly (bleeding over),
+                --when "hidden" note off is not triggered in correct time
+                if selection.dly == 0 and dly > 0 and selection.line > 1 then
+                    local newColumnNeeded = false
+                    for i = selection.line, 1, -1 do
+                        if lineValues[i]:note_column(selection.column).note_value < 120 then
+                            newColumnNeeded = true
+                            break
+                        elseif lineValues[i]:note_column(selection.column).note_value == 120 then
+                            break
+                        end
+                    end
+                    --when new column is needed move the note
+                    if newColumnNeeded then
+                        --remove note
+                        removeNoteInPattern(selection.column, selection.line, selection.len)
+                        --search for valid column
+                        local column = returnColumnWhenEnoughSpaceForNote(selection.line, selection.len, dly)
+                        if column then
+                            selection.line = selection.line
+                            selection.column = column
+                        end
+                        selection.noteoff = addNoteToPattern(
+                                selection.column,
+                                selection.line,
+                                selection.len,
+                                selection.note,
+                                selection.vel,
+                                selection.end_vel,
+                                selection.pan,
+                                selection.dly,
+                                selection.ghst
+                        )
+                        --refresh note var
+                        note = lineValues[selection.line]:note_column(selection.column)
+                    end
+                end
                 note.delay_string = toRenoiseHex(dly)
                 selection.dly = dly
             end
@@ -1542,8 +1593,8 @@ function noteClick(x, y, c, released)
             vbw["p" .. i .. "_" .. y].active = false
         end
         --disable all notes on step, so other notes doesn't receive click events
-        for i = 1, note_data.len do
-            local ns = noteOnStep[x + (i - 1)]
+        for j = 1, note_data.len do
+            local ns = noteOnStep[x + (j - 1)]
             if ns ~= nil and #ns > 0 then
                 for i = 1, #ns do
                     if ns[i] ~= nil and ns[i].note == note_data.note and ns[i].index ~= index then
@@ -1738,7 +1789,7 @@ function pianoGridClick(x, y, released)
             end
             --disable edit mode because of side effects
             song.transport.edit_mode = false
-            column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength)
+            column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay)
             --no column found
             if column == nil then
                 --no space for this note
@@ -1789,7 +1840,7 @@ function pianoGridClick(x, y, released)
 end
 
 --enable a note button, when its visible, set correct length of the button
-local function enableNoteButton(column, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, noteoff, ghost, quickRefresh)
+local function enableNoteButton(column, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, noteoff, ghost)
     local l_song = song
     local l_song_transport = l_song.transport
     local l_song_st = l_song.selected_track
@@ -2509,7 +2560,7 @@ local function fillPianoRoll(quickRefresh)
                     currentInstrument = note_column.instrument_value + 1
                 end
                 if current_note ~= nil then
-                    enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost, quickRefresh)
+                    enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost)
                 end
                 lastColumnWithNotes = c
                 current_note = note
@@ -2533,7 +2584,7 @@ local function fillPianoRoll(quickRefresh)
                 if not current_note_step and s then
                     current_note_step = current_note_line - stepOffset
                 end
-                enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, true, current_note_ghost, quickRefresh)
+                enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, true, current_note_ghost)
                 current_note = nil
                 current_note_len = 0
                 current_note_rowIndex = nil
@@ -2548,7 +2599,7 @@ local function fillPianoRoll(quickRefresh)
         end
         --pattern end, no note off, enable last note
         if current_note ~= nil then
-            enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost, quickRefresh)
+            enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost)
         end
     end
 
