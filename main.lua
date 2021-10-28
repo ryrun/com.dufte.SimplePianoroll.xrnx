@@ -62,6 +62,7 @@ local defaultPreferences = {
     disableKeyHandler = false,
     shadingType = 1,
     disableAltClickNoteRemove = false,
+    resetVolPanDlyControlOnClick = true,
 }
 
 --tool preferences
@@ -100,6 +101,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     keyboardStyle = defaultPreferences.keyboardStyle,
     keyInfoTime = defaultPreferences.keyInfoTime,
     enableKeyInfo = defaultPreferences.enableKeyInfo,
+    resetVolPanDlyControlOnClick = defaultPreferences.resetVolPanDlyControlOnClick,
     --scale highlighting settings
     scaleHighlightingType = defaultPreferences.scaleHighlightingType,
     keyForSelectedScale = defaultPreferences.keyForSelectedScale,
@@ -1834,6 +1836,14 @@ function pianoGridClick(x, y, released)
                     noteSelection = {}
                 end
                 refreshPianoRollNeeded = true
+            elseif preferences.resetVolPanDlyControlOnClick.value then
+                --nothing selected reset vol, pan and dly
+                currentNoteVelocity = 255
+                currentNotePan = 255
+                currentNoteDelay = 0
+                currentNoteVelocityPreview = 127
+                currentNoteEndVelocity = 255
+                refreshControls = true
             end
         end
     end
@@ -4511,6 +4521,14 @@ local function main_function()
                                             tonumber = function(v)
                                                 return tonumber(v)
                                             end
+                                        },
+                                    },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.resetVolPanDlyControlOnClick,
+                                        },
+                                        vb:text {
+                                            text = "Reset vol, pan and dly controls on grid click, when nothing is selected",
                                         },
                                     },
                                     vb:row {
