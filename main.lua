@@ -1621,7 +1621,7 @@ function noteClick(x, y, c, released)
         xypadpos.duplicate = keyShift and not checkMode("pen")
         xypadpos.time = os.clock()
         triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true)
-        --refreshPianoRollNeeded = true
+        refreshPianoRollNeeded = true
         return
     end
 
