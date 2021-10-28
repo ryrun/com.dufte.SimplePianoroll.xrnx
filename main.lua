@@ -569,7 +569,7 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly)
             end
         end
         --check for note on with delay, note off is needed
-        if lineValues[line + len - 1]:note_column(c).note_value < 120 and lineValues[line + len - 1]:note_column(c).delay_value > 0 then
+        if lineValues[line + len] and lineValues[line + len]:note_column(c).note_value < 120 and lineValues[line + len]:note_column(c).delay_value > 0 then
             validSpace = false
         end
         --found valid space, break the loop
@@ -1256,6 +1256,7 @@ local function duplicateSelectedNotes(noOffset)
     for key in pairs(noteSelection) do
         --search for valid column
         column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line + offset, noteSelection[key].len, noteSelection[key].dly)
+        print(column, noteSelection[key].line + offset, noteSelection[key].len, noteSelection[key].dly)
         if column then
             noteSelection[key].column = column
             noteSelection[key].line = noteSelection[key].line + offset
@@ -3509,6 +3510,14 @@ local function handleXypad(val)
                         if xypadpos.lastval ~= v then
                             blockLineModifier = true
                             quickRefresh = true
+                            if keyShift then
+                                v = math.floor(4 / 0xff * v)
+                                if v == 2 then
+                                    v = 0x55
+                                elseif v > 2 then
+                                    v = 0xaa
+                                end
+                            end
                             changePropertiesOfSelectedNotes(nil, nil, v, nil, "quick")
                             xypadpos.lastval = v
                         end
