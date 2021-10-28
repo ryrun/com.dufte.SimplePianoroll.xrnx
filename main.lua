@@ -3513,7 +3513,7 @@ local function handleXypad(val)
                             blockLineModifier = true
                             quickRefresh = true
                             if keyShift then
-                                v = math.floor(4 / 0xff * v)
+                                v = math.max(math.floor(4 / 0xff * v - 0.75), 0)
                                 if v == 2 then
                                     v = 0x55
                                 elseif v > 2 then
