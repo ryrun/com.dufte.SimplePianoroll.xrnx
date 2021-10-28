@@ -1,3 +1,4 @@
+--luacheck: globals renoise
 --some basic renoise vars for reuse
 local app = renoise.app()
 local tool = renoise.tool()
@@ -217,7 +218,6 @@ local noteData = {}
 local usedNoteIndices = {}
 
 local lastKeyInfoTime
-local lastKeyAction
 
 --key states
 local keyControl = false
@@ -259,7 +259,7 @@ local stepPreview = false
 local lastKeyboardNote = {}
 
 --force value between and inclusive min/max values
-function math.clamp(val, min, max)
+local function clamp(val, min, max)
     if min > max then
         min, max = max, min
     end
@@ -384,7 +384,7 @@ end
 
 --simple function for coloring velocity
 local function colorNoteVelocity(vel)
-    local color = {}
+    local color
     if vel < 0x7f and preferences.applyVelocityColorShading.value then
         if preferences.shadingType.value == 2 then
             color = alphablendColors(colorBaseGridColor, colorNote, preferences.velocityColorShadingAmount.value / 0x7f * (0x7f - vel))
@@ -510,17 +510,13 @@ local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly,
     end
     --set note off?
     if line + len <= song.selected_pattern.number_of_lines then
-        if lineValues[line + len]:note_column(column).note_value < 120 then
-
-        else
+        if lineValues[line + len]:note_column(column).note_value >= 120 then
             noteoff = true
             lineValues[line + len]:note_column(column).note_value = 120
         end
     elseif line + len - 1 == song.selected_pattern.number_of_lines then
         --set note off to the beginning of a pattern for looping purpose
-        if lineValues[1]:note_column(column).note_value < 120 then
-
-        else
+        if lineValues[1]:note_column(column).note_value >= 120 then
             noteoff = true
             lineValues[1]:note_column(column).note_value = 120
         end
@@ -538,7 +534,7 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly)
     local column
     --note outside the grid?
     if line < 1 or line + len - 1 > song.selected_pattern.number_of_lines then
-        return column
+        return nil
     end
     --check if enough space for a new note
     local maxColumns = song.selected_track.visible_note_columns
@@ -859,7 +855,6 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
     if oscClient == nil then
         local protocol, host, port = string.match(preferences.oscConnectionString.value, '([a-zA-Z]+)://([0-9a-zA-Z.]+):([0-9]+)')
         if protocol and host and port then
-            socket_error = nil
             if string.lower(protocol) == "udp" then
                 oscClient, socket_error = renoise.Socket.create_client(host, tonumber(port), renoise.Socket.PROTOCOL_UDP)
             elseif string.lower(protocol) == "tcp" then
@@ -1472,9 +1467,7 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
             note.instrument_value = currentInstrument - 1
         end
     end
-    if tostring(special) == "quick" then
-        --no refresh, important for mouse dragging feature
-    else
+    if tostring(special) ~= "quick" then
         addMissingNoteOffForColumns()
         refreshPianoRollNeeded = true
     end
@@ -1784,7 +1777,7 @@ function pianoGridClick(x, y, released)
             local steps = song.selected_pattern.number_of_lines
             local column
             local note_value
-            local noteoff = false
+            local noteoff
             --move x by stepoffset
             x = x + stepOffset
             --check if current note length is too long for pattern size, reduce len if needed
@@ -1946,7 +1939,7 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
 
             --display note button, note len is greater 0 and when the row is visible
             if current_note_len > 0 then
-                local color = {}
+                local color
                 local spaceWidth = 0
                 local retriggerWidth = 0
                 local delayWidth = 0
@@ -2435,7 +2428,6 @@ local function fillPianoRoll(quickRefresh)
     local noffset = noteOffset - 1
     local blackKey
     local temp
-    local lastColumnWithNotes
 
     --disable line modifier block and force a quick refresh
     if blockLineModifier then
@@ -2575,7 +2567,6 @@ local function fillPianoRoll(quickRefresh)
                 if current_note ~= nil then
                     enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost)
                 end
-                lastColumnWithNotes = c
                 current_note = note
                 current_note_string = note_string
                 current_note_len = 0
@@ -2888,7 +2879,7 @@ local function handleKeyEvent(keyEvent)
     local handled = false
     local keyInfoText
     local isModifierKey = false
-    local key = {}
+    local key
 
     if preferences.disableKeyHandler.value then
         return false
@@ -3390,14 +3381,11 @@ local function handleKeyEvent(keyEvent)
 
     if keyEvent.state == "pressed" then
         lastKeyInfoTime = nil
-        lastKeyAction = nil
         local keystatetext = ""
         if keyEvent.modifiers ~= "" then
             keystatetext = keyEvent.modifiers
         end
-        if isModifierKey then
-            --nothing
-        else
+        if not isModifierKey then
             if keystatetext ~= "" then
                 keystatetext = keystatetext .. " + "
             end
@@ -3508,7 +3496,7 @@ local function handleXypad(val)
             if not xypadpos.scalemode then
                 if keyAlt then
                     if song.selected_track.delay_column_visible then
-                        local v = math.clamp(0, 0xff, math.floor((val.x - xypadpos.x) * 0xff))
+                        local v = clamp(0, 0xff, math.floor((val.x - xypadpos.x) * 0xff))
                         if xypadpos.lastval ~= v then
                             blockLineModifier = true
                             quickRefresh = true
@@ -3632,12 +3620,12 @@ local function main_function()
         pianoKeyWidth = preferences.gridStepSizeW.value * 3
 
         --limit gridHeight
-        preferences.gridHeight.value = math.clamp(preferences.gridHeight.value, 16, 64)
+        preferences.gridHeight.value = clamp(preferences.gridHeight.value, 16, 64)
         gridHeight = preferences.gridHeight.value
 
         lastStepOn = nil
         stepOffset = 0
-        noteOffset = math.clamp(28, 0, 119 - gridHeight) -- default offset
+        noteOffset = clamp(28, 0, 119 - gridHeight) -- default offset
 
         currentGhostTrack = nil
         noteButtons = {}
