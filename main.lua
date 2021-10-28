@@ -387,7 +387,9 @@ local function colorNoteVelocity(vel)
     local color
     if vel < 0x7f and preferences.applyVelocityColorShading.value then
         if preferences.shadingType.value == 2 then
-            color = alphablendColors(colorBaseGridColor, colorNote, preferences.velocityColorShadingAmount.value / 0x7f * (0x7f - vel))
+            color = alphablendColors(colorBaseGridColor,
+                    colorNote,
+                    preferences.velocityColorShadingAmount.value / 0x7f * (0x7f - vel))
         else
             color = shadeColor(colorNote, preferences.velocityColorShadingAmount.value / 0x7f * (0x7f - vel))
         end
@@ -401,7 +403,10 @@ end
 local function initColors()
     --prepare shading colors
     colorWhiteKey = { shadeColor(colorBaseGridColor, preferences.oddBarsShadingAmount.value), colorBaseGridColor }
-    colorBlackKey = { shadeColor(colorWhiteKey[1], preferences.outOfNoteScaleShadingAmount.value), shadeColor(colorWhiteKey[2], preferences.outOfNoteScaleShadingAmount.value) }
+    colorBlackKey = {
+        shadeColor(colorWhiteKey[1], preferences.outOfNoteScaleShadingAmount.value),
+        shadeColor(colorWhiteKey[2], preferences.outOfNoteScaleShadingAmount.value)
+    }
 end
 
 --check mode
@@ -478,7 +483,10 @@ local function noteInSelection(notedata)
     local ret
     for i = 1, #noteSelection do
         local note_data = noteSelection[i]
-        if note_data.note == notedata.note and note_data.line == notedata.line and note_data.len == notedata.len and note_data.column == notedata.column then
+        if note_data.note == notedata.note
+                and note_data.line == notedata.line
+                and note_data.len == notedata.len
+                and note_data.column == notedata.column then
             ret = i
             break
         end
@@ -567,7 +575,9 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly)
             end
         end
         --check for note on with delay, note off is needed
-        if lineValues[line + len] and lineValues[line + len]:note_column(c).note_value < 120 and lineValues[line + len]:note_column(c).delay_value > 0 then
+        if lineValues[line + len]
+                and lineValues[line + len]:note_column(c).note_value < 120
+                and lineValues[line + len]:note_column(c).delay_value > 0 then
             validSpace = false
         end
         --found valid space, break the loop
@@ -853,12 +863,16 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
     --init server connection, when not ready
     local socket_error
     if oscClient == nil then
-        local protocol, host, port = string.match(preferences.oscConnectionString.value, '([a-zA-Z]+)://([0-9a-zA-Z.]+):([0-9]+)')
+        local protocol, host, port = string.match(
+                preferences.oscConnectionString.value,
+                '([a-zA-Z]+)://([0-9a-zA-Z.]+):([0-9]+)'
+        )
         if protocol and host and port then
+            port = tonumber(port)
             if string.lower(protocol) == "udp" then
-                oscClient, socket_error = renoise.Socket.create_client(host, tonumber(port), renoise.Socket.PROTOCOL_UDP)
+                oscClient, socket_error = renoise.Socket.create_client(host, port, renoise.Socket.PROTOCOL_UDP)
             elseif string.lower(protocol) == "tcp" then
-                oscClient, socket_error = renoise.Socket.create_client(host, tonumber(port), renoise.Socket.PROTOCOL_TCP)
+                oscClient, socket_error = renoise.Socket.create_client(host, port, renoise.Socket.PROTOCOL_TCP)
             else
                 socket_error = "Invalid protocol"
             end
@@ -881,14 +895,18 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
         velocity = currentNoteVelocityPreview
     end
     if pressed == true then
-        oscClient:send(renoise.Osc.Message("/renoise/trigger/note_on", { { tag = "i", value = instrument },
-                                                                         { tag = "i", value = song.selected_track_index },
-                                                                         { tag = "i", value = note_value },
-                                                                         { tag = "i", value = velocity } }))
+        oscClient:send(
+                renoise.Osc.Message("/renoise/trigger/note_on", { { tag = "i", value = instrument },
+                                                                  { tag = "i", value = song.selected_track_index },
+                                                                  { tag = "i", value = note_value },
+                                                                  { tag = "i", value = velocity } })
+        )
     elseif pressed == false then
-        oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", { { tag = "i", value = instrument },
-                                                                          { tag = "i", value = song.selected_track_index },
-                                                                          { tag = "i", value = note_value } }))
+        oscClient:send(
+                renoise.Osc.Message("/renoise/trigger/note_off", { { tag = "i", value = instrument },
+                                                                   { tag = "i", value = song.selected_track_index },
+                                                                   { tag = "i", value = note_value } })
+        )
     else
         --when last note is still playing, cut off
         if lastTriggerNote ~= nil then
@@ -957,7 +975,11 @@ local function moveSelectedNotes(steps)
         --remove note
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
         --search for valid column
-        column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line + steps, noteSelection[key].len, noteSelection[key].dly)
+        column = returnColumnWhenEnoughSpaceForNote(
+                noteSelection[key].line + steps,
+                noteSelection[key].len,
+                noteSelection[key].dly
+        )
         if column then
             noteSelection[key].line = noteSelection[key].line + steps
             noteSelection[key].column = column
@@ -1066,7 +1088,11 @@ local function pasteNotesFromClipboard()
     --go through clipboard
     for key in pairs(clipboard) do
         --search for valid column
-        column = returnColumnWhenEnoughSpaceForNote(clipboard[key].line + lineoffset, clipboard[key].len, clipboard[key].dly)
+        column = returnColumnWhenEnoughSpaceForNote(
+                clipboard[key].line + lineoffset,
+                clipboard[key].len,
+                clipboard[key].dly
+        )
         if column then
             clipboard[key].column = column
             clipboard[key].line = clipboard[key].line + lineoffset
@@ -1252,7 +1278,11 @@ local function duplicateSelectedNotes(noOffset)
     --go through selection
     for key in pairs(noteSelection) do
         --search for valid column
-        column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line + offset, noteSelection[key].len, noteSelection[key].dly)
+        column = returnColumnWhenEnoughSpaceForNote(
+                noteSelection[key].line + offset,
+                noteSelection[key].len,
+                noteSelection[key].dly
+        )
         print(column, noteSelection[key].line + offset, noteSelection[key].len, noteSelection[key].dly)
         if column then
             noteSelection[key].column = column
@@ -1601,8 +1631,9 @@ function noteClick(x, y, c, released)
                 end
             end
         end
-        --remove and add the clicked button, disable underlaying buttons, so the xypad in the background can receive the click event
-        --remove/add trick from joule: https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
+        --remove and add the clicked button, disable underlaying buttons, so the xypad in the background
+        --can receive the click event, remove/add trick from joule:
+        --https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
         vbw["bbb" .. index]:remove_child(vbw["b" .. index])
         vbw["bbb" .. index]:add_child(vbw["b" .. index])
         xypadpos.nx = x
@@ -1682,7 +1713,9 @@ function noteClick(x, y, c, released)
                     if not keyControl and not keyShift then
                         if #noteSelection > 0 then
                             for i = 1, #noteSelection do
-                                if noteSelection[i].line == note_data.line and noteSelection[i].len == note_data.len and noteSelection[i].column == note_data.column then
+                                if noteSelection[i].line == note_data.line
+                                        and noteSelection[i].len == note_data.len
+                                        and noteSelection[i].column == note_data.column then
                                     return
                                 end
                             end
@@ -1691,7 +1724,9 @@ function noteClick(x, y, c, released)
                     elseif #noteSelection > 0 and keyControl then
                         --check if the note is in selection, then just deselect
                         for i = 1, #noteSelection do
-                            if noteSelection[i].line == note_data.line and noteSelection[i].len == note_data.len and noteSelection[i].column == note_data.column then
+                            if noteSelection[i].line == note_data.line
+                                    and noteSelection[i].len == note_data.len
+                                    and noteSelection[i].column == note_data.column then
                                 deselect = true
                                 table.remove(noteSelection, i)
                                 break
@@ -1714,8 +1749,9 @@ function pianoGridClick(x, y, released)
     local index = tostring(x) .. "_" .. tostring(y)
 
     if not released and not checkMode("preview") and not keyControl then
-        --remove and add the clicked button, disable all buttons in the row, so the xypad in the background can receive the click event
-        --remove/add trick from joule: https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
+        --remove and add the clicked button, disable all buttons in the row, so the xypad in the background can
+        --receive the click event remove/add trick from joule:
+        --https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
         for i = 1, gridWidth do
             vbw["p" .. i .. "_" .. y].active = false
             --prevent accidentally note drawing "twins", when piano grid buttons overlap
@@ -1737,7 +1773,8 @@ function pianoGridClick(x, y, released)
             xypadpos.ny = y
             xypadpos.notemode = false
         end
-        --disabled button need to be enabled again outside this call when just one click was triggered, use idle function
+        --disabled button need to be enabled again outside this call when just one click was triggered,
+        --use idle function
         refreshPianoRollNeeded = true
         return
     end
@@ -1797,7 +1834,17 @@ function pianoGridClick(x, y, released)
             setUndoDescription("Draw a note ...")
             --add new note
             note_value = gridOffset2NoteValue(y)
-            noteoff = addNoteToPattern(column, x, currentNoteLength, note_value, currentNoteVelocity, currentNoteEndVelocity, currentNotePan, currentNoteDelay, currentNoteGhost)
+            noteoff = addNoteToPattern(
+                    column,
+                    x,
+                    currentNoteLength,
+                    note_value,
+                    currentNoteVelocity,
+                    currentNoteEndVelocity,
+                    currentNotePan,
+                    currentNoteDelay,
+                    currentNoteGhost
+            )
             --
             local note_data = {
                 line = x,
