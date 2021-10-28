@@ -556,8 +556,8 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly)
         end
         --check for note on in
         for i = line, line + len - 1 do
-            --no note off allowed to overwrite, when delay is set
-            if i == line and dly and dly > 0 and lineValues[i]:note_column(c).note_value == 120 then
+            --no note off allowed to overwrite, when delay is set and the note off is not on line 1
+            if i == line and line > 1 and dly and dly > 0 and lineValues[i]:note_column(c).note_value == 120 then
                 validSpace = false
                 break
             end
