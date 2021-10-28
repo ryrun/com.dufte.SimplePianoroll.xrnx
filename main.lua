@@ -63,6 +63,7 @@ local defaultPreferences = {
     shadingType = 1,
     disableAltClickNoteRemove = false,
     resetVolPanDlyControlOnClick = true,
+    minSizeOfNoteButton = 1,
 }
 
 --tool preferences
@@ -76,6 +77,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     --size of pianorollgrid
     gridWidth = defaultPreferences.gridWidth,
     gridHeight = defaultPreferences.gridHeight,
+    minSizeOfNoteButton = defaultPreferences.minSizeOfNoteButton,
     --note preview
     triggerTime = defaultPreferences.triggerTime,
     enableOSCClient = defaultPreferences.enableOSCClient,
@@ -2057,7 +2059,7 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
 
                 --no note labels when to short
                 if buttonWidth - buttonSpace - 1 < 30 or (retriggerWidth > 0 and buttonWidth - buttonSpace - 1 < 52) then
-                    current_note_string = ""
+                    current_note_string = nil
                 end
 
                 l_vbw["b" .. current_note_index] = nil
@@ -2068,7 +2070,7 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
                             vb:button {
                                 id = "b" .. current_note_index,
                                 height = gridStepSizeH,
-                                width = math.max(buttonWidth - buttonSpace - 1, 1),
+                                width = math.max(buttonWidth - buttonSpace - 1, math.max(1, preferences.minSizeOfNoteButton.value)),
                                 visible = true,
                                 color = color,
                                 text = current_note_string,
@@ -4300,6 +4302,23 @@ local function main_function()
                                     vb:space { height = 8 },
                                     vb:row {
                                         vb:text {
+                                            text = "Min size of a note button (px):",
+                                        },
+                                        vb:valuebox {
+                                            min = 5,
+                                            max = 16,
+                                            bind = preferences.minSizeOfNoteButton,
+                                            tostring = function(v)
+                                                return string.format("%i", v)
+                                            end,
+                                            tonumber = function(v)
+                                                return tonumber(v)
+                                            end
+                                        },
+                                    },
+                                    vb:space { height = 8 },
+                                    vb:row {
+                                        vb:text {
                                             text = "Shading amount of out of scale notes:",
                                         },
                                         vb:valuebox {
@@ -4534,18 +4553,18 @@ local function main_function()
                                     },
                                     vb:row {
                                         vb:checkbox {
-                                            bind = preferences.resetVolPanDlyControlOnClick,
-                                        },
-                                        vb:text {
-                                            text = "Reset vol, pan and dly controls on grid click, when nothing is selected",
-                                        },
-                                    },
-                                    vb:row {
-                                        vb:checkbox {
                                             bind = preferences.forcePenMode,
                                         },
                                         vb:text {
                                             text = "Enable pen mode by default",
+                                        },
+                                    },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.resetVolPanDlyControlOnClick,
+                                        },
+                                        vb:text {
+                                            text = "Reset vol, pan and dly controls on grid click, when nothing is selected",
                                         },
                                     },
                                     vb:row {
