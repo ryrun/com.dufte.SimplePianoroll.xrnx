@@ -25,6 +25,7 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 * Can display notes with note cut effects and delayed ones
 * Scale highlighting can be changed (None, Minor scale, Major scale, Instrument scale, Automatic scale)
 * Many useful options to change the behavior for your own taste
+* Tool Updater support
 * And more...
 
 ### Note rendering in piano roll
@@ -52,12 +53,17 @@ It supports to render different note column effects.
 * To improve mouse handling, please disable mouse warping in Renoise preferences
 * You draw notes with the instrument, which is used in the current track of the pattern. In empty track's, it's using the current selected one.
 
-## Install
+## Install and Update
 
 Download the latest version from official tool page:<br>https://www.renoise.com/tools/simple-pianoroll
 
 Alternative download the latest build here and drop it onto
 Renoise (beta build):<br>https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/out/com.duftetools.SimplePianoroll.xrnx
+
+Tool updater is supported, so when a new version is relased, it should show you an update prompt.
+
+More information about how you can install and update Renoise tools:
+[<img src="https://img.youtube.com/vi/E3ZfSlQ8m_4/0.jpg" width="300">](https://www.youtube.com/watch?v=E3ZfSlQ8m_4)
 
 ## How to use it
 
