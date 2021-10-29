@@ -1,4 +1,3 @@
---luacheck: globals renoise
 --some basic renoise vars for reuse
 local app = renoise.app()
 local tool = renoise.tool()
@@ -540,6 +539,7 @@ end
 local function returnColumnWhenEnoughSpaceForNote(line, len, dly)
     local lineValues = song.selected_pattern_track.lines
     local column
+    local validSpace
     --note outside the grid?
     if line < 1 or line + len - 1 > song.selected_pattern.number_of_lines then
         return nil
@@ -550,7 +550,7 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly)
         maxColumns = song.selected_track.max_note_columns
     end
     for c = 1, maxColumns do
-        local validSpace = true
+        validSpace = true
         --check for note on before
         if line > 1 then
             for i = line, 1, -1 do
@@ -568,8 +568,7 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly)
             if i == line and line > 1 and dly and dly > 0 and lineValues[i]:note_column(c).note_value == 120 then
                 validSpace = false
                 break
-            end
-            if lineValues[i]:note_column(c).note_value < 120 then
+            elseif lineValues[i]:note_column(c).note_value < 120 then
                 validSpace = false
                 break
             end
@@ -1552,6 +1551,7 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
     local smax = math.max(x, x2)
     local nmin = gridOffset2NoteValue(math.min(y, y2))
     local nmax = gridOffset2NoteValue(math.max(y, y2))
+    local note_data
     --remove current note selection
     if not addToSelection then
         noteSelection = {}
@@ -1566,7 +1566,7 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
                 local note = note_column.note_value
                 --note inside the selection rect?
                 if note >= nmin and note <= nmax then
-                    local note_data = noteData[tostring(s) .. "_" .. tostring(noteValue2GridRowOffset(note)) .. "_" .. tostring(c)]
+                    note_data = noteData[tostring(s) .. "_" .. tostring(noteValue2GridRowOffset(note)) .. "_" .. tostring(c)]
                     --note found?
                     if note_data ~= nil and s + note_data.len - 1 <= smax and not noteInSelection(note_data) then
                         --add to selection table
@@ -1893,7 +1893,19 @@ function pianoGridClick(x, y, released)
 end
 
 --enable a note button, when its visible, set correct length of the button
-local function enableNoteButton(column, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, noteoff, ghost)
+local function enableNoteButton(column,
+                                current_note_line,
+                                current_note_step,
+                                current_note_rowIndex,
+                                current_note,
+                                current_note_len,
+                                current_note_string,
+                                current_note_vel,
+                                current_note_end_vel,
+                                current_note_pan,
+                                current_note_dly,
+                                noteoff,
+                                ghost)
     local l_song = song
     local l_song_transport = l_song.transport
     local l_song_st = l_song.selected_track
@@ -2616,7 +2628,19 @@ local function fillPianoRoll(quickRefresh)
                     currentInstrument = note_column.instrument_value + 1
                 end
                 if current_note ~= nil then
-                    enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost)
+                    enableNoteButton(c,
+                            current_note_line,
+                            current_note_step,
+                            current_note_rowIndex,
+                            current_note,
+                            current_note_len,
+                            current_note_string,
+                            current_note_vel,
+                            current_note_end_vel,
+                            current_note_pan,
+                            current_note_dly,
+                            false,
+                            current_note_ghost)
                 end
                 current_note = note
                 current_note_string = note_string
@@ -2639,7 +2663,19 @@ local function fillPianoRoll(quickRefresh)
                 if not current_note_step and s then
                     current_note_step = current_note_line - stepOffset
                 end
-                enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, true, current_note_ghost)
+                enableNoteButton(c,
+                        current_note_line,
+                        current_note_step,
+                        current_note_rowIndex,
+                        current_note,
+                        current_note_len,
+                        current_note_string,
+                        current_note_vel,
+                        current_note_end_vel,
+                        current_note_pan,
+                        current_note_dly,
+                        true,
+                        current_note_ghost)
                 current_note = nil
                 current_note_len = 0
                 current_note_rowIndex = nil
@@ -2654,7 +2690,19 @@ local function fillPianoRoll(quickRefresh)
         end
         --pattern end, no note off, enable last note
         if current_note ~= nil then
-            enableNoteButton(c, current_note_line, current_note_step, current_note_rowIndex, current_note, current_note_len, current_note_string, current_note_vel, current_note_end_vel, current_note_pan, current_note_dly, false, current_note_ghost)
+            enableNoteButton(c,
+                    current_note_line,
+                    current_note_step,
+                    current_note_rowIndex,
+                    current_note,
+                    current_note_len,
+                    current_note_string,
+                    current_note_vel,
+                    current_note_end_vel,
+                    current_note_pan,
+                    current_note_dly,
+                    false,
+                    current_note_ghost)
         end
     end
 
@@ -4549,7 +4597,8 @@ local function main_function()
                                         bind = preferences.oscConnectionString,
                                     },
                                     vb:text {
-                                        text = "Please check in the Renoise preferences in\nthe OSC section that the OSC server has\nbeen activated and is running with the same\nprotocol (UDP, TCP) and port settings\nas specified here."
+                                        text = "Please check in the Renoise preferences in\nthe OSC section that the OSC server has\n" ..
+                                                "been activated and is running with the same\nprotocol (UDP, TCP) and port settings\nas specified here."
                                     },
                                 },
                                 vb:column {
