@@ -125,7 +125,7 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 |<kbd>shift + left</kbd>|Move in the grid 4 steps leftwards|
 |<kbd>shift + right</kbd>|Move in the grid 4 steps rightwards|
 |<kbd>ctrl + a</kbd>|Select all visible notes|
-|<kbd>ctrl + b</kbd>|Select all visible notes and duplicate it to the right|
+|<kbd>ctrl + b</kbd> or<br><kbd>ctrl + d</kbd>|Select all visible notes and duplicate it to the right|
 |<kbd>ctrl + u</kbd>|Select all visible notes and quick chop it|
 |<kbd>ctrl + 1 .. 9</kbd>|Set current note length|
 |<kbd>ctrl + 0</kbd>|Double current note length|
@@ -139,7 +139,7 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 |Keys|Description|
 |---|---|
 |<kbd>ctrl + space</kbd>|Play selection|
-|<kbd>ctrl + b</kbd>|Duplicate selected notes to the right|
+|<kbd>ctrl + b</kbd> or<br><kbd>ctrl + d</kbd>|Duplicate selected notes to the right|
 |<kbd>ctrl + u</kbd>|Quick chop all selected notes|
 |<kbd>ctrl + 1 .. 9</kbd>|Set current note length and for very selected note|
 |<kbd>ctrl + 0</kbd>|Double current note length and for very selected note|
@@ -152,10 +152,10 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 |<kbd>alt + shift + m</kbd>|Unmute selected notes (remove volume value)|
 |<kbd>up</kbd>|Transpose note 1 semitone up|
 |<kbd>down</kbd>|Transpose note 1 semitone down|
-|<kbd>alt + up</kbd>|Transpose note 7 semitones up|
-|<kbd>alt + down</kbd>|Transpose note 7 semitones down|
 |<kbd>shift + up</kbd>|Transpose note 12 semitones up|
 |<kbd>shift + down</kbd>|Transpose note 12 semitones down|
+|<kbd>ctrl + shift + up</kbd>|Transpose note 7 semitones up|
+|<kbd>ctrl + shift + down</kbd>|Transpose note 7 semitones down|
 |<kbd>ctrl + up</kbd>|Transpose note 1 semitone up but stay in scale|
 |<kbd>ctrl + down</kbd>|Transpose note 1 semitone down but stay in scale|
 |<kbd>ctrl + shift + up</kbd>|Transpose note 12 semitone up but stay in scale|

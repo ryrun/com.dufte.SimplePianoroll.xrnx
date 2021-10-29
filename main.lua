@@ -3252,7 +3252,7 @@ local function handleKeyEvent(keyEvent)
         end
         handled = true
     end
-    if key.name == "b" and key.modifiers == "control" then
+    if (key.name == "b" or key.name == "d") and key.modifiers == "control" then
         if key.state == "pressed" then
             if #noteSelection == 0 then
                 --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
@@ -3383,20 +3383,24 @@ local function handleKeyEvent(keyEvent)
     if (key.name == "up" or key.name == "down") then
         if key.state == "pressed" then
             local transpose = 1
-            if keyAlt then
-                transpose = 7
-            end
             if keyShift or keyRShift then
                 transpose = 12
+            end
+            if (keyShift or keyRShift) and keyControl then
+                transpose = 7
             end
             if key.name == "down" then
                 transpose = transpose * -1
             end
             if #noteSelection > 0 then
-                transposeSelectedNotes(transpose, keyControl or keyRControl)
-                keyInfoText = "Transpose selected notes by " .. getSingularPlural(transpose, "semitone", "semitones", true)
-                if keyControl or keyRControl then
-                    keyInfoText = keyInfoText .. ", keep in scale"
+                if keyAlt then
+                    --TODO code for note selecting via cursor keys
+                else
+                    transposeSelectedNotes(transpose, (keyControl or keyRControl) and not (keyShift or keyRShift))
+                    keyInfoText = "Transpose selected notes by " .. getSingularPlural(transpose, "semitone", "semitones", true)
+                    if (keyControl or keyRControl) and not (keyShift or keyRShift) then
+                        keyInfoText = keyInfoText .. ", keep in scale"
+                    end
                 end
             else
                 keyInfoText = "Move through the grid"
