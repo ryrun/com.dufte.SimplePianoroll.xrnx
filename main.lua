@@ -2099,7 +2099,11 @@ local function enableNoteButton(column, current_note_line, current_note_step, cu
 
                 --no note labels when to short
                 if buttonWidth - buttonSpace - 1 < 30 or (retriggerWidth > 0 and buttonWidth - buttonSpace - 1 < 52) then
-                    current_note_string = nil
+                    if not string.find(current_note_string, '#') and buttonWidth - buttonSpace - 1 > 25 and retriggerWidth == 0 then
+                        current_note_string = string.gsub(current_note_string, '-', '')
+                    else
+                        current_note_string = nil
+                    end
                 end
 
                 l_vbw["b" .. current_note_index] = nil
