@@ -265,6 +265,11 @@ local function clamp(val, min, max)
     return math.max(min, math.min(max, val))
 end
 
+--calc distance
+local function calcDistance(x1, y1, x2, y2)
+    return math.sqrt((x2 - x1) ^ 2 + (y2 - y1) ^ 2)
+end
+
 --show some text in Renoise status bar
 local function showStatus(status)
     app:show_status("Simple Pianoroll: " .. status)
@@ -1282,7 +1287,6 @@ local function duplicateSelectedNotes(noOffset)
                 noteSelection[key].len,
                 noteSelection[key].dly
         )
-        print(column, noteSelection[key].line + offset, noteSelection[key].len, noteSelection[key].dly)
         if column then
             noteSelection[key].column = column
             noteSelection[key].line = noteSelection[key].line + offset
@@ -1540,6 +1544,54 @@ local function highlightNoteRow(row, highlighted)
                 vbw[idx].color = defaultColor[idx]
             end
         end
+    end
+end
+
+--move the current seleciton to the next desired note
+local function moveSelectionThroughNotes(dx, dy, addToSelection)
+    local note_data
+    local distance = 99999
+    local x1 = noteSelection[1].step
+    local y1 = noteSelection[1].note
+    local x2
+    local y2
+    local newDistance
+
+    --calc center of selection
+    for i = 2, #noteSelection do
+        x1 = (x1 + noteSelection[i].step) / 2
+        y1 = (y1 + noteSelection[i].note) / 2
+    end
+
+    x1 = math.floor(x1 + clamp(dx, -1, 1))
+    y1 = math.floor(y1 + clamp(dy, -1, 1))
+
+    for key in pairs(noteData) do
+        if not noteInSelection(noteData[key]) then
+            x2 = noteData[key].step
+            y2 = noteData[key].note
+            if
+            (dx < 0 and x2 <= x1) or
+                    (dx > 0 and x1 <= x2) or
+                    (dy < 0 and y2 <= y1) or
+                    (dy > 0 and y1 <= y2)
+            then
+                newDistance = calcDistance(x1, y1, x2, y2)
+                if newDistance < distance then
+                    note_data = noteData[key]
+                    distance = newDistance
+                end
+            end
+        end
+    end
+
+    if note_data then
+        if not addToSelection then
+            noteSelection = {}
+        end
+        table.insert(noteSelection, note_data)
+        jumpToNoteInPattern(note_data)
+        refreshPianoRollNeeded = true
     end
 end
 
@@ -1854,6 +1906,7 @@ function pianoGridClick(x, y, released)
             --
             local note_data = {
                 line = x,
+                step = x - stepOffset,
                 note = note_value,
                 vel = currentNoteVelocity,
                 end_vel = currentNoteEndVelocity,
@@ -1943,6 +1996,7 @@ local function enableNoteButton(column,
         end
         noteData[current_note_index] = {
             line = current_note_line,
+            step = current_note_step,
             note = current_note,
             vel = current_note_vel,
             end_vel = current_note_end_vel,
@@ -3400,7 +3454,12 @@ local function handleKeyEvent(keyEvent)
             end
             if #noteSelection > 0 then
                 if keyAlt then
-                    --TODO code for note selecting via cursor keys
+                    moveSelectionThroughNotes(0, transpose, keyShift)
+                    if keyShift then
+                        keyInfoText = "Add a note from above/below to selection"
+                    else
+                        keyInfoText = "Move note selection " .. key.name
+                    end
                 else
                     transposeSelectedNotes(transpose, (keyControl or keyRControl) and not (keyShift or keyRShift))
                     keyInfoText = "Transpose selected notes by " .. getSingularPlural(transpose, "semitone", "semitones", true)
@@ -3426,7 +3485,12 @@ local function handleKeyEvent(keyEvent)
             end
             if #noteSelection > 0 then
                 if keyAlt then
-                    --TODO code for note selecting via cursor keys
+                    moveSelectionThroughNotes(steps, 0, keyShift)
+                    if keyShift then
+                        keyInfoText = "Add a note from left/right to selection"
+                    else
+                        keyInfoText = "Move note selection to the " .. key.name
+                    end
                 else
                     if keyControl then
                         steps = steps / math.abs(steps)

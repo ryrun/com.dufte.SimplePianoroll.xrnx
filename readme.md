@@ -21,7 +21,7 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 * Polyphony support (automatically adds note column, if needed)
 * Note preview via Renoise inbuild OSC Server
 * Ghost Track
-* Many useful keyboard shortcuts (inspired by FL and Reason)
+* Many useful keyboard shortcuts (inspired by FL, Bitwig, Ableton and Reason)
 * Can display notes with note cut effects and delayed ones
 * Scale highlighting can be changed (None, Minor scale, Major scale, Instrument scale, Automatic scale)
 * Many useful options to change the behavior for your own taste
@@ -51,14 +51,15 @@ It supports to render different note column effects.
 ## Important
 
 * To improve mouse handling, please disable mouse warping in Renoise preferences
-* You draw notes with the instrument, which is used in the current track of the pattern. In empty track's, it's using the current selected one.
+* You draw notes with the instrument, which is used in the current track of the pattern. In empty track's, it's using
+  the current selected one.
 
 ## Install and Update
 
 Download the latest version from official tool page:<br>https://www.renoise.com/tools/simple-pianoroll
 
-Alternative download the latest build here and drop it onto
-Renoise (beta build):<br>https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/out/com.duftetools.SimplePianoroll.xrnx
+Alternative download the latest build here and drop it onto Renoise (beta
+build):<br>https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/out/com.duftetools.SimplePianoroll.xrnx
 
 Tool updater is supported, so when a new version is relased, it should show you an update prompt.
 
@@ -83,10 +84,11 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 |---|---|
 |Add notes|Double click on a free spot in the grid<br>Alternative: While hold <kbd>alt</kbd> its just one click|
 |Remove notes|Double click on a note<br>Alternative: While hold <kbd>alt</kbd> its just one click|
-|Select a note|Click on a note.<br>*It also reads out note length and velocity of the selected note and set these values for new notes.*|
+|Select a note|Click on a note.<br>*It also reads out note length and velocity of the selected note and set these values
+for new notes.*|
 |Move one note or multiple notes|Click and drag a note. It will also move all selected notes, too. Hold <kbd>ctrl</kbd> during moving will force note movement in scale.|
 |Change note length|Click and hold the end of a note and move the mouse to the right. It will also increase the length of all selected notes. To decrease the note length, just move the mouse to the left|
-|Change note delay|Hold <kbd>alt</kbd> key, click and hold a note and move the mouse to the right. Delay column needs to be enabled. When <kbd>shift</kbd> is holded also, it set one of the following hardcoded values (1, 0x55, 0xAA). For easy note legato portamento for VSTi's or triplet timings. 
+|Change note delay|Hold <kbd>alt</kbd> key, click and hold a note and move the mouse to the right. Delay column needs to be enabled. When <kbd>shift</kbd> is holded also, it set one of the following hardcoded values (1, 0x55, 0xAA). For easy note legato portamento for VSTi's or triplet timings.
 |Preview a note|Click on a note or use preview mode|
 |Play from mouse cursor|While holding <kbd>ctrl</kbd>, click on a freespot in the grid|
 |Play all notes from mouse cursor|While holding <kbd>ctrl + shift</kbd>, click and hold on a freespot in the grid|
@@ -97,7 +99,7 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 |Select all notes with a specific note value|Hold <kbd>ctrl</kbd> and click one of the notes in the piano keyboard control
 |Select all notes with on a specific position|Hold <kbd>ctrl</kbd> and click one of the position indicators above the piano grid
 |Duplicate selected notes|Hold <kbd>shift</kbd> and start dragging the selection to duplicate the notes
-|Scroll vertically|Use your mouse wheel above the piano roll grid or the piano roll keys on the left. 
+|Scroll vertically|Use your mouse wheel above the piano roll grid or the piano roll keys on the left.
 |Scroll horizontally|Use your mouse wheel and hold <kbd>alt</kbd> or <kbd>shift</kbd> above the piano roll grid or the piano roll keys on the left.
 |Quick clear of vol, pan and dly controls|Left mouse click on the grid, when no note is selected. (can be disabled)
 
@@ -105,7 +107,8 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 
 **Info:** Non handled keyboard events will be sent back to the host. So renoise default keyboard shortcuts should work.
 
-**About AZERTY keyboard layout:** AZERTY mode in the preferences will internally convert non number keys to number keys. So you don't need to hold <kbd>shift</kbd>.
+**About AZERTY keyboard layout:** AZERTY mode in the preferences will internally convert non number keys to number keys.
+So you don't need to hold <kbd>shift</kbd>.
 
 ### Nothing selected
 
@@ -150,6 +153,7 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 |<kbd>alt + n</kbd>|Match note value to the first selected one|
 |<kbd>alt + m</kbd>|Mute selected notes (set volume to 0)|
 |<kbd>alt + shift + m</kbd>|Unmute selected notes (remove volume value)|
+|<kbd>alt + left</kbd> or<br><kbd>alt + right</kbd> or<br><kbd>alt + up</kbd> or<br><kbd>alt + down</kbd><br>|Move note selection. When <kbd>shift</kbd> is holded, it add notes to the current selection.|
 |<kbd>up</kbd>|Transpose note 1 semitone up|
 |<kbd>down</kbd>|Transpose note 1 semitone down|
 |<kbd>shift + up</kbd>|Transpose note 12 semitones up|
