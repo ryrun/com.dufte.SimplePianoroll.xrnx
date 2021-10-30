@@ -1553,7 +1553,7 @@ end
 local function moveSelectionThroughNotes(dx, dy, addToSelection)
     local note_data
     local distance = 99999
-    local x1 = noteSelection[1].step
+    local x1 = noteSelection[1].step + (noteSelection[1].len - 1) / 2
     local y1 = noteSelection[1].note
     local x2
     local y2
@@ -1561,7 +1561,7 @@ local function moveSelectionThroughNotes(dx, dy, addToSelection)
 
     --calc center of selection
     for i = 2, #noteSelection do
-        x1 = (x1 + noteSelection[i].step) / 2
+        x1 = (x1 + noteSelection[i].step + (noteSelection[i].len - 1) / 2) / 2
         y1 = (y1 + noteSelection[i].note) / 2
     end
 
@@ -1572,6 +1572,11 @@ local function moveSelectionThroughNotes(dx, dy, addToSelection)
         if not noteInSelection(noteData[key]) then
             x2 = noteData[key].step
             y2 = noteData[key].note
+            if dy ~= 0 then
+                x2 = x2 + (noteData[key].len - 1) / 2
+            elseif dx < 0 then
+                x2 = x2 + (noteData[key].len - 1)
+            end
             if
             (dx < 0 and x2 <= x1) or
                     (dx > 0 and x1 <= x2) or
