@@ -1552,9 +1552,11 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
     local nmin = gridOffset2NoteValue(math.min(y, y2))
     local nmax = gridOffset2NoteValue(math.max(y, y2))
     local note_data
+    local refreshNeeded = false
     --remove current note selection
-    if not addToSelection then
+    if not addToSelection and #noteSelection > 0 then
         noteSelection = {}
+        refreshNeeded = true
     end
     --loop through columns
     for c = 1, columns do
@@ -1571,14 +1573,18 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
                     if note_data ~= nil and s + note_data.len - 1 <= smax and not noteInSelection(note_data) then
                         --add to selection table
                         table.insert(noteSelection, note_data)
+                        refreshNeeded = true
                     end
                 end
             end
         end
     end
-    --piano refresh
-    addMissingNoteOffForColumns()
-    refreshPianoRollNeeded = true
+    --piano refresh only when something was found
+    if refreshNeeded then
+        addMissingNoteOffForColumns()
+        refreshPianoRollNeeded = true
+    end
+    return refreshNeeded
 end
 
 --keyboard preview
@@ -3419,13 +3425,17 @@ local function handleKeyEvent(keyEvent)
                 steps = steps * -1
             end
             if #noteSelection > 0 then
-                if keyControl then
-                    steps = steps / math.abs(steps)
-                    changeSizeSelectedNotes(steps, true)
-                    keyInfoText = "Change note length of selected notes"
+                if keyAlt then
+                    --TODO code for note selecting via cursor keys
                 else
-                    moveSelectedNotes(steps)
-                    keyInfoText = "Move selected notes by " .. getSingularPlural(steps, "step", "steps", true)
+                    if keyControl then
+                        steps = steps / math.abs(steps)
+                        changeSizeSelectedNotes(steps, true)
+                        keyInfoText = "Change note length of selected notes"
+                    else
+                        moveSelectedNotes(steps)
+                        keyInfoText = "Move selected notes by " .. getSingularPlural(steps, "step", "steps", true)
+                    end
                 end
             else
                 keyInfoText = "Move through the grid"
@@ -3680,8 +3690,9 @@ local function handleXypad(val)
         if xypadpos.x ~= math.floor(val.x) or xypadpos.y ~= math.floor(val.y) then
             xypadpos.x = math.floor(val.x)
             xypadpos.y = math.floor(val.y)
-            selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, keyShift)
-            quickRefresh = true
+            if selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, keyShift) then
+                quickRefresh = true
+            end
         end
     end
     if quickRefresh then
