@@ -985,6 +985,7 @@ local function moveSelectedNotes(steps)
                 noteSelection[key].dly
         )
         if column then
+            noteSelection[key].step = noteSelection[key].step + steps
             noteSelection[key].line = noteSelection[key].line + steps
             noteSelection[key].column = column
         end
@@ -1290,6 +1291,7 @@ local function duplicateSelectedNotes(noOffset)
         if column then
             noteSelection[key].column = column
             noteSelection[key].line = noteSelection[key].line + offset
+            noteSelection[key].step = noteSelection[key].step + offset
         else
             showStatus("Not enough space to duplicate notes here.")
             return false
