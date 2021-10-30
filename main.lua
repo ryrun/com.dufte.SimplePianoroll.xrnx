@@ -63,7 +63,7 @@ local defaultPreferences = {
     shadingType = 1,
     disableAltClickNoteRemove = false,
     resetVolPanDlyControlOnClick = true,
-    minSizeOfNoteButton = 1,
+    minSizeOfNoteButton = 5,
 }
 
 --tool preferences
@@ -4471,7 +4471,7 @@ local function main_function()
                                             text = "Min size of a note button (px):",
                                         },
                                         vb:valuebox {
-                                            min = 5,
+                                            min = 2,
                                             max = 16,
                                             bind = preferences.minSizeOfNoteButton,
                                             tostring = function(v)
