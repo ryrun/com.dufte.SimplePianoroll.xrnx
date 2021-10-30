@@ -4768,18 +4768,18 @@ local function main_function()
                                     },
                                     vb:row {
                                         vb:checkbox {
-                                            bind = preferences.disableKeyHandler,
-                                        },
-                                        vb:text {
-                                            text = "Disable all keyboard shortcuts",
-                                        },
-                                    },
-                                    vb:row {
-                                        vb:checkbox {
                                             bind = preferences.azertyMode,
                                         },
                                         vb:text {
                                             text = "Enable AZERTY keyboard mode",
+                                        },
+                                    },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.disableKeyHandler,
+                                        },
+                                        vb:text {
+                                            text = "Disable all keyboard shortcuts",
                                         },
                                     },
                                     vb:row {
