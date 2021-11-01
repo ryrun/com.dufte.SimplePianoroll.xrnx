@@ -64,6 +64,7 @@ local defaultPreferences = {
     disableAltClickNoteRemove = false,
     resetVolPanDlyControlOnClick = true,
     minSizeOfNoteButton = 5,
+    setLastEditedTrackAsGhost = true,
 }
 
 --tool preferences
@@ -119,6 +120,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     --disable key disableKeyHandler
     disableKeyHandler = defaultPreferences.disableKeyHandler,
     disableAltClickNoteRemove = defaultPreferences.disableAltClickNoteRemove,
+    setLastEditedTrackAsGhost = defaultPreferences.setLastEditedTrackAsGhost,
 }
 tool.preferences = preferences
 
@@ -208,6 +210,7 @@ local currentInstrument
 local currentGhostTrack
 local currentScale = 2
 local currentScaleOffset = 1
+local lastTrackIndex
 
 local noteSelection = {}
 local lowestNote
@@ -2559,6 +2562,14 @@ local function fillPianoRoll(quickRefresh)
     local blackKey
     local temp
 
+    --set auto ghost track
+    if preferences.setLastEditedTrackAsGhost.value and lastTrackIndex and lastTrackIndex ~= l_song.selected_track_index then
+        l_vbw.ghosttracks.value = lastTrackIndex
+    end
+
+    --set track index
+    lastTrackIndex = l_song.selected_track_index
+
     --disable line modifier block and force a quick refresh
     if blockLineModifier then
         quickRefresh = true
@@ -2959,6 +2970,8 @@ local function appNewDoc()
     end
 
     song = renoise.song()
+    --reset vars
+    lastTrackIndex = nil
     --set new observers
     song.transport.lpb_observable:add_notifier(function()
         refreshPianoRollNeeded = true
@@ -4763,6 +4776,14 @@ local function main_function()
                                         },
                                         vb:text {
                                             text = "Automatically add NoteOff's in empty note columns",
+                                        },
+                                    },
+                                    vb:row {
+                                        vb:checkbox {
+                                            bind = preferences.setLastEditedTrackAsGhost,
+                                        },
+                                        vb:text {
+                                            text = "Automatically set the last edited track as ghost track",
                                         },
                                     },
                                     vb:row {
