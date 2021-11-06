@@ -1571,16 +1571,27 @@ end
 local function moveSelectionThroughNotes(dx, dy, addToSelection)
     local note_data
     local distance = 99999
-    local x1 = noteSelection[1].step + (noteSelection[1].len - 1) / 2
-    local y1 = noteSelection[1].note
+    local x1
+    local y1
     local x2
     local y2
     local newDistance
 
-    --calc center of selection
-    for i = 2, #noteSelection do
-        x1 = (x1 + noteSelection[i].step + (noteSelection[i].len - 1) / 2) / 2
-        y1 = (y1 + noteSelection[i].note) / 2
+    if #noteSelection > 0 then
+        x1 = noteSelection[1].step + (noteSelection[1].len - 1) / 2
+        y1 = noteSelection[1].note
+        --calc center of selection
+        for i = 2, #noteSelection do
+            x1 = (x1 + noteSelection[i].step + (noteSelection[i].len - 1) / 2) / 2
+            y1 = (y1 + noteSelection[i].note) / 2
+        end
+    else
+        x1 = song.transport.edit_pos.line
+        if dy < 0 then
+            y1 = 120
+        else
+            y1 = 0
+        end
     end
 
     x1 = math.floor(x1 + clamp(dx, -1, 1))
@@ -1617,7 +1628,9 @@ local function moveSelectionThroughNotes(dx, dy, addToSelection)
         table.insert(noteSelection, note_data)
         jumpToNoteInPattern(note_data)
         refreshPianoRollNeeded = true
+        return true
     end
+    return false
 end
 
 --add notes from a rectangle to the selection
@@ -3487,7 +3500,13 @@ local function handleKeyEvent(keyEvent)
             if key.name == "down" then
                 transpose = transpose * -1
             end
-            if #noteSelection > 0 then
+            if #noteSelection > 0 and not keyAlt then
+                transposeSelectedNotes(transpose, (keyControl or keyRControl) and not (keyShift or keyRShift))
+                keyInfoText = "Transpose selected notes by " .. getSingularPlural(transpose, "semitone", "semitones", true)
+                if (keyControl or keyRControl) and not (keyShift or keyRShift) then
+                    keyInfoText = keyInfoText .. ", keep in scale"
+                end
+            else
                 if keyAlt then
                     moveSelectionThroughNotes(0, transpose, keyShift)
                     if keyShift then
@@ -3496,15 +3515,9 @@ local function handleKeyEvent(keyEvent)
                         keyInfoText = "Move note selection " .. key.name
                     end
                 else
-                    transposeSelectedNotes(transpose, (keyControl or keyRControl) and not (keyShift or keyRShift))
-                    keyInfoText = "Transpose selected notes by " .. getSingularPlural(transpose, "semitone", "semitones", true)
-                    if (keyControl or keyRControl) and not (keyShift or keyRShift) then
-                        keyInfoText = keyInfoText .. ", keep in scale"
-                    end
+                    keyInfoText = "Move through the grid"
+                    noteSlider.value = forceValueToRange(noteSlider.value + transpose, noteSlider.min, noteSlider.max)
                 end
-            else
-                keyInfoText = "Move through the grid"
-                noteSlider.value = forceValueToRange(noteSlider.value + transpose, noteSlider.min, noteSlider.max)
             end
         end
         handled = true
@@ -3518,7 +3531,16 @@ local function handleKeyEvent(keyEvent)
             if key.name == "left" then
                 steps = steps * -1
             end
-            if #noteSelection > 0 then
+            if #noteSelection > 0 and not keyAlt then
+                if keyControl then
+                    steps = steps / math.abs(steps)
+                    changeSizeSelectedNotes(steps, true)
+                    keyInfoText = "Change note length of selected notes"
+                else
+                    moveSelectedNotes(steps)
+                    keyInfoText = "Move selected notes by " .. getSingularPlural(steps, "step", "steps", true)
+                end
+            else
                 if keyAlt then
                     moveSelectionThroughNotes(steps, 0, keyShift)
                     if keyShift then
@@ -3527,19 +3549,10 @@ local function handleKeyEvent(keyEvent)
                         keyInfoText = "Move note selection to the " .. key.name
                     end
                 else
-                    if keyControl then
-                        steps = steps / math.abs(steps)
-                        changeSizeSelectedNotes(steps, true)
-                        keyInfoText = "Change note length of selected notes"
-                    else
-                        moveSelectedNotes(steps)
-                        keyInfoText = "Move selected notes by " .. getSingularPlural(steps, "step", "steps", true)
+                    keyInfoText = "Move through the grid"
+                    if stepSlider.value + steps <= stepSlider.max and stepSlider.value + steps >= stepSlider.min then
+                        stepSlider.value = stepSlider.value + steps
                     end
-                end
-            else
-                keyInfoText = "Move through the grid"
-                if stepSlider.value + steps <= stepSlider.max and stepSlider.value + steps >= stepSlider.min then
-                    stepSlider.value = stepSlider.value + steps
                 end
             end
         end
