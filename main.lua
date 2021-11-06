@@ -849,6 +849,7 @@ end
 
 --simple note trigger
 local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, newOrChanged)
+    local socket_error, successSend, errorSend
     --if osc client is enabled
     if not preferences.enableOSCClient.value then
         return
@@ -868,7 +869,6 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
         instrument = song.selected_instrument_index
     end
     --init server connection, when not ready
-    local socket_error
     if oscClient == nil then
         local protocol, host, port = string.match(
                 preferences.oscConnectionString.value,
@@ -902,14 +902,14 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
         velocity = currentNoteVelocityPreview
     end
     if pressed == true then
-        oscClient:send(
+        successSend, errorSend = oscClient:send(
                 renoise.Osc.Message("/renoise/trigger/note_on", { { tag = "i", value = instrument },
                                                                   { tag = "i", value = song.selected_track_index },
                                                                   { tag = "i", value = note_value },
                                                                   { tag = "i", value = velocity } })
         )
     elseif pressed == false then
-        oscClient:send(
+        successSend, errorSend = oscClient:send(
                 renoise.Osc.Message("/renoise/trigger/note_off", { { tag = "i", value = instrument },
                                                                    { tag = "i", value = song.selected_track_index },
                                                                    { tag = "i", value = note_value } })
@@ -928,16 +928,31 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
                             { tag = "i", value = note_value },
                             { tag = "i", value = velocity } }
         --send note event to osc server
-        oscClient:send(renoise.Osc.Message("/renoise/trigger/note_on", lastTriggerNote))
-        --create a timer for note off
-        triggerTimer = function()
-            table.remove(lastTriggerNote) --remove velocity
-            oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote))
-            lastTriggerNote = nil
-            tool:remove_timer(triggerTimer)
+        successSend, errorSend = oscClient:send(renoise.Osc.Message("/renoise/trigger/note_on", lastTriggerNote))
+        --create a timer for note off, whenn note on was successful
+        if successSend then
+            triggerTimer = function()
+                table.remove(lastTriggerNote) --remove velocity
+                if oscClient then
+                    oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote))
+                    lastTriggerNote = nil
+                    tool:remove_timer(triggerTimer)
+                end
+            end
+            --start timer
+            tool:add_timer(triggerTimer, preferences.triggerTime.value)
         end
-        --start timer
-        tool:add_timer(triggerTimer, preferences.triggerTime.value)
+    end
+    --on send fail, disable note preview, clsoe socket and show error
+    if not successSend then
+        showStatus("Error: OSC socket send: " .. errorSend)
+        preferences.notePreview.value = false
+        preferences.enableOSCClient.value = false
+        if oscClient then
+            oscClient:close()
+            oscClient = nil
+        end
+        refreshControls = true
     end
 end
 
