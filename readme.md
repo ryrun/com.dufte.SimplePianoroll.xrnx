@@ -61,7 +61,7 @@ Download the latest version from official tool page:<br>https://www.renoise.com/
 Alternative download the latest build here and drop it onto Renoise (beta
 build):<br>https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/out/com.duftetools.SimplePianoroll.xrnx
 
-Tool updater is supported, so when a new version is relased, it should show you an update prompt.
+Tool updater is supported, so when a new version is released, it should show you an update prompt.
 
 More information about how you can install and update Renoise tools:
 
