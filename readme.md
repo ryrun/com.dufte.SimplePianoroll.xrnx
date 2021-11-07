@@ -64,6 +64,7 @@ build):<br>https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/o
 Tool updater is supported, so when a new version is relased, it should show you an update prompt.
 
 More information about how you can install and update Renoise tools:
+
 [<img src="https://img.youtube.com/vi/E3ZfSlQ8m_4/0.jpg" width="300">](https://www.youtube.com/watch?v=E3ZfSlQ8m_4)
 
 ## How to use it
