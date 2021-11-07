@@ -1578,12 +1578,22 @@ local function moveSelectionThroughNotes(dx, dy, addToSelection)
     local newDistance
 
     if #noteSelection > 0 then
-        x1 = noteSelection[1].step + (noteSelection[1].len - 1) / 2
-        y1 = noteSelection[1].note
-        --calc center of selection
-        for i = 2, #noteSelection do
-            x1 = (x1 + noteSelection[i].step + (noteSelection[i].len - 1) / 2) / 2
-            y1 = (y1 + noteSelection[i].note) / 2
+        --select one of the note when shift is not holded
+        if #noteSelection > 1 and not (keyShift or keyRShift) then
+            note_data = noteSelection[#noteSelection]
+            noteSelection = {}
+            table.insert(noteSelection, note_data)
+            jumpToNoteInPattern(note_data)
+            refreshPianoRollNeeded = true
+            return true
+        else
+            x1 = noteSelection[1].step + (noteSelection[1].len - 1) / 2
+            y1 = noteSelection[1].note
+            --calc center of selection
+            for i = 2, #noteSelection do
+                x1 = (x1 + noteSelection[i].step + (noteSelection[i].len - 1) / 2) / 2
+                y1 = (y1 + noteSelection[i].note) / 2
+            end
         end
     else
         x1 = song.transport.edit_pos.line
