@@ -1794,8 +1794,8 @@ function noteClick(x, y, c, released)
             --always jump to the note
             jumpToNoteInPattern(note_data)
         end
-        --remove on dblclk or when in penmode
-        if checkMode("pen") or dbclk then
+        --remove on dblclk or when in penmode or previewmode
+        if checkMode("pen") or (dbclk and not checkMode("preview")) then
             --set clicked note as selected for remove function
             if note_data ~= nil then
                 if preferences.disableAltClickNoteRemove.value and keyAlt then
