@@ -839,9 +839,9 @@ local function refreshNoteControls()
     vbw.trackcolor.color = track.color
     vbw.trackcolor.tooltip = track.name
     if string.len(track.name) > 9 then
-        vbw.trackname.text = string.sub(track.name, 1, 8) .. "…"
+        vbw.trackcolor.text = string.sub(track.name, 1, 8) .. "…"
     else
-        vbw.trackname.text = track.name
+        vbw.trackcolor.text = track.name
     end
     if track.solo_state then
         vbw.solo.color = colorStepOn
@@ -4036,7 +4036,7 @@ local function createPianoRollDialog()
     windowContent = vb:column {
         vb:row {
             margin = 3,
-            spacing = 6,
+            spacing = -1,
             vb:row {
                 margin = 3,
                 spacing = -3,
@@ -4959,20 +4959,9 @@ local function createPianoRollDialog()
                                     id = "trackcolor",
                                     height = gridStepSizeH + 3,
                                     color = { 44, 77, 66 },
-                                    active = false,
+                                    active = true,
                                     width = pianoKeyWidth,
-                                },
-                                vb:text {
-                                    id = "trackname",
-                                    height = gridStepSizeH + 3,
-                                    width = pianoKeyWidth,
-                                    font = "mono",
-                                    align = "center",
-                                    style = "strong",
-                                },
-                                vb:space {
-                                    width = pianoKeyWidth,
-                                },
+                                }
                             },
                             vb:row {
                                 spacing = -4,
