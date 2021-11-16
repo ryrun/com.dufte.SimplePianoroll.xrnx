@@ -48,6 +48,10 @@ It supports to render different note column effects.
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/notedelay.png?raw=true" width="300">
 
+#### Note delay for note off
+
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/noteoffdelay.png?raw=true" width="300">
+
 ## Important
 
 * To improve mouse handling, please disable mouse warping in Renoise preferences

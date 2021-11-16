@@ -536,7 +536,7 @@ local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly,
     elseif line + len - 1 == song.selected_pattern.number_of_lines then
         --set note off to the beginning of a pattern for looping purpose
         if lineValues[1]:note_column(column).note_value >= 120 then
-            noteoff = true
+            --noteoff = true
             lineValues[1]:note_column(column).note_value = 120
         end
     end
@@ -548,12 +548,17 @@ local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly,
 end
 
 --search for a column, which have enough space for the line and length of a new note
-local function returnColumnWhenEnoughSpaceForNote(line, len, dly)
+local function returnColumnWhenEnoughSpaceForNote(line, len, dly, end_dly)
     local lineValues = song.selected_pattern_track.lines
+    local number_of_lines = song.selected_pattern.number_of_lines
     local column
     local validSpace
     --note outside the grid?
-    if line < 1 or line + len - 1 > song.selected_pattern.number_of_lines then
+    if line < 1 or line + len - 1 > number_of_lines then
+        return nil
+    end
+    --note with end dly outside the grid?
+    if end_dly and end_dly > 0 and line + len - 1 > number_of_lines - 1 then
         return nil
     end
     --check if enough space for a new note
@@ -570,6 +575,10 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly)
                     validSpace = false
                     break
                 elseif lineValues[i]:note_column(c).note_value == 120 then
+                    --note off with a delay value?
+                    if lineValues[i]:note_column(c).delay_value > 0 and line == i then
+                        validSpace = false
+                    end
                     break
                 end
             end
@@ -589,6 +598,11 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly)
         if lineValues[line + len]
                 and lineValues[line + len]:note_column(c).note_value < 120
                 and lineValues[line + len]:note_column(c).delay_value > 0 then
+            validSpace = false
+        end
+        --check if there is enough space for note off with delay
+        if end_dly and end_dly > 0 and lineValues[line + len]
+                and lineValues[line + len]:note_column(c).note_value < 121 then
             validSpace = false
         end
         --found valid space, break the loop
@@ -1010,7 +1024,8 @@ local function moveSelectedNotes(steps)
         column = returnColumnWhenEnoughSpaceForNote(
                 noteSelection[key].line + steps,
                 noteSelection[key].len,
-                noteSelection[key].dly
+                noteSelection[key].dly,
+                noteSelection[key].end_dly
         )
         if column then
             noteSelection[key].step = noteSelection[key].step + steps
@@ -1125,7 +1140,8 @@ local function pasteNotesFromClipboard()
         column = returnColumnWhenEnoughSpaceForNote(
                 clipboard[key].line + lineoffset,
                 clipboard[key].len,
-                clipboard[key].dly
+                clipboard[key].dly,
+                clipboard[key].end_dly
         )
         if column then
             clipboard[key].column = column
@@ -1186,7 +1202,7 @@ local function scaleNoteSelection(times)
         --change len and position
         local len = math.max(math.floor(noteSelection[key].len * times), 1)
         local line = math.floor((noteSelection[key].line - first_line) * times) + first_line
-        local column = returnColumnWhenEnoughSpaceForNote(line, len, noteSelection[key].dly)
+        local column = returnColumnWhenEnoughSpaceForNote(line, len, noteSelection[key].dly, noteSelection[key].end_dly)
         if column then
             if noteSelection[key].len == 1 and len > 1 then
                 if toRenoiseHex(noteSelection[key].vel):sub(1, 1) == "C" then
@@ -1245,7 +1261,7 @@ local function chopSelectedNotes()
                 },
             }) do
                 --search for valid column
-                local column = returnColumnWhenEnoughSpaceForNote(v.line, v.len, noteSelection[key].dly)
+                local column = returnColumnWhenEnoughSpaceForNote(v.line, v.len, noteSelection[key].dly, noteSelection[key].end_dly)
                 if not column then
                     showStatus("Not enough space to chop notes here.")
                     return false
@@ -1319,7 +1335,8 @@ local function duplicateSelectedNotes(noOffset)
         column = returnColumnWhenEnoughSpaceForNote(
                 noteSelection[key].line + offset,
                 noteSelection[key].len,
-                noteSelection[key].dly
+                noteSelection[key].dly,
+                noteSelection[key].end_dly
         )
         if column then
             noteSelection[key].column = column
@@ -1370,7 +1387,7 @@ local function changeSizeSelectedNotes(len, add)
             newLen = math.max(noteSelection[key].len + len, 1)
         end
         --search for valid column
-        column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line, newLen, noteSelection[key].dly)
+        column = returnColumnWhenEnoughSpaceForNote(noteSelection[key].line, newLen, noteSelection[key].dly, noteSelection[key].end_dly)
         if column then
             if noteSelection[key].len == 1 and newLen > 1 then
                 if toRenoiseHex(noteSelection[key].vel):sub(1, 1) == "C" then
@@ -1406,7 +1423,7 @@ local function changeSizeSelectedNotes(len, add)
 end
 
 --change note properties
-local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
+local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, special)
     local lineValues = song.selected_pattern_track.lines
     --randomize seed for humanizing
     math.randomseed(os.clock() * 100000000000)
@@ -1428,10 +1445,19 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
     song.transport.edit_mode = false
     song.transport.follow_player = false
     --go through selection
+    local selection
+    local note
+    local note_end
+    local noteoff
     for key in pairs(noteSelection) do
-        local selection = noteSelection[key]
-        local note = lineValues[selection.line]:note_column(selection.column)
-        local note_end = lineValues[selection.line + selection.len - 1]:note_column(selection.column)
+        selection = noteSelection[key]
+        note = lineValues[selection.line]:note_column(selection.column)
+        note_end = lineValues[selection.line + selection.len - 1]:note_column(selection.column)
+        if selection.noteoff then
+            noteoff = lineValues[selection.line + selection.len]:note_column(selection.column)
+        else
+            noteoff = nil
+        end
         if vel ~= nil then
             if tostring(vel) == "h" then
                 if note.volume_value <= 127 then
@@ -1500,7 +1526,7 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
                         --remove note
                         removeNoteInPattern(selection.column, selection.line, selection.len)
                         --search for valid column
-                        local column = returnColumnWhenEnoughSpaceForNote(selection.line, selection.len, dly)
+                        local column = returnColumnWhenEnoughSpaceForNote(selection.line, selection.len, dly, selection.end_dly)
                         if column then
                             selection.line = selection.line
                             selection.column = column
@@ -1523,6 +1549,41 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, pan, special)
                 end
                 note.delay_string = toRenoiseHex(dly)
                 selection.dly = dly
+            end
+        end
+        if end_dly ~= nil then
+            if selection.end_dly == 0 and end_dly > 0 and not selection.noteoff then
+                --remove note
+                removeNoteInPattern(selection.column, selection.line, selection.len)
+                --search for valid column
+                local column = returnColumnWhenEnoughSpaceForNote(selection.line, selection.len, selection.end_dly, end_dly)
+                if column then
+                    selection.line = selection.line
+                    selection.column = column
+                end
+                selection.noteoff = addNoteToPattern(
+                        selection.column,
+                        selection.line,
+                        selection.len,
+                        selection.note,
+                        selection.vel,
+                        selection.end_vel,
+                        selection.pan,
+                        selection.dly,
+                        selection.end_dly,
+                        selection.ghst
+                )
+                --refresh note var
+                note = lineValues[selection.line]:note_column(selection.column)
+                if selection.noteoff then
+                    noteoff = lineValues[selection.line + selection.len]:note_column(selection.column)
+                else
+                    noteoff = nil
+                end
+            end
+            if noteoff then
+                noteoff.delay_string = toRenoiseHex(end_dly)
+                selection.end_dly = end_dly
             end
         end
         if special == "matchingnotes" then
@@ -1953,7 +2014,7 @@ function pianoGridClick(x, y, released)
             end
             --disable edit mode because of side effects
             song.transport.edit_mode = false
-            column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay)
+            column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay, currentNoteEndDelay)
             --no column found
             if column == nil then
                 --no space for this note
@@ -2141,6 +2202,7 @@ local function enableNoteButton(column,
                 local spaceWidth = 0
                 local retriggerWidth = 0
                 local delayWidth = 0
+                local addWidth = 0
                 local cutValue = 0
 
                 if l_song_st.volume_column_visible and current_note_end_vel >= 192 and current_note_end_vel <= 207 then
@@ -2226,8 +2288,13 @@ local function enableNoteButton(column,
                     spaceWidth = (gridStepSizeW * (current_note_step - 1)) - (gridSpacing * (current_note_step - 2))
                 end
 
-                if l_song_st.delay_column_visible and current_note_dly > 0 then
-                    delayWidth = math.max(current_note_dly, delayWidth)
+                if l_song_st.delay_column_visible then
+                    if current_note_dly > 0 then
+                        delayWidth = math.max(current_note_dly, delayWidth)
+                    end
+                    if current_note_end_dly > 0 then
+                        addWidth = math.max(current_note_end_dly, addWidth)
+                    end
                 end
 
                 if delayWidth > 0 and stepOffset < current_note_line then
@@ -2237,6 +2304,11 @@ local function enableNoteButton(column,
                     if current_note_step < 2 then
                         spaceWidth = spaceWidth + gridSpacing
                     end
+                end
+
+                if addWidth > 0 then
+                    addWidth = math.max(math.floor((gridStepSizeW - gridSpacing) / 0xff * addWidth), 1)
+                    buttonWidth = buttonWidth + addWidth
                 end
 
                 if spaceWidth > 0 then
@@ -2254,7 +2326,7 @@ local function enableNoteButton(column,
                 end
 
                 --no note labels when to short
-                if buttonWidth - buttonSpace - 1 < 30 or (retriggerWidth > 0 and buttonWidth - buttonSpace - 1 < 52) then
+                if buttonWidth - buttonSpace - 1 < 32 or (retriggerWidth > 0 and buttonWidth - buttonSpace - 1 < 52) then
                     if not string.find(current_note_string, '#') and buttonWidth - buttonSpace - 1 > 25 and retriggerWidth == 0 then
                         current_note_string = string.gsub(current_note_string, '-', '')
                     else
@@ -3372,7 +3444,7 @@ local function handleKeyEvent(keyEvent)
                 selectall = true
             end
             if #noteSelection > 0 then
-                changePropertiesOfSelectedNotes("mute", nil, nil, nil)
+                changePropertiesOfSelectedNotes("mute")
                 keyInfoText = "Mute selected notes"
                 showStatus(#noteSelection .. " notes was muted.")
                 --when all was automatically selected, deselect it
@@ -3387,7 +3459,7 @@ local function handleKeyEvent(keyEvent)
     if key.name == "n" and key.modifiers == "alt" then
         if key.state == "pressed" then
             if #noteSelection > 0 then
-                changePropertiesOfSelectedNotes(nil, nil, nil, nil, "matchingnotes")
+                changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, "matchingnotes")
                 keyInfoText = "Match notes"
                 showStatus(#noteSelection .. " notes was matched.")
             end
@@ -3405,7 +3477,7 @@ local function handleKeyEvent(keyEvent)
                 selectall = true
             end
             if #noteSelection > 0 then
-                changePropertiesOfSelectedNotes("unmute", nil, nil, nil)
+                changePropertiesOfSelectedNotes("unmute")
                 keyInfoText = "Unmute selected notes"
                 showStatus(#noteSelection .. " notes was unmuted.")
                 --when all was automatically selected, deselect it
@@ -3737,7 +3809,7 @@ local function handleXypad(val)
                         --when a new len will be drawn, then reset len to 1
                         changeSizeSelectedNotes(1)
                         --and remove delay
-                        changePropertiesOfSelectedNotes(nil, nil, 0, nil, "quick")
+                        changePropertiesOfSelectedNotes(nil, nil, 0, nil, nil, "quick")
                     end
                     for d = math.abs(xypadpos.x - math.floor(val.x + xypadpos.threshold)), 1, -1 do
                         if changeSizeSelectedNotes(-d, true) then
@@ -3753,7 +3825,7 @@ local function handleXypad(val)
                     quickRefresh = true
                     if #noteSelection == 1 and xypadpos.resetscale then
                         changeSizeSelectedNotes(1)
-                        changePropertiesOfSelectedNotes(nil, nil, 0, nil, "quick")
+                        changePropertiesOfSelectedNotes(nil, nil, 0, nil, nil, "quick")
                     end
                     for d = math.abs(xypadpos.x - math.floor(val.x - xypadpos.threshold)), 1, -1 do
                         if changeSizeSelectedNotes(d, true) then
@@ -3790,7 +3862,7 @@ local function handleXypad(val)
                                     v = 0xaa
                                 end
                             end
-                            changePropertiesOfSelectedNotes(nil, nil, v, nil, "quick")
+                            changePropertiesOfSelectedNotes(nil, nil, v, nil, nil, "quick")
                             xypadpos.lastval = v
                         end
                     end
@@ -4137,7 +4209,7 @@ local function showPreferences()
             },
             vb:text {
                 text = "Please check in the Renoise preferences in the OSC\n" ..
-                        "section that the OSC server has been activated and is\n"..
+                        "section that the OSC server has been activated and is\n" ..
                         "running with the same protocol (UDP, TCP) and port\n" ..
                         "settings as specified here."
             },
@@ -4674,7 +4746,7 @@ local function createPianoRollDialog()
                             currentNoteVelocity = number
                         end
                         if #noteSelection > 0 and not refreshControls then
-                            changePropertiesOfSelectedNotes(currentNoteVelocity, nil, nil, nil)
+                            changePropertiesOfSelectedNotes(currentNoteVelocity)
                         end
                         refreshControls = true
                     end,
@@ -4686,7 +4758,7 @@ local function createPianoRollDialog()
                     notifier = function()
                         currentNoteVelocity = 255
                         if #noteSelection > 0 then
-                            changePropertiesOfSelectedNotes(currentNoteVelocity, nil, nil, nil)
+                            changePropertiesOfSelectedNotes(currentNoteVelocity)
                         end
                         refreshControls = true
                     end,
@@ -4697,7 +4769,7 @@ local function createPianoRollDialog()
                     tooltip = "Humanize note velocity of selected notes",
                     notifier = function()
                         if #noteSelection > 0 then
-                            changePropertiesOfSelectedNotes("h", nil, nil, nil)
+                            changePropertiesOfSelectedNotes("h")
                         end
                     end,
                 },
@@ -4728,7 +4800,7 @@ local function createPianoRollDialog()
                             currentNoteEndVelocity = number
                         end
                         if #noteSelection > 0 and not refreshControls then
-                            changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity, nil, nil)
+                            changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity)
                         end
                         refreshControls = true
                     end,
@@ -4740,7 +4812,7 @@ local function createPianoRollDialog()
                     notifier = function()
                         currentNoteEndVelocity = 255
                         if #noteSelection > 0 then
-                            changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity, nil, nil)
+                            changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity)
                         end
                         refreshControls = true
                     end,
@@ -4787,7 +4859,7 @@ local function createPianoRollDialog()
                             currentNotePan = number
                         end
                         if #noteSelection > 0 and not refreshControls then
-                            changePropertiesOfSelectedNotes(nil, nil, nil, currentNotePan)
+                            changePropertiesOfSelectedNotes(nil, nil, nil, nil, currentNotePan)
                         end
                         refreshControls = true
                     end,
@@ -4798,7 +4870,7 @@ local function createPianoRollDialog()
                     tooltip = "Clear note panning",
                     notifier = function()
                         currentNotePan = 255
-                        changePropertiesOfSelectedNotes(nil, nil, nil, currentNotePan)
+                        changePropertiesOfSelectedNotes(nil, nil, nil, nil, currentNotePan)
                         refreshControls = true
                         refreshPianoRollNeeded = true
                     end,
@@ -4809,7 +4881,7 @@ local function createPianoRollDialog()
                     tooltip = "Humanize note panning of selected notes",
                     notifier = function()
                         if #noteSelection > 0 then
-                            changePropertiesOfSelectedNotes(nil, nil, nil, "h")
+                            changePropertiesOfSelectedNotes(nil, nil, nil, nil, "h")
                         end
                     end,
                 },
@@ -4851,7 +4923,7 @@ local function createPianoRollDialog()
                     notifier = function(number)
                         currentNoteDelay = number
                         if #noteSelection > 0 and not refreshControls then
-                            changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay, nil)
+                            changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay)
                         end
                         refreshControls = true
                     end,
@@ -4862,7 +4934,7 @@ local function createPianoRollDialog()
                     tooltip = "Clear note delay",
                     notifier = function()
                         currentNoteDelay = 0
-                        changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay, nil)
+                        changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay)
                         refreshControls = true
                         refreshPianoRollNeeded = true
                     end,
@@ -4873,7 +4945,7 @@ local function createPianoRollDialog()
                     tooltip = "Humanize note delay of selected notes",
                     notifier = function()
                         if #noteSelection > 0 then
-                            changePropertiesOfSelectedNotes(nil, nil, "h", nil)
+                            changePropertiesOfSelectedNotes(nil, nil, "h")
                         end
                     end,
                 },
@@ -4899,9 +4971,9 @@ local function createPianoRollDialog()
                     end,
                     notifier = function(number)
                         currentNoteEndDelay = number
-                        --if #noteSelection > 0 and not refreshControls then
-                        --    changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay, nil)
-                        --end
+                        if #noteSelection > 0 and not refreshControls then
+                            changePropertiesOfSelectedNotes(nil, nil, nil, currentNoteEndDelay)
+                        end
                         refreshControls = true
                     end,
                 },
@@ -4911,7 +4983,7 @@ local function createPianoRollDialog()
                     tooltip = "Clear note delay",
                     notifier = function()
                         currentNoteEndDelay = 0
-                        --changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay, nil)
+                        changePropertiesOfSelectedNotes(nil, nil, nil, currentNoteEndDelay)
                         refreshControls = true
                         refreshPianoRollNeeded = true
                     end,
@@ -4924,12 +4996,12 @@ local function createPianoRollDialog()
                         if currentNoteGhost then
                             currentNoteGhost = false
                             if #noteSelection > 0 then
-                                changePropertiesOfSelectedNotes(nil, nil, nil, nil, "noghost")
+                                changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, "noghost")
                             end
                         else
                             currentNoteGhost = true
                             if #noteSelection > 0 then
-                                changePropertiesOfSelectedNotes(nil, nil, nil, nil, "ghost")
+                                changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, "ghost")
                             end
                         end
                         refreshControls = true
