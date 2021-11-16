@@ -65,6 +65,7 @@ local defaultPreferences = {
     resetVolPanDlyControlOnClick = true,
     minSizeOfNoteButton = 5,
     setLastEditedTrackAsGhost = true,
+    useTrackColorForNoteHighlighting = false,
 }
 
 --tool preferences
@@ -121,6 +122,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     disableKeyHandler = defaultPreferences.disableKeyHandler,
     disableAltClickNoteRemove = defaultPreferences.disableAltClickNoteRemove,
     setLastEditedTrackAsGhost = defaultPreferences.setLastEditedTrackAsGhost,
+    useTrackColorForNoteHighlighting = defaultPreferences.useTrackColorForNoteHighlighting,
 }
 tool.preferences = preferences
 
@@ -1561,7 +1563,11 @@ end
 local function setKeyboardKeyColor(row, pressed, highlighted)
     local idx = "k" .. row
     if highlighted then
-        vbw[idx].color = colorNoteHighlight
+        if preferences.useTrackColorForNoteHighlighting.value then
+            vbw[idx].color = vbw["trackcolor"].color
+        else
+            vbw[idx].color = colorNoteHighlight
+        end
     elseif not pressed then
         vbw[idx].color = defaultColor[idx]
     else
@@ -2189,7 +2195,11 @@ local function enableNoteButton(column,
                 if current_note_vel == 0 then
                     color = colorNoteMuted
                 elseif isOnStep == true then
-                    color = colorNoteHighlight
+                    if preferences.useTrackColorForNoteHighlighting.value then
+                        color = vbw["trackcolor"].color
+                    else
+                        color = colorNoteHighlight
+                    end
                 elseif ghost == true then
                     color = colorNoteGhost
                 else
@@ -2554,7 +2564,11 @@ local function highlightNotesOnStep(step, highlight)
                 rows[note.row] = note.note
                 if highlight then
                     if vbw[idx].color[1] ~= colorNoteSelected[1] then
-                        vbw[idx].color = colorNoteHighlight
+                        if preferences.useTrackColorForNoteHighlighting.value then
+                            vbw[idx].color = vbw["trackcolor"].color
+                        else
+                            vbw[idx].color = colorNoteHighlight
+                        end
                     end
                 else
                     if vbw[idx].color[1] ~= colorNoteSelected[1] then
@@ -3855,6 +3869,457 @@ local function handleXypad(val)
     end
 end
 
+--preferences window
+local function showPreferences()
+    local btn = app:show_custom_prompt("Preferences", vb:row {
+        uniform = true,
+        margin = 5,
+        spacing = 5,
+        vb:column {
+            style = "group",
+            margin = 5,
+            uniform = true,
+            spacing = 4,
+            vb:text {
+                text = "Piano roll grid",
+                font = "big",
+                style = "strong",
+            },
+            vb:row {
+                vb:text {
+                    text = "Grid size:",
+                },
+                vb:valuebox {
+                    steps = { 1, 2 },
+                    min = 16,
+                    max = 256,
+                    bind = preferences.gridWidth,
+                },
+                vb:text { text = "x", align = "center", },
+                vb:valuebox {
+                    steps = { 1, 2 },
+                    min = 16,
+                    max = 64,
+                    bind = preferences.gridHeight,
+                },
+            },
+            vb:text {
+                text = "Grid size settings takes effect,\nwhen the piano roll will be reopened.",
+            },
+            vb:space { height = 8 },
+            vb:row {
+                vb:text {
+                    text = "Min size of a note button (px):",
+                },
+                vb:valuebox {
+                    min = 2,
+                    max = 16,
+                    bind = preferences.minSizeOfNoteButton,
+                    tostring = function(v)
+                        return string.format("%i", v)
+                    end,
+                    tonumber = function(v)
+                        return tonumber(v)
+                    end
+                },
+            },
+            vb:space { height = 8 },
+            vb:row {
+                vb:text {
+                    text = "Shading amount of out of scale notes:",
+                },
+                vb:valuebox {
+                    steps = { 0.01, 0.1 },
+                    min = 0.01,
+                    max = 1,
+                    bind = preferences.outOfNoteScaleShadingAmount,
+                    tostring = function(v)
+                        return string.format("%.2f", v)
+                    end,
+                    tonumber = function(v)
+                        return tonumber(v)
+                    end
+                },
+            },
+            vb:row {
+                vb:text {
+                    text = "Shading amount of odd bars:",
+                },
+                vb:valuebox {
+                    steps = { 0.01, 0.1 },
+                    min = 0.01,
+                    max = 1,
+                    bind = preferences.oddBarsShadingAmount,
+                    tostring = function(v)
+                        return string.format("%.2f", v)
+                    end,
+                    tonumber = function(v)
+                        return tonumber(v)
+                    end
+                },
+            },
+            vb:space { height = 8 },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.applyVelocityColorShading
+                },
+                vb:text {
+                    text = "Shading note color according to velocity",
+                },
+            },
+            vb:row {
+                vb:text {
+                    text = "Shading mode type:",
+                },
+                vb:popup {
+                    width = 110,
+                    items = {
+                        "Shading",
+                        "Alpha blending",
+                    },
+                    bind = preferences.shadingType,
+                },
+            },
+            vb:row {
+                vb:text {
+                    text = "Shading / alpha blending amount:",
+                },
+                vb:valuebox {
+                    steps = { 0.01, 0.1 },
+                    min = 0.01,
+                    max = 1,
+                    bind = preferences.velocityColorShadingAmount,
+                    tostring = function(v)
+                        return string.format("%.2f", v)
+                    end,
+                    tonumber = function(v)
+                        return tonumber(v)
+                    end
+                },
+            },
+            vb:space { height = 8 },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.highlightEntireLineOfPlayingNote
+                },
+                vb:text {
+                    text = "Highlight the entire row of a playing note (slow)",
+                },
+            },
+            vb:row {
+                vb:text {
+                    text = "Highlighting amount:",
+                },
+                vb:valuebox {
+                    steps = { 0.01, 0.1 },
+                    min = 0.01,
+                    max = 1,
+                    bind = preferences.rowHighlightingAmount,
+                    tostring = function(v)
+                        return string.format("%.2f", v)
+                    end,
+                    tonumber = function(v)
+                        return tonumber(v)
+                    end
+                },
+            },
+            vb:space { height = 8 },
+            vb:row {
+                uniform = true,
+                vb:text {
+                    text = "Scale highlighting:",
+                },
+                vb:popup {
+                    width = 110,
+                    items = {
+                        "None",
+                        "Major scale",
+                        "Minor scale",
+                        "Instrument scale",
+                        "Automatic scale",
+                    },
+                    bind = preferences.scaleHighlightingType,
+                },
+            },
+            vb:row {
+                vb:text {
+                    text = "Key for selected scale:",
+                    width = "50%"
+                },
+                vb:popup {
+                    items = notesTable,
+                    bind = preferences.keyForSelectedScale,
+                },
+            },
+            vb:row {
+                vb:text {
+                    text = "Keyboard style:",
+                    width = "50%"
+                },
+                vb:popup {
+                    items = {
+                        "Flat",
+                        "List",
+                    },
+                    bind = preferences.keyboardStyle,
+                },
+            },
+        },
+        vb:column {
+            style = "group",
+            margin = 5,
+            uniform = true,
+            spacing = 4,
+            vb:text {
+                text = "Color settings",
+                font = "big",
+                style = "strong",
+            },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.useTrackColorForNoteHighlighting
+                },
+                vb:text {
+                    text = "Use track color for note highlighting",
+                },
+            },
+        },
+        vb:column {
+            style = "group",
+            margin = 5,
+            uniform = true,
+            spacing = 4,
+            vb:text {
+                text = "Note playback and preview",
+                font = "big",
+                style = "strong",
+            },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.enableOSCClient
+                },
+                vb:text {
+                    text = "Enable OSC client",
+                },
+            },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.notePreview
+                },
+                vb:text {
+                    text = "Enable note preview",
+                },
+            },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.noNotePreviewDuringSongPlayback,
+                },
+                vb:text {
+                    text = "No note preview during song playback",
+                },
+            },
+            vb:row {
+                vb:text {
+                    text = "Note preview length (ms):",
+                },
+                vb:valuebox {
+                    steps = { 1, 2 },
+                    min = 50,
+                    max = 2000,
+                    bind = preferences.triggerTime,
+                },
+            },
+            vb:text {
+                text = "OSC connection string: [protocol]://[ip]:[port]",
+            },
+            vb:textfield {
+                bind = preferences.oscConnectionString,
+            },
+            vb:text {
+                text = "Please check in the Renoise preferences in the OSC\n" ..
+                        "section that the OSC server has been activated and is\n"..
+                        "running with the same protocol (UDP, TCP) and port\n" ..
+                        "settings as specified here."
+            },
+        },
+        vb:column {
+            style = "group",
+            margin = 5,
+            uniform = true,
+            spacing = 4,
+            vb:text {
+                text = "Misc",
+                font = "big",
+                style = "strong",
+            },
+            vb:row {
+                vb:text {
+                    text = "Max double click time (ms):",
+                },
+                vb:valuebox {
+                    steps = { 1, 2 },
+                    min = 50,
+                    max = 2000,
+                    bind = preferences.dblClickTime,
+                },
+            },
+            vb:row {
+                vb:text {
+                    text = "Scroll wheel speed:",
+                },
+                vb:valuebox {
+                    steps = { 1, 2 },
+                    min = 1,
+                    max = 6,
+                    bind = preferences.scrollWheelSpeed,
+                    tostring = function(v)
+                        return string.format("%i", v)
+                    end,
+                    tonumber = function(v)
+                        return tonumber(v)
+                    end
+                },
+            },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.forcePenMode,
+                },
+                vb:text {
+                    text = "Enable pen mode by default",
+                },
+            },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.resetVolPanDlyControlOnClick,
+                },
+                vb:text {
+                    text = "Reset vol, pan and dly on grid click, when nothing is selected",
+                },
+            },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.followPlayCursor,
+                },
+                vb:text {
+                    text = "Follow play cursor, when enabled in Renoise",
+                },
+            },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.addNoteColumnsIfNeeded,
+                },
+                vb:text {
+                    text = "Automatically add note columns, when needed",
+                },
+            },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.addNoteOffToEmptyNoteColumns,
+                },
+                vb:text {
+                    text = "Automatically add NoteOff's in empty note columns",
+                },
+            },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.setLastEditedTrackAsGhost,
+                },
+                vb:text {
+                    text = "Automatically set the last edited track as ghost track",
+                },
+            },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.disableAltClickNoteRemove,
+                },
+                vb:text {
+                    text = "Disable alt key click note remove",
+                },
+            },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.azertyMode,
+                },
+                vb:text {
+                    text = "Enable AZERTY keyboard mode",
+                },
+            },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.disableKeyHandler,
+                },
+                vb:text {
+                    text = "Disable all keyboard shortcuts",
+                },
+            },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.enableKeyInfo,
+                },
+                vb:text {
+                    text = "Enable keyboard status bar",
+                },
+            },
+            vb:row {
+                vb:text {
+                    text = "Max keyboard status bar display time (s):",
+                },
+                vb:valuebox {
+                    steps = { 1, 2 },
+                    min = 1,
+                    max = 10,
+                    bind = preferences.keyInfoTime,
+                    tostring = function(v)
+                        return string.format("%i", v)
+                    end,
+                    tonumber = function(v)
+                        return tonumber(v)
+                    end
+                },
+            },
+            vb:row {
+                vb:text {
+                    text = "Click area size for scaling (%):",
+                },
+                vb:valuebox {
+                    steps = { 1, 2 },
+                    min = 1,
+                    max = 75,
+                    bind = preferences.clickAreaSizeForScaling,
+                    tostring = function(v)
+                        return string.format("%i", v)
+                    end,
+                    tonumber = function(v)
+                        return tonumber(v)
+                    end
+                },
+            },
+            vb:text {
+                text = "IMPORTANT: To improve mouse control, please disable\nthe mouse warping option in the Renoise preferences\nin section GUI."
+            },
+        },
+    }, { "Close", "Reset to default", "Help / Feedback" })
+    if btn == "Reset to default" then
+        if app:show_prompt("Reset to default", "Are you sure you want to reset all settings to their default values?", { "Yes", "No" }) == "Yes" then
+            for key in pairs(defaultPreferences) do
+                preferences[key].value = defaultPreferences[key]
+            end
+            app:show_message("All preferences was set to default values.")
+        end
+    end
+    if btn == "Help / Feedback" then
+        app:open_url("https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx/63034")
+    end
+    if oscClient then
+        oscClient:close()
+        oscClient = nil
+    end
+    refreshControls = true
+    refreshPianoRollNeeded = true
+    --apply new highlighting colors
+    initColors()
+end
+
 --create main piano roll dialog
 local function createPianoRollDialog()
     local vb_temp
@@ -4511,432 +4976,7 @@ local function createPianoRollDialog()
                     text = "Preferences",
                     tooltip = "Simple Pianoroll Preferences ...",
                     notifier = function()
-                        local btn = app:show_custom_prompt("Preferences", vb:row {
-                            uniform = true,
-                            margin = 5,
-                            spacing = 5,
-                            vb:column {
-                                style = "group",
-                                margin = 5,
-                                uniform = true,
-                                spacing = 4,
-                                vb:text {
-                                    text = "Piano roll grid",
-                                    font = "big",
-                                    style = "strong",
-                                },
-                                vb:row {
-                                    vb:text {
-                                        text = "Grid size:",
-                                    },
-                                    vb:valuebox {
-                                        steps = { 1, 2 },
-                                        min = 16,
-                                        max = 256,
-                                        bind = preferences.gridWidth,
-                                    },
-                                    vb:text { text = "x", align = "center", },
-                                    vb:valuebox {
-                                        steps = { 1, 2 },
-                                        min = 16,
-                                        max = 64,
-                                        bind = preferences.gridHeight,
-                                    },
-                                },
-                                vb:text {
-                                    text = "Grid size settings takes effect,\nwhen the piano roll will be reopened.",
-                                },
-                                vb:space { height = 8 },
-                                vb:row {
-                                    vb:text {
-                                        text = "Min size of a note button (px):",
-                                    },
-                                    vb:valuebox {
-                                        min = 2,
-                                        max = 16,
-                                        bind = preferences.minSizeOfNoteButton,
-                                        tostring = function(v)
-                                            return string.format("%i", v)
-                                        end,
-                                        tonumber = function(v)
-                                            return tonumber(v)
-                                        end
-                                    },
-                                },
-                                vb:space { height = 8 },
-                                vb:row {
-                                    vb:text {
-                                        text = "Shading amount of out of scale notes:",
-                                    },
-                                    vb:valuebox {
-                                        steps = { 0.01, 0.1 },
-                                        min = 0.01,
-                                        max = 1,
-                                        bind = preferences.outOfNoteScaleShadingAmount,
-                                        tostring = function(v)
-                                            return string.format("%.2f", v)
-                                        end,
-                                        tonumber = function(v)
-                                            return tonumber(v)
-                                        end
-                                    },
-                                },
-                                vb:row {
-                                    vb:text {
-                                        text = "Shading amount of odd bars:",
-                                    },
-                                    vb:valuebox {
-                                        steps = { 0.01, 0.1 },
-                                        min = 0.01,
-                                        max = 1,
-                                        bind = preferences.oddBarsShadingAmount,
-                                        tostring = function(v)
-                                            return string.format("%.2f", v)
-                                        end,
-                                        tonumber = function(v)
-                                            return tonumber(v)
-                                        end
-                                    },
-                                },
-                                vb:space { height = 8 },
-                                vb:row {
-                                    vb:checkbox {
-                                        bind = preferences.applyVelocityColorShading
-                                    },
-                                    vb:text {
-                                        text = "Shading note color according to velocity",
-                                    },
-                                },
-                                vb:row {
-                                    vb:text {
-                                        text = "Shading mode type:",
-                                    },
-                                    vb:popup {
-                                        width = 110,
-                                        items = {
-                                            "Shading",
-                                            "Alpha blending",
-                                        },
-                                        bind = preferences.shadingType,
-                                    },
-                                },
-                                vb:row {
-                                    vb:text {
-                                        text = "Shading / alpha blending amount:",
-                                    },
-                                    vb:valuebox {
-                                        steps = { 0.01, 0.1 },
-                                        min = 0.01,
-                                        max = 1,
-                                        bind = preferences.velocityColorShadingAmount,
-                                        tostring = function(v)
-                                            return string.format("%.2f", v)
-                                        end,
-                                        tonumber = function(v)
-                                            return tonumber(v)
-                                        end
-                                    },
-                                },
-                                vb:space { height = 8 },
-                                vb:row {
-                                    vb:checkbox {
-                                        bind = preferences.highlightEntireLineOfPlayingNote
-                                    },
-                                    vb:text {
-                                        text = "Highlight the entire row of a playing note (slow)",
-                                    },
-                                },
-                                vb:row {
-                                    vb:text {
-                                        text = "Highlighting amount:",
-                                    },
-                                    vb:valuebox {
-                                        steps = { 0.01, 0.1 },
-                                        min = 0.01,
-                                        max = 1,
-                                        bind = preferences.rowHighlightingAmount,
-                                        tostring = function(v)
-                                            return string.format("%.2f", v)
-                                        end,
-                                        tonumber = function(v)
-                                            return tonumber(v)
-                                        end
-                                    },
-                                },
-                                vb:space { height = 8 },
-                                vb:row {
-                                    uniform = true,
-                                    vb:text {
-                                        text = "Scale highlighting:",
-                                    },
-                                    vb:popup {
-                                        width = 110,
-                                        items = {
-                                            "None",
-                                            "Major scale",
-                                            "Minor scale",
-                                            "Instrument scale",
-                                            "Automatic scale",
-                                        },
-                                        bind = preferences.scaleHighlightingType,
-                                    },
-                                },
-                                vb:row {
-                                    vb:text {
-                                        text = "Key for selected scale:",
-                                        width = "50%"
-                                    },
-                                    vb:popup {
-                                        items = notesTable,
-                                        bind = preferences.keyForSelectedScale,
-                                    },
-                                },
-                                vb:row {
-                                    vb:text {
-                                        text = "Keyboard style:",
-                                        width = "50%"
-                                    },
-                                    vb:popup {
-                                        items = {
-                                            "Flat",
-                                            "List",
-                                        },
-                                        bind = preferences.keyboardStyle,
-                                    },
-                                },
-                            },
-                            vb:column {
-                                style = "group",
-                                margin = 5,
-                                uniform = true,
-                                spacing = 4,
-                                vb:text {
-                                    text = "Note playback and preview",
-                                    font = "big",
-                                    style = "strong",
-                                },
-                                vb:row {
-                                    vb:checkbox {
-                                        bind = preferences.enableOSCClient
-                                    },
-                                    vb:text {
-                                        text = "Enable OSC client",
-                                    },
-                                },
-                                vb:row {
-                                    vb:checkbox {
-                                        bind = preferences.notePreview
-                                    },
-                                    vb:text {
-                                        text = "Enable note preview",
-                                    },
-                                },
-                                vb:row {
-                                    vb:checkbox {
-                                        bind = preferences.noNotePreviewDuringSongPlayback,
-                                    },
-                                    vb:text {
-                                        text = "No note preview during song playback",
-                                    },
-                                },
-                                vb:row {
-                                    vb:text {
-                                        text = "Note preview length (ms):",
-                                    },
-                                    vb:valuebox {
-                                        steps = { 1, 2 },
-                                        min = 50,
-                                        max = 2000,
-                                        bind = preferences.triggerTime,
-                                    },
-                                },
-                                vb:text {
-                                    text = "OSC connection string: [protocol]://[ip]:[port]",
-                                },
-                                vb:textfield {
-                                    bind = preferences.oscConnectionString,
-                                },
-                                vb:text {
-                                    text = "Please check in the Renoise preferences in\nthe OSC section that the OSC server has\n" ..
-                                            "been activated and is running with the same\nprotocol (UDP, TCP) and port settings\nas specified here."
-                                },
-                            },
-                            vb:column {
-                                style = "group",
-                                margin = 5,
-                                uniform = true,
-                                spacing = 4,
-                                vb:text {
-                                    text = "Misc",
-                                    font = "big",
-                                    style = "strong",
-                                },
-                                vb:row {
-                                    vb:text {
-                                        text = "Max double click time (ms):",
-                                    },
-                                    vb:valuebox {
-                                        steps = { 1, 2 },
-                                        min = 50,
-                                        max = 2000,
-                                        bind = preferences.dblClickTime,
-                                    },
-                                },
-                                vb:row {
-                                    vb:text {
-                                        text = "Scroll wheel speed:",
-                                    },
-                                    vb:valuebox {
-                                        steps = { 1, 2 },
-                                        min = 1,
-                                        max = 6,
-                                        bind = preferences.scrollWheelSpeed,
-                                        tostring = function(v)
-                                            return string.format("%i", v)
-                                        end,
-                                        tonumber = function(v)
-                                            return tonumber(v)
-                                        end
-                                    },
-                                },
-                                vb:row {
-                                    vb:checkbox {
-                                        bind = preferences.forcePenMode,
-                                    },
-                                    vb:text {
-                                        text = "Enable pen mode by default",
-                                    },
-                                },
-                                vb:row {
-                                    vb:checkbox {
-                                        bind = preferences.resetVolPanDlyControlOnClick,
-                                    },
-                                    vb:text {
-                                        text = "Reset vol, pan and dly controls on grid click, when nothing is selected",
-                                    },
-                                },
-                                vb:row {
-                                    vb:checkbox {
-                                        bind = preferences.followPlayCursor,
-                                    },
-                                    vb:text {
-                                        text = "Follow play cursor, when enabled in Renoise",
-                                    },
-                                },
-                                vb:row {
-                                    vb:checkbox {
-                                        bind = preferences.addNoteColumnsIfNeeded,
-                                    },
-                                    vb:text {
-                                        text = "Automatically add note columns, when needed",
-                                    },
-                                },
-                                vb:row {
-                                    vb:checkbox {
-                                        bind = preferences.addNoteOffToEmptyNoteColumns,
-                                    },
-                                    vb:text {
-                                        text = "Automatically add NoteOff's in empty note columns",
-                                    },
-                                },
-                                vb:row {
-                                    vb:checkbox {
-                                        bind = preferences.setLastEditedTrackAsGhost,
-                                    },
-                                    vb:text {
-                                        text = "Automatically set the last edited track as ghost track",
-                                    },
-                                },
-                                vb:row {
-                                    vb:checkbox {
-                                        bind = preferences.disableAltClickNoteRemove,
-                                    },
-                                    vb:text {
-                                        text = "Disable alt key click note remove",
-                                    },
-                                },
-                                vb:row {
-                                    vb:checkbox {
-                                        bind = preferences.azertyMode,
-                                    },
-                                    vb:text {
-                                        text = "Enable AZERTY keyboard mode",
-                                    },
-                                },
-                                vb:row {
-                                    vb:checkbox {
-                                        bind = preferences.disableKeyHandler,
-                                    },
-                                    vb:text {
-                                        text = "Disable all keyboard shortcuts",
-                                    },
-                                },
-                                vb:row {
-                                    vb:checkbox {
-                                        bind = preferences.enableKeyInfo,
-                                    },
-                                    vb:text {
-                                        text = "Enable keyboard status bar",
-                                    },
-                                },
-                                vb:row {
-                                    vb:text {
-                                        text = "Max keyboard status bar display time (s):",
-                                    },
-                                    vb:valuebox {
-                                        steps = { 1, 2 },
-                                        min = 1,
-                                        max = 10,
-                                        bind = preferences.keyInfoTime,
-                                        tostring = function(v)
-                                            return string.format("%i", v)
-                                        end,
-                                        tonumber = function(v)
-                                            return tonumber(v)
-                                        end
-                                    },
-                                },
-                                vb:row {
-                                    vb:text {
-                                        text = "Click area size for scaling (%):",
-                                    },
-                                    vb:valuebox {
-                                        steps = { 1, 2 },
-                                        min = 1,
-                                        max = 75,
-                                        bind = preferences.clickAreaSizeForScaling,
-                                        tostring = function(v)
-                                            return string.format("%i", v)
-                                        end,
-                                        tonumber = function(v)
-                                            return tonumber(v)
-                                        end
-                                    },
-                                },
-                                vb:text {
-                                    text = "IMPORTANT: To improve mouse control, please disable\nthe mouse warping option in the Renoise preferences\nin section GUI."
-                                },
-                            },
-                        }, { "Close", "Reset to default", "Help / Feedback" })
-                        if btn == "Reset to default" then
-                            if app:show_prompt("Reset to default", "Are you sure you want to reset all settings to their default values?", { "Yes", "No" }) == "Yes" then
-                                for key in pairs(defaultPreferences) do
-                                    preferences[key].value = defaultPreferences[key]
-                                end
-                                app:show_message("All preferences was set to default values.")
-                            end
-                        end
-                        if btn == "Help / Feedback" then
-                            app:open_url("https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx/63034")
-                        end
-                        if oscClient then
-                            oscClient:close()
-                            oscClient = nil
-                        end
-                        refreshControls = true
-                        refreshPianoRollNeeded = true
-                        --apply new highlighting colors
-                        initColors()
+                        showPreferences()
                     end,
                 },
             }
