@@ -1044,6 +1044,7 @@ local function finerMoveSelectedNotes(microsteps)
     local steps
     local len
     local delay
+
     --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
     if microsteps < 0 then
         --left one notes first
@@ -1056,6 +1057,12 @@ local function finerMoveSelectedNotes(microsteps)
             return a.line > b.line
         end)
     end
+
+    --reduce microsteps when tehre is not enough space
+    if microsteps < 0 and noteSelection[1].line == 1 and noteSelection[1].dly < math.abs(microsteps) then
+        microsteps = -noteSelection[1].dly
+    end
+
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     song.transport.follow_player = false
