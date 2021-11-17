@@ -66,39 +66,30 @@ local defaultPreferences = {
     minSizeOfNoteButton = 5,
     setLastEditedTrackAsGhost = true,
     useTrackColorForNoteHighlighting = false,
+    autoEnableDelayWhenNeeded = true,
 }
 
 --tool preferences
 local preferences = renoise.Document.create("ScriptingToolPreferences") {
-    --default grid button size
     gridStepSizeW = defaultPreferences.gridStepSizeW,
     gridStepSizeH = defaultPreferences.gridStepSizeH,
-    --positive values will be converted to negative ones to reduce margin and spacing, looks better but its slower
     gridSpacing = defaultPreferences.gridSpacing,
     gridMargin = defaultPreferences.gridMargin,
-    --size of pianorollgrid
     gridWidth = defaultPreferences.gridWidth,
     gridHeight = defaultPreferences.gridHeight,
     minSizeOfNoteButton = defaultPreferences.minSizeOfNoteButton,
-    --note preview
     triggerTime = defaultPreferences.triggerTime,
     enableOSCClient = defaultPreferences.enableOSCClient,
     noNotePreviewDuringSongPlayback = defaultPreferences.noNotePreviewDuringSongPlayback,
-    --doubleclick time
     dblClickTime = defaultPreferences.dblClickTime,
-    --button states
     forcePenMode = defaultPreferences.forcePenMode,
     notePreview = defaultPreferences.notePreview,
-    --oscsettingstring
     oscConnectionString = defaultPreferences.oscConnectionString,
-    --velocity rendering
     applyVelocityColorShading = defaultPreferences.applyVelocityColorShading,
     velocityColorShadingAmount = defaultPreferences.velocityColorShadingAmount,
     shadingType = defaultPreferences.shadingType,
-    --highlighting playing note rows
     highlightEntireLineOfPlayingNote = defaultPreferences.highlightEntireLineOfPlayingNote,
     rowHighlightingAmount = defaultPreferences.rowHighlightingAmount,
-    --misc settings
     followPlayCursor = defaultPreferences.followPlayCursor,
     addNoteOffToEmptyNoteColumns = defaultPreferences.addNoteOffToEmptyNoteColumns,
     addNoteColumnsIfNeeded = defaultPreferences.addNoteColumnsIfNeeded,
@@ -106,23 +97,18 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     keyInfoTime = defaultPreferences.keyInfoTime,
     enableKeyInfo = defaultPreferences.enableKeyInfo,
     resetVolPanDlyControlOnClick = defaultPreferences.resetVolPanDlyControlOnClick,
-    --scale highlighting settings
     scaleHighlightingType = defaultPreferences.scaleHighlightingType,
     keyForSelectedScale = defaultPreferences.keyForSelectedScale,
-    --shading in piano grid
     oddBarsShadingAmount = defaultPreferences.oddBarsShadingAmount,
     outOfNoteScaleShadingAmount = defaultPreferences.outOfNoteScaleShadingAmount,
-    --special keyboard mode
     azertyMode = defaultPreferences.azertyMode,
-    --scroll wheel settings
     scrollWheelSpeed = defaultPreferences.scrollWheelSpeed,
-    --clicksize from 1 block
     clickAreaSizeForScaling = defaultPreferences.clickAreaSizeForScaling,
-    --disable key disableKeyHandler
     disableKeyHandler = defaultPreferences.disableKeyHandler,
     disableAltClickNoteRemove = defaultPreferences.disableAltClickNoteRemove,
     setLastEditedTrackAsGhost = defaultPreferences.setLastEditedTrackAsGhost,
     useTrackColorForNoteHighlighting = defaultPreferences.useTrackColorForNoteHighlighting,
+    autoEnableDelayWhenNeeded = defaultPreferences.autoEnableDelayWhenNeeded,
 }
 tool.preferences = preferences
 
@@ -1073,6 +1059,10 @@ local function finerMoveSelectedNotes(microsteps)
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     song.transport.follow_player = false
+    --auto enable delay column
+    if not song.selected_track.delay_column_visible and preferences.autoEnableDelayWhenNeeded.value then
+        song.selected_track.delay_column_visible = true
+    end
     --
     setUndoDescription("Finer movement of notes ...")
     --go through selection
@@ -4355,6 +4345,14 @@ local function showPreferences()
                 },
                 vb:text {
                     text = "Automatically add NoteOff's in empty note columns",
+                },
+            },
+            vb:row {
+                vb:checkbox {
+                    bind = preferences.autoEnableDelayWhenNeeded,
+                },
+                vb:text {
+                    text = "Automatically enable delay column, when needed",
                 },
             },
             vb:row {
