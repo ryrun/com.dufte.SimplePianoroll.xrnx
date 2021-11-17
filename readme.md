@@ -173,6 +173,8 @@ So you don't need to hold <kbd>shift</kbd>.
 |<kbd>right</kbd>|Move note 1 step right|
 |<kbd>shift + left</kbd>|Move note 4 steps left|
 |<kbd>shift + right</kbd>|Move note 4 steps right|
+|<kbd>ctrl + alt + left</kbd>|Move note 1 microsteps left (using note delay)|
+|<kbd>ctrl + alt + right</kbd>|Move note 1 microsteps right (using note delay)|
 |<kbd>ctrl + left</kbd>|Increase note length by 1|
 |<kbd>ctrl + right</kbd>|Decrease note length by 1|
 |<kbd>shift + i</kbd>|Invert note selection|

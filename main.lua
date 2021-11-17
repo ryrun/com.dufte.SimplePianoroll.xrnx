@@ -3739,11 +3739,16 @@ local function handleKeyEvent(keyEvent)
                 end
             else
                 if keyAlt then
-                    moveSelectionThroughNotes(steps, 0, keyShift)
-                    if keyShift then
-                        keyInfoText = "Add a note from left/right to selection"
+                    if keyControl then
+                        finerMoveSelectedNotes(steps)
+                        keyInfoText = "Finer move note selection to the " .. key.name
                     else
-                        keyInfoText = "Move note selection to the " .. key.name
+                        moveSelectionThroughNotes(steps, 0, keyShift)
+                        if keyShift then
+                            keyInfoText = "Add a note from left/right to selection"
+                        else
+                            keyInfoText = "Move note selection to the " .. key.name
+                        end
                     end
                 else
                     keyInfoText = "Move through the grid"
