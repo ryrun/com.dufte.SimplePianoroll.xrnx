@@ -3918,10 +3918,12 @@ local function handleXypad(val)
             if not xypadpos.scalemode then
                 if keyAlt then
                     local v = math.floor((val.x - xypadpos.x) * 0xff)
-                    blockLineModifier = true
-                    quickRefresh = true
-                    if finerMoveSelectedNotes(v) then
-                        xypadpos.x = xypadpos.x + (v / 0xff)
+                    if v ~= 0 then
+                        blockLineModifier = true
+                        quickRefresh = true
+                        if finerMoveSelectedNotes(v) then
+                            xypadpos.x = xypadpos.x + (v / 0xff)
+                        end
                     end
                 else
                     xypadpos.x = math.floor(xypadpos.x)
@@ -3956,12 +3958,12 @@ local function handleXypad(val)
                         xypadpos.lastx = math.floor(val.x)
                     end
                 end
-                if xypadpos.y - math.floor(val.y) > 0 then
+                if xypadpos.y - math.floor(val.y + 0.1) > 0 then
                     if xypadpos.duplicate then
                         duplicateSelectedNotes(0)
                         xypadpos.duplicate = false
                     end
-                    for d = math.abs(xypadpos.y - math.floor(val.y)), 1, -1 do
+                    for d = math.abs(xypadpos.y - math.floor(val.y + 0.1)), 1, -1 do
                         blockLineModifier = true
                         quickRefresh = true
                         if transposeSelectedNotes(-d, keyControl or keyRControl) then
@@ -3969,12 +3971,12 @@ local function handleXypad(val)
                             break
                         end
                     end
-                elseif xypadpos.y - math.floor(val.y) < 0 then
+                elseif xypadpos.y - math.floor(val.y - 0.1) < 0 then
                     if xypadpos.duplicate then
                         duplicateSelectedNotes(0)
                         xypadpos.duplicate = false
                     end
-                    for d = math.abs(xypadpos.y - math.floor(val.y)), 1, -1 do
+                    for d = math.abs(xypadpos.y - math.floor(val.y - 0.1)), 1, -1 do
                         blockLineModifier = true
                         quickRefresh = true
                         if transposeSelectedNotes(d, keyControl or keyRControl) then
