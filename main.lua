@@ -538,6 +538,8 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly, end_dly)
     local number_of_lines = song.selected_pattern.number_of_lines
     local column
     local validSpace
+    local maxColumns
+    local lVnC
     --note outside the grid?
     if line < 1 or line + len - 1 > number_of_lines then
         return nil
@@ -547,7 +549,7 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly, end_dly)
         return nil
     end
     --check if enough space for a new note
-    local maxColumns = song.selected_track.visible_note_columns
+    maxColumns = song.selected_track.visible_note_columns
     if preferences.addNoteColumnsIfNeeded.value then
         maxColumns = song.selected_track.max_note_columns
     end
@@ -556,12 +558,13 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly, end_dly)
         --check for note on before
         if line > 1 then
             for i = line, 1, -1 do
-                if lineValues[i]:note_column(c).note_value < 120 then
+                lVnC = lineValues[i]:note_column(c)
+                if lVnC.note_value < 120 then
                     validSpace = false
                     break
-                elseif lineValues[i]:note_column(c).note_value == 120 then
+                elseif lVnC.note_value == 120 then
                     --note off with a delay value?
-                    if lineValues[i]:note_column(c).delay_value > 0 and line == i then
+                    if lVnC.delay_value > 0 and line == i then
                         validSpace = false
                     end
                     break
@@ -570,11 +573,12 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly, end_dly)
         end
         --check for note on in
         for i = line, line + len - 1 do
+            lVnC = lineValues[i]:note_column(c)
             --no note off allowed to overwrite, when delay is set and the note off is not on line 1
-            if i == line and line > 1 and dly and dly > 0 and lineValues[i]:note_column(c).note_value == 120 then
+            if i == line and line > 1 and dly and dly > 0 and lVnC.note_value == 120 then
                 validSpace = false
                 break
-            elseif lineValues[i]:note_column(c).note_value < 120 then
+            elseif lVnC.note_value < 120 then
                 validSpace = false
                 break
             end
