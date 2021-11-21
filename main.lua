@@ -3139,10 +3139,7 @@ local function fillPianoRoll(quickRefresh)
 
     --render ghost notes, only when index is not the current track
     if currentGhostTrack and currentGhostTrack ~= l_song.selected_track_index and l_song:track(currentGhostTrack).type == renoise.Track.TRACK_TYPE_SEQUENCER then
-        l_vbw.ghosttrackswitch.active = true
         ghostTrack(currentGhostTrack)
-    else
-        l_vbw.ghosttrackswitch.active = false
     end
 
     --refresh playback pos indicator
@@ -4308,7 +4305,7 @@ local function showPreferences()
             vbp:row {
                 vbp:text {
                     text = "Base grid:",
-                    width = 86,
+                    width = 90,
                     align = "right",
                 },
                 vbp:textfield {
@@ -4328,7 +4325,7 @@ local function showPreferences()
             vbp:row {
                 vbp:text {
                     text = "Ghost track note:",
-                    width = 86,
+                    width = 90,
                     align = "right",
                 },
                 vbp:textfield {
@@ -4348,7 +4345,7 @@ local function showPreferences()
             vbp:row {
                 vbp:text {
                     text = "Note:",
-                    width = 86,
+                    width = 90,
                     align = "right",
                 },
                 vbp:textfield {
@@ -4368,7 +4365,7 @@ local function showPreferences()
             vbp:row {
                 vbp:text {
                     text = "Ghost note:",
-                    width = 86,
+                    width = 90,
                     align = "right",
                 },
                 vbp:textfield {
@@ -5263,20 +5260,6 @@ local function createPianoRollDialog()
                         end
                     end,
                 },
-                vb:button {
-                    id = "ghosttrackswitch",
-                    --text = "Switch",
-                    bitmap = "Icons/Transport_PlaybackSync.bmp",
-                    width = 24,
-                    tooltip = "Switch to selected ghost track",
-                    notifier = function()
-                        if currentGhostTrack and currentGhostTrack ~= song.selected_track_index then
-                            local temp = currentGhostTrack
-                            vbw.ghosttracks.value = song.selected_track_index
-                            song.selected_track_index = temp
-                        end
-                    end,
-                },
             },
             vb:row {
                 margin = 3,
@@ -5311,6 +5294,15 @@ local function createPianoRollDialog()
                                     color = { 44, 77, 66 },
                                     active = true,
                                     width = pianoKeyWidth,
+                                    notifier = function()
+                                        if currentGhostTrack and currentGhostTrack ~= song.selected_track_index then
+                                            local temp = currentGhostTrack
+                                            vbw.ghosttracks.value = song.selected_track_index
+                                            song.selected_track_index = temp
+                                        else
+                                            showStatus("Info: Can't switch to ghost track, please select a ghost track first.")
+                                        end
+                                    end
                                 }
                             },
                             vb:row {
