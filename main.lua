@@ -407,7 +407,7 @@ end
 --converts a color string to a table
 local function convertStringToColorValue(val, default)
     local ret
-    local red, green, blue = string.match(val, '^#*([0-9a-zA-Z][0-9a-zA-Z])([0-9a-zA-Z][0-9a-zA-Z])([0-9a-zA-Z][0-9a-zA-Z])$')
+    local red, green, blue = string.match(val, '^#*([0-9a-fA-F][0-9a-fA-F])([0-9a-fA-F][0-9a-fA-F])([0-9a-fA-F][0-9a-fA-F])$')
     if red and green and blue then
         ret = {
             fromRenoiseHex(red),
@@ -415,21 +415,30 @@ local function convertStringToColorValue(val, default)
             fromRenoiseHex(blue),
         }
     else
-        red, green, blue = string.match(val, '^ *([0-9]+) *, *([0-9]+) *, *([0-9]+) *$')
+        red, green, blue = string.match(val, '^#*([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$')
         if red and green and blue then
             ret = {
-                clamp(tonumber(red), 0, 255),
-                clamp(tonumber(green), 0, 255),
-                clamp(tonumber(blue), 0, 255),
+                fromRenoiseHex(red .. red),
+                fromRenoiseHex(green .. green),
+                fromRenoiseHex(blue .. blue),
             }
         else
-            red, green, blue = string.match(val, '^ *([0-9]+)  *([0-9]+)  *([0-9]+) *$')
+            red, green, blue = string.match(val, '^ *([0-9]+) *, *([0-9]+) *, *([0-9]+) *$')
             if red and green and blue then
                 ret = {
                     clamp(tonumber(red), 0, 255),
                     clamp(tonumber(green), 0, 255),
                     clamp(tonumber(blue), 0, 255),
                 }
+            else
+                red, green, blue = string.match(val, '^ *([0-9]+)  *([0-9]+)  *([0-9]+) *$')
+                if red and green and blue then
+                    ret = {
+                        clamp(tonumber(red), 0, 255),
+                        clamp(tonumber(green), 0, 255),
+                        clamp(tonumber(blue), 0, 255),
+                    }
+                end
             end
         end
     end
