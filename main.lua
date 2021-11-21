@@ -985,16 +985,18 @@ local function moveSelectedNotes(steps)
     local column
     local state = true
     --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
-    if steps < 0 then
-        --left one notes first
-        table.sort(noteSelection, function(a, b)
-            return a.line < b.line
-        end)
-    else
-        --right one notes first
-        table.sort(noteSelection, function(a, b)
-            return a.line > b.line
-        end)
+    if #noteSelection > 1 then
+        if steps < 0 then
+            --left one notes first
+            table.sort(noteSelection, function(a, b)
+                return a.line < b.line
+            end)
+        else
+            --right one notes first
+            table.sort(noteSelection, function(a, b)
+                return a.line + a.len > b.line + b.len
+            end)
+        end
     end
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
@@ -1046,21 +1048,28 @@ local function finerMoveSelectedNotes(microsteps)
     local delay
 
     --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
-    if microsteps < 0 then
-        --left one notes first
-        table.sort(noteSelection, function(a, b)
-            return a.line < b.line
-        end)
-    else
-        --right one notes first
-        table.sort(noteSelection, function(a, b)
-            return a.line > b.line
-        end)
+    if #noteSelection > 1 then
+        if microsteps < 0 then
+            --left one notes first
+            table.sort(noteSelection, function(a, b)
+                return a.line + a.dly / 0xff < b.line + a.dly / 0xff
+            end)
+        else
+            --right one notes first
+            table.sort(noteSelection, function(a, b)
+                return a.line + a.len + a.dly / 0xff > b.line + b.len + a.dly / 0xff
+            end)
+        end
     end
 
     --reduce microsteps when tehre is not enough space
     if microsteps < 0 and noteSelection[1].line == 1 and noteSelection[1].dly < math.abs(microsteps) then
         microsteps = -noteSelection[1].dly
+    end
+
+    --no movement necessary?
+    if math.floor(microsteps) == 0 then
+        return true
     end
 
     --disable edit mode and following to prevent side effects
