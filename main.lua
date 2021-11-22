@@ -72,6 +72,17 @@ local defaultPreferences = {
     colorNote = "#AAD9B3",
     colorGhostTrackNote = "#50616B",
     colorNoteGhost = "#C2B1E2",
+    colorNoteHighlight = "#E8CC6E",
+    colorNoteMuted = "#ABBBC6",
+    colorNoteSelected = "#F49695",
+    colorStepOff = "#1E0600",
+    colorStepOn = "#F16A32",
+    colorList = "#464F54",
+    colorKeyWhite = "#FFFFFF",
+    colorKeyBlack = "#141414",
+    colorVelocity = "#D4BC24",
+    colorPan = "#8ABB7A",
+    colorDelay = "#47C2EC",
 }
 
 --tool preferences
@@ -119,6 +130,17 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     colorNote = defaultPreferences.colorNote,
     colorGhostTrackNote = defaultPreferences.colorGhostTrackNote,
     colorNoteGhost = defaultPreferences.colorNoteGhost,
+    colorNoteHighlight = defaultPreferences.colorNoteHighlight,
+    colorNoteMuted = defaultPreferences.colorNoteMuted,
+    colorNoteSelected = defaultPreferences.colorNoteSelected,
+    colorStepOff = defaultPreferences.colorStepOff,
+    colorStepOn = defaultPreferences.colorStepOn,
+    colorList = defaultPreferences.colorList,
+    colorKeyWhite = defaultPreferences.colorKeyWhite,
+    colorKeyBlack = defaultPreferences.colorKeyBlack,
+    colorVelocity = defaultPreferences.colorVelocity,
+    colorPan = defaultPreferences.colorPan,
+    colorDelay = defaultPreferences.colorDelay,
 }
 tool.preferences = preferences
 
@@ -147,21 +169,20 @@ local pianoKeyWidth
 
 --colors
 local colorDefault = { 0, 0, 0 }
-local colorDisabled = { 55, 55, 55 }
 local colorBaseGridColor
 local colorGhostTrackNote
-local colorList = { 70, 79, 84 }
+local colorList
 local colorNote
-local colorNoteGhost = { 194, 177, 226 }
-local colorNoteHighlight = { 232, 204, 110 }
-local colorNoteMuted = { 171, 187, 198 }
-local colorNoteSelected = { 244, 150, 149 }
-local colorStepOff = { 30, 6, 0 }
-local colorStepOn = { 241, 106, 50 }
-local colorKeyWhite = { 255, 255, 255 }
-local colorKeyBlack = { 20, 20, 20 }
-local colorVelocity = { 212, 188, 36 }
-local colorPan = { 138, 187, 122 }
+local colorNoteGhost
+local colorNoteHighlight
+local colorNoteMuted
+local colorNoteSelected
+local colorStepOff
+local colorStepOn
+local colorKeyWhite
+local colorKeyBlack
+local colorVelocity
+local colorPan
 local colorDelay = { 71, 194, 236 }
 
 --calculated colors
@@ -468,6 +489,17 @@ local function initColors()
     colorNote = convertStringToColorValue(preferences.colorNote.value, defaultPreferences.colorNote)
     colorGhostTrackNote = convertStringToColorValue(preferences.colorGhostTrackNote.value, defaultPreferences.colorGhostTrackNote)
     colorNoteGhost = convertStringToColorValue(preferences.colorNoteGhost.value, defaultPreferences.colorNoteGhost)
+    colorNoteHighlight = convertStringToColorValue(preferences.colorNoteHighlight.value, defaultPreferences.colorNoteHighlight)
+    colorNoteMuted = convertStringToColorValue(preferences.colorNoteMuted.value, defaultPreferences.colorNoteMuted)
+    colorNoteSelected = convertStringToColorValue(preferences.colorNoteSelected.value, defaultPreferences.colorNoteSelected)
+    colorStepOn = convertStringToColorValue(preferences.colorStepOn.value, defaultPreferences.colorStepOn)
+    colorStepOff = convertStringToColorValue(preferences.colorStepOff.value, defaultPreferences.colorStepOff)
+    colorList = convertStringToColorValue(preferences.colorList.value, defaultPreferences.colorList)
+    colorKeyWhite = convertStringToColorValue(preferences.colorKeyWhite.value, defaultPreferences.colorKeyWhite)
+    colorKeyBlack = convertStringToColorValue(preferences.colorKeyBlack.value, defaultPreferences.colorKeyBlack)
+    colorVelocity = convertStringToColorValue(preferences.colorVelocity.value, defaultPreferences.colorVelocity)
+    colorPan = convertStringToColorValue(preferences.colorPan.value, defaultPreferences.colorPan)
+    colorDelay = convertStringToColorValue(preferences.colorDelay.value, defaultPreferences.colorDelay)
     --prepare shading colors
     colorWhiteKey = { shadeColor(colorBaseGridColor, preferences.oddBarsShadingAmount.value), colorBaseGridColor }
     colorBlackKey = {
@@ -3102,7 +3134,7 @@ local function fillPianoRoll(quickRefresh)
         for i = steps + 1, gridWidth do
             if y == 1 then
                 l_vbw["s" .. i].active = false
-                l_vbw["s" .. i].color = colorDisabled
+                l_vbw["s" .. i].color = colorDefault
             end
             l_vbw["p" .. i .. "_" .. y].color = temp
         end
@@ -4305,7 +4337,7 @@ local function showPreferences()
             vbp:row {
                 vbp:text {
                     text = "Base grid:",
-                    width = 90,
+                    width = 104,
                     align = "right",
                 },
                 vbp:textfield {
@@ -4325,7 +4357,7 @@ local function showPreferences()
             vbp:row {
                 vbp:text {
                     text = "Ghost track note:",
-                    width = 90,
+                    width = 104,
                     align = "right",
                 },
                 vbp:textfield {
@@ -4345,7 +4377,7 @@ local function showPreferences()
             vbp:row {
                 vbp:text {
                     text = "Note:",
-                    width = 90,
+                    width = 104,
                     align = "right",
                 },
                 vbp:textfield {
@@ -4365,7 +4397,7 @@ local function showPreferences()
             vbp:row {
                 vbp:text {
                     text = "Ghost note:",
-                    width = 90,
+                    width = 104,
                     align = "right",
                 },
                 vbp:textfield {
@@ -4380,6 +4412,226 @@ local function showPreferences()
                 vbp:button {
                     id = "colorNoteGhost",
                     color = colorNoteGhost,
+                }
+            },
+            vbp:row {
+                vbp:text {
+                    text = "Highlighting note:",
+                    width = 104,
+                    align = "right",
+                },
+                vbp:textfield {
+                    id = "colorNoteHighlightField",
+                    bind = preferences.colorNoteHighlight,
+                    notifier = function()
+                        initColors()
+                        vbwp.colorNoteHighlight.color = colorNoteHighlight
+                        vbwp.colorNoteHighlightField.value = convertColorValueToString(colorNoteHighlight)
+                    end
+                },
+                vbp:button {
+                    id = "colorNoteHighlight",
+                    color = colorNoteHighlight,
+                }
+            },
+            vbp:row {
+                vbp:text {
+                    text = "Muted note:",
+                    width = 104,
+                    align = "right",
+                },
+                vbp:textfield {
+                    id = "colorNoteMutedField",
+                    bind = preferences.colorNoteMuted,
+                    notifier = function()
+                        initColors()
+                        vbwp.colorNoteMuted.color = colorNoteMuted
+                        vbwp.colorNoteMutedField.value = convertColorValueToString(colorNoteMuted)
+                    end
+                },
+                vbp:button {
+                    id = "colorNoteMuted",
+                    color = colorNoteMuted,
+                }
+            },
+            vbp:row {
+                vbp:text {
+                    text = "Selected note:",
+                    width = 104,
+                    align = "right",
+                },
+                vbp:textfield {
+                    id = "colorNoteSelectedField",
+                    bind = preferences.colorNoteSelected,
+                    notifier = function()
+                        initColors()
+                        vbwp.colorNoteSelected.color = colorNoteSelected
+                        vbwp.colorNoteSelectedField.value = convertColorValueToString(colorNoteSelected)
+                    end
+                },
+                vbp:button {
+                    id = "colorNoteSelected",
+                    color = colorNoteSelected,
+                }
+            },
+            vbp:row {
+                vbp:text {
+                    text = "Step on / Active btn:",
+                    width = 104,
+                    align = "right",
+                },
+                vbp:textfield {
+                    id = "colorStepOnField",
+                    bind = preferences.colorStepOn,
+                    notifier = function()
+                        initColors()
+                        vbwp.colorStepOn.color = colorStepOn
+                        vbwp.colorStepOnField.value = convertColorValueToString(colorStepOn)
+                    end
+                },
+                vbp:button {
+                    id = "colorStepOn",
+                    color = colorStepOn,
+                }
+            },
+            vbp:row {
+                vbp:text {
+                    text = "Step off:",
+                    width = 104,
+                    align = "right",
+                },
+                vbp:textfield {
+                    id = "colorStepOffField",
+                    bind = preferences.colorStepOff,
+                    notifier = function()
+                        initColors()
+                        vbwp.colorStepOff.color = colorStepOff
+                        vbwp.colorStepOffField.value = convertColorValueToString(colorStepOff)
+                    end
+                },
+                vbp:button {
+                    id = "colorStepOff",
+                    color = colorStepOff,
+                }
+            },
+            vbp:row {
+                vbp:text {
+                    text = "Keyboard list:",
+                    width = 104,
+                    align = "right",
+                },
+                vbp:textfield {
+                    id = "colorListField",
+                    bind = preferences.colorList,
+                    notifier = function()
+                        initColors()
+                        vbwp.colorList.color = colorList
+                        vbwp.colorListField.value = convertColorValueToString(colorList)
+                    end
+                },
+                vbp:button {
+                    id = "colorList",
+                    color = colorList,
+                }
+            },
+            vbp:row {
+                vbp:text {
+                    text = "Keyboard white key:",
+                    width = 104,
+                    align = "right",
+                },
+                vbp:textfield {
+                    id = "colorKeyWhiteField",
+                    bind = preferences.colorKeyWhite,
+                    notifier = function()
+                        initColors()
+                        vbwp.colorKeyWhite.color = colorKeyWhite
+                        vbwp.colorKeyWhiteField.value = convertColorValueToString(colorKeyWhite)
+                    end
+                },
+                vbp:button {
+                    id = "colorKeyWhite",
+                    color = colorKeyWhite,
+                }
+            },
+            vbp:row {
+                vbp:text {
+                    text = "Keyboard black key:",
+                    width = 104,
+                    align = "right",
+                },
+                vbp:textfield {
+                    id = "colorKeyBlackField",
+                    bind = preferences.colorKeyBlack,
+                    notifier = function()
+                        initColors()
+                        vbwp.colorKeyBlack.color = colorKeyBlack
+                        vbwp.colorKeyBlackField.value = convertColorValueToString(colorKeyBlack)
+                    end
+                },
+                vbp:button {
+                    id = "colorKeyBlack",
+                    color = colorKeyBlack,
+                }
+            },
+            vbp:row {
+                vbp:text {
+                    text = "Vol button:",
+                    width = 104,
+                    align = "right",
+                },
+                vbp:textfield {
+                    id = "colorVelocityField",
+                    bind = preferences.colorVelocity,
+                    notifier = function()
+                        initColors()
+                        vbwp.colorVelocity.color = colorVelocity
+                        vbwp.colorVelocityField.value = convertColorValueToString(colorVelocity)
+                    end
+                },
+                vbp:button {
+                    id = "colorVelocity",
+                    color = colorVelocity,
+                }
+            },
+            vbp:row {
+                vbp:text {
+                    text = "Pan button:",
+                    width = 104,
+                    align = "right",
+                },
+                vbp:textfield {
+                    id = "colorPanField",
+                    bind = preferences.colorPan,
+                    notifier = function()
+                        initColors()
+                        vbwp.colorPan.color = colorPan
+                        vbwp.colorPanField.value = convertColorValueToString(colorPan)
+                    end
+                },
+                vbp:button {
+                    id = "colorPan",
+                    color = colorPan,
+                }
+            },
+            vbp:row {
+                vbp:text {
+                    text = "Delay button:",
+                    width = 104,
+                    align = "right",
+                },
+                vbp:textfield {
+                    id = "colorDelayField",
+                    bind = preferences.colorDelay,
+                    notifier = function()
+                        initColors()
+                        vbwp.colorDelay.color = colorDelay
+                        vbwp.colorDelayField.value = convertColorValueToString(colorDelay)
+                    end
+                },
+                vbp:button {
+                    id = "colorDelay",
+                    color = colorDelay,
                 }
             },
         },
@@ -5663,6 +5915,5 @@ tool:add_keybinding {
             windowObj:close()
         end
         app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_MIXER
-        --app.window.active_lower_frame = renoise.ApplicationWindow.LOWER_FRAME_TRACK_DSPS
     end
 }
