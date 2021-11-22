@@ -444,22 +444,13 @@ local function convertStringToColorValue(val, default)
                 fromRenoiseHex(blue .. blue),
             }
         else
-            red, green, blue = string.match(val, '^ *([0-9]+) *, *([0-9]+) *, *([0-9]+) *$')
+            red, green, blue = string.match(val, '^ *([0-9]+) *[,; ] *([0-9]+) *[,; ] *([0-9]+) *$')
             if red and green and blue then
                 ret = {
                     clamp(tonumber(red), 0, 255),
                     clamp(tonumber(green), 0, 255),
                     clamp(tonumber(blue), 0, 255),
                 }
-            else
-                red, green, blue = string.match(val, '^ *([0-9]+)  *([0-9]+)  *([0-9]+) *$')
-                if red and green and blue then
-                    ret = {
-                        clamp(tonumber(red), 0, 255),
-                        clamp(tonumber(green), 0, 255),
-                        clamp(tonumber(blue), 0, 255),
-                    }
-                end
             end
         end
     end
@@ -1170,9 +1161,30 @@ local function finerMoveSelectedNotes(microsteps)
         end
     end
 
+    print(microsteps, (noteSelection[1].line - 1) * 0xff +
+            noteSelection[1].len * 0xff +
+            noteSelection[1].dly +
+            noteSelection[1].end_dly, song.selected_pattern.number_of_lines * 0xff)
+
     --reduce microsteps when tehre is not enough space
-    if microsteps < 0 and noteSelection[1].line == 1 and noteSelection[1].dly < math.abs(microsteps) then
+    if microsteps < 0 and
+            noteSelection[1].line == 1 and
+            noteSelection[1].dly < math.abs(microsteps)
+    then
         microsteps = -noteSelection[1].dly
+    elseif microsteps > 0 and
+            (noteSelection[1].line - 1) * 0xff +
+                    noteSelection[1].len * 0xff +
+                    noteSelection[1].dly +
+                    noteSelection[1].end_dly +
+                    microsteps > song.selected_pattern.number_of_lines * 0xff
+    then
+        microsteps = song.selected_pattern.number_of_lines * 0xff -
+                ((noteSelection[1].line - 1) * 0xff +
+                        noteSelection[1].len * 0xff +
+                        noteSelection[1].dly +
+                        noteSelection[1].end_dly)
+        print(microsteps)
     end
 
     --no movement necessary?
@@ -4333,7 +4345,6 @@ local function showPreferences()
                     text = "Use track color for note highlighting",
                 },
             },
-            vbp:space { height = 8 },
             vbp:row {
                 vbp:text {
                     text = "Base grid:",
@@ -4616,7 +4627,7 @@ local function showPreferences()
             },
             vbp:row {
                 vbp:text {
-                    text = "Delay button:",
+                    text = "Dly button:",
                     width = 104,
                     align = "right",
                 },
