@@ -3320,6 +3320,12 @@ local function appNewDoc()
     song = renoise.song()
     --reset vars
     lastTrackIndex = nil
+    currentNoteVelocity = 255
+    currentNotePan = 255
+    currentNoteDelay = 0
+    currentNoteEndDelay = 0
+    currentNoteVelocityPreview = 127
+    currentNoteEndVelocity = 255
     --set new observers
     song.transport.lpb_observable:add_notifier(function()
         refreshPianoRollNeeded = true
