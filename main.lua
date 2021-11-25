@@ -1151,20 +1151,20 @@ local function finerMoveSelectedNotes(microsteps)
         if microsteps < 0 then
             --left one notes first
             table.sort(noteSelection, function(a, b)
-                return a.line + a.dly / 0xff < b.line + a.dly / 0xff
+                return a.line + a.dly / 0x100 < b.line + a.dly / 0x100
             end)
         else
             --right one notes first
             table.sort(noteSelection, function(a, b)
-                return a.line + a.len + a.dly / 0xff > b.line + b.len + a.dly / 0xff
+                return a.line + a.len + a.dly / 0x100 > b.line + b.len + a.dly / 0x100
             end)
         end
     end
 
-    print(microsteps, (noteSelection[1].line - 1) * 0xff +
-            noteSelection[1].len * 0xff +
+    print(microsteps, (noteSelection[1].line - 1) * 0x100 +
+            noteSelection[1].len * 0x100 +
             noteSelection[1].dly +
-            noteSelection[1].end_dly, song.selected_pattern.number_of_lines * 0xff)
+            noteSelection[1].end_dly, song.selected_pattern.number_of_lines * 0x100)
 
     --reduce microsteps when tehre is not enough space
     if microsteps < 0 and
@@ -1173,15 +1173,15 @@ local function finerMoveSelectedNotes(microsteps)
     then
         microsteps = -noteSelection[1].dly
     elseif microsteps > 0 and
-            (noteSelection[1].line - 1) * 0xff +
-                    noteSelection[1].len * 0xff +
+            (noteSelection[1].line - 1) * 0x100 +
+                    noteSelection[1].len * 0x100 +
                     noteSelection[1].dly +
                     noteSelection[1].end_dly +
-                    microsteps > song.selected_pattern.number_of_lines * 0xff
+                    microsteps > song.selected_pattern.number_of_lines * 0x100
     then
-        microsteps = song.selected_pattern.number_of_lines * 0xff -
-                ((noteSelection[1].line - 1) * 0xff +
-                        noteSelection[1].len * 0xff +
+        microsteps = song.selected_pattern.number_of_lines * 0x100 -
+                ((noteSelection[1].line - 1) * 0x100 +
+                        noteSelection[1].len * 0x100 +
                         noteSelection[1].dly +
                         noteSelection[1].end_dly)
         print(microsteps)
@@ -1206,24 +1206,24 @@ local function finerMoveSelectedNotes(microsteps)
         --remove note
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
         --calculate step and delay difference
-        delay = microsteps % 0xff
-        steps = math.floor((noteSelection[key].dly + microsteps) / 0xff)
-        len = math.floor((noteSelection[key].end_dly + microsteps) / 0xff)
+        delay = microsteps % 0x100
+        steps = math.floor((noteSelection[key].dly + microsteps) / 0x100)
+        len = math.floor((noteSelection[key].end_dly + microsteps) / 0x100)
         --prepare len difference for new delay values
         len = len - steps
         --search for column
         column = returnColumnWhenEnoughSpaceForNote(
                 noteSelection[key].line + steps,
                 noteSelection[key].len + len,
-                (noteSelection[key].dly + delay) % 0xff,
-                (noteSelection[key].end_dly + delay) % 0xff
+                (noteSelection[key].dly + delay) % 0x100,
+                (noteSelection[key].end_dly + delay) % 0x100
         )
         if column then
             noteSelection[key].step = noteSelection[key].step + steps
             noteSelection[key].line = noteSelection[key].line + steps
             noteSelection[key].len = noteSelection[key].len + len
-            noteSelection[key].dly = (noteSelection[key].dly + delay) % 0xff
-            noteSelection[key].end_dly = (noteSelection[key].end_dly + delay) % 0xff
+            noteSelection[key].dly = (noteSelection[key].dly + delay) % 0x100
+            noteSelection[key].end_dly = (noteSelection[key].end_dly + delay) % 0x100
             noteSelection[key].column = column
         end
         noteSelection[key].noteoff = addNoteToPattern(
@@ -2208,6 +2208,19 @@ function pianoGridClick(x, y, released)
             end
             --disable edit mode because of side effects
             song.transport.edit_mode = false
+            --when currentNoteDelay or currentNoteEndDelay is used, recalculate them
+            if currentNoteDelay > 0 and currentNoteEndDelay == 0 and currentNoteLength > 1 then
+                currentNoteEndDelay = 0x100 - currentNoteDelay
+                currentNoteLength = currentNoteLength - 1
+                currentNoteDelay = 0
+            elseif currentNoteDelay > 0 and currentNoteEndDelay > 0 then
+                currentNoteEndDelay = currentNoteEndDelay - currentNoteDelay
+                currentNoteDelay = 0
+                if currentNoteEndDelay < 0 then
+                    currentNoteEndDelay = 0x100 + currentNoteEndDelay
+                    currentNoteLength = currentNoteLength - 1
+                end
+            end
             column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay, currentNoteEndDelay)
             --no column found
             if column == nil then
@@ -2435,7 +2448,7 @@ local function enableNoteButton(column,
                 if delayWidth > 0 then
                     delayWidth = delayWidth - 416
                     if delayWidth < l_song_transport.tpl then
-                        delayWidth = math.floor(0xff / l_song_transport.tpl * delayWidth)
+                        delayWidth = math.floor(0x100 / l_song_transport.tpl * delayWidth)
                     else
                         delayWidth = 0
                     end
@@ -2492,7 +2505,7 @@ local function enableNoteButton(column,
                 end
 
                 if delayWidth > 0 and stepOffset < current_note_line then
-                    delayWidth = math.max(math.floor((gridStepSizeW - gridSpacing) / 0xff * delayWidth), 1)
+                    delayWidth = math.max(math.floor((gridStepSizeW - gridSpacing) / 0x100 * delayWidth), 1)
                     spaceWidth = spaceWidth + delayWidth
                     buttonWidth = buttonWidth - delayWidth
                     if current_note_step < 2 then
@@ -2501,7 +2514,7 @@ local function enableNoteButton(column,
                 end
 
                 if addWidth > 0 then
-                    addWidth = math.max(math.floor((gridStepSizeW - gridSpacing) / 0xff * addWidth), 1)
+                    addWidth = math.max(math.floor((gridStepSizeW - gridSpacing) / 0x100 * addWidth), 1)
                     buttonWidth = buttonWidth + addWidth
                 end
 
@@ -4051,12 +4064,12 @@ local function handleXypad(val)
             --when move note is active, move notes
             if not xypadpos.scalemode then
                 if keyAlt then
-                    local v = math.floor((val.x - xypadpos.x) * 0xff)
+                    local v = math.floor((val.x - xypadpos.x) * 0x100)
                     if v ~= 0 then
                         blockLineModifier = true
                         quickRefresh = true
                         if finerMoveSelectedNotes(v) then
-                            xypadpos.x = xypadpos.x + (v / 0xff)
+                            xypadpos.x = xypadpos.x + (v / 0x100)
                         end
                     end
                 else
