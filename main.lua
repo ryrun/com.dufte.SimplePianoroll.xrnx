@@ -2209,7 +2209,7 @@ function pianoGridClick(x, y, released)
             --disable edit mode because of side effects
             song.transport.edit_mode = false
             --when currentNoteDelay or currentNoteEndDelay is used, recalculate them
-            if currentNoteDelay > 0 and currentNoteEndDelay == 0 and currentNoteLength > 1 then
+            if currentNoteDelay > 0 and currentNoteEndDelay == 0 then
                 currentNoteEndDelay = 0x100 - currentNoteDelay
                 currentNoteLength = currentNoteLength - 1
                 currentNoteDelay = 0
@@ -2220,6 +2220,12 @@ function pianoGridClick(x, y, released)
                     currentNoteEndDelay = 0x100 + currentNoteEndDelay
                     currentNoteLength = currentNoteLength - 1
                 end
+            end
+            --fix, when note gets shorter than one
+            if currentNoteLength < 1 then
+                currentNoteLength = 1
+                currentNoteEndDelay = 0
+                currentNoteDelay = 0
             end
             column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay, currentNoteEndDelay)
             --no column found
