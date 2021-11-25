@@ -1156,35 +1156,18 @@ local function finerMoveSelectedNotes(microsteps)
         else
             --right one notes first
             table.sort(noteSelection, function(a, b)
-                return a.line + a.len + a.dly / 0x100 > b.line + b.len + a.dly / 0x100
+                return a.line + a.len + a.end_dly / 0x100 > b.line + b.len + a.end_dly / 0x100
             end)
         end
     end
 
-    print(microsteps, (noteSelection[1].line - 1) * 0x100 +
-            noteSelection[1].len * 0x100 +
-            noteSelection[1].dly +
-            noteSelection[1].end_dly, song.selected_pattern.number_of_lines * 0x100)
-
     --reduce microsteps when tehre is not enough space
-    if microsteps < 0 and
-            noteSelection[1].line == 1 and
-            noteSelection[1].dly < math.abs(microsteps)
-    then
-        microsteps = -noteSelection[1].dly
-    elseif microsteps > 0 and
-            (noteSelection[1].line - 1) * 0x100 +
-                    noteSelection[1].len * 0x100 +
-                    noteSelection[1].dly +
-                    noteSelection[1].end_dly +
-                    microsteps > song.selected_pattern.number_of_lines * 0x100
-    then
-        microsteps = song.selected_pattern.number_of_lines * 0x100 -
-                ((noteSelection[1].line - 1) * 0x100 +
-                        noteSelection[1].len * 0x100 +
-                        noteSelection[1].dly +
-                        noteSelection[1].end_dly)
-        print(microsteps)
+    if microsteps < 0 then
+        microsteps = -math.min(math.abs(microsteps), noteSelection[1].dly + ((noteSelection[1].line - 1) * 0x100))
+    elseif microsteps > 0 then
+        microsteps = math.min(microsteps, song.selected_pattern.number_of_lines * 0x100 -
+                ((noteSelection[1].line + noteSelection[1].len - 1) * 0x100 +
+                        noteSelection[1].end_dly))
     end
 
     --no movement necessary?
