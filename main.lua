@@ -976,6 +976,8 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
     if not currentInstrument then
         instrument = song.selected_instrument_index
     end
+    --disable record mode, when enabled
+    song.transport.edit_mode = false
     --init server connection, when not ready
     if oscClient == nil then
         local protocol, host, port = string.match(
