@@ -1105,6 +1105,10 @@ end
 local function moveSelectedNotes(steps)
     local column
     local state = true
+    --when nothing is selected, then nothing is to do
+    if #noteSelection == 0 then
+        return false
+    end
     --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
     if #noteSelection > 1 then
         if steps < 0 then
@@ -1167,6 +1171,10 @@ local function finerMoveSelectedNotes(microsteps, snapSpecialGrid)
     local steps
     local len
     local delay
+    --when nothing is selected, then nothing is to do
+    if #noteSelection == 0 then
+        return false
+    end
 
     --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
     if #noteSelection > 1 then
@@ -1188,7 +1196,7 @@ local function finerMoveSelectedNotes(microsteps, snapSpecialGrid)
         microsteps = findNearestMicroStepValue(noteSelection[1].dly, microsteps, { 0, 0x55, 0xaa, 0x100 })
     end
 
-    --reduce microsteps when tehre is not enough space
+    --reduce microsteps when there is not enough space
     if microsteps < 0 then
         microsteps = -math.min(math.abs(microsteps), noteSelection[1].dly + ((noteSelection[1].line - 1) * 0x100))
     elseif microsteps > 0 then
