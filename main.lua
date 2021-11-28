@@ -957,7 +957,7 @@ local function refreshNoteControls()
 
     --set color indicator to current track color and name
     vbw.trackcolor.color = track.color
-    vbw.trackcolor.tooltip = track.name
+    vbw.trackcolor.tooltip = track.name .. "\n(Switch to ghost track)"
     if string.len(track.name) > 9 then
         vbw.trackcolor.text = string.sub(track.name, 1, 8) .. "…"
     else
