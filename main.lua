@@ -37,7 +37,7 @@ local defaultPreferences = {
     gridHeight = 42,
     triggerTime = 250,
     keyInfoTime = 3,
-    enableKeyInfo = false,
+    enableKeyInfo = true,
     dblClickTime = 400,
     forcePenMode = false,
     notePreview = true,
@@ -1650,10 +1650,17 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
                 note.volume_value = 255
                 selection.vel = note.volume_value
             else
-                note.volume_string = toRenoiseHex(vel)
-                selection.vel = vel
-                if selection.len == 1 then
-                    selection.end_vel = vel
+                if tostring(special) == "add" then
+                    if selection.vel >= 0 and selection.vel <= 127 then
+                        selection.vel = forceValueToRange(selection.vel + vel, 0, 127)
+                        note.volume_string = toRenoiseHex(selection.vel)
+                    end
+                else
+                    note.volume_string = toRenoiseHex(vel)
+                    selection.vel = vel
+                    if selection.len == 1 then
+                        selection.end_vel = vel
+                    end
                 end
             end
         end
@@ -3797,9 +3804,20 @@ local function handleKeyEvent(keyEvent)
                 steps = steps * -1
             end
             if (keyAlt or keyShift or keyRShift) and not keyControl then
-                keyInfoText = "Move through the grid"
-                steps = steps * -1
-                stepSlider.value = forceValueToRange(stepSlider.value + steps, stepSlider.min, stepSlider.max)
+                if #noteSelection > 0 and keyAlt then
+                    if steps > 0 then
+                        keyInfoText = "Increase velocity of selected notes"
+                    else
+                        keyInfoText = "Decrease velocity of selected notes"
+                    end
+                    changePropertiesOfSelectedNotes(steps, nil, nil, nil, nil, "add")
+                    --play new velocity
+                    triggerNoteOfCurrentInstrument(noteSelection[1].note, nil, noteSelection[1].vel, true)
+                else
+                    keyInfoText = "Move through the grid"
+                    steps = steps * -1
+                    stepSlider.value = forceValueToRange(stepSlider.value + steps, stepSlider.min, stepSlider.max)
+                end
             elseif not keyAlt and not keyControl and not keyShift and not keyRShift then
                 keyInfoText = "Move through the grid"
                 noteSlider.value = forceValueToRange(noteSlider.value + steps, noteSlider.min, noteSlider.max)
