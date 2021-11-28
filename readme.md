@@ -57,6 +57,7 @@ It supports to render different note column effects.
 * To improve mouse handling, please disable mouse warping in Renoise preferences
 * You draw notes with the instrument, which is used in the current track of the pattern. In empty track's, it's using
   the current selected one.
+* The key combination <kbd>alt + shift</kbd> is a default shortcut to change the keyboard layout in Windows OS's. It is recommended to switch this off or change the keybaord shortcut to avoid problems. <br>See following for more details: https://answers.microsoft.com/en-us/windows/forum/all/how-to-disable-the-windows-10-language-shortcut/030016c9-bfed-48d9-8e4f-7d1030ced338  
 
 ## Install and Update
 
