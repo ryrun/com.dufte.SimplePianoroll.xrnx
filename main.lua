@@ -4710,6 +4710,11 @@ local function showPreferences()
                     color = colorDelay,
                 }
             },
+            vbp:text {
+                text = "IMPORTANT: Please note that color #000000\n" ..
+                        "will use the default control theme color. It's a\n" ..
+                        "Renoise Viewbuilder restriction, which can't be\n" .. "changed, yet."
+            },
         },
         vbp:column {
             style = "group",
