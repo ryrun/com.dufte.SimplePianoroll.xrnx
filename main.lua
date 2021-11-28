@@ -3218,8 +3218,14 @@ local function fillPianoRoll(quickRefresh)
     end
 
     --render ghost notes, only when index is not the current track
-    if currentGhostTrack and currentGhostTrack ~= l_song.selected_track_index and l_song:track(currentGhostTrack).type == renoise.Track.TRACK_TYPE_SEQUENCER then
-        ghostTrack(currentGhostTrack)
+    if currentGhostTrack and currentGhostTrack ~= l_song.selected_track_index then
+        if l_song:track(currentGhostTrack).type == renoise.Track.TRACK_TYPE_SEQUENCER then
+            ghostTrack(currentGhostTrack)
+        elseif l_song:track(currentGhostTrack).type ~= renoise.Track.TRACK_TYPE_SEQUENCER then
+            currentGhostTrack = l_song.selected_track_index
+            vbw.ghosttracks.value = currentGhostTrack
+            showStatus("Current selected track cant be a ghost track.")
+        end
     end
 
     --refresh playback pos indicator
