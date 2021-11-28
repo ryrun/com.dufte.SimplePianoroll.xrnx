@@ -94,9 +94,8 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 |Add notes|Double click on a free spot in the grid<br>Alternative: While hold <kbd>alt</kbd> its just one click|
 |Remove notes|Double click on a note<br>Alternative: While hold <kbd>alt</kbd> its just one click|
 |Select a note|Click on a note.<br>*It also reads out note length and velocity of the selected note and set these values for new notes.*|
-|Move one note or multiple notes|Click and drag a note. It will also move all selected notes, too. Hold <kbd>ctrl</kbd> during moving will force note movement in scale.|
+|Move one note or multiple notes|Click and drag a note. It will also move all selected notes, too.<br>Hold <kbd>ctrl</kbd> during moving will force note movement in scale.<br><br>When <kbd>alt</kbd> is holded, the notes will be moved in microsteps (using delay values). Please note, hat alt + note click is note removing. So you need to click first, before you hold <kbd>alt</kbd>. Alternative: Alt click note remove can be disabled in option, so its easier to use. Using <kbd>shift</kbd> during microsteps note movement, forces the note to snap into a special grid (0, 0x55, 0xaa).|
 |Change note length|Click and hold the end of a note and move the mouse to the right. It will also increase the length of all selected notes. To decrease the note length, just move the mouse to the left|
-|Change note delay|Hold <kbd>alt</kbd> key, click and hold a note and move the mouse to the right. Delay column needs to be enabled. When <kbd>shift</kbd> is holded also, it set one of the following hardcoded values (0x55, 0xAA). For easy note legato portamento for VSTi's or triplet timings. Alternative hold <kbd>shift</kbd> and use the mouse wheel to change the note delay, too.
 |Change velocity of selected notes|Hold <kbd>alt</kbd> and use the scroll whell
 |Preview a note|Click on a note or use preview mode|
 |Play from mouse cursor|While holding <kbd>ctrl</kbd>, click on a freespot in the grid|
