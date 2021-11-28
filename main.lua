@@ -1970,6 +1970,9 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
                     if note_data ~= nil and s + note_data.len - 1 <= smax and not noteInSelection(note_data) then
                         --add to selection table
                         table.insert(noteSelection, note_data)
+                        --jump to the note, which was added to selection
+                        jumpToNoteInPattern(note_data)
+                        --refresh of piano roll needed
                         refreshNeeded = true
                     end
                 end
