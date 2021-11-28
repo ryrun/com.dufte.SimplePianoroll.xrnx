@@ -1676,7 +1676,10 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
                 selection.vel = note.volume_value
             else
                 if tostring(special) == "add" then
-                    if selection.vel >= 0 and selection.vel <= 127 then
+                    if selection.vel == 255 and vel < 0 then
+                        selection.vel = forceValueToRange(128 + vel, 0, 127)
+                        note.volume_string = toRenoiseHex(selection.vel)
+                    elseif selection.vel >= 0 and selection.vel <= 127 then
                         selection.vel = forceValueToRange(selection.vel + vel, 0, 127)
                         note.volume_string = toRenoiseHex(selection.vel)
                     end
