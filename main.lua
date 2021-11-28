@@ -5332,11 +5332,15 @@ local function createPianoRollDialog()
                 vb:button {
                     id = "note_vel_clear",
                     text = "C",
-                    tooltip = "Clear note velocity",
+                    tooltip = "Clear note velocity\n(While holding shift: Clear both velocity values)",
                     notifier = function()
                         currentNoteVelocity = 255
                         if #noteSelection > 0 then
                             changePropertiesOfSelectedNotes(currentNoteVelocity)
+                            if keyShift then
+                                currentNoteEndVelocity = 255
+                                changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity)
+                            end
                         end
                         refreshControls = true
                     end,
@@ -5509,10 +5513,14 @@ local function createPianoRollDialog()
                 vb:button {
                     id = "note_dly_clear",
                     text = "C",
-                    tooltip = "Clear note delay",
+                    tooltip = "Clear note delay\n(While holding shift: Clear both delay values)",
                     notifier = function()
                         currentNoteDelay = 0
                         changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay)
+                        if keyShift then
+                            currentNoteEndDelay = 0
+                            changePropertiesOfSelectedNotes(nil, nil, nil, currentNoteEndDelay)
+                        end
                         refreshControls = true
                         refreshPianoRollNeeded = true
                     end,
