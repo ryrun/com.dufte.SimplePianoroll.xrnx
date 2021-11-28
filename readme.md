@@ -57,7 +57,9 @@ It supports to render different note column effects.
 * To improve mouse handling, please disable mouse warping in Renoise preferences
 * You draw notes with the instrument, which is used in the current track of the pattern. In empty track's, it's using
   the current selected one.
-* The key combination <kbd>alt + shift</kbd> is a default shortcut to change the keyboard layout in Windows OS's. It is recommended to switch this off or change the keybaord shortcut to avoid problems. <br>See following for more details: https://answers.microsoft.com/en-us/windows/forum/all/how-to-disable-the-windows-10-language-shortcut/030016c9-bfed-48d9-8e4f-7d1030ced338  
+* The key combination <kbd>alt + shift</kbd> is a default shortcut to change the keyboard layout on Windows OS. It is
+  recommended to switch this off or change the keyboard shortcut to avoid problems. <br>See following for more
+  details: https://answers.microsoft.com/en-us/windows/forum/all/how-to-disable-the-windows-10-language-shortcut/030016c9-bfed-48d9-8e4f-7d1030ced338
 
 ## Install and Update
 
@@ -90,8 +92,7 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 |---|---|
 |Add notes|Double click on a free spot in the grid<br>Alternative: While hold <kbd>alt</kbd> its just one click|
 |Remove notes|Double click on a note<br>Alternative: While hold <kbd>alt</kbd> its just one click|
-|Select a note|Click on a note.<br>*It also reads out note length and velocity of the selected note and set these values
-for new notes.*|
+|Select a note|Click on a note.<br>*It also reads out note length and velocity of the selected note and set these values for new notes.*|
 |Move one note or multiple notes|Click and drag a note. It will also move all selected notes, too. Hold <kbd>ctrl</kbd> during moving will force note movement in scale.|
 |Change note length|Click and hold the end of a note and move the mouse to the right. It will also increase the length of all selected notes. To decrease the note length, just move the mouse to the left|
 |Change note delay|Hold <kbd>alt</kbd> key, click and hold a note and move the mouse to the right. Delay column needs to be enabled. When <kbd>shift</kbd> is holded also, it set one of the following hardcoded values (0x55, 0xAA). For easy note legato portamento for VSTi's or triplet timings.
