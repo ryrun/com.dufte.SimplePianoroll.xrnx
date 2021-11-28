@@ -1206,8 +1206,14 @@ local function finerMoveSelectedNotes(microsteps, snapSpecialGrid)
     song.transport.edit_mode = false
     song.transport.follow_player = false
     --auto enable delay column
-    if not song.selected_track.delay_column_visible and preferences.autoEnableDelayWhenNeeded.value then
-        song.selected_track.delay_column_visible = true
+    if not song.selected_track.delay_column_visible then
+        if preferences.autoEnableDelayWhenNeeded.value then
+            song.selected_track.delay_column_visible = true
+        else
+            --no microstep movement without delay column
+            showStatus("Please enable delay column for microsteps actions.")
+            return false
+        end
     end
     --
     setUndoDescription("Finer movement of notes ...")
