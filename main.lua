@@ -3850,6 +3850,10 @@ local function handleKeyEvent(keyEvent)
                     changePropertiesOfSelectedNotes(steps, nil, nil, nil, nil, "add")
                     --play new velocity
                     triggerNoteOfCurrentInstrument(noteSelection[1].note, nil, noteSelection[1].vel, true)
+                elseif #noteSelection > 0 and keyShift and not keyAlt and not keyControl then
+                    steps = -steps
+                    keyInfoText = "Move notes by " .. steps .. " microsteps"
+                    finerMoveSelectedNotes(steps)
                 else
                     keyInfoText = "Move through the grid"
                     steps = steps * -1
