@@ -367,6 +367,26 @@ local function forceValueToRange(val, min, max)
     return val
 end
 
+--find nearest values
+local function findNearestMicroStepValue(currentval, add, array)
+    local v
+    local val = currentval + add
+    for key in pairs(array) do
+        if not v then
+            v = array[key]
+        else
+            if math.abs(val - array[key]) < math.abs(val - v) then
+                v = array[key]
+            end
+            if math.abs(val - -(array[key])) < math.abs(val - v) then
+                v = -array[key]
+            end
+        end
+    end
+    v = v - currentval
+    return v
+end
+
 --change a value randomly
 local function randomizeValue(input, scale, min, max)
     local r = math.random(-scale, scale)
@@ -1141,7 +1161,7 @@ local function moveSelectedNotes(steps)
 end
 
 --finer movement selected notes using delay values
-local function finerMoveSelectedNotes(microsteps)
+local function finerMoveSelectedNotes(microsteps, snapSpecialGrid)
     local column
     local state = true
     local steps
@@ -1163,6 +1183,11 @@ local function finerMoveSelectedNotes(microsteps)
         end
     end
 
+    --try to snap microsteps to a special grid
+    if snapSpecialGrid then
+        microsteps = findNearestMicroStepValue(noteSelection[1].dly, microsteps, { 0, 0x55, 0xaa, 0x100 })
+    end
+
     --reduce microsteps when tehre is not enough space
     if microsteps < 0 then
         microsteps = -math.min(math.abs(microsteps), noteSelection[1].dly + ((noteSelection[1].line - 1) * 0x100))
@@ -1174,7 +1199,7 @@ local function finerMoveSelectedNotes(microsteps)
 
     --no movement necessary?
     if math.floor(microsteps) == 0 then
-        return true
+        return false
     end
 
     --disable edit mode and following to prevent side effects
@@ -2020,7 +2045,7 @@ function noteClick(x, y, c, released)
         xypadpos.resetscale = false
         xypadpos.notemode = true
         xypadpos.lastval = nil
-        xypadpos.duplicate = keyShift and not checkMode("pen")
+        xypadpos.duplicate = keyShift and not checkMode("pen") and not keyAlt
         xypadpos.time = os.clock()
         triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true)
         refreshPianoRollNeeded = true
@@ -3804,7 +3829,7 @@ local function handleKeyEvent(keyEvent)
                 steps = steps * -1
             end
             if (keyAlt or keyShift or keyRShift) and not keyControl then
-                if #noteSelection > 0 and keyAlt then
+                if #noteSelection > 0 and keyAlt and not keyShift and not keyControl then
                     if steps > 0 then
                         keyInfoText = "Increase velocity of selected notes"
                     else
@@ -4077,7 +4102,7 @@ local function handleXypad(val)
                     if v ~= 0 then
                         blockLineModifier = true
                         quickRefresh = true
-                        if finerMoveSelectedNotes(v) then
+                        if finerMoveSelectedNotes(v, keyShift) then
                             xypadpos.x = xypadpos.x + (v / 0x100)
                         end
                     end
