@@ -4837,12 +4837,12 @@ local function showPreferences()
                     bind = preferences.enableKeyInfo,
                 },
                 vbp:text {
-                    text = "Enable keyboard status bar",
+                    text = "Show current pressed keyboard keys in the status bar",
                 },
             },
             vbp:row {
                 vbp:text {
-                    text = "Max keyboard status bar display time (s):",
+                    text = "Max display time of status bar text (s):",
                 },
                 vbp:valuebox {
                     steps = { 1, 2 },
