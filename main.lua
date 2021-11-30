@@ -1165,7 +1165,7 @@ local function moveSelectedNotes(steps)
 end
 
 --finer movement selected notes using delay values
-local function finerMoveSelectedNotes(microsteps, snapSpecialGrid)
+local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
     local column
     local state = true
     local steps
@@ -1193,7 +1193,7 @@ local function finerMoveSelectedNotes(microsteps, snapSpecialGrid)
 
     --try to snap microsteps to a special grid
     if snapSpecialGrid then
-        microsteps = findNearestMicroStepValue(noteSelection[1].dly, microsteps, { 0, 0x55, 0xaa, 0x100 })
+        microsteps = findNearestMicroStepValue(noteSelection[1].dly, microsteps, { 0, 0x55, 0x80, 0xaa, 0x100 })
     end
 
     --reduce microsteps when there is not enough space
@@ -3867,7 +3867,7 @@ local function handleKeyEvent(keyEvent)
                 elseif #noteSelection > 0 and keyShift and not keyAlt and not keyControl then
                     steps = -steps
                     keyInfoText = "Move notes by " .. steps .. " microsteps"
-                    finerMoveSelectedNotes(steps)
+                    moveSelectedNotesByMicroSteps(steps)
                 else
                     keyInfoText = "Move through the grid"
                     steps = steps * -1
@@ -3946,7 +3946,7 @@ local function handleKeyEvent(keyEvent)
             else
                 if keyAlt then
                     if keyControl then
-                        finerMoveSelectedNotes(steps)
+                        moveSelectedNotesByMicroSteps(steps)
                         keyInfoText = "Finer move note selection to the " .. key.name
                     else
                         moveSelectionThroughNotes(steps, 0, keyShift)
@@ -4132,7 +4132,7 @@ local function handleXypad(val)
                     if v ~= 0 then
                         blockLineModifier = true
                         quickRefresh = true
-                        if finerMoveSelectedNotes(v, keyShift) then
+                        if moveSelectedNotesByMicroSteps(v, keyShift) then
                             xypadpos.x = xypadpos.x + (v / 0x100)
                         end
                     end
