@@ -371,6 +371,8 @@ end
 local function findNearestMicroStepValue(currentval, add, array)
     local v
     local val = currentval + add
+    local steps = math.floor((currentval + add) / 0x100)
+    val = val - (steps * 0x100)
     for key in pairs(array) do
         if not v then
             v = array[key]
@@ -384,6 +386,7 @@ local function findNearestMicroStepValue(currentval, add, array)
         end
     end
     v = v - currentval
+    v = v + (steps * 0x100)
     return v
 end
 
@@ -1193,7 +1196,7 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
 
     --try to snap microsteps to a special grid
     if snapSpecialGrid then
-        microsteps = findNearestMicroStepValue(noteSelection[1].dly, microsteps, { 0, 0x55, 0x80, 0xaa, 0x100 })
+        microsteps = findNearestMicroStepValue(noteSelection[1].dly, microsteps, { 0, 0x55, 0x80, 0xaa })
     end
 
     --reduce microsteps when there is not enough space
@@ -1267,7 +1270,7 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
             break
         end
     end
-    return state
+    return microsteps
 end
 
 --transpose each selected notes
@@ -4132,7 +4135,8 @@ local function handleXypad(val)
                     if v ~= 0 then
                         blockLineModifier = true
                         quickRefresh = true
-                        if moveSelectedNotesByMicroSteps(v, keyShift) then
+                        v = moveSelectedNotesByMicroSteps(v, keyShift)
+                        if v ~= false then
                             xypadpos.x = xypadpos.x + (v / 0x100)
                         end
                     end
