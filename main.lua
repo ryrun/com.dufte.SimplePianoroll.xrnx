@@ -1222,7 +1222,7 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
             song.selected_track.delay_column_visible = true
         else
             --no microstep movement without delay column
-            showStatus("Please enable delay column for microsteps actions.")
+            showStatus("Please enable delay column for micro steps actions.")
             return false
         end
     end
@@ -1583,6 +1583,80 @@ local function duplicateSelectedNotes(noOffset)
     addMissingNoteOffForColumns()
     refreshPianoRollNeeded = true
     return true
+end
+
+--change note length by micro steps
+local function changeSizeSelectedNotesByMicroSteps(microsteps)
+    local column
+    local state = true
+    local len
+    local delay
+
+    --no scaling necessary?
+    if math.floor(microsteps) == 0 then
+        return false
+    end
+
+    --disable edit mode and following to prevent side effects
+    song.transport.edit_mode = false
+    song.transport.follow_player = false
+    --auto enable delay column
+    if not song.selected_track.delay_column_visible then
+        if preferences.autoEnableDelayWhenNeeded.value then
+            song.selected_track.delay_column_visible = true
+        else
+            --no microstep movement without delay column
+            showStatus("Please enable delay column for micro steps actions.")
+            return false
+        end
+    end
+    --
+    setUndoDescription("Change note lengths by micro steps ...")
+    --go through selection
+    for key in pairs(noteSelection) do
+        --remove note
+        removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
+        --calculate step and delay difference
+        delay = (noteSelection[key].end_dly + microsteps) % 0x100
+        len = math.floor((noteSelection[key].end_dly + microsteps) / 0x100)
+        --prepare len difference for new delay values
+        if noteSelection[key].len + len < 1 then
+            len = 0
+            delay = 0
+        end
+        --search for column
+        column = returnColumnWhenEnoughSpaceForNote(
+                noteSelection[key].line,
+                noteSelection[key].len + len,
+                noteSelection[key].dly,
+                delay
+        )
+        if column then
+            noteSelection[key].step = noteSelection[key].step
+            noteSelection[key].line = noteSelection[key].line
+            noteSelection[key].len = noteSelection[key].len + len
+            noteSelection[key].dly = noteSelection[key].dly
+            noteSelection[key].end_dly = delay
+            noteSelection[key].column = column
+        end
+        noteSelection[key].noteoff = addNoteToPattern(
+                noteSelection[key].column,
+                noteSelection[key].line,
+                noteSelection[key].len,
+                noteSelection[key].note,
+                noteSelection[key].vel,
+                noteSelection[key].end_vel,
+                noteSelection[key].pan,
+                noteSelection[key].dly,
+                noteSelection[key].end_dly,
+                noteSelection[key].ghst
+        )
+        if not column then
+            state = false
+            break
+        end
+    end
+    return state
 end
 
 --change note size
@@ -4068,8 +4142,8 @@ local function handleXypad(val)
         --mouse dragging and scaling
         local max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
         if xypadpos.time > os.clock() - xypadpos.pickuptiming then
-            xypadpos.x = math.floor(val.x)
-            xypadpos.y = math.floor(val.y)
+            xypadpos.x = val.x
+            xypadpos.y = val.y
             if val.x - xypadpos.nx > xypadpos.scalethreshold and not xypadpos.duplicate then
                 xypadpos.scalemode = true
             end
@@ -4080,51 +4154,29 @@ local function handleXypad(val)
             end
             --when scale mode is active, scale notes
             if xypadpos.scalemode then
-                --prevet scaling into negative values
-                if val.x < xypadpos.nx then
-                    val.x = xypadpos.nx
+                if #noteSelection == 1 and xypadpos.resetscale then
+                    --when a new len will be drawn, then reset len to 1
+                    changeSizeSelectedNotes(1)
+                    --and remove delay
+                    changePropertiesOfSelectedNotes(nil, nil, 0, 0, nil, "quick")
                 end
-                if xypadpos.x - math.floor(val.x) > 0 then
+                local v = math.floor((val.x - xypadpos.x) * 0x100)
+                if v ~= 0 then
                     blockLineModifier = true
                     quickRefresh = true
-                    if #noteSelection == 1 and xypadpos.resetscale then
-                        --when a new len will be drawn, then reset len to 1
-                        changeSizeSelectedNotes(1)
-                        --and remove delay
-                        changePropertiesOfSelectedNotes(nil, nil, 0, nil, nil, "quick")
-                    end
-                    for d = math.abs(xypadpos.x - math.floor(val.x)), 1, -1 do
-                        if changeSizeSelectedNotes(-d, true) then
-                            xypadpos.x = xypadpos.x - d
-                            xypadpos.scaling = true
-                            xypadpos.resetscale = false
-                            break
+
+                    if changeSizeSelectedNotesByMicroSteps(v) then
+                        xypadpos.x = xypadpos.x + (v / 0x100)
+                        xypadpos.scaling = true
+                        xypadpos.resetscale = false
+                    elseif not xypadpos.scaling then
+                        --when note wasn't scaled, then switch to move mode
+                        if xypadpos.y - math.floor(val.y) > 0 then
+                            xypadpos.scalemode = false
                         end
-                    end
-                end
-                if xypadpos.x - math.floor(val.x) < 0 then
-                    blockLineModifier = true
-                    quickRefresh = true
-                    if #noteSelection == 1 and xypadpos.resetscale then
-                        changeSizeSelectedNotes(1)
-                        changePropertiesOfSelectedNotes(nil, nil, 0, nil, nil, "quick")
-                    end
-                    for d = math.abs(xypadpos.x - math.floor(val.x)), 1, -1 do
-                        if changeSizeSelectedNotes(d, true) then
-                            xypadpos.x = xypadpos.x + d
-                            xypadpos.scaling = true
-                            xypadpos.resetscale = false
-                            break
+                        if xypadpos.y - math.floor(val.y) < 0 then
+                            xypadpos.scalemode = false
                         end
-                    end
-                end
-                if not xypadpos.scaling then
-                    --when note wasn't scaled, then switch to move mode
-                    if xypadpos.y - math.floor(val.y) > 0 then
-                        xypadpos.scalemode = false
-                    end
-                    if xypadpos.y - math.floor(val.y) < 0 then
-                        xypadpos.scalemode = false
                     end
                 end
             end
