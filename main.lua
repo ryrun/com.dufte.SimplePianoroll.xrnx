@@ -267,6 +267,7 @@ local xypadpos = {
     resetscale = false,
     pickuptiming = 0.025, --time before trackpad reacts
     scalethreshold = 0.2,
+    selection_key = nil,
 }
 
 --pen mode
@@ -446,6 +447,24 @@ local function colorNoteVelocity(vel)
         color = colorNote
     end
     return color
+end
+
+--return true if delay column is enabled, check for auto enable
+local function isDelayColumnActive(showHint)
+    --auto enable delay column
+    if not song.selected_track.delay_column_visible then
+        if preferences.autoEnableDelayWhenNeeded.value then
+            song.selected_track.delay_column_visible = true
+            return true
+        else
+            --no microstep movement without delay column
+            if showHint then
+                showStatus("Please enable delay column for micro steps actions.")
+            end
+            return false
+        end
+    end
+    return true
 end
 
 --converts a color string to a table
@@ -1167,7 +1186,7 @@ local function moveSelectedNotes(steps)
     return state
 end
 
---finer movement selected notes using delay values
+--micro step movement selected notes using delay values
 local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
     local column
     local state = true
@@ -1216,18 +1235,8 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     song.transport.follow_player = false
-    --auto enable delay column
-    if not song.selected_track.delay_column_visible then
-        if preferences.autoEnableDelayWhenNeeded.value then
-            song.selected_track.delay_column_visible = true
-        else
-            --no microstep movement without delay column
-            showStatus("Please enable delay column for micro steps actions.")
-            return false
-        end
-    end
     --
-    setUndoDescription("Finer movement of notes ...")
+    setUndoDescription("Micro step movement of notes ...")
     --go through selection
     for key in pairs(noteSelection) do
         --remove note
@@ -1600,16 +1609,6 @@ local function changeSizeSelectedNotesByMicroSteps(microsteps)
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     song.transport.follow_player = false
-    --auto enable delay column
-    if not song.selected_track.delay_column_visible then
-        if preferences.autoEnableDelayWhenNeeded.value then
-            song.selected_track.delay_column_visible = true
-        else
-            --no microstep movement without delay column
-            showStatus("Please enable delay column for micro steps actions.")
-            return false
-        end
-    end
     --
     setUndoDescription("Change note lengths by micro steps ...")
     --go through selection
@@ -1655,6 +1654,10 @@ local function changeSizeSelectedNotesByMicroSteps(microsteps)
             state = false
             break
         end
+    end
+    if #noteSelection == 1 then
+        currentNoteLength = noteSelection[1].len
+        refreshControls = true
     end
     return state
 end
@@ -1752,6 +1755,17 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
             noteoff = lineValues[selection.line + selection.len]:note_column(selection.column)
         else
             noteoff = nil
+        end
+        if tostring(special) == "removecut" then
+            if selection.vel >= fromRenoiseHex("C0") and selection.vel <= fromRenoiseHex("CF") then
+                vel = 255
+            end
+            if selection.end_vel >= fromRenoiseHex("C0") and selection.end_vel <= fromRenoiseHex("CF") then
+                end_vel = 255
+            end
+            if selection.pan >= fromRenoiseHex("C0") and selection.pan <= fromRenoiseHex("CF") then
+                pan = 255
+            end
         end
         if vel ~= nil then
             if tostring(vel) == "h" then
@@ -1904,7 +1918,7 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
             note.instrument_value = currentInstrument - 1
         end
     end
-    if tostring(special) ~= "quick" then
+    if tostring(special) ~= "quick" and tostring(special) ~= "removecut" then
         addMissingNoteOffForColumns()
         refreshPianoRollNeeded = true
     end
@@ -2133,6 +2147,7 @@ function noteClick(x, y, c, released)
         --https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
         vbw["bbb" .. index]:remove_child(vbw["b" .. index])
         vbw["bbb" .. index]:add_child(vbw["b" .. index])
+        xypadpos.selection_key = noteInSelection(note_data)
         xypadpos.nx = x
         xypadpos.ny = y
         xypadpos.nlen = note_data.len
@@ -3943,8 +3958,10 @@ local function handleKeyEvent(keyEvent)
                     triggerNoteOfCurrentInstrument(noteSelection[1].note, nil, noteSelection[1].vel, true)
                 elseif #noteSelection > 0 and keyShift and not keyAlt and not keyControl then
                     steps = -steps
-                    keyInfoText = "Move notes by " .. steps .. " microsteps"
-                    moveSelectedNotesByMicroSteps(steps)
+                    keyInfoText = "Move notes by " .. steps .. " micro steps"
+                    if isDelayColumnActive(true) then
+                        moveSelectedNotesByMicroSteps(steps)
+                    end
                 else
                     keyInfoText = "Move through the grid"
                     steps = steps * -1
@@ -4023,8 +4040,10 @@ local function handleKeyEvent(keyEvent)
             else
                 if keyAlt then
                     if keyControl then
-                        moveSelectedNotesByMicroSteps(steps)
-                        keyInfoText = "Finer move note selection to the " .. key.name
+                        if isDelayColumnActive(true) then
+                            moveSelectedNotesByMicroSteps(steps)
+                        end
+                        keyInfoText = "Move note selection by microsteps to the " .. key.name
                     else
                         moveSelectionThroughNotes(steps, 0, keyShift)
                         if keyShift then
@@ -4142,8 +4161,8 @@ local function handleXypad(val)
         --mouse dragging and scaling
         local max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
         if xypadpos.time > os.clock() - xypadpos.pickuptiming then
-            xypadpos.x = val.x
-            xypadpos.y = val.y
+            xypadpos.x = math.floor(val.x)
+            xypadpos.y = math.floor(val.y)
             if val.x - xypadpos.nx > xypadpos.scalethreshold and not xypadpos.duplicate then
                 xypadpos.scalemode = true
             end
@@ -4158,31 +4177,58 @@ local function handleXypad(val)
                     --when a new len will be drawn, then reset len to 1
                     changeSizeSelectedNotes(1)
                     --and remove delay
-                    changePropertiesOfSelectedNotes(nil, nil, 0, 0, nil, "quick")
+                    changePropertiesOfSelectedNotes(nil, nil, 0, 0, nil, "removecut")
+                    --switch to scale mode, when note was resettet
+                    xypadpos.scaling = true
+                    xypadpos.resetscale = false
                 end
-                local v = math.floor((val.x - xypadpos.x) * 0x100)
+                local note_data = noteSelection[xypadpos.selection_key]
+                --for note drawing scaling select the first
+                if not note_data then
+                    note_data = noteSelection[1]
+                end
+                local v
+                if isDelayColumnActive() then
+                    v = math.floor((val.x - (xypadpos.nx + note_data.len + (note_data.end_dly / 0x100))) * 0x100)
+                    --calculate snap
+                    local delay = (note_data.end_dly + v) % 0x100
+                    local len = math.floor((note_data.end_dly + v) / 0x100)
+                    local scalesnapsize = 0x50
+                    if delay > 0x100 - scalesnapsize then
+                        v = v - delay + 0x100
+                    elseif delay < scalesnapsize then
+                        v = v - delay
+                    end
+                    --no scaling when target len < , then not scaling
+                    if note_data.len + len < 1 then
+                        v = 0
+                    end
+                else
+                    v = math.floor(math.floor((val.x - (xypadpos.nx + note_data.len)) * 0x100) / 0x100 + 0.8) * 0x100
+                    if note_data.len + math.floor((note_data.end_dly + v) / 0x100) < 1 then
+                        v = 0
+                    end
+                end
                 if v ~= 0 then
                     blockLineModifier = true
                     quickRefresh = true
-
                     if changeSizeSelectedNotesByMicroSteps(v) then
-                        xypadpos.x = xypadpos.x + (v / 0x100)
                         xypadpos.scaling = true
                         xypadpos.resetscale = false
-                    elseif not xypadpos.scaling then
-                        --when note wasn't scaled, then switch to move mode
-                        if xypadpos.y - math.floor(val.y) > 0 then
-                            xypadpos.scalemode = false
-                        end
-                        if xypadpos.y - math.floor(val.y) < 0 then
-                            xypadpos.scalemode = false
-                        end
+                    end
+                elseif not xypadpos.scaling then
+                    --when note wasn't scaled, then switch to move mode
+                    if xypadpos.y - math.floor(val.y) > 0 then
+                        xypadpos.scalemode = false
+                    end
+                    if xypadpos.y - math.floor(val.y) < 0 then
+                        xypadpos.scalemode = false
                     end
                 end
             end
             --when move note is active, move notes
             if not xypadpos.scalemode then
-                if keyAlt then
+                if keyAlt and isDelayColumnActive(true) then
                     local v = math.floor((val.x - xypadpos.x) * 0x100)
                     if v ~= 0 then
                         blockLineModifier = true
