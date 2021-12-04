@@ -67,6 +67,7 @@ local defaultPreferences = {
     minSizeOfNoteButton = 5,
     setLastEditedTrackAsGhost = true,
     useTrackColorForNoteHighlighting = false,
+    useTrackColorForNoteColor = false,
     autoEnableDelayWhenNeeded = true,
     --colors
     colorBaseGridColor = "#34444E",
@@ -125,6 +126,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     disableAltClickNoteRemove = defaultPreferences.disableAltClickNoteRemove,
     setLastEditedTrackAsGhost = defaultPreferences.setLastEditedTrackAsGhost,
     useTrackColorForNoteHighlighting = defaultPreferences.useTrackColorForNoteHighlighting,
+    useTrackColorForNoteColor = defaultPreferences.useTrackColorForNoteColor,
     autoEnableDelayWhenNeeded = defaultPreferences.autoEnableDelayWhenNeeded,
     snapToGridSize = defaultPreferences.snapToGridSize,
     --colors
@@ -437,16 +439,20 @@ end
 --simple function for coloring velocity
 local function colorNoteVelocity(vel)
     local color
+    local noteColor = colorNote
+    if preferences.useTrackColorForNoteColor.value then
+        noteColor = vbw["trackcolor"].color
+    end
     if vel < 0x7f and preferences.applyVelocityColorShading.value then
         if preferences.shadingType.value == 2 then
             color = alphablendColors(colorBaseGridColor,
-                    colorNote,
+                    noteColor,
                     preferences.velocityColorShadingAmount.value / 0x7f * (0x7f - vel))
         else
-            color = shadeColor(colorNote, preferences.velocityColorShadingAmount.value / 0x7f * (0x7f - vel))
+            color = shadeColor(noteColor, preferences.velocityColorShadingAmount.value / 0x7f * (0x7f - vel))
         end
     else
-        color = colorNote
+        color = noteColor
     end
     return color
 end
@@ -4548,6 +4554,14 @@ local function showPreferences()
                 },
                 vbp:text {
                     text = "Use track color for note highlighting",
+                },
+            },
+            vbp:row {
+                vbp:checkbox {
+                    bind = preferences.useTrackColorForNoteColor
+                },
+                vbp:text {
+                    text = "Use track color for note color",
                 },
             },
             vbp:row {
