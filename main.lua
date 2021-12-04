@@ -187,7 +187,7 @@ local colorKeyWhite
 local colorKeyBlack
 local colorVelocity
 local colorPan
-local colorDelay = { 71, 194, 236 }
+local colorDelay
 
 --calculated colors
 local colorWhiteKey = {}
@@ -2985,7 +2985,7 @@ local function highlightNotesOnStep(step, highlight)
                 local idx = "b" .. note.index
                 rows[note.row] = note.note
                 if highlight then
-                    if vbw[idx].color[1] ~= colorNoteSelected[1] then
+                    if not noteData[note.index] or not noteInSelection(noteData[note.index]) then
                         if preferences.useTrackColorForNoteHighlighting.value then
                             vbw[idx].color = vbw["trackcolor"].color
                         else
@@ -2993,7 +2993,7 @@ local function highlightNotesOnStep(step, highlight)
                         end
                     end
                 else
-                    if vbw[idx].color[1] ~= colorNoteSelected[1] then
+                    if not noteData[note.index] or not noteInSelection(noteData[note.index]) then
                         if note.ghst then
                             vbw[idx].color = colorNoteGhost
                         else
