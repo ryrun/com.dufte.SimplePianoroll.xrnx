@@ -42,6 +42,7 @@ local defaultPreferences = {
     forcePenMode = false,
     notePreview = true,
     enableOSCClient = true,
+    snapToGridSize = 20,
     oscConnectionString = "udp://127.0.0.1:8000",
     applyVelocityColorShading = true,
     velocityColorShadingAmount = 0.4,
@@ -125,6 +126,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     setLastEditedTrackAsGhost = defaultPreferences.setLastEditedTrackAsGhost,
     useTrackColorForNoteHighlighting = defaultPreferences.useTrackColorForNoteHighlighting,
     autoEnableDelayWhenNeeded = defaultPreferences.autoEnableDelayWhenNeeded,
+    snapToGridSize = defaultPreferences.snapToGridSize,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -4182,31 +4184,32 @@ local function handleXypad(val)
                     xypadpos.scaling = true
                     xypadpos.resetscale = false
                 end
+                local v = 0
                 local note_data = noteSelection[xypadpos.selection_key]
-                --for note drawing scaling select the first
-                if not note_data then
+                if not note_data and noteSelection[1] then
                     note_data = noteSelection[1]
                 end
-                local v
-                if isDelayColumnActive() then
-                    v = math.floor((val.x - (xypadpos.nx + note_data.len + (note_data.end_dly / 0x100))) * 0x100)
-                    --calculate snap
-                    local delay = (note_data.end_dly + v) % 0x100
-                    local len = math.floor((note_data.end_dly + v) / 0x100)
-                    local scalesnapsize = 0x50
-                    if delay > 0x100 - scalesnapsize then
-                        v = v - delay + 0x100
-                    elseif delay < scalesnapsize then
-                        v = v - delay
-                    end
-                    --no scaling when target len < , then not scaling
-                    if note_data.len + len < 1 then
-                        v = 0
-                    end
-                else
-                    v = math.floor(math.floor((val.x - (xypadpos.nx + note_data.len)) * 0x100) / 0x100 + 0.8) * 0x100
-                    if note_data.len + math.floor((note_data.end_dly + v) / 0x100) < 1 then
-                        v = 0
+                if note_data then
+                    if isDelayColumnActive() and keyAlt then
+                        v = math.floor((val.x - (xypadpos.nx + note_data.len + (note_data.end_dly / 0x100))) * 0x100)
+                        --calculate snap
+                        local delay = (note_data.end_dly + v) % 0x100
+                        local len = math.floor((note_data.end_dly + v) / 0x100)
+                        local scalesnapsize = math.floor(0x100 / 100 * preferences.snapToGridSize.value)
+                        if delay > 0x100 - scalesnapsize then
+                            v = v - delay + 0x100
+                        elseif delay < scalesnapsize then
+                            v = v - delay
+                        end
+                        --no scaling when target len < 1, then no scaling
+                        if note_data.len + len < 1 then
+                            v = 0
+                        end
+                    else
+                        v = math.floor(math.floor((val.x - (xypadpos.nx + note_data.len)) * 0x100 - note_data.end_dly) / 0x100 + 0.5) * 0x100
+                        if note_data.len + math.floor((note_data.end_dly + v) / 0x100) < 1 then
+                            v = 0
+                        end
                     end
                 end
                 if v ~= 0 then
@@ -4917,13 +4920,30 @@ local function showPreferences()
             },
             vbp:row {
                 vbp:text {
-                    text = "Scroll wheel speed:",
+                    text = "Scroll wheel speed (lines):",
                 },
                 vbp:valuebox {
                     steps = { 1, 2 },
                     min = 1,
                     max = 6,
                     bind = preferences.scrollWheelSpeed,
+                    tostring = function(v)
+                        return string.format("%i", v)
+                    end,
+                    tonumber = function(v)
+                        return tonumber(v)
+                    end
+                },
+            },
+            vbp:row {
+                vbp:text {
+                    text = "Snap to grid amount for scaling (%):",
+                },
+                vbp:valuebox {
+                    steps = { 1, 2 },
+                    min = 0,
+                    max = 50,
+                    bind = preferences.snapToGridSize,
                     tostring = function(v)
                         return string.format("%i", v)
                     end,
@@ -4969,7 +4989,7 @@ local function showPreferences()
                     bind = preferences.addNoteOffToEmptyNoteColumns,
                 },
                 vbp:text {
-                    text = "Automatically add NoteOff's in empty note columns",
+                    text = "Automatically add Note-Off in empty note columns",
                 },
             },
             vbp:row {
