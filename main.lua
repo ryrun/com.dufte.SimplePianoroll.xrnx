@@ -4171,10 +4171,11 @@ local function handleXypad(val)
         --mouse dragging and scaling
         local max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
         if xypadpos.time > os.clock() - xypadpos.pickuptiming then
-            xypadpos.x = math.floor(val.x)
-            xypadpos.y = math.floor(val.y)
+            xypadpos.x = val.x
+            xypadpos.y = val.y
             if val.x - xypadpos.nx > xypadpos.scalethreshold and not xypadpos.duplicate then
                 xypadpos.scalemode = true
+                xypadpos.scaling = true
             end
         else
             --prevent moving and scaling outside the grid
@@ -4183,7 +4184,7 @@ local function handleXypad(val)
             end
             --when scale mode is active, scale notes
             if xypadpos.scalemode then
-                if #noteSelection == 1 and xypadpos.resetscale then
+                if #noteSelection == 1 and xypadpos.resetscale and math.abs(xypadpos.x - val.x) > 0 then
                     --when a new len will be drawn, then reset len to 1
                     changeSizeSelectedNotes(1)
                     --and remove delay
