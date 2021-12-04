@@ -4231,6 +4231,23 @@ local function handleXypad(val)
             end
             --when move note is active, move notes
             if not xypadpos.scalemode then
+                --scroll through, when note hits border
+                if val.y == 1 and noteSlider.value > 0 then
+                    noteSlider.value = forceValueToRange(noteSlider.value - 1, noteSlider.min, noteSlider.max)
+                    xypadpos.y = xypadpos.y + 1
+                elseif val.y - 1 == gridHeight and noteSlider.value < noteSlider.max then
+                    noteSlider.value = forceValueToRange(noteSlider.value + 1, noteSlider.min, noteSlider.max)
+                    xypadpos.y = xypadpos.y - 1
+                end
+                if val.x == 1 and stepSlider.value > 0 then
+                    stepSlider.value = forceValueToRange(stepSlider.value - 1, stepSlider.min, stepSlider.max)
+                    xypadpos.x = xypadpos.x + 1
+                    xypadpos.lastx = xypadpos.lastx + 1
+                elseif val.x - 1 == gridWidth and stepSlider.value < stepSlider.max then
+                    stepSlider.value = forceValueToRange(stepSlider.value + 1, stepSlider.min, stepSlider.max)
+                    xypadpos.x = xypadpos.x - 1
+                    xypadpos.lastx = xypadpos.lastx - 1
+                end
                 if keyAlt and isDelayColumnActive(true) then
                     local v = math.floor((val.x - xypadpos.x) * 0x100)
                     if v ~= 0 then
