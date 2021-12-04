@@ -69,6 +69,7 @@ local defaultPreferences = {
     useTrackColorForNoteHighlighting = false,
     useTrackColorForNoteColor = false,
     autoEnableDelayWhenNeeded = true,
+    setVelPanDlyLenFromLastNote = true,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -129,6 +130,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     useTrackColorForNoteColor = defaultPreferences.useTrackColorForNoteColor,
     autoEnableDelayWhenNeeded = defaultPreferences.autoEnableDelayWhenNeeded,
     snapToGridSize = defaultPreferences.snapToGridSize,
+    setVelPanDlyLenFromLastNote = defaultPreferences.setVelPanDlyLenFromLastNote,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -1666,7 +1668,7 @@ local function changeSizeSelectedNotesByMicroSteps(microsteps)
             break
         end
     end
-    if #noteSelection == 1 then
+    if #noteSelection == 1 and preferences.setVelPanDlyLenFromLastNote.value then
         currentNoteLength = noteSelection[1].len
         refreshControls = true
     end
@@ -1724,7 +1726,7 @@ local function changeSizeSelectedNotes(len, add)
     end
     addMissingNoteOffForColumns()
     --set current scale length as new current length
-    if #noteSelection == 1 then
+    if #noteSelection == 1 and preferences.setVelPanDlyLenFromLastNote.value then
         currentNoteLength = newLen
         refreshControls = true
     end
@@ -2187,28 +2189,30 @@ function noteClick(x, y, c, released)
         local dbclk = dbclkDetector("b" .. index)
         --always set note date for the next new note
         if note_data ~= nil then
-            currentNoteGhost = note_data.ghst
-            currentNoteLength = note_data.len
-            currentNoteVelocity = note_data.vel
-            if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
-                currentNoteVelocityPreview = currentNoteVelocity
-            else
-                currentNoteVelocityPreview = 127
-            end
-            if note_data.len > 1 then
-                currentNoteEndVelocity = note_data.end_vel
-            else
-                if toRenoiseHex(note_data.vel):sub(1, 1) == "C" then
-                    currentNoteVelocity = 255
-                    currentNoteEndVelocity = note_data.vel
+            if preferences.setVelPanDlyLenFromLastNote.value then
+                currentNoteGhost = note_data.ghst
+                currentNoteLength = note_data.len
+                currentNoteVelocity = note_data.vel
+                if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
+                    currentNoteVelocityPreview = currentNoteVelocity
                 else
-                    currentNoteEndVelocity = 255
+                    currentNoteVelocityPreview = 127
                 end
+                if note_data.len > 1 then
+                    currentNoteEndVelocity = note_data.end_vel
+                else
+                    if toRenoiseHex(note_data.vel):sub(1, 1) == "C" then
+                        currentNoteVelocity = 255
+                        currentNoteEndVelocity = note_data.vel
+                    else
+                        currentNoteEndVelocity = 255
+                    end
+                end
+                currentNotePan = note_data.pan
+                currentNoteDelay = note_data.dly
+                currentNoteEndDelay = note_data.end_dly
+                refreshControls = true
             end
-            currentNotePan = note_data.pan
-            currentNoteDelay = note_data.dly
-            currentNoteEndDelay = note_data.end_dly
-            refreshControls = true
             --always jump to the note
             jumpToNoteInPattern(note_data)
         end
@@ -2622,7 +2626,7 @@ local function enableNoteButton(column,
                 end
                 if noteInSelection(noteData[current_note_index]) ~= nil then
                     color = colorNoteVelocity(current_note_vel, colorNoteSelected)
-                    if #noteSelection == 1 then
+                    if #noteSelection == 1 and preferences.setVelPanDlyLenFromLastNote.value then
                         currentNotePan = current_note_pan
                         currentNoteVelocity = current_note_vel
                         currentNoteEndVelocity = current_note_end_vel
@@ -5011,6 +5015,14 @@ local function showPreferences()
                 },
                 vbp:text {
                     text = "Enable pen mode by default",
+                },
+            },
+            vbp:row {
+                vbp:checkbox {
+                    bind = preferences.setVelPanDlyLenFromLastNote,
+                },
+                vbp:text {
+                    text = "Set vel, pan, dly and len from last drawn or selected note",
                 },
             },
             vbp:row {
