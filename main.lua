@@ -437,10 +437,12 @@ local function alphablendColors(color1, color2, alphablend)
 end
 
 --simple function for coloring velocity
-local function colorNoteVelocity(vel)
+local function colorNoteVelocity(vel, forceColor)
     local color
     local noteColor = colorNote
-    if preferences.useTrackColorForNoteColor.value then
+    if forceColor then
+        noteColor = forceColor
+    elseif preferences.useTrackColorForNoteColor.value then
         noteColor = vbw["trackcolor"].color
     end
     if vel < 0x7f and preferences.applyVelocityColorShading.value then
@@ -2618,7 +2620,7 @@ local function enableNoteButton(column,
                     color = colorNoteVelocity(current_note_vel)
                 end
                 if noteInSelection(noteData[current_note_index]) ~= nil then
-                    color = colorNoteSelected
+                    color = colorNoteVelocity(current_note_vel, colorNoteSelected)
                     if #noteSelection == 1 then
                         currentNotePan = current_note_pan
                         currentNoteVelocity = current_note_vel
