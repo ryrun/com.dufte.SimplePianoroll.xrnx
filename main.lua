@@ -2659,7 +2659,7 @@ local function enableNoteButton(column,
                     end
                 end
 
-                if addWidth > 0 then
+                if addWidth > 0 and (current_note_step + current_note_len) - 1 < gridWidth then
                     addWidth = math.max(math.floor((gridStepSizeW - gridSpacing) / 0x100 * addWidth), 1)
                     buttonWidth = buttonWidth + addWidth
                 end
