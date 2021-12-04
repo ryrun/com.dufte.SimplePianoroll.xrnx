@@ -268,6 +268,7 @@ local xypadpos = {
     scalemode = false, --is scale mode active?
     scaling = false, --are we scaling currently?
     duplicate = false, --for duplicate shortcut state var
+    distanceblock = false, --some distance needed before process anything
     resetscale = false,
     pickuptiming = 0.025, --time before trackpad reacts
     scalethreshold = 0.2,
@@ -4173,9 +4174,17 @@ local function handleXypad(val)
         if xypadpos.time > os.clock() - xypadpos.pickuptiming then
             xypadpos.x = val.x
             xypadpos.y = val.y
+            if xypadpos.scalemode then
+                xypadpos.distanceblock = true
+            end
             if val.x - xypadpos.nx > xypadpos.scalethreshold and not xypadpos.duplicate then
                 xypadpos.scalemode = true
                 xypadpos.scaling = true
+            end
+        elseif xypadpos.distanceblock then
+            --some distance is needed
+            if math.max(math.abs(xypadpos.x - val.x), math.abs(xypadpos.y - val.y)) > 0.69 then
+                xypadpos.distanceblock = false
             end
         else
             --prevent moving and scaling outside the grid
@@ -4184,7 +4193,7 @@ local function handleXypad(val)
             end
             --when scale mode is active, scale notes
             if xypadpos.scalemode then
-                if #noteSelection == 1 and xypadpos.resetscale and math.abs(xypadpos.x - val.x) > 0 then
+                if #noteSelection == 1 and xypadpos.resetscale then
                     --when a new len will be drawn, then reset len to 1
                     changeSizeSelectedNotes(1)
                     --and remove delay
