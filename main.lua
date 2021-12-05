@@ -1249,7 +1249,7 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
     song.transport.edit_mode = false
     song.transport.follow_player = false
     --
-    setUndoDescription("Micro step movement of notes ...")
+    setUndoDescription("Move notes ...")
     --go through selection
     for key in pairs(noteSelection) do
         --remove note
@@ -1623,7 +1623,7 @@ local function changeSizeSelectedNotesByMicroSteps(microsteps)
     song.transport.edit_mode = false
     song.transport.follow_player = false
     --
-    setUndoDescription("Change note lengths by micro steps ...")
+    setUndoDescription("Change note lengths ...")
     --go through selection
     for key in pairs(noteSelection) do
         --remove note
