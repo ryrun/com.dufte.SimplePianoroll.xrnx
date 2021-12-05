@@ -4318,29 +4318,29 @@ local function handleXypad(val)
                         xypadpos.lastx = math.floor(val.x)
                     end
                 end
-                if xypadpos.y - math.floor(val.y + 0.1) > 0 then
+                if math.floor(xypadpos.y) - math.floor(val.y + 0.1) > 0 then
                     if xypadpos.duplicate then
                         duplicateSelectedNotes(0)
                         xypadpos.duplicate = false
                     end
-                    for d = math.abs(xypadpos.y - math.floor(val.y + 0.1)), 1, -1 do
+                    for d = math.abs(math.floor(xypadpos.y) - math.floor(val.y + 0.1)), 1, -1 do
                         blockLineModifier = true
                         quickRefresh = true
                         if transposeSelectedNotes(-d, keyControl or keyRControl) then
-                            xypadpos.y = xypadpos.y - d
+                            xypadpos.y = math.floor(xypadpos.y) - d
                             break
                         end
                     end
-                elseif xypadpos.y - math.floor(val.y - 0.1) < 0 then
+                elseif math.floor(xypadpos.y) - math.floor(val.y - 0.1) < 0 then
                     if xypadpos.duplicate then
                         duplicateSelectedNotes(0)
                         xypadpos.duplicate = false
                     end
-                    for d = math.abs(xypadpos.y - math.floor(val.y - 0.1)), 1, -1 do
+                    for d = math.abs(math.floor(xypadpos.y) - math.floor(val.y - 0.1)), 1, -1 do
                         blockLineModifier = true
                         quickRefresh = true
                         if transposeSelectedNotes(d, keyControl or keyRControl) then
-                            xypadpos.y = xypadpos.y + d
+                            xypadpos.y = math.floor(xypadpos.y) + d
                             break
                         end
                     end
