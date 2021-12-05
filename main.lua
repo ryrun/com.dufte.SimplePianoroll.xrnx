@@ -1369,7 +1369,11 @@ local function pasteNotesFromClipboard()
             return a.line < b.line
         end)
         lineoffset = pasteCursor[1] - clipboard[1].line
-        noteoffset = pasteCursor[2] - clipboard[1].note
+        if pasteCursor[2] then
+            noteoffset = pasteCursor[2] - clipboard[1].note
+        else
+            noteoffset = 0
+        end
     end
     --process last note first
     table.sort(clipboard, function(a, b)
@@ -3913,15 +3917,11 @@ local function handleKeyEvent(keyEvent)
                     local note_data = noteSelection[k]
                     table.insert(clipboard, note_data)
                 end
-                --set paste cursor
+                --set paste cursor, to the first note
                 table.sort(clipboard, function(a, b)
                     return a.line < b.line
                 end)
-                pasteCursor = { clipboard[1].line, 0 }
-                table.sort(clipboard, function(a, b)
-                    return a.note < b.note
-                end)
-                pasteCursor = { pasteCursor[1], clipboard[1].note }
+                pasteCursor = { clipboard[1].line, clipboard[1].note }
                 --set status
                 showStatus(#noteSelection .. " notes cut.", true)
                 --remove selected notes
