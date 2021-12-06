@@ -630,10 +630,8 @@ local function noteInSelection(notedata)
     local ret
     for i = 1, #noteSelection do
         local note_data = noteSelection[i]
-        if note_data.note == notedata.note
-                and note_data.line == notedata.line
-                and note_data.len == notedata.len
-                and note_data.column == notedata.column then
+        --just search for line in pattern and column
+        if note_data.line == notedata.line and note_data.column == notedata.column then
             ret = i
             break
         end
@@ -2524,10 +2522,10 @@ local function enableNoteButton(column,
             ghst = ghost
         }
         --check if note is in selection and refresh noteData
-        for key in pairs(noteSelection) do
-            if noteSelection[key].line == current_note_line and noteSelection[key].column == column then
+        if #noteSelection then
+            local key = noteInSelection(noteData[current_note_index])
+            if key then
                 noteSelection[key] = noteData[current_note_index]
-                break
             end
         end
 
