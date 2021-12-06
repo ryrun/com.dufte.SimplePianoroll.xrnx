@@ -107,7 +107,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     oscConnectionString = defaultPreferences.oscConnectionString,
     applyVelocityColorShading = defaultPreferences.applyVelocityColorShading,
     velocityColorShadingAmount = defaultPreferences.velocityColorShadingAmount,
-    scaleBtnShadingAmount =  defaultPreferences.scaleBtnShadingAmount,
+    scaleBtnShadingAmount = defaultPreferences.scaleBtnShadingAmount,
     shadingType = defaultPreferences.shadingType,
     highlightEntireLineOfPlayingNote = defaultPreferences.highlightEntireLineOfPlayingNote,
     rowHighlightingAmount = defaultPreferences.rowHighlightingAmount,
@@ -2411,6 +2411,7 @@ function pianoGridClick(x, y, released)
             )
             --
             local note_data = {
+                idx = tostring(x - stepOffset) .. "_" .. tostring(y) .. "_" .. tostring(column),
                 line = x,
                 step = x - stepOffset,
                 note = note_value,
@@ -2491,6 +2492,7 @@ local function enableNoteButton(column,
     if current_note_rowIndex ~= nil then
         local noteOnStepIndex = current_note_step
         local current_note_index = tostring(current_note_step) .. "_" .. tostring(current_note_rowIndex) .. "_" .. tostring(column)
+        local current_note_param = "noteClick(" .. string.gsub(current_note_index, "_", ",")
         if current_note_vel == nil then
             current_note_vel = 255
         end
@@ -2507,6 +2509,7 @@ local function enableNoteButton(column,
             current_note_end_dly = 0
         end
         noteData[current_note_index] = {
+            idx = current_note_index,
             line = current_note_line,
             step = current_note_step,
             note = current_note,
@@ -2520,6 +2523,13 @@ local function enableNoteButton(column,
             column = column,
             ghst = ghost
         }
+        --check if note is in selection and refresh noteData
+        for key in pairs(noteSelection) do
+            if noteSelection[key].line == current_note_line and noteSelection[key].column == column then
+                noteSelection[key] = noteData[current_note_index]
+                break
+            end
+        end
 
         --only process notes on steps and visibility, when there is a valid row
         if l_vbw["row" .. current_note_rowIndex] then
@@ -2719,8 +2729,8 @@ local function enableNoteButton(column,
                                 visible = true,
                                 color = color,
                                 text = current_note_string,
-                                notifier = loadstring("noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ",true)"),
-                                pressed = loadstring("noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ",false)")
+                                notifier = loadstring(current_note_param .. ",true)"),
+                                pressed = loadstring(current_note_param .. ",false)")
                             },
                         }
                 );
@@ -2761,8 +2771,8 @@ local function enableNoteButton(column,
                             width = preferences.clickAreaSizeForScalingPx.value,
                             visible = true,
                             color = shadeColor(color, preferences.scaleBtnShadingAmount.value),
-                            notifier = loadstring("noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ",true,true)"),
-                            pressed = loadstring("noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ",false,true)")
+                            notifier = loadstring(current_note_param .. ",true,true)"),
+                            pressed = loadstring(current_note_param .. ",false,true)")
                         }
                     }
                 });
@@ -2771,6 +2781,7 @@ local function enableNoteButton(column,
 
                 --display retrigger effect
                 if retriggerWidth > 0 then
+                    l_vbw["br" .. current_note_index] = nil
                     spaceWidth = math.max(spaceWidth, 4)
                     local rTpl = l_song_transport.tpl - 1
                     if cutValue > 0 and cutValue < l_song_transport.tpl and current_note_len == 1 then
@@ -2778,6 +2789,7 @@ local function enableNoteButton(column,
                     end
                     for spc = retriggerWidth, rTpl, retriggerWidth do
                         local retrigger = vb:row {
+                            id = "br" .. current_note_index,
                             margin = -gridMargin,
                             spacing = -gridSpacing,
                         }
@@ -4220,6 +4232,42 @@ local function handleSrollWheel(number, id)
     vbw[id].value = 0
 end
 
+--just refresh selected notes, improves mouse actions
+local function refreshSelectedNotes()
+    local l_vbw = vbw
+    local lineValues = song.selected_pattern_track.lines
+    for key in pairs(noteSelection) do
+        if l_vbw["b" .. noteSelection[key].idx] then
+            l_vbw["b" .. noteSelection[key].idx].visible = false
+            l_vbw["bs" .. noteSelection[key].idx].visible = false
+        end
+        if l_vbw["br" .. noteSelection[key].idx] then
+            l_vbw["br" .. noteSelection[key].idx].visible = false
+        end
+        local rowIndex = noteValue2GridRowOffset(noteSelection[key].note, true)
+        noteSelection[key].idx = tostring(noteSelection[key].step) .. "_" .. tostring(rowIndex) .. "_" .. tostring(noteSelection[key].column)
+        local noteString = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column).note_string
+        enableNoteButton(
+                noteSelection[key].column,
+                noteSelection[key].line,
+                noteSelection[key].step,
+                rowIndex,
+                noteSelection[key].note,
+                noteSelection[key].len,
+                noteString,
+                noteSelection[key].vel,
+                noteSelection[key].end_vel,
+                noteSelection[key].pan,
+                noteSelection[key].dly,
+                noteSelection[key].end_dly,
+                noteSelection[key].noteoff,
+                noteSelection[key].ghst
+        )
+    end
+    --enable blockline modifier
+    blockLineModifier = false
+end
+
 --handle xy pad events
 local function handleXypad(val)
     local quickRefresh = false
@@ -4330,6 +4378,7 @@ local function handleXypad(val)
                     if xypadpos.x - math.floor(val.x) > 0 and math.floor(val.x) ~= xypadpos.lastx then
                         if xypadpos.duplicate then
                             duplicateSelectedNotes(0)
+                            forceFullRefresh = true
                             xypadpos.duplicate = false
                         end
                         for d = math.abs(xypadpos.x - math.floor(val.x)), 1, -1 do
@@ -4344,6 +4393,7 @@ local function handleXypad(val)
                     elseif xypadpos.x - math.floor(val.x) < 0 and math.floor(val.x) ~= xypadpos.lastx then
                         if xypadpos.duplicate then
                             duplicateSelectedNotes(0)
+                            forceFullRefresh = true
                             xypadpos.duplicate = false
                         end
                         for d = math.abs(xypadpos.x - math.floor(val.x)), 1, -1 do
@@ -4360,6 +4410,7 @@ local function handleXypad(val)
                 if math.floor(xypadpos.y) - math.floor(val.y + 0.1) > 0 then
                     if xypadpos.duplicate then
                         duplicateSelectedNotes(0)
+                        forceFullRefresh = true
                         xypadpos.duplicate = false
                     end
                     for d = math.abs(math.floor(xypadpos.y) - math.floor(val.y + 0.1)), 1, -1 do
@@ -4373,6 +4424,7 @@ local function handleXypad(val)
                 elseif math.floor(xypadpos.y) - math.floor(val.y - 0.1) < 0 then
                     if xypadpos.duplicate then
                         duplicateSelectedNotes(0)
+                        forceFullRefresh = true
                         xypadpos.duplicate = false
                     end
                     for d = math.abs(math.floor(xypadpos.y) - math.floor(val.y - 0.1)), 1, -1 do
@@ -4400,8 +4452,11 @@ local function handleXypad(val)
         if forceFullRefresh then
             quickRefresh = false
             blockLineModifier = false
+            fillPianoRoll()
+        else
+            --fillPianoRoll(quickRefresh)
+            refreshSelectedNotes()
         end
-        fillPianoRoll(quickRefresh)
     end
 end
 
