@@ -1648,6 +1648,12 @@ local function changeSizeSelectedNotesByMicroSteps(microsteps)
                 delay
         )
         if column then
+            if noteSelection[key].len == 1 and noteSelection[key].len + len > 1 then
+                if toRenoiseHex(noteSelection[key].vel):sub(1, 1) == "C" then
+                    noteSelection[key].end_vel = noteSelection[key].vel
+                    noteSelection[key].vel = 255
+                end
+            end
             noteSelection[key].step = noteSelection[key].step
             noteSelection[key].line = noteSelection[key].line
             noteSelection[key].len = noteSelection[key].len + len
@@ -4262,14 +4268,13 @@ local function refreshSelectedNotes()
                 noteSelection[key].ghst
         )
     end
-    --enable blockline modifier
-    blockLineModifier = false
+    refreshPianoRollNeeded = true
 end
 
 --handle xy pad events
 local function handleXypad(val)
-    local quickRefresh = false
-    local forceFullRefresh = false
+    local quickRefresh
+    local forceFullRefresh
     if xypadpos.notemode then
         --mouse dragging and scaling
         local max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
@@ -4441,15 +4446,14 @@ local function handleXypad(val)
             xypadpos.x = math.floor(val.x)
             xypadpos.y = math.floor(val.y)
             if selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, keyShift) then
-                quickRefresh = true
+                --just a quick refresh so selection works smooth
+                fillPianoRoll(true)
             end
         end
     end
-    if quickRefresh then
+    if quickRefresh or forceFullRefresh then
         --full refresh needed for scrolling
         if forceFullRefresh then
-            quickRefresh = false
-            blockLineModifier = false
             fillPianoRoll()
         else
             --fillPianoRoll(quickRefresh)
