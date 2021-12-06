@@ -4451,14 +4451,12 @@ local function handleXypad(val)
             end
         end
     end
-    if quickRefresh or forceFullRefresh then
-        --full refresh needed for scrolling
-        if forceFullRefresh then
-            fillPianoRoll()
-        else
-            --fillPianoRoll(quickRefresh)
-            refreshSelectedNotes()
-        end
+    if forceFullRefresh then
+        blockLineModifier = false
+        fillPianoRoll()
+    elseif quickRefresh then
+        --fillPianoRoll(quickRefresh)
+        refreshSelectedNotes()
     end
 end
 
