@@ -3043,6 +3043,7 @@ local function highlightNotesOnStep(step, highlight)
             if noteOnStep[step][i] ~= nil then
                 local note = noteOnStep[step][i]
                 local idx = "b" .. note.index
+                local sidx = "bs" .. note.index
                 rows[note.row] = note.note
                 if highlight then
                     if not noteData[note.index] or not noteInSelection(noteData[note.index]) then
@@ -3061,6 +3062,7 @@ local function highlightNotesOnStep(step, highlight)
                         end
                     end
                 end
+                vbw[sidx].color = shadeColor(vbw[idx].color, preferences.scaleBtnShadingAmount.value)
             end
         end
     end
