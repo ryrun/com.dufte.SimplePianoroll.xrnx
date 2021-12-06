@@ -56,10 +56,11 @@ local defaultPreferences = {
     highlightEntireLineOfPlayingNote = false,
     rowHighlightingAmount = 0.15,
     oddBarsShadingAmount = 0.11,
+    scaleBtnShadingAmount = 0.3,
     outOfNoteScaleShadingAmount = 0.2,
     azertyMode = false,
     scrollWheelSpeed = 2,
-    clickAreaSizeForScaling = 50,
+    clickAreaSizeForScalingPx = 6,
     disableKeyHandler = false,
     shadingType = 1,
     disableAltClickNoteRemove = true,
@@ -106,6 +107,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     oscConnectionString = defaultPreferences.oscConnectionString,
     applyVelocityColorShading = defaultPreferences.applyVelocityColorShading,
     velocityColorShadingAmount = defaultPreferences.velocityColorShadingAmount,
+    scaleBtnShadingAmount =  defaultPreferences.scaleBtnShadingAmount,
     shadingType = defaultPreferences.shadingType,
     highlightEntireLineOfPlayingNote = defaultPreferences.highlightEntireLineOfPlayingNote,
     rowHighlightingAmount = defaultPreferences.rowHighlightingAmount,
@@ -122,7 +124,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     outOfNoteScaleShadingAmount = defaultPreferences.outOfNoteScaleShadingAmount,
     azertyMode = defaultPreferences.azertyMode,
     scrollWheelSpeed = defaultPreferences.scrollWheelSpeed,
-    clickAreaSizeForScaling = defaultPreferences.clickAreaSizeForScaling,
+    clickAreaSizeForScalingPx = defaultPreferences.clickAreaSizeForScalingPx,
     disableKeyHandler = defaultPreferences.disableKeyHandler,
     disableAltClickNoteRemove = defaultPreferences.disableAltClickNoteRemove,
     setLastEditedTrackAsGhost = defaultPreferences.setLastEditedTrackAsGhost,
@@ -2137,7 +2139,7 @@ function keyClick(y, pressed)
 end
 
 --will be called, when a note was clicked
-function noteClick(x, y, c, released)
+function noteClick(x, y, c, released, forceScaling)
     local index = tostring(x) .. "_" .. tostring(y) .. "_" .. tostring(c)
     local note_data = noteData[index]
     local row = noteValue2GridRowOffset(note_data.note)
@@ -2162,15 +2164,25 @@ function noteClick(x, y, c, released)
         --remove and add the clicked button, disable underlaying buttons, so the xypad in the background
         --can receive the click event, remove/add trick from joule:
         --https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
-        vbw["bbb" .. index]:remove_child(vbw["b" .. index])
-        vbw["bbb" .. index]:add_child(vbw["b" .. index])
+        if forceScaling then
+            vbw["bbbs" .. index]:remove_child(vbw["bs" .. index])
+            vbw["bbbs" .. index]:add_child(vbw["bs" .. index])
+            vbw["b" .. index].active = false
+        else
+            vbw["bbb" .. index]:remove_child(vbw["b" .. index])
+            vbw["bbb" .. index]:add_child(vbw["b" .. index])
+        end
         xypadpos.selection_key = noteInSelection(note_data)
         xypadpos.nx = x
         xypadpos.ny = y
         xypadpos.nlen = note_data.len
-        xypadpos.scalethreshold = note_data.len - 1 + 1 * ((100 - preferences.clickAreaSizeForScaling.value) / 100)
-        xypadpos.scalemode = false
-        xypadpos.scaling = false
+        if forceScaling then
+            xypadpos.scalemode = true
+            xypadpos.scaling = true
+        else
+            xypadpos.scalemode = false
+            xypadpos.scaling = false
+        end
         xypadpos.resetscale = false
         xypadpos.notemode = true
         xypadpos.lastval = nil
@@ -2703,7 +2715,7 @@ local function enableNoteButton(column,
                             vb:button {
                                 id = "b" .. current_note_index,
                                 height = gridStepSizeH,
-                                width = math.max(buttonWidth - buttonSpace - 1, math.max(1, preferences.minSizeOfNoteButton.value)),
+                                width = math.max(buttonWidth - buttonSpace - 1, math.max(1, preferences.minSizeOfNoteButton.value + preferences.clickAreaSizeForScalingPx.value)),
                                 visible = true,
                                 color = color,
                                 text = current_note_string,
@@ -2719,6 +2731,43 @@ local function enableNoteButton(column,
 
                 table.insert(noteButtons[current_note_rowIndex], btn);
                 l_vbw["row" .. current_note_rowIndex]:add_child(btn)
+
+                --size button
+                local sizebutton = vb:row {
+                    margin = -gridMargin,
+                    spacing = -gridSpacing,
+                }
+                if spaceWidth > 0 then
+                    sizebutton:add_child(vb:space {
+                        width = spaceWidth,
+                    })
+                end
+                l_vbw["bs" .. current_note_index] = nil
+                l_vbw["bbbs" .. current_note_index] = nil
+                sizebutton:add_child(vb:row {
+                    spacing = -2,
+                    vb:space {
+                        width = l_vbw["b" .. current_note_index].width - (preferences.clickAreaSizeForScalingPx.value - 4),
+                    },
+                    vb:row {
+                        id = "bbbs" .. current_note_index,
+                        spacing = -3,
+                        vb:space {
+                            width = 1,
+                        },
+                        vb:button {
+                            id = "bs" .. current_note_index,
+                            height = gridStepSizeH,
+                            width = preferences.clickAreaSizeForScalingPx.value,
+                            visible = true,
+                            color = shadeColor(color, preferences.scaleBtnShadingAmount.value),
+                            notifier = loadstring("noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ",true,true)"),
+                            pressed = loadstring("noteClick(" .. tostring(current_note_step) .. "," .. tostring(current_note_rowIndex) .. "," .. tostring(column) .. ",false,true)")
+                        }
+                    }
+                });
+                l_vbw["row" .. current_note_rowIndex]:add_child(sizebutton)
+                table.insert(noteButtons[current_note_rowIndex], sizebutton);
 
                 --display retrigger effect
                 if retriggerWidth > 0 then
@@ -4182,10 +4231,6 @@ local function handleXypad(val)
             if xypadpos.scalemode then
                 xypadpos.distanceblock = true
             end
-            if val.x - xypadpos.nx > xypadpos.scalethreshold and not xypadpos.duplicate then
-                xypadpos.scalemode = true
-                xypadpos.scaling = true
-            end
         elseif xypadpos.distanceblock then
             --some distance is needed
             if math.max(math.abs(xypadpos.x - val.x), math.abs(xypadpos.y - val.y)) > 0.69 then
@@ -4241,14 +4286,6 @@ local function handleXypad(val)
                     if changeSizeSelectedNotesByMicroSteps(v) then
                         xypadpos.scaling = true
                         xypadpos.resetscale = false
-                    end
-                elseif not xypadpos.scaling then
-                    --when note wasn't scaled, then switch to move mode
-                    if xypadpos.y - math.floor(val.y) > 0 then
-                        xypadpos.scalemode = false
-                    end
-                    if xypadpos.y - math.floor(val.y) < 0 then
-                        xypadpos.scalemode = false
                     end
                 end
             end
@@ -4422,6 +4459,23 @@ local function showPreferences()
                     end
                 },
             },
+            vbp:row {
+                vbp:text {
+                    text = "Click area size for scaling (px):",
+                },
+                vbp:valuebox {
+                    steps = { 1, 2 },
+                    min = 6,
+                    max = 10,
+                    bind = preferences.clickAreaSizeForScalingPx,
+                    tostring = function(v)
+                        return string.format("%i", v)
+                    end,
+                    tonumber = function(v)
+                        return tonumber(v)
+                    end
+                },
+            },
             vbp:space { height = 8 },
             vbp:row {
                 vbp:text {
@@ -4449,6 +4503,23 @@ local function showPreferences()
                     min = 0.01,
                     max = 1,
                     bind = preferences.oddBarsShadingAmount,
+                    tostring = function(v)
+                        return string.format("%.2f", v)
+                    end,
+                    tonumber = function(v)
+                        return tonumber(v)
+                    end
+                },
+            },
+            vbp:row {
+                vbp:text {
+                    text = "Shading amount for scale part of notes:",
+                },
+                vbp:valuebox {
+                    steps = { 0.01, 0.1 },
+                    min = 0.01,
+                    max = 1,
+                    bind = preferences.scaleBtnShadingAmount,
                     tostring = function(v)
                         return string.format("%.2f", v)
                     end,
@@ -5114,23 +5185,6 @@ local function showPreferences()
                     min = 1,
                     max = 10,
                     bind = preferences.keyInfoTime,
-                    tostring = function(v)
-                        return string.format("%i", v)
-                    end,
-                    tonumber = function(v)
-                        return tonumber(v)
-                    end
-                },
-            },
-            vbp:row {
-                vbp:text {
-                    text = "Click area size for scaling (%):",
-                },
-                vbp:valuebox {
-                    steps = { 1, 2 },
-                    min = 1,
-                    max = 75,
-                    bind = preferences.clickAreaSizeForScaling,
                     tostring = function(v)
                         return string.format("%i", v)
                     end,
