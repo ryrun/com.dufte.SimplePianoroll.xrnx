@@ -2792,15 +2792,16 @@ local function drawNoteToGrid(column,
 
                 --display retrigger effect
                 if retriggerWidth > 0 then
-                    l_vbw["br" .. current_note_index] = nil
                     spaceWidth = math.max(spaceWidth, 4)
                     local rTpl = l_song_transport.tpl - 1
                     if cutValue > 0 and cutValue < l_song_transport.tpl and current_note_len == 1 then
                         rTpl = rTpl + (cutValue - 0xf)
                     end
+                    local i = 1
                     for spc = retriggerWidth, rTpl, retriggerWidth do
+                        l_vbw["br" .. current_note_index .. "_" .. i] = nil
                         local retrigger = vb:row {
-                            id = "br" .. current_note_index,
+                            id = "br" .. current_note_index .. "_" .. i,
                             margin = -gridMargin,
                             spacing = -gridSpacing,
                         }
@@ -2823,6 +2824,7 @@ local function drawNoteToGrid(column,
                         );
                         table.insert(noteButtons[current_note_rowIndex], retrigger);
                         l_vbw["row" .. current_note_rowIndex]:add_child(retrigger)
+                        i = i + 1
                     end
                 end
             end
@@ -4252,8 +4254,12 @@ local function refreshSelectedNotes()
             l_vbw["b" .. noteSelection[key].idx].visible = false
             l_vbw["bs" .. noteSelection[key].idx].visible = false
         end
-        if l_vbw["br" .. noteSelection[key].idx] then
-            l_vbw["br" .. noteSelection[key].idx].visible = false
+        for i = 1, 0xf do
+            if l_vbw["br" .. noteSelection[key].idx .. "_" .. i] then
+                l_vbw["br" .. noteSelection[key].idx .. "_" .. i].visible = false
+            else
+                break
+            end
         end
         local rowIndex = noteValue2GridRowOffset(noteSelection[key].note, true)
         noteSelection[key].idx = tostring(noteSelection[key].step) .. "_" .. tostring(rowIndex) .. "_" .. tostring(noteSelection[key].column)
