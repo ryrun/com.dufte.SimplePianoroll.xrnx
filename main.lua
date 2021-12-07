@@ -55,12 +55,12 @@ local defaultPreferences = {
     noNotePreviewDuringSongPlayback = false,
     highlightEntireLineOfPlayingNote = false,
     rowHighlightingAmount = 0.15,
-    oddBarsShadingAmount = 0.11,
-    scaleBtnShadingAmount = 0.3,
-    outOfNoteScaleShadingAmount = 0.2,
+    oddBarsShadingAmount = 0.10,
+    scaleBtnShadingAmount = 0.25,
+    outOfNoteScaleShadingAmount = 0.15,
     azertyMode = false,
     scrollWheelSpeed = 2,
-    clickAreaSizeForScalingPx = 6,
+    clickAreaSizeForScalingPx = 7,
     disableKeyHandler = false,
     shadingType = 1,
     disableAltClickNoteRemove = true,
@@ -425,6 +425,9 @@ end
 
 --shade color
 local function shadeColor(color, shade)
+    if shade == 0 then
+        return color
+    end
     return {
         color[1] * (1 - shade),
         color[2] * (1 - shade),
@@ -434,6 +437,9 @@ end
 
 --alphablend colors
 local function alphablendColors(color1, color2, alphablend)
+    if alphablend == 0 then
+        return color1
+    end
     return {
         color2[1] * (1 - alphablend) + color1[1] * alphablend,
         color2[2] * (1 - alphablend) + color1[2] * alphablend,
@@ -4543,7 +4549,7 @@ local function showPreferences()
                 },
                 vbp:valuebox {
                     steps = { 0.01, 0.1 },
-                    min = 0.01,
+                    min = 0,
                     max = 1,
                     bind = preferences.outOfNoteScaleShadingAmount,
                     tostring = function(v)
@@ -4560,7 +4566,7 @@ local function showPreferences()
                 },
                 vbp:valuebox {
                     steps = { 0.01, 0.1 },
-                    min = 0.01,
+                    min = 0,
                     max = 1,
                     bind = preferences.oddBarsShadingAmount,
                     tostring = function(v)
@@ -4577,7 +4583,7 @@ local function showPreferences()
                 },
                 vbp:valuebox {
                     steps = { 0.01, 0.1 },
-                    min = 0.01,
+                    min = 0,
                     max = 1,
                     bind = preferences.scaleBtnShadingAmount,
                     tostring = function(v)
@@ -4616,7 +4622,7 @@ local function showPreferences()
                 },
                 vbp:valuebox {
                     steps = { 0.01, 0.1 },
-                    min = 0.01,
+                    min = 0,
                     max = 1,
                     bind = preferences.velocityColorShadingAmount,
                     tostring = function(v)
@@ -4642,7 +4648,7 @@ local function showPreferences()
                 },
                 vbp:valuebox {
                     steps = { 0.01, 0.1 },
-                    min = 0.01,
+                    min = 0,
                     max = 1,
                     bind = preferences.rowHighlightingAmount,
                     tostring = function(v)
