@@ -2465,25 +2465,26 @@ function pianoGridClick(x, y, released)
 end
 
 --enable a note button, when its visible, set correct length of the button
-local function enableNoteButton(column,
-                                current_note_line,
-                                current_note_step,
-                                current_note_rowIndex,
-                                current_note,
-                                current_note_len,
-                                current_note_string,
-                                current_note_vel,
-                                current_note_end_vel,
-                                current_note_pan,
-                                current_note_dly,
-                                current_note_end_dly,
-                                noteoff,
-                                ghost)
+local function drawNoteToGrid(column,
+                              current_note_line,
+                              current_note_step,
+                              current_note_rowIndex,
+                              current_note,
+                              current_note_len,
+                              current_note_string,
+                              current_note_vel,
+                              current_note_end_vel,
+                              current_note_pan,
+                              current_note_dly,
+                              current_note_end_dly,
+                              noteoff,
+                              ghost)
     local l_song = song
     local l_song_transport = l_song.transport
     local l_song_st = l_song.selected_track
     local l_vbw = vbw
     local isOnStep = false
+    local isInSelection = false
     --save highest and lowest note
     if lowestNote == nil then
         lowestNote = current_note
@@ -2532,6 +2533,7 @@ local function enableNoteButton(column,
             local key = noteInSelection(noteData[current_note_index])
             if key then
                 noteSelection[key] = noteData[current_note_index]
+                isInSelection = true
             end
         end
 
@@ -2641,20 +2643,7 @@ local function enableNoteButton(column,
                     end
                 end
 
-                if current_note_vel == 0 then
-                    color = colorNoteMuted
-                elseif isOnStep == true then
-                    if preferences.useTrackColorForNoteHighlighting.value then
-                        color = vbw["trackcolor"].color
-                    else
-                        color = colorNoteHighlight
-                    end
-                elseif ghost == true then
-                    color = colorNoteGhost
-                else
-                    color = colorNoteVelocity(current_note_vel)
-                end
-                if noteInSelection(noteData[current_note_index]) ~= nil then
+                if isInSelection then
                     color = colorNoteVelocity(current_note_vel, colorNoteSelected)
                     if #noteSelection == 1 and preferences.setVelPanDlyLenFromLastNote.value then
                         currentNotePan = current_note_pan
@@ -2663,6 +2652,20 @@ local function enableNoteButton(column,
                         currentNoteDelay = current_note_dly
                         currentNoteEndDelay = current_note_end_dly
                         refreshControls = true
+                    end
+                else
+                    if current_note_vel == 0 then
+                        color = colorNoteMuted
+                    elseif isOnStep == true then
+                        if preferences.useTrackColorForNoteHighlighting.value then
+                            color = vbw["trackcolor"].color
+                        else
+                            color = colorNoteHighlight
+                        end
+                    elseif ghost == true then
+                        color = colorNoteGhost
+                    else
+                        color = colorNoteVelocity(current_note_vel)
                     end
                 end
 
@@ -3285,7 +3288,7 @@ local function fillPianoRoll(quickRefresh)
                     currentInstrument = note_column.instrument_value + 1
                 end
                 if current_note ~= nil then
-                    enableNoteButton(c,
+                    drawNoteToGrid(c,
                             current_note_line,
                             current_note_step,
                             current_note_rowIndex,
@@ -3324,7 +3327,7 @@ local function fillPianoRoll(quickRefresh)
                 if not current_note_step and s then
                     current_note_step = current_note_line - stepOffset
                 end
-                enableNoteButton(c,
+                drawNoteToGrid(c,
                         current_note_line,
                         current_note_step,
                         current_note_rowIndex,
@@ -3352,7 +3355,7 @@ local function fillPianoRoll(quickRefresh)
         end
         --pattern end, no note off, enable last note
         if current_note ~= nil then
-            enableNoteButton(c,
+            drawNoteToGrid(c,
                     current_note_line,
                     current_note_step,
                     current_note_rowIndex,
@@ -4251,7 +4254,7 @@ local function refreshSelectedNotes()
         local rowIndex = noteValue2GridRowOffset(noteSelection[key].note, true)
         noteSelection[key].idx = tostring(noteSelection[key].step) .. "_" .. tostring(rowIndex) .. "_" .. tostring(noteSelection[key].column)
         local noteString = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column).note_string
-        enableNoteButton(
+        drawNoteToGrid(
                 noteSelection[key].column,
                 noteSelection[key].line,
                 noteSelection[key].step,
