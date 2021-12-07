@@ -1208,7 +1208,6 @@ end
 --micro step movement selected notes using delay values
 local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
     local column
-    local state = true
     local steps
     local len
     local delay
@@ -1294,8 +1293,7 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
                 noteSelection[key].ghst
         )
         if not column then
-            state = false
-            break
+            return false
         end
     end
     return microsteps
