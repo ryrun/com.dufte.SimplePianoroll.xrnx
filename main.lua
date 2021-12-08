@@ -4324,7 +4324,7 @@ local function handleXypad(val)
                     note_data = noteSelection[1]
                 end
                 if note_data then
-                    if isDelayColumnActive() and keyAlt then
+                    if keyAlt and isDelayColumnActive() then
                         v = math.floor((val.x - (xypadpos.nx + note_data.len + (note_data.end_dly / 0x100))) * 0x100)
                         --calculate snap
                         local delay = (note_data.end_dly + v) % 0x100
