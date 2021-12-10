@@ -71,6 +71,7 @@ local defaultPreferences = {
     useTrackColorForNoteColor = false,
     autoEnableDelayWhenNeeded = true,
     setVelPanDlyLenFromLastNote = true,
+    keyLabels = 2,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -133,6 +134,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     autoEnableDelayWhenNeeded = defaultPreferences.autoEnableDelayWhenNeeded,
     snapToGridSize = defaultPreferences.snapToGridSize,
     setVelPanDlyLenFromLastNote = defaultPreferences.setVelPanDlyLenFromLastNote,
+    keyLabels = defaultPreferences.keyLabels,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -3261,9 +3263,14 @@ local function fillPianoRoll(quickRefresh)
                             end
                             key.color = defaultColor[idx]
                             --set root label
-                            if ((currentScale == 1 or preferences.scaleHighlightingType.value == 5) and noteIndexInScale((y + noffset) % 12, true) == 0) or
-                                    (preferences.scaleHighlightingType.value ~= 5 and currentScale == 2 and noteIndexInScale((y + noffset) % 12) == 0) or
-                                    (preferences.scaleHighlightingType.value ~= 5 and currentScale == 3 and noteIndexInScale((y + noffset) % 12) == 9)
+                            if preferences.keyLabels.value == 4 or
+                                    (preferences.keyLabels.value == 2 and (
+                                            ((currentScale == 1 or preferences.scaleHighlightingType.value == 5) and noteIndexInScale((y + noffset) % 12, true) == 0) or
+                                                    (preferences.scaleHighlightingType.value ~= 5 and currentScale == 2 and noteIndexInScale((y + noffset) % 12) == 0) or
+                                                    (preferences.scaleHighlightingType.value ~= 5 and currentScale == 3 and noteIndexInScale((y + noffset) % 12) == 9)))
+                                    or
+                                    (preferences.keyLabels.value == 3 and
+                                            noteInScale((y + noffset) % 12))
                             then
                                 local note = notesTable[(y + noffset) % 12 + 1]
                                 if string.len(note) == 1 then
@@ -4706,6 +4713,21 @@ local function showPreferences()
                         "List",
                     },
                     bind = preferences.keyboardStyle,
+                },
+            },
+            vbp:row {
+                vbp:text {
+                    text = "Key labels:",
+                    width = "50%"
+                },
+                vbp:popup {
+                    items = {
+                        "None",
+                        "Root notes",
+                        "In scale",
+                        "All notes",
+                    },
+                    bind = preferences.keyLabels,
                 },
             },
         },
