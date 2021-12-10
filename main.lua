@@ -3265,10 +3265,14 @@ local function fillPianoRoll(quickRefresh)
                                     (preferences.scaleHighlightingType.value ~= 5 and currentScale == 2 and noteIndexInScale((y + noffset) % 12) == 0) or
                                     (preferences.scaleHighlightingType.value ~= 5 and currentScale == 3 and noteIndexInScale((y + noffset) % 12) == 9)
                             then
+                                local note = notesTable[(y + noffset) % 12 + 1]
+                                if string.len(note) == 1 then
+                                    note = note .. "-"
+                                end
                                 if preferences.keyboardStyle.value == 2 then
-                                    key.text = notesTable[(y + noffset) % 12 + 1] .. tostring(math.floor((y + noffset) / 12)) .. "        "
+                                    key.text = note .. tostring(math.floor((y + noffset) / 12)) .. "        "
                                 else
-                                    key.text = "        " .. notesTable[(y + noffset) % 12 + 1] .. tostring(math.floor((y + noffset) / 12))
+                                    key.text = "        " .. note .. tostring(math.floor((y + noffset) / 12))
                                 end
                             else
                                 key.text = ""
