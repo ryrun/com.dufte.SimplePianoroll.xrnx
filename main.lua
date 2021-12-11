@@ -3277,9 +3277,9 @@ local function fillPianoRoll(quickRefresh)
                                     note = note .. "-"
                                 end
                                 if preferences.keyboardStyle.value == 2 then
-                                    key.text = note .. tostring(math.floor((y + noffset) / 12)) .. "        "
+                                    key.text = note .. tostring(math.floor((y + noffset) / 12)) .. "         "
                                 else
-                                    key.text = "        " .. note .. tostring(math.floor((y + noffset) / 12))
+                                    key.text = "         " .. note .. tostring(math.floor((y + noffset) / 12))
                                 end
                             else
                                 key.text = ""
