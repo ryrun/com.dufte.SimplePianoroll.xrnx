@@ -27,6 +27,15 @@ local notesTable = {
     "B",
 }
 
+local scaleTypes = {
+    "None",
+    "Major scale",
+    "Minor scale",
+    "Instrument scale",
+    "Automatic scale",
+
+}
+
 --default values, can be used to reset to default
 local defaultPreferences = {
     gridStepSizeW = 20,
@@ -3053,9 +3062,9 @@ local function setScaleHighlighting(afterPianoRollRefresh)
         if currentScale == 1 then
             vbw["currentscale"].text = "None"
         elseif currentScale == 2 then
-            vbw["currentscale"].text = notesTable[currentScaleOffset] .. " Maj"
+            vbw["currentscale"].text = notesTable[currentScaleOffset] .. " Major"
         elseif currentScale == 3 then
-            vbw["currentscale"].text = notesTable[currentScaleOffset] .. " Min"
+            vbw["currentscale"].text = notesTable[currentScaleOffset] .. " Minor"
         end
     end
     return ret
@@ -4682,13 +4691,7 @@ local function showPreferences()
                 },
                 vbp:popup {
                     width = 110,
-                    items = {
-                        "None",
-                        "Major scale",
-                        "Minor scale",
-                        "Instrument scale",
-                        "Automatic scale",
-                    },
+                    items = scaleTypes,
                     bind = preferences.scaleHighlightingType,
                 },
             },
@@ -6050,38 +6053,46 @@ local function createPianoRollDialog()
                                     height = 2
                                 },
                                 vb:row {
-                                    style = "panel",
-                                    spacing = -pianoKeyWidth,
-                                    vb:bitmap {
-                                        width = pianoKeyWidth - 2,
-                                        height = gridStepSizeH + 1,
-                                        bitmap = "Icons/SwitchOff.bmp",
-                                        mode = "transparent",
+                                    margin = -1,
+                                    vb:button {
+                                        width = "100%",
+                                        id = "currentscale",
+                                        text = "C Maj",
+                                        width = pianoKeyWidth,
+                                        height = gridStepSizeH + 3,
                                         notifier = function()
-                                            --nothing
+                                            local vbp = renoise.ViewBuilder()
+                                            local vbwp = vbp.views
+                                            local btn = app:show_custom_prompt("Set current scale highlighting",
+                                                    vbp:row {
+                                                        uniform = true,
+                                                        margin = 5,
+                                                        spacing = 5,
+                                                        vb:column {
+                                                            style = "group",
+                                                            margin = 5,
+                                                            uniform = true,
+                                                            spacing = 4,
+                                                            width = 432,
+                                                            vb:text {
+                                                                text = "Scale highlighting:",
+                                                            },
+                                                            vb:switch {
+                                                                width = "100%",
+                                                                items = scaleTypes,
+                                                                bind = preferences.scaleHighlightingType,
+                                                            },
+                                                            vb:text {
+                                                                text = "Key for selected scale:",
+                                                            },
+                                                            vb:switch {
+                                                                width = "100%",
+                                                                items = notesTable,
+                                                                bind = preferences.keyForSelectedScale,
+                                                            },
+                                                        } }, { "Ok" })
+                                            refreshPianoRollNeeded = true
                                         end
-                                    },
-                                    vb:column {
-                                        vb:space {
-                                            height = 1,
-                                        },
-                                        vb:row {
-                                            spacing = 2,
-                                            vb:space {
-                                                width = 2,
-                                            },
-                                            vb:bitmap {
-                                                bitmap = "Icons/Transport_ChordModeOff.bmp",
-                                                mode = "transparent",
-                                                tooltip = "Active scale highlighting. This can be changed via preferences.",
-                                            },
-                                            vb:text {
-                                                id = "currentscale",
-                                                text = "C Maj",
-                                                font = "mono",
-                                                style = "strong",
-                                            },
-                                        },
                                     },
                                 }
                             }
