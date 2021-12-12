@@ -6061,7 +6061,7 @@ local function createPianoRollDialog()
                                         text = "",
                                         width = pianoKeyWidth,
                                         height = gridStepSizeH + 3,
-                                        tooltip = "Change the current scale highlighting",
+                                        tooltip = "Set current scale highlighting",
                                         notifier = function()
                                             local vbp = renoise.ViewBuilder()
                                             app:show_custom_prompt("Set current scale highlighting",
