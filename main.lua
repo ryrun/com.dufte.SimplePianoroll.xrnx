@@ -6055,37 +6055,35 @@ local function createPianoRollDialog()
                                 vb:row {
                                     margin = -1,
                                     vb:button {
-                                        width = "100%",
                                         id = "currentscale",
                                         text = "C Maj",
                                         width = pianoKeyWidth,
                                         height = gridStepSizeH + 3,
                                         notifier = function()
-                                            local vbp = renoise.ViewBuilder()
-                                            local vbwp = vbp.views
-                                            local btn = app:show_custom_prompt("Set current scale highlighting",
-                                                    vbp:row {
+                                            local vbwp = renoise.ViewBuilder().views
+                                            app:show_custom_prompt("Set current scale highlighting",
+                                                    vbwp:row {
                                                         uniform = true,
                                                         margin = 5,
                                                         spacing = 5,
-                                                        vb:column {
+                                                        vbwp:column {
                                                             style = "group",
                                                             margin = 5,
                                                             uniform = true,
                                                             spacing = 4,
                                                             width = 432,
-                                                            vb:text {
+                                                            vbwp:text {
                                                                 text = "Scale highlighting:",
                                                             },
-                                                            vb:switch {
+                                                            vbwp:switch {
                                                                 width = "100%",
                                                                 items = scaleTypes,
                                                                 bind = preferences.scaleHighlightingType,
                                                             },
-                                                            vb:text {
+                                                            vbwp:text {
                                                                 text = "Key for selected scale:",
                                                             },
-                                                            vb:switch {
+                                                            vbwp:switch {
                                                                 width = "100%",
                                                                 items = notesTable,
                                                                 bind = preferences.keyForSelectedScale,
