@@ -61,6 +61,7 @@ It supports to render different note column effects.
   recommended to switch this off or change the keyboard shortcut to avoid problems. <br>See following for more
   details: https://answers.microsoft.com/en-us/windows/forum/all/how-to-disable-the-windows-10-language-shortcut/030016c9-bfed-48d9-8e4f-7d1030ced338
 * The rectangle of the mouse rectangle selection is currently "invisible". Will be changed in the future.
+* Renoise have a 12 column limit per tack. So when more than 12 columns are needed, then some notes will stuck in the current position. A hint shoulöd be displayed in Renoise toolbar.
 
 ## Install and Update
 
