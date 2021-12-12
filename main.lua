@@ -247,8 +247,8 @@ local currentNoteEndVelocity = 255
 local currentNoteGhost
 local currentInstrument
 local currentGhostTrack
-local currentScale = 2
-local currentScaleOffset = 1
+local currentScale
+local currentScaleOffset
 local lastTrackIndex
 
 local noteSelection = {}
@@ -617,8 +617,10 @@ end
 --return note index of scale
 local function noteIndexInScale(note, forceMajorC)
     if not forceMajorC then
-        note = note - (currentScaleOffset - 1)
-        if currentScale == 1 then
+        if currentScaleOffset ~= nil then
+            note = note - (currentScaleOffset - 1)
+        end
+        if currentScale == 1 or currentScale == nil then
             --no scale
             return -1
         elseif currentScale == 3 then
@@ -6056,34 +6058,35 @@ local function createPianoRollDialog()
                                     margin = -1,
                                     vb:button {
                                         id = "currentscale",
-                                        text = "C Maj",
+                                        text = "",
                                         width = pianoKeyWidth,
                                         height = gridStepSizeH + 3,
+                                        tooltip = "Change the current scale highlighting",
                                         notifier = function()
-                                            local vbwp = renoise.ViewBuilder().views
+                                            local vbp = renoise.ViewBuilder()
                                             app:show_custom_prompt("Set current scale highlighting",
-                                                    vbwp:row {
+                                                    vbp:row {
                                                         uniform = true,
                                                         margin = 5,
                                                         spacing = 5,
-                                                        vbwp:column {
+                                                        vbp:column {
                                                             style = "group",
                                                             margin = 5,
                                                             uniform = true,
                                                             spacing = 4,
                                                             width = 432,
-                                                            vbwp:text {
+                                                            vbp:text {
                                                                 text = "Scale highlighting:",
                                                             },
-                                                            vbwp:switch {
+                                                            vbp:switch {
                                                                 width = "100%",
                                                                 items = scaleTypes,
                                                                 bind = preferences.scaleHighlightingType,
                                                             },
-                                                            vbwp:text {
+                                                            vbp:text {
                                                                 text = "Key for selected scale:",
                                                             },
-                                                            vbwp:switch {
+                                                            vbp:switch {
                                                                 width = "100%",
                                                                 items = notesTable,
                                                                 bind = preferences.keyForSelectedScale,
