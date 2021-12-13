@@ -172,6 +172,7 @@ local noteSlider
 --last step position for resetting the last step button
 local lastStepOn
 local lastPlaySelectionLine
+local lastEditPos
 
 --current note offset and stepoffset (x/y) - sliders (scrollbars)
 local noteOffset
@@ -3195,6 +3196,7 @@ local function fillPianoRoll(quickRefresh)
         usedNoteIndices = {}
         defaultColor = {}
         lastStepOn = nil
+        lastEditPos = nil
         refreshPianoRollNeeded = false
         --show keyboard info bar
         l_vbw["key_state_panel"].visible = preferences.enableKeyInfo.value
@@ -3259,6 +3261,7 @@ local function fillPianoRoll(quickRefresh)
                         --refresh step indicator
                         if y == 1 then
                             l_vbw["s" .. stepString].active = true
+                            l_vbw["se" .. stepString].visible = false
                             l_vbw["s" .. stepString].color = colorStepOff
                         end
                         --refresh keyboad
@@ -3411,6 +3414,7 @@ local function fillPianoRoll(quickRefresh)
         for i = steps + 1, gridWidth do
             if y == 1 then
                 l_vbw["s" .. i].active = false
+                l_vbw["se" .. i].visible = false
                 l_vbw["s" .. i].color = colorDefault
             end
             l_vbw["p" .. i .. "_" .. y].color = temp
@@ -3526,6 +3530,17 @@ local function appIdleEvent()
 
         --refresh playback pos indicator
         refreshPlaybackPosIndicator()
+
+        --edit pos render
+        if lastEditPos == nil or lastEditPos ~= song.transport.edit_pos.line then
+            if vbw["se" .. tostring(lastEditPos)] then
+                vbw["se" .. tostring(lastEditPos)].visible = false
+            end
+            lastEditPos = song.transport.edit_pos.line - stepOffset
+            if vbw["se" .. tostring(lastEditPos)] then
+                vbw["se" .. tostring(lastEditPos)].visible = true
+            end
+        end
 
         --block loop, create an index for comparison, because obserable's are missing here
         local currentblockloop = tostring(song.transport.loop_block_enabled)
@@ -5333,13 +5348,32 @@ local function createPianoRollDialog()
             vb:space {
                 width = 2
             },
-            vb:button {
-                id = "s" .. tostring(x),
-                height = 9,
-                width = gridStepSizeW - 4,
-                color = colorStepOff,
-                active = false,
-                notifier = loadstring(temp),
+            vb:row {
+                spacing = -(gridStepSizeW - 4),
+                vb:button {
+                    id = "se" .. tostring(x),
+                    height = 13,
+                    width = gridStepSizeW - 4,
+                    color = colorStepOn,
+                    active = false,
+                    visible = false,
+                },
+                vb:column {
+                    vb:space {
+                        height = 2,
+                    },
+                    vb:button {
+                        id = "s" .. tostring(x),
+                        height = 9,
+                        width = gridStepSizeW - 4,
+                        color = colorStepOff,
+                        active = false,
+                        notifier = loadstring(temp),
+                    },
+                },
+                vb:space {
+                    height = 13,
+                },
             },
             vb:space {
                 width = 2
@@ -6104,19 +6138,16 @@ local function createPianoRollDialog()
             vb:column {
                 vb:column {
                     vb:space {
-                        height = 5,
+                        height = 3,
                     },
                     playCursor,
-                    vb:space {
-                        height = 1,
-                    },
                 },
                 vb:column {
                     vb:row {
                         vb:space {
                             id = "blockloopspc",
                             width = gridStepSizeW * 1 - (gridSpacing * 1),
-                            height = 5,
+                            height = 4,
                         },
                         vb:button {
                             id = "blockloop",
