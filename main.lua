@@ -3619,6 +3619,8 @@ local function appNewDoc()
     currentNoteEndDelay = 0
     currentNoteVelocityPreview = 127
     currentNoteEndVelocity = 255
+    currentScale = nil
+    currentScaleOffset = nil
     --set new observers
     song.transport.lpb_observable:add_notifier(function()
         refreshPianoRollNeeded = true
@@ -6106,10 +6108,10 @@ local function createPianoRollDialog()
                                         text = "",
                                         width = pianoKeyWidth,
                                         height = gridStepSizeH + 3,
-                                        tooltip = "Set current scale highlighting",
+                                        tooltip = "Set scale highlighting",
                                         notifier = function()
                                             local vbp = renoise.ViewBuilder()
-                                            app:show_custom_prompt("Set current scale highlighting",
+                                            app:show_custom_prompt("Set scale highlighting",
                                                     vbp:row {
                                                         uniform = true,
                                                         margin = 5,
