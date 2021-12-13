@@ -591,11 +591,16 @@ end
 --jump to the note position in pattern
 local function jumpToNoteInPattern(notedata)
     --jump to the first note in selection, when needed
-    if type(notedata) == "string" and notedata == "sel" and #noteSelection > 0 then
-        table.sort(noteSelection, function(a, b)
-            return a.line + a.dly / 0x100 < b.line + a.dly / 0x100
-        end)
-        notedata = noteSelection[1]
+    if type(notedata) == "string" and notedata == "sel" then
+        if #noteSelection > 0 then
+            table.sort(noteSelection, function(a, b)
+                return a.line + a.dly / 0x100 < b.line + a.dly / 0x100
+            end)
+            notedata = noteSelection[1]
+        else
+            --no selection, dont do anything
+            return false
+        end
     end
     --only when not playing or follow player
     if not song.transport.playing or not song.transport.follow_player then
@@ -2124,8 +2129,6 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
                     if note_data ~= nil and s + note_data.len - 1 <= smax and not noteInSelection(note_data) then
                         --add to selection table
                         table.insert(noteSelection, note_data)
-                        --jump to the note, which was added to selection
-                        jumpToNoteInPattern(note_data)
                         --refresh of piano roll needed
                         refreshNeeded = true
                     end
@@ -2137,6 +2140,7 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
     if refreshNeeded then
         addMissingNoteOffForColumns()
         refreshPianoRollNeeded = true
+        jumpToNoteInPattern("sel")
     end
     return refreshNeeded
 end
