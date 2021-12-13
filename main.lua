@@ -2914,7 +2914,7 @@ local function fillTimeline()
         if len < 1 or pos > gridWidth then
             hideblockloop = true
         else
-            vbw.blockloop.width = gridStepSizeW * len - (gridSpacing * (len - 1)) - 4
+            vbw.blockloop.width = gridStepSizeW * len - (gridSpacing * (len - 1)) - 2
             vbw.blockloopspc.width = math.max(gridStepSizeW * (pos - 1) - (gridSpacing * (pos - 1)), 1)
             vbw.blockloop.visible = true
         end
@@ -6146,10 +6146,11 @@ local function createPianoRollDialog()
                 },
                 vb:column {
                     vb:row {
+                        margin = -1,
                         vb:space {
                             id = "blockloopspc",
                             width = gridStepSizeW * 1 - (gridSpacing * 1),
-                            height = 4,
+                            height = 5,
                         },
                         vb:button {
                             id = "blockloop",
