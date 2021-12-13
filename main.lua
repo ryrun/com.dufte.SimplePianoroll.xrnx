@@ -171,7 +171,6 @@ local noteSlider
 
 --last step position for resetting the last step button
 local lastStepOn
-local lastPlaySelectionLine
 local lastEditPos
 
 --current note offset and stepoffset (x/y) - sliders (scrollbars)
@@ -2459,8 +2458,7 @@ function pianoGridClick(x, y, released)
         else
             --fast play from cursor
             if keyControl and not keyAlt and not keyShift then
-                lastPlaySelectionLine = x + stepOffset
-                playPatternFromLine(lastPlaySelectionLine)
+                playPatternFromLine(x + stepOffset)
             end
             --deselect selected notes
             if #noteSelection > 0 then
@@ -4203,14 +4201,8 @@ local function handleKeyEvent(keyEvent)
     --play selection
     if key.name == "space" and key.modifiers == "control" then
         if key.state == "pressed" then
-            if #noteSelection > 0 then
-                table.sort(noteSelection, function(a, b)
-                    return a.line < b.line
-                end)
-                lastPlaySelectionLine = noteSelection[1].line
-            end
-            if lastPlaySelectionLine then
-                playPatternFromLine(lastPlaySelectionLine)
+            if lastEditPos then
+                playPatternFromLine(lastEditPos + stepOffset)
             else
                 playPatternFromLine(1)
             end

@@ -144,7 +144,7 @@ So you don't need to hold <kbd>shift</kbd>.
 |<kbd>ctrl + shift + 0</kbd>|Halve current note length|
 |<kbd>alt + m</kbd>|Mute all visible notes (set volume to 0)|
 |<kbd>alt + shift + m</kbd>|Unmute all visible notes (remove volume value)|
-|<kbd>ctrl + space</kbd>|Play from last selection|
+|<kbd>ctrl + space</kbd>|Play from edit cursor position|
 
 ### One or more notes selected
 
