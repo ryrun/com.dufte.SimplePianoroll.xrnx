@@ -591,7 +591,7 @@ end
 --jump to the note position in pattern
 local function jumpToNoteInPattern(notedata)
     --jump to the first note in selection, when needed
-    if type(notedata) == "string" and notedata == "sel" and #noteSelection>0 then
+    if type(notedata) == "string" and notedata == "sel" and #noteSelection > 0 then
         table.sort(noteSelection, function(a, b)
             return a.line + a.dly / 0x100 < b.line + a.dly / 0x100
         end)
@@ -3539,7 +3539,7 @@ local function appIdleEvent()
         refreshPlaybackPosIndicator()
 
         --edit pos render
-        if lastEditPos == nil or lastEditPos ~= song.transport.edit_pos.line then
+        if lastEditPos == nil or lastEditPos ~= song.transport.edit_pos.line - stepOffset then
             if vbw["se" .. tostring(lastEditPos)] then
                 vbw["se" .. tostring(lastEditPos)].visible = false
             end
