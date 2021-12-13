@@ -6152,6 +6152,9 @@ local function createPianoRollDialog()
                         height = 3,
                     },
                     playCursor,
+                    vb:space {
+                        height = 1,
+                    },
                 },
                 vb:column {
                     vb:row {
