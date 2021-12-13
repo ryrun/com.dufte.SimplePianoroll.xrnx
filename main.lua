@@ -4181,9 +4181,19 @@ local function handleKeyEvent(keyEvent)
                         end
                     end
                 else
-                    keyInfoText = "Move through the grid"
-                    if stepSlider.value + steps <= stepSlider.max and stepSlider.value + steps >= stepSlider.min then
-                        stepSlider.value = stepSlider.value + steps
+                    keyInfoText = "Move edit cursor position"
+                    local npos = renoise.SongPos()
+                    npos.line = song.transport.edit_pos.line + steps
+                    if npos.line >= 1 and npos.line <= song.selected_pattern.number_of_lines then
+                        npos.sequence = song.transport.edit_pos.sequence
+                        song.transport.edit_pos = npos
+                        if npos.line > gridWidth + stepOffset or npos.line <= stepOffset then
+                            if npos.line - gridWidth >= stepSlider.min then
+                                stepSlider.value = npos.line - gridWidth
+                            elseif npos.line <= stepOffset then
+                                stepSlider.value = npos.line - 1
+                            end
+                        end
                     end
                 end
             end

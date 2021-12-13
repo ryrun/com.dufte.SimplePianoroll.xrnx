@@ -128,8 +128,8 @@ So you don't need to hold <kbd>shift</kbd>.
 |<kbd>F3</kbd>|Switch to audio preview tool|
 |<kbd>up</kbd>|Move in the grid upwards|
 |<kbd>down</kbd>|Move in the grid downwards|
-|<kbd>left</kbd>|Move in the grid leftwards|
-|<kbd>right</kbd>|Move in the grid rightwards|
+|<kbd>left</kbd>|Move edit position cursor leftwards, scroll when cursor get's outside the grid|
+|<kbd>right</kbd>|Move edit position cursor rightwards, scroll when cursor get's outside the grid|
 |<kbd>page up</kbd>|Move in the grid 16 steps upwards|
 |<kbd>page down</kbd>|Move in the grid 16 steps downwards|
 |<kbd>shift + up</kbd>|Move in the grid 12 steps upwards|
