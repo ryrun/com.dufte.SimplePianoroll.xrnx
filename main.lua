@@ -590,6 +590,13 @@ end
 
 --jump to the note position in pattern
 local function jumpToNoteInPattern(notedata)
+    --jump to the first note in selection, when needed
+    if type(notedata) == "string" and notedata == "sel" and #noteSelection>0 then
+        table.sort(noteSelection, function(a, b)
+            return a.line + a.dly / 0x100 < b.line + a.dly / 0x100
+        end)
+        notedata = noteSelection[1]
+    end
     --only when not playing or follow player
     if not song.transport.playing or not song.transport.follow_player then
         --only when the edit cursor is in the correct pattern
@@ -1215,6 +1222,7 @@ local function moveSelectedNotes(steps)
             break
         end
     end
+    jumpToNoteInPattern("sel")
     return state
 end
 
@@ -1309,6 +1317,7 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
             return false
         end
     end
+    jumpToNoteInPattern("sel")
     return microsteps
 end
 
