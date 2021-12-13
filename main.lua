@@ -2325,18 +2325,19 @@ end
 --will be called, when an empty grid button was clicked
 function pianoGridClick(x, y, released)
     local index = tostring(x) .. "_" .. tostring(y)
+    local outside = false
 
-    --ignore clicks outside pattern
+    --just allow selection, deselect notes, when pos is outside the grid
     if x + stepOffset > song.selected_pattern.number_of_lines then
-        --deselect selected notes
-        if #noteSelection > 0 then
+        outside = true
+    end
+
+    if not released and not checkMode("preview") and not keyControl and not (outside and checkMode("pen")) then
+        --deselect current notes, when outside was clicked
+        if outside and #noteSelection > 0 then
             noteSelection = {}
             refreshPianoRollNeeded = true
         end
-        return
-    end
-
-    if not released and not checkMode("preview") and not keyControl then
         --remove and add the clicked button, disable all buttons in the row, so the xypad in the background can
         --receive the click event remove/add trick from joule:
         --https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
@@ -2364,6 +2365,11 @@ function pianoGridClick(x, y, released)
         --disabled button need to be enabled again outside this call when just one click was triggered,
         --use idle function
         refreshPianoRollNeeded = true
+        return
+    end
+
+    --dont do anything, when position is outside pattern
+    if outside then
         return
     end
 
@@ -3429,6 +3435,7 @@ local function fillPianoRoll(quickRefresh)
                 l_vbw["s" .. i].color = colorDefault
             end
             l_vbw["p" .. i .. "_" .. y].color = temp
+            l_vbw["p" .. i .. "_" .. y].active = true
         end
     end
 
