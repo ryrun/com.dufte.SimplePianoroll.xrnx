@@ -288,6 +288,7 @@ local xypadpos = {
     pickuptiming = 0.025, --time before trackpad reacts
     scalethreshold = 0.2,
     selection_key = nil,
+    idx = nil,
 }
 
 --pen mode
@@ -2221,6 +2222,7 @@ function noteClick(x, y, c, released, forceScaling)
             vbw["bbb" .. index]:add_child(vbw["b" .. index])
         end
         xypadpos.selection_key = noteInSelection(note_data)
+        xypadpos.idx = note_data.idx
         xypadpos.nx = x
         xypadpos.ny = y
         xypadpos.nlen = note_data.len
@@ -2234,7 +2236,7 @@ function noteClick(x, y, c, released, forceScaling)
         xypadpos.resetscale = false
         xypadpos.notemode = true
         xypadpos.lastval = nil
-        xypadpos.duplicate = keyShift and not checkMode("pen") and not keyAlt
+        xypadpos.duplicate = (keyShift or keyControl) and not checkMode("pen") and not keyAlt
         xypadpos.time = os.clock()
         triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true)
         refreshPianoRollNeeded = true
@@ -2302,18 +2304,7 @@ function noteClick(x, y, c, released, forceScaling)
                 if not checkMode("preview") then
                     local deselect = false
                     --clear selection, when ctrl is not holded
-                    if not keyControl then
-                        if #noteSelection > 0 then
-                            for i = 1, #noteSelection do
-                                if noteSelection[i].line == note_data.line
-                                        and noteSelection[i].len == note_data.len
-                                        and noteSelection[i].column == note_data.column then
-                                    return
-                                end
-                            end
-                        end
-                        noteSelection = {}
-                    elseif #noteSelection > 0 and keyControl then
+                    if #noteSelection > 0 and keyControl then
                         --check if the note is in selection, then just deselect
                         for i = 1, #noteSelection do
                             if noteSelection[i].line == note_data.line
@@ -2324,6 +2315,17 @@ function noteClick(x, y, c, released, forceScaling)
                                 break
                             end
                         end
+                    else
+                        if #noteSelection > 0 then
+                            for i = 1, #noteSelection do
+                                if noteSelection[i].line == note_data.line
+                                        and noteSelection[i].len == note_data.len
+                                        and noteSelection[i].column == note_data.column then
+                                    return
+                                end
+                            end
+                        end
+                        noteSelection = {}
                     end
                     --when note was not deselected, then add this note to selection
                     if not deselect and not noteInSelection(note_data) then
@@ -4467,6 +4469,13 @@ local function handleXypad(val)
                     xypadpos.y = math.floor(xypadpos.y)
                     if xypadpos.x - math.floor(val.x) > 0 and math.floor(val.x) ~= xypadpos.lastx then
                         if xypadpos.duplicate then
+                            if keyControl and xypadpos.idx then
+                                if noteInSelection(noteData[xypadpos.idx]) then
+                                    noteSelection = {}
+                                end
+                                table.insert(noteSelection, noteData[xypadpos.idx])
+                                xypadpos.idx = nil
+                            end
                             duplicateSelectedNotes(0)
                             forceFullRefresh = true
                             xypadpos.duplicate = false
@@ -4482,6 +4491,13 @@ local function handleXypad(val)
                         xypadpos.lastx = math.floor(val.x)
                     elseif xypadpos.x - math.floor(val.x) < 0 and math.floor(val.x) ~= xypadpos.lastx then
                         if xypadpos.duplicate then
+                            if keyControl and xypadpos.idx then
+                                if noteInSelection(noteData[xypadpos.idx]) then
+                                    noteSelection = {}
+                                end
+                                table.insert(noteSelection, noteData[xypadpos.idx])
+                                xypadpos.idx = nil
+                            end
                             duplicateSelectedNotes(0)
                             forceFullRefresh = true
                             xypadpos.duplicate = false
@@ -4499,6 +4515,13 @@ local function handleXypad(val)
                 end
                 if math.floor(xypadpos.y) - math.floor(val.y + 0.1) > 0 then
                     if xypadpos.duplicate then
+                        if keyControl and xypadpos.idx then
+                            if noteInSelection(noteData[xypadpos.idx]) then
+                                noteSelection = {}
+                            end
+                            table.insert(noteSelection, noteData[xypadpos.idx])
+                            xypadpos.idx = nil
+                        end
                         duplicateSelectedNotes(0)
                         forceFullRefresh = true
                         xypadpos.duplicate = false
@@ -4506,13 +4529,20 @@ local function handleXypad(val)
                     for d = math.abs(math.floor(xypadpos.y) - math.floor(val.y + 0.1)), 1, -1 do
                         blockLineModifier = true
                         quickRefresh = true
-                        if transposeSelectedNotes(-d, keyControl or keyRControl) then
+                        if transposeSelectedNotes(-d) then
                             xypadpos.y = math.floor(xypadpos.y) - d
                             break
                         end
                     end
                 elseif math.floor(xypadpos.y) - math.floor(val.y - 0.1) < 0 then
                     if xypadpos.duplicate then
+                        if keyControl and xypadpos.idx then
+                            if noteInSelection(noteData[xypadpos.idx]) then
+                                noteSelection = {}
+                            end
+                            table.insert(noteSelection, noteData[xypadpos.idx])
+                            xypadpos.idx = nil
+                        end
                         duplicateSelectedNotes(0)
                         forceFullRefresh = true
                         xypadpos.duplicate = false
@@ -4520,7 +4550,7 @@ local function handleXypad(val)
                     for d = math.abs(math.floor(xypadpos.y) - math.floor(val.y - 0.1)), 1, -1 do
                         blockLineModifier = true
                         quickRefresh = true
-                        if transposeSelectedNotes(d, keyControl or keyRControl) then
+                        if transposeSelectedNotes(d) then
                             xypadpos.y = math.floor(xypadpos.y) + d
                             break
                         end
