@@ -1394,6 +1394,7 @@ local function transposeSelectedNotes(transpose, keepscale)
         note_column.note_value = noteSelection[key].note
         triggerNoteOfCurrentInstrument(noteSelection[key].note, nil, nil, true)
     end
+    jumpToNoteInPattern("sel")
     return ret
 end
 
@@ -2291,11 +2292,13 @@ function noteClick(x, y, c, released, forceScaling)
                     if not noteInSelection(note_data) then
                         noteSelection = {}
                         table.insert(noteSelection, note_data)
+                        jumpToNoteInPattern("sel")
                     end
                     refreshPianoRollNeeded = true
                 else
                     noteSelection = {}
                     table.insert(noteSelection, note_data)
+                    jumpToNoteInPattern("sel")
                     removeSelectedNotes()
                 end
             end
@@ -2304,7 +2307,7 @@ function noteClick(x, y, c, released, forceScaling)
                 if not checkMode("preview") then
                     local deselect = false
                     --clear selection, when ctrl is not holded
-                    if #noteSelection > 0 and keyControl then
+                    if #noteSelection > 0 and keyControl and not forceScaling  then
                         --check if the note is in selection, then just deselect
                         for i = 1, #noteSelection do
                             if noteSelection[i].line == note_data.line
@@ -2312,6 +2315,7 @@ function noteClick(x, y, c, released, forceScaling)
                                     and noteSelection[i].column == note_data.column then
                                 deselect = true
                                 table.remove(noteSelection, i)
+                                jumpToNoteInPattern("sel")
                                 break
                             end
                         end
@@ -2330,6 +2334,7 @@ function noteClick(x, y, c, released, forceScaling)
                     --when note was not deselected, then add this note to selection
                     if not deselect and not noteInSelection(note_data) then
                         table.insert(noteSelection, note_data)
+                        jumpToNoteInPattern("sel")
                     end
                     refreshPianoRollNeeded = true
                 end
