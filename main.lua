@@ -4234,14 +4234,14 @@ local function handleKeyEvent(keyEvent)
         handled = true
     end
     --play selection
-    if key.name == "space" and key.modifiers == "control" then
+    if key.name == "space" and (key.modifiers == "control" or key.modifiers == "shift") then
         if key.state == "pressed" then
             if lastEditPos then
                 playPatternFromLine(lastEditPos + stepOffset)
             else
                 playPatternFromLine(1)
             end
-            keyInfoText = "Start song from last play selection"
+            keyInfoText = "Start song from cursor position"
         end
         handled = true
     end
