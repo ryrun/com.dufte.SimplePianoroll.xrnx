@@ -2302,7 +2302,7 @@ function noteClick(x, y, c, released, forceScaling)
                 if not checkMode("preview") then
                     local deselect = false
                     --clear selection, when ctrl is not holded
-                    if not keyControl and not keyShift then
+                    if not keyControl then
                         if #noteSelection > 0 then
                             for i = 1, #noteSelection do
                                 if noteSelection[i].line == note_data.line
