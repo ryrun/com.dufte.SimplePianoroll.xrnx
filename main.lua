@@ -1052,6 +1052,7 @@ local function refreshNoteControls()
     else
         vbw.mute.color = colorDefault
     end
+    refreshControls = false
 end
 
 --simple note trigger
@@ -2956,6 +2957,7 @@ local function fillTimeline()
         vbw.blockloop.visible = false
         vbw.blockloopspc.width = 1
     end
+    refreshTimeline = false
 end
 
 --render ghost track by simply change the color of piano grid buttons
@@ -3545,13 +3547,11 @@ local function appIdleEvent()
         --refresh control, when needed
         if refreshControls then
             refreshNoteControls()
-            refreshControls = false
         end
 
         --refresh timeline, when needed
         if refreshTimeline then
             fillTimeline()
-            refreshTimeline = false
         end
 
         --key info state
