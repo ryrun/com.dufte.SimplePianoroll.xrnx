@@ -4234,7 +4234,7 @@ local function handleKeyEvent(keyEvent)
         handled = true
     end
     --play selection
-    if key.name == "space" and (key.modifiers == "control" or key.modifiers == "shift") then
+    if key.name == "space" and (key.modifiers == "control" or key.modifiers == "shift") and not key.repeated then
         if key.state == "pressed" then
             if lastEditPos then
                 playPatternFromLine(lastEditPos + stepOffset)
