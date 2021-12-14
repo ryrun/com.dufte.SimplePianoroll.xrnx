@@ -715,18 +715,16 @@ end
 
 --search for a column, which have enough space for the line and length of a new note
 local function returnColumnWhenEnoughSpaceForNote(line, len, dly, end_dly)
-    local lineValues = song.selected_pattern_track.lines
+    local sT = song.selected_pattern_track
     local number_of_lines = song.selected_pattern.number_of_lines
-    local column
-    local validSpace
-    local maxColumns
-    local lVnC
+    local lineLen = line + len
+    local column, validSpace, maxColumns, lV, lVnC
     --note outside the grid?
-    if line < 1 or line + len - 1 > number_of_lines then
+    if line < 1 or lineLen - 1 > number_of_lines then
         return nil
     end
     --note with end dly outside the grid?
-    if end_dly and end_dly > 0 and line + len - 1 > number_of_lines - 1 then
+    if end_dly and end_dly > 0 and lineLen - 1 > number_of_lines - 1 then
         return nil
     end
     --check if enough space for a new note
@@ -739,46 +737,61 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly, end_dly)
         --check for note on before
         if line > 1 then
             for i = line, 1, -1 do
-                lVnC = lineValues[i]:note_column(c)
-                if lVnC.note_value < 120 then
-                    validSpace = false
-                    break
-                elseif lVnC.note_value == 120 then
-                    --note off with a delay value?
-                    if lVnC.delay_value > 0 and line == i then
+                lV = sT:line(i)
+                if not lV.is_empty then
+                    lVnC = lV:note_column(c)
+                    if lVnC.note_value < 120 then
                         validSpace = false
+                        break
+                    elseif lVnC.note_value == 120 then
+                        --note off with a delay value?
+                        if lVnC.delay_value > 0 and line == i then
+                            validSpace = false
+                        end
+                        break
                     end
-                    break
                 end
             end
         end
         --check for note on in
-        for i = line, line + len - 1 do
-            lVnC = lineValues[i]:note_column(c)
-            --no note off allowed to overwrite, when delay is set and the note off is not on line 1
-            if i == line and line > 1 and dly and dly > 0 and lVnC.note_value == 120 then
-                validSpace = false
-                break
-            elseif lVnC.note_value < 120 then
-                validSpace = false
-                break
-            end
-        end
-        --check for note on with delay, note off is needed
-        if lineValues[line + len]
-                and lineValues[line + len]:note_column(c).note_value < 120
-                and lineValues[line + len]:note_column(c).delay_value > 0 then
-            validSpace = false
-        end
-        --check if there is enough space for note off with delay
-        if end_dly and end_dly > 0 and lineValues[line + len]
-                and lineValues[line + len]:note_column(c).note_value < 121 then
-            validSpace = false
-        end
-        --found valid space, break the loop
         if validSpace then
-            column = c
-            break
+            for i = line, lineLen - 1 do
+                lV = sT:line(i)
+                if not lV.is_empty then
+                    lVnC = lV:note_column(c)
+                    --no note off allowed to overwrite, when delay is set and the note off is not on line 1
+                    if i == line and line > 1 and dly and dly > 0 and lVnC.note_value == 120 then
+                        validSpace = false
+                        break
+                    elseif lVnC.note_value < 120 then
+                        validSpace = false
+                        break
+                    end
+                end
+            end
+            --check for note on with delay, note off is needed
+            if validSpace then
+                lV = sT:line(lineLen)
+                if lV then
+                    if not lV.is_empty then
+                        lVnC = lV:note_column(c)
+                        if lVnC.note_value < 120
+                                and lVnC.delay_value > 0 then
+                            validSpace = false
+                        end
+                        --check if there is enough space for note off with delay
+                        if end_dly and end_dly > 0
+                                and lVnC.note_value < 121 then
+                            validSpace = false
+                        end
+                    end
+                end
+                --found valid space, break the loop
+                if validSpace then
+                    column = c
+                    break
+                end
+            end
         end
     end
     return column
