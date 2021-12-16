@@ -878,8 +878,8 @@ local function removeSelectedNotes(cut)
         setUndoDescription("Delete notes ...")
     end
     --loop through selected notes
-    for key in pairs(noteSelection) do
-        removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
+    for i = 1, #noteSelection do
+        removeNoteInPattern(noteSelection[i].column, noteSelection[i].line, noteSelection[i].len)
     end
     noteSelection = {}
     addMissingNoteOffForColumns()
@@ -1211,7 +1211,7 @@ local function moveSelectedNotes(steps)
     --
     setUndoDescription("Move notes ...")
     --go through selection
-    for key in pairs(noteSelection) do
+    for key = 1, #noteSelection do
         --remove note
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
         --search for valid column
@@ -1298,7 +1298,7 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
     --
     setUndoDescription("Move notes ...")
     --go through selection
-    for key in pairs(noteSelection) do
+    for key = 1, #noteSelection do
         --remove note
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
         --calculate step and delay difference
@@ -1364,7 +1364,7 @@ local function transposeSelectedNotes(transpose, keepscale)
     --
     setUndoDescription("Transpose notes ...")
     --go through selection
-    for key in pairs(noteSelection) do
+    for key = 1, #noteSelection do
         local transposeVal = transpose
         --transpose
         local note_column = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column)
@@ -1492,7 +1492,7 @@ local function scaleNoteSelection(times)
         end)
     end
     --go through selection
-    for key in pairs(noteSelection) do
+    for key = 1, #noteSelection do
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
         --change len and position
         local len = math.max(math.floor(noteSelection[key].len * times), 1)
@@ -1540,7 +1540,7 @@ local function chopSelectedNotes()
         return a.line < b.line
     end)
     --go through selection
-    for key in pairs(noteSelection) do
+    for key = 1, #noteSelection do
         if noteSelection[key].len > 1 then
             --remove old note
             removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
@@ -1625,7 +1625,7 @@ local function duplicateSelectedNotes(noOffset)
         setUndoDescription("Duplicate notes to right ...")
     end
     --go through selection
-    for key in pairs(noteSelection) do
+    for key = 1, #noteSelection do
         --search for valid column
         column = returnColumnWhenEnoughSpaceForNote(
                 noteSelection[key].line + offset,
@@ -1677,7 +1677,7 @@ local function changeSizeSelectedNotesByMicroSteps(microsteps)
     --
     setUndoDescription("Change note lengths ...")
     --go through selection
-    for key in pairs(noteSelection) do
+    for key = 1, #noteSelection do
         --remove note
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
         --calculate step and delay difference
@@ -1748,7 +1748,7 @@ local function changeSizeSelectedNotes(len, add)
     --
     setUndoDescription("Change note lengths ...")
     --go through selection
-    for key in pairs(noteSelection) do
+    for key = 1, #noteSelection do
         --remove note
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
         --add mode
@@ -1818,7 +1818,7 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
     local note
     local note_end
     local noteoff
-    for key in pairs(noteSelection) do
+    for key = 1, #noteSelection do
         selection = noteSelection[key]
         note = lineValues[selection.line]:note_column(selection.column)
         note_end = lineValues[selection.line + selection.len - 1]:note_column(selection.column)
@@ -4333,7 +4333,7 @@ end
 local function refreshSelectedNotes()
     local l_vbw = vbw
     local lineValues = song.selected_pattern_track.lines
-    for key in pairs(noteSelection) do
+    for key = 1, #noteSelection do
         if l_vbw["b" .. noteSelection[key].idx] then
             l_vbw["b" .. noteSelection[key].idx].visible = false
             l_vbw["bs" .. noteSelection[key].idx].visible = false
