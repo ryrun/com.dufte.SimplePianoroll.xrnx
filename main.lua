@@ -80,6 +80,7 @@ local defaultPreferences = {
     useTrackColorForNoteColor = false,
     autoEnableDelayWhenNeeded = true,
     setVelPanDlyLenFromLastNote = true,
+    centerViewOnOpen = true,
     keyLabels = 2,
     --colors
     colorBaseGridColor = "#34444E",
@@ -144,6 +145,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     snapToGridSize = defaultPreferences.snapToGridSize,
     setVelPanDlyLenFromLastNote = defaultPreferences.setVelPanDlyLenFromLastNote,
     keyLabels = defaultPreferences.keyLabels,
+    centerViewOnOpen = defaultPreferences.centerViewOnOpen,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -5311,6 +5313,14 @@ local function showPreferences()
             },
             vbp:row {
                 vbp:checkbox {
+                    bind = preferences.centerViewOnOpen,
+                },
+                vbp:text {
+                    text = "Center piano roll when opening based on pattern notes",
+                },
+            },
+            vbp:row {
+                vbp:checkbox {
                     bind = preferences.addNoteColumnsIfNeeded,
                 },
                 vbp:text {
@@ -6371,7 +6381,7 @@ local function main_function()
         fillTimeline()
         fillPianoRoll()
         --center note view
-        if lowestNote ~= nil then
+        if lowestNote ~= nil and preferences.centerViewOnOpen.value then
             local nOffset = math.floor(((lowestNote + highestNote) / 2) - (gridHeight / 2))
             if nOffset < 0 then
                 nOffset = 0
