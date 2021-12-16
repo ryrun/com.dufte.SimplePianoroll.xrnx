@@ -220,6 +220,7 @@ local triggerTimer
 local blockloopidx
 
 --main flag for refreshing pianoroll
+local rebuildWindowDialog = true
 local refreshPianoRollNeeded = false
 local blockLineModifier = false
 local refreshControls = false
@@ -2307,7 +2308,7 @@ function noteClick(x, y, c, released, forceScaling)
                 if not checkMode("preview") then
                     local deselect = false
                     --clear selection, when ctrl is not holded
-                    if #noteSelection > 0 and keyControl and not forceScaling  then
+                    if #noteSelection > 0 and keyControl and not forceScaling then
                         --check if the note is in selection, then just deselect
                         for i = 1, #noteSelection do
                             if noteSelection[i].line == note_data.line
@@ -4611,6 +4612,9 @@ local function showPreferences()
                     min = 16,
                     max = 256,
                     bind = preferences.gridWidth,
+                    notifier = function(v)
+                        rebuildWindowDialog = true
+                    end
                 },
                 vbp:text { text = "x", align = "center", },
                 vbp:valuebox {
@@ -4618,6 +4622,9 @@ local function showPreferences()
                     min = 16,
                     max = 64,
                     bind = preferences.gridHeight,
+                    notifier = function(v)
+                        rebuildWindowDialog = true
+                    end
                 },
             },
             vbp:text {
@@ -6326,30 +6333,8 @@ local function main_function()
 
     --only create pianoroll grid, when window is not created and not visible
     if not windowObj or not windowObj.visible then
-        vb = renoise.ViewBuilder()
-        vbw = vb.views
-
-        --init colors
-        initColors()
-
-        --setup grid settings
-        gridStepSizeW = defaultPreferences.gridStepSizeW
-        gridStepSizeH = defaultPreferences.gridStepSizeH
-        gridSpacing = preferences.gridSpacing.value
-        gridMargin = preferences.gridMargin.value
-        gridWidth = preferences.gridWidth.value
-        pianoKeyWidth = preferences.gridStepSizeW.value * 3
-
-        --limit gridHeight
-        preferences.gridHeight.value = clamp(preferences.gridHeight.value, 16, 64)
-        gridHeight = preferences.gridHeight.value
-
         lastStepOn = nil
-        stepOffset = 0
-        noteOffset = clamp(28, 0, 119 - gridHeight) -- default offset
-
         currentGhostTrack = nil
-        noteButtons = {}
         --reset lowest / highest note for center view
         lowestNote = nil
         highestNote = nil
@@ -6358,7 +6343,29 @@ local function main_function()
         --when needed set enable penmode
         penMode = preferences.forcePenMode.value
         --create main dialog
-        createPianoRollDialog()
+        if not windowContent or rebuildWindowDialog then
+            --init colors
+            initColors()
+            --setup grid settings
+            gridStepSizeW = defaultPreferences.gridStepSizeW
+            gridStepSizeH = defaultPreferences.gridStepSizeH
+            gridSpacing = preferences.gridSpacing.value
+            gridMargin = preferences.gridMargin.value
+            gridWidth = preferences.gridWidth.value
+            pianoKeyWidth = preferences.gridStepSizeW.value * 3
+            --limit gridHeight
+            preferences.gridHeight.value = clamp(preferences.gridHeight.value, 16, 64)
+            gridHeight = preferences.gridHeight.value
+            stepOffset = 0
+            -- default offset
+            noteOffset = clamp(28, 0, 119 - gridHeight)
+            --reset note btn table
+            noteButtons = {}
+            vb = renoise.ViewBuilder()
+            vbw = vb.views
+            createPianoRollDialog()
+        end
+
         --fill new created pianoroll, timeline and refresh controls
         refreshNoteControls()
         fillTimeline()
@@ -6374,6 +6381,8 @@ local function main_function()
             noteSlider.value = nOffset
             noteOffset = nOffset
         end
+        --reset rebuild flag
+        rebuildWindowDialog = false
         --show dialog
         windowObj = app:show_custom_dialog("Simple Pianoroll v" .. manifest:property("Version").value, windowContent, function(_, key)
             local handled
