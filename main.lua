@@ -2135,8 +2135,6 @@ end
 
 --add notes from a rectangle to the selection
 local function selectRectangle(x, y, x2, y2, addToSelection)
-    local lineValues = song.selected_pattern_track.lines
-    local columns = song.selected_track.visible_note_columns
     local smin = math.min(x, x2)
     local smax = math.max(x, x2)
     local nmin = gridOffset2NoteValue(math.min(y, y2))
@@ -2148,26 +2146,22 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
         noteSelection = {}
         refreshNeeded = true
     end
-    --loop through columns
-    for c = 1, columns do
-        --loop through lines as steps
-        for s = smin, smax do
-            local linVal = lineValues[s + stepOffset]
-            if linVal then
-                local note_column = linVal:note_column(c)
-                local note = note_column.note_value
-                --note inside the selection rect?
-                if note >= nmin and note <= nmax then
-                    note_data = noteData[tostring(s) .. "_" .. tostring(noteValue2GridRowOffset(note)) .. "_" .. tostring(c)]
-                    --note found?
-                    if note_data ~= nil and s + note_data.len - 1 <= smax and not noteInSelection(note_data) then
-                        --add to selection table
-                        table.insert(noteSelection, note_data)
-                        --refresh of piano roll needed
-                        refreshNeeded = true
-                    end
-                end
-            end
+    --loop through all notes
+    for key in pairs(noteData) do
+        note_data = noteData[key]
+        if nmin <= note_data.note and
+                nmax >= note_data.note and
+                (
+                        (smin>=note_data.step and smin<=note_data.step + note_data.len - 1) or
+                                (smax>=note_data.step and smax<=note_data.step + note_data.len - 1) or
+                                (note_data.step>=smin and note_data.step + note_data.len - 1<=smax)
+                ) and
+                not noteInSelection(note_data)
+        then
+            --add to selection table
+            table.insert(noteSelection, note_data)
+            --refresh of piano roll needed
+            refreshNeeded = true
         end
     end
     --piano refresh only when something was found
