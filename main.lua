@@ -2578,22 +2578,23 @@ function pianoGridClick(x, y, released)
             --fast play from cursor
             if keyControl and not keyAlt and not keyShift then
                 playPatternFromLine(x + stepOffset)
-            end
-            --deselect selected notes
-            if #noteSelection > 0 then
-                if not keyShift then
-                    noteSelection = {}
+            else
+                --deselect selected notes
+                if #noteSelection > 0 then
+                    if not keyShift then
+                        noteSelection = {}
+                    end
+                    refreshPianoRollNeeded = true
+                elseif preferences.resetVolPanDlyControlOnClick.value then
+                    --nothing selected reset vol, pan and dly
+                    currentNoteVelocity = 255
+                    currentNotePan = 255
+                    currentNoteDelay = 0
+                    currentNoteEndDelay = 0
+                    currentNoteVelocityPreview = 127
+                    currentNoteEndVelocity = 255
+                    refreshControls = true
                 end
-                refreshPianoRollNeeded = true
-            elseif preferences.resetVolPanDlyControlOnClick.value then
-                --nothing selected reset vol, pan and dly
-                currentNoteVelocity = 255
-                currentNotePan = 255
-                currentNoteDelay = 0
-                currentNoteEndDelay = 0
-                currentNoteVelocityPreview = 127
-                currentNoteEndVelocity = 255
-                refreshControls = true
             end
         end
     end
