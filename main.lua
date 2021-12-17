@@ -592,6 +592,19 @@ local function checkMode(mode)
     return false
 end
 
+--refresh edit pos
+local function refreshEditPosIndicator()
+    if lastEditPos == nil or lastEditPos ~= song.transport.edit_pos.line - stepOffset then
+        if vbw["se" .. tostring(lastEditPos)] then
+            vbw["se" .. tostring(lastEditPos)].visible = false
+        end
+        lastEditPos = song.transport.edit_pos.line - stepOffset
+        if vbw["se" .. tostring(lastEditPos)] then
+            vbw["se" .. tostring(lastEditPos)].visible = true
+        end
+    end
+end
+
 --jump to the note position in pattern
 local function jumpToNoteInPattern(notedata)
     --jump to the first note in selection, when needed
@@ -620,6 +633,8 @@ local function jumpToNoteInPattern(notedata)
             end
         end
     end
+    --refresh edit pos
+    refreshEditPosIndicator()
 end
 
 --check if a note index is in major scale
@@ -3575,15 +3590,7 @@ local function appIdleEvent()
         refreshPlaybackPosIndicator()
 
         --edit pos render
-        if lastEditPos == nil or lastEditPos ~= song.transport.edit_pos.line - stepOffset then
-            if vbw["se" .. tostring(lastEditPos)] then
-                vbw["se" .. tostring(lastEditPos)].visible = false
-            end
-            lastEditPos = song.transport.edit_pos.line - stepOffset
-            if vbw["se" .. tostring(lastEditPos)] then
-                vbw["se" .. tostring(lastEditPos)].visible = true
-            end
-        end
+        refreshEditPosIndicator()
 
         --block loop, create an index for comparison, because obserable's are missing here
         local currentblockloop = tostring(song.transport.loop_block_enabled)
