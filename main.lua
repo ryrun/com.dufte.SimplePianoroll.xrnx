@@ -611,6 +611,7 @@ local function refreshEditPosIndicator()
         end
         lastEditPos = song.transport.edit_pos.line - stepOffset
         if vbw["se" .. tostring(lastEditPos)] then
+            vbw["se" .. tostring(lastEditPos)].color = colorStepOn
             vbw["se" .. tostring(lastEditPos)].visible = true
         end
     end
@@ -2175,10 +2176,14 @@ local function drawRectangle(show, x, y, x2, y2)
                 addW = 0
             end
             vbw["seltop"].width = gridStepSizeW + ((rx2 - rx) * (gridStepSizeW - 4)) - 5 + addW
+            vbw["seltop"].color = colorStepOn
             vbw["selbottom"].width = vbw["seltop"].width
+            vbw["selbottom"].color = colorStepOn
             vbw["selheightspace"].height = math.max(1, (ry2 - ry) * (gridStepSizeH - 3)) + 9
             vbw["selleft"].height = vbw["selheightspace"].height + 10
+            vbw["selleft"].color = colorStepOn
             vbw["selright"].height = vbw["selheightspace"].height + 10
+            vbw["selright"].color = colorStepOn
             vbw["sel"].visible = true
         else
             vbw["sel"].visible = false
