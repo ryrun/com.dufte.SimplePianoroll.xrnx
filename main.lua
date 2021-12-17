@@ -2195,7 +2195,6 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
     local note_data
     local refreshNeeded = false
     local wasInSelection = {}
-    local idx
     if not addToSelection and #noteSelection > 0 then
         for i = 1, #noteSelection do
             wasInSelection[noteSelection[i].idx] = 1
