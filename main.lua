@@ -292,6 +292,7 @@ local xypadpos = {
     scalethreshold = 0.2,
     selection_key = nil,
     idx = nil,
+    leftClick = false,
 }
 
 --pen mode
@@ -463,11 +464,21 @@ local function alphablendColors(color1, color2, alphablend)
 end
 
 --simple function for coloring velocity
-local function colorNoteVelocity(vel, forceColor)
+local function colorNoteVelocity(vel, ghost, isOnStep, isInSelection)
     local color
     local noteColor = colorNote
-    if forceColor then
-        noteColor = forceColor
+    if isInSelection then
+        noteColor = colorNoteSelected
+    elseif isOnStep == true then
+        if preferences.useTrackColorForNoteHighlighting.value then
+            return vbw["trackcolor"].color
+        else
+            return colorNoteHighlight
+        end
+    elseif vel == 0 then
+        return colorNoteMuted
+    elseif ghost == true then
+        noteColor = colorNoteGhost
     elseif preferences.useTrackColorForNoteColor.value then
         noteColor = vbw["trackcolor"].color
     end
@@ -2133,6 +2144,48 @@ local function moveSelectionThroughNotes(dx, dy, addToSelection)
     return false
 end
 
+--draw selection rectangle
+local function drawRectangle(show, x, y, x2, y2)
+    if not show then
+        vbw["sel"].visible = false
+    else
+        local rx = math.min(x, x2)
+        local rx2 = math.min(math.max(x, x2), gridWidth)
+        local ry = math.min(y, y2)
+        local ry2 = math.min(math.max(y, y2), gridHeight)
+        local addW
+        if rx ~= rx2 or ry ~= ry2 then
+            if (gridHeight - ry2) * gridStepSizeH > 0 then
+                vbw["seltopspace"].height = (gridHeight - ry2) * (gridStepSizeH - 3)
+                vbw["seltopspace1"].height = vbw["seltopspace"].height
+                vbw["seltopspace2"].height = vbw["seltopspace"].height
+                vbw["seltopspace"].visible = true
+                vbw["seltopspace1"].visible = true
+                vbw["seltopspace2"].visible = true
+            else
+                vbw["seltopspace"].visible = false
+                vbw["seltopspace1"].visible = false
+                vbw["seltopspace2"].visible = false
+            end
+            if rx > 1 then
+                vbw["selleftspace"].width = (rx - 1) * (gridStepSizeW - 4)
+                addW = 2
+            else
+                vbw["selleftspace"].width = 2
+                addW = 0
+            end
+            vbw["seltop"].width = gridStepSizeW + ((rx2 - rx) * (gridStepSizeW - 4)) - 5 + addW
+            vbw["selbottom"].width = vbw["seltop"].width
+            vbw["selheightspace"].height = math.max(1, (ry2 - ry) * (gridStepSizeH - 3)) + 9
+            vbw["selleft"].height = vbw["selheightspace"].height + 10
+            vbw["selright"].height = vbw["selheightspace"].height + 10
+            vbw["sel"].visible = true
+        else
+            vbw["sel"].visible = false
+        end
+    end
+end
+
 --add notes from a rectangle to the selection
 local function selectRectangle(x, y, x2, y2, addToSelection)
     local smin = math.min(x, x2)
@@ -2141,8 +2194,12 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
     local nmax = gridOffset2NoteValue(math.max(y, y2))
     local note_data
     local refreshNeeded = false
-    --remove current note selection
+    local wasInSelection = {}
+    local idx
     if not addToSelection and #noteSelection > 0 then
+        for i = 1, #noteSelection do
+            wasInSelection[noteSelection[i].idx] = 1
+        end
         noteSelection = {}
         refreshNeeded = true
     end
@@ -2152,20 +2209,31 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
         if nmin <= note_data.note and
                 nmax >= note_data.note and
                 (
-                        (smin>=note_data.step and smin<=note_data.step + note_data.len - 1) or
-                                (smax>=note_data.step and smax<=note_data.step + note_data.len - 1) or
-                                (note_data.step>=smin and note_data.step + note_data.len - 1<=smax)
+                        (smin >= note_data.step and smin <= note_data.step + note_data.len - 1) or
+                                (smax >= note_data.step and smax <= note_data.step + note_data.len - 1) or
+                                (note_data.step >= smin and note_data.step + note_data.len - 1 <= smax)
                 ) and
                 not noteInSelection(note_data)
         then
             --add to selection table
             table.insert(noteSelection, note_data)
+            wasInSelection[note_data.idx] = nil
+            vbw["b" .. note_data.idx].color = colorNoteVelocity(note_data.vel, note_data.ghst, nil, true)
+            vbw["bs" .. note_data.idx].color = shadeColor(vbw["b" .. note_data.idx].color, preferences.scaleBtnShadingAmount.value)
             --refresh of piano roll needed
             refreshNeeded = true
         end
     end
     --piano refresh only when something was found
     if refreshNeeded then
+        --reset note colors
+        for key in pairs(wasInSelection) do
+            note_data = noteData[key]
+            if note_data then
+                vbw["b" .. note_data.idx].color = colorNoteVelocity(note_data.vel, note_data.ghst)
+                vbw["bs" .. note_data.idx].color = shadeColor(vbw["b" .. note_data.idx].color, preferences.scaleBtnShadingAmount.value)
+            end
+        end
         jumpToNoteInPattern("sel")
     end
     return refreshNeeded
@@ -2392,6 +2460,7 @@ function pianoGridClick(x, y, released)
             xypadpos.nx = x
             xypadpos.ny = y
             xypadpos.notemode = false
+            xypadpos.leftClick = true
         end
         --disabled button need to be enabled again outside this call when just one click was triggered,
         --use idle function
@@ -2709,31 +2778,15 @@ local function drawNoteToGrid(column,
                     end
                 end
 
-                if isInSelection then
-                    color = colorNoteVelocity(current_note_vel, colorNoteSelected)
-                    if #noteSelection == 1 and preferences.setVelPanDlyLenFromLastNote.value then
-                        currentNotePan = current_note_pan
-                        currentNoteVelocity = current_note_vel
-                        currentNoteEndVelocity = current_note_end_vel
-                        currentNoteDelay = current_note_dly
-                        currentNoteEndDelay = current_note_end_dly
-                        refreshControls = true
-                    end
-                else
-                    if current_note_vel == 0 then
-                        color = colorNoteMuted
-                    elseif isOnStep == true then
-                        if preferences.useTrackColorForNoteHighlighting.value then
-                            color = vbw["trackcolor"].color
-                        else
-                            color = colorNoteHighlight
-                        end
-                    elseif ghost == true then
-                        color = colorNoteGhost
-                    else
-                        color = colorNoteVelocity(current_note_vel)
-                    end
+                if isInSelection and #noteSelection == 1 and preferences.setVelPanDlyLenFromLastNote.value then
+                    currentNotePan = current_note_pan
+                    currentNoteVelocity = current_note_vel
+                    currentNoteEndVelocity = current_note_end_vel
+                    currentNoteDelay = current_note_dly
+                    currentNoteEndDelay = current_note_end_dly
+                    refreshControls = true
                 end
+                color = colorNoteVelocity(current_note_vel, ghost, isOnStep, isInSelection)
 
                 local btn = vb:row {
                     margin = -gridMargin,
@@ -3147,11 +3200,7 @@ local function highlightNotesOnStep(step, highlight)
                     end
                 else
                     if not noteData[note.index] or not noteInSelection(noteData[note.index]) then
-                        if note.ghst then
-                            vbw[idx].color = colorNoteGhost
-                        else
-                            vbw[idx].color = colorNoteVelocity(note.vel)
-                        end
+                        vbw[idx].color = colorNoteVelocity(note.vel, note.ghst)
                     end
                 end
                 vbw[sidx].color = shadeColor(vbw[idx].color, preferences.scaleBtnShadingAmount.value)
@@ -4373,6 +4422,14 @@ end
 local function handleXypad(val)
     local quickRefresh
     local forceFullRefresh
+    --snap back
+    if (val.x == 1.01234 or val.y == 1.01234) then
+        if val.x == 1.01234 and val.y == 1.01234 and xypadpos.leftClick then
+            xypadpos.leftClick = false
+            drawRectangle(false)
+        end
+        return
+    end
     if xypadpos.notemode then
         --mouse dragging and scaling
         local max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
@@ -4568,12 +4625,13 @@ local function handleXypad(val)
             end
         end
     else
-        if xypadpos.x ~= math.floor(val.x) or xypadpos.y ~= math.floor(val.y) then
-            xypadpos.x = math.floor(val.x)
-            xypadpos.y = math.floor(val.y)
-            if selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, keyShift) then
-                --just a quick refresh so selection works smooth
-                fillPianoRoll(true)
+        --only process rectangle selection, when left mouse button is holded
+        if xypadpos.leftClick then
+            if xypadpos.x ~= math.floor(val.x) or xypadpos.y ~= math.floor(val.y) then
+                xypadpos.x = math.floor(val.x)
+                xypadpos.y = math.floor(val.y)
+                drawRectangle(true, xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny)
+                selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, keyShift)
             end
         end
     end
@@ -4613,7 +4671,7 @@ local function showPreferences()
                     min = 16,
                     max = 256,
                     bind = preferences.gridWidth,
-                    notifier = function(v)
+                    notifier = function()
                         rebuildWindowDialog = true
                     end
                 },
@@ -4623,7 +4681,7 @@ local function showPreferences()
                     min = 16,
                     max = 64,
                     bind = preferences.gridHeight,
-                    notifier = function(v)
+                    notifier = function()
                         rebuildWindowDialog = true
                     end
                 },
@@ -6275,6 +6333,7 @@ local function createPianoRollDialog()
                             width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)),
                             height = (gridStepSizeH - 3) * gridHeight,
                             min = { x = 1, y = 1 },
+                            snapback = { x = 1.01234, y = 1.01234 },
                             max = { x = gridWidth + 1, y = gridHeight + 1 },
                             notifier = function(val)
                                 handleXypad(val)
@@ -6309,7 +6368,70 @@ local function createPianoRollDialog()
                                     },
                                 }
                             }
-                        }
+                        },
+                        vb:row {
+                            id = "sel",
+                            visible = false,
+                            spacing = -3,
+                            margin = -gridMargin,
+                            vb:space {
+                                id = "selleftspace",
+                                width = 1,
+                                height = 1,
+                            },
+                            vb:column {
+                                vb:space {
+                                    id = "seltopspace1",
+                                    height = 1,
+                                    width = 1,
+                                },
+                                vb:button {
+                                    id = "selleft",
+                                    width = 5,
+                                    height = 1,
+                                    active = false,
+                                    color = colorStepOn,
+                                },
+                            },
+                            vb:column {
+                                vb:space {
+                                    id = "seltopspace",
+                                    height = 1,
+                                },
+                                vb:button {
+                                    id = "seltop",
+                                    active = false,
+                                    width = gridStepSizeW * 2 - gridSpacing * 2,
+                                    height = 5,
+                                    color = colorStepOn,
+                                },
+                                vb:space {
+                                    id = "selheightspace",
+                                    height = gridStepSizeH * 2,
+                                },
+                                vb:button {
+                                    id = "selbottom",
+                                    active = false,
+                                    width = gridStepSizeW * 2 - gridSpacing * 2,
+                                    height = 5,
+                                    color = colorStepOn,
+                                },
+                            },
+                            vb:column {
+                                vb:space {
+                                    id = "seltopspace2",
+                                    height = 1,
+                                    width = 1,
+                                },
+                                vb:button {
+                                    id = "selright",
+                                    width = 5,
+                                    height = 1,
+                                    active = false,
+                                    color = colorStepOn,
+                                },
+                            },
+                        },
                     },
                 },
             },
