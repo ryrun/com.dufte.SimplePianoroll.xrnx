@@ -2222,8 +2222,10 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
             --add to selection table
             table.insert(noteSelection, note_data)
             wasInSelection[note_data.idx] = nil
-            vbw["b" .. note_data.idx].color = colorNoteVelocity(note_data.vel, note_data.ghst, nil, true)
-            vbw["bs" .. note_data.idx].color = shadeColor(vbw["b" .. note_data.idx].color, preferences.scaleBtnShadingAmount.value)
+            if vbw["b" .. note_data.idx] then
+                vbw["b" .. note_data.idx].color = colorNoteVelocity(note_data.vel, note_data.ghst, nil, true)
+                vbw["bs" .. note_data.idx].color = shadeColor(vbw["b" .. note_data.idx].color, preferences.scaleBtnShadingAmount.value)
+            end
             --refresh of piano roll needed
             refreshNeeded = true
         end
@@ -2259,7 +2261,7 @@ function keyClick(y, pressed)
                 table.insert(noteSelection, note_data)
             end
         end
-        addMissingNoteOffForColumns()
+        jumpToNoteInPattern("sel")
         refreshPianoRollNeeded = true
     else
         local row = noteValue2GridRowOffset(note)
@@ -3587,7 +3589,7 @@ function setPlaybackPos(pos)
                 table.insert(noteSelection, note_data)
             end
         end
-        addMissingNoteOffForColumns()
+        jumpToNoteInPattern("sel")
         refreshPianoRollNeeded = true
     else
         playPatternFromLine(pos + stepOffset)
