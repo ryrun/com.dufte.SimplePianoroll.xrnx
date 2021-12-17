@@ -2157,8 +2157,6 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
     end
     --piano refresh only when something was found
     if refreshNeeded then
-        addMissingNoteOffForColumns()
-        refreshPianoRollNeeded = true
         jumpToNoteInPattern("sel")
     end
     return refreshNeeded
