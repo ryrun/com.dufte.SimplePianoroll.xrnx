@@ -72,7 +72,8 @@ local defaultPreferences = {
     clickAreaSizeForScalingPx = 7,
     disableKeyHandler = false,
     shadingType = 1,
-    previewPolyphony = 1,
+    previewPolyphony = 3,
+    limitPreviewBySelectionSize = true,
     disableAltClickNoteRemove = true,
     resetVolPanDlyControlOnClick = true,
     minSizeOfNoteButton = 5,
@@ -148,6 +149,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     keyLabels = defaultPreferences.keyLabels,
     centerViewOnOpen = defaultPreferences.centerViewOnOpen,
     previewPolyphony = defaultPreferences.previewPolyphony,
+    limitPreviewBySelectionSize = defaultPreferences.limitPreviewBySelectionSize,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -1140,14 +1142,19 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
                                                                    { tag = "i", value = note_value } })
         )
     else
+        local polyLimit = preferences.previewPolyphony.value
         --check if the current note already playing
         for i = 1, #lastTriggerNote do
-            if lastTriggerNote[i] and lastTriggerNote[i].packet[3].note_value == note_value then
+            if lastTriggerNote[i] and lastTriggerNote[i].packet[3].value == note_value then
                 return
             end
         end
+        --reduce preview polyphony to just the count of selected notes
+        if #noteSelection > 0 and preferences.limitPreviewBySelectionSize.value then
+            polyLimit = math.min(#noteSelection, polyLimit)
+        end
         --check if previewPolyphony limit was hit
-        if #lastTriggerNote >= preferences.previewPolyphony.value then
+        if #lastTriggerNote >= polyLimit then
             local newLastTriggerNote = {}
             --stop playing older notes
             table.sort(lastTriggerNote, function(a, b)
@@ -5284,6 +5291,14 @@ local function showPreferences()
                     min = 1,
                     max = 32,
                     bind = preferences.previewPolyphony,
+                },
+            },
+            vbp:row {
+                vbp:checkbox {
+                    bind = preferences.limitPreviewBySelectionSize,
+                },
+                vbp:text {
+                    text = "Reduce preview polyphony to selection size",
                 },
             },
             vbp:row {
