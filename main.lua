@@ -4097,6 +4097,7 @@ local function handleKeyEvent(keyEvent)
                     refreshPianoRollNeeded = true
                 else
                     keyInfoText = "Duplicate notes"
+                    jumpToNoteInPattern("sel")
                     showStatus(#noteSelection .. " notes duplicated.")
                 end
             end
@@ -4157,6 +4158,7 @@ local function handleKeyEvent(keyEvent)
             if key.state == "pressed" then
                 showStatus(#clipboard .. " notes pasted.", true)
                 pasteNotesFromClipboard()
+                jumpToNoteInPattern("sel")
             end
         end
         handled = true
@@ -4172,6 +4174,7 @@ local function handleKeyEvent(keyEvent)
             end
             keyInfoText = "Select all notes"
             showStatus(#noteSelection .. " notes selected.", true)
+            jumpToNoteInPattern("sel")
             refreshPianoRollNeeded = true
         end
         handled = true
