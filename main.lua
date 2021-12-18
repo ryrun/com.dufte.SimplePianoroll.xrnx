@@ -828,22 +828,6 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly, end_dly)
     return column
 end
 
---add note off's to all note columns where no note is at line 1 for looping porpuse
-local function addMissingNoteOffForColumns()
-    if preferences.addNoteOffToEmptyNoteColumns.value then
-        local track = song.selected_track
-        local columns = track.visible_note_columns
-        local lineValues = song.selected_pattern_track.lines
-
-        for c = 1, columns do
-            local note_column = lineValues[1]:note_column(c)
-            if note_column.note_value == 121 then
-                note_column.note_value = 120
-            end
-        end
-    end
-end
-
 --remove note
 local function removeNoteInPattern(column, line, len)
     local lineValues = song.selected_pattern_track.lines
@@ -911,7 +895,6 @@ local function removeSelectedNotes(cut)
         removeNoteInPattern(noteSelection[i].column, noteSelection[i].line, noteSelection[i].len)
     end
     noteSelection = {}
-    addMissingNoteOffForColumns()
     refreshPianoRollNeeded = true
 end
 
@@ -1497,7 +1480,6 @@ local function pasteNotesFromClipboard()
     end)
     pasteCursor = { noteSelection[1].line + noteSelection[1].len, pasteCursor[2] }
     --
-    addMissingNoteOffForColumns()
     refreshPianoRollNeeded = true
     return true
 end
@@ -1555,7 +1537,6 @@ local function scaleNoteSelection(times)
             return false
         end
     end
-    addMissingNoteOffForColumns()
     refreshPianoRollNeeded = true
     return true
 end
@@ -1622,7 +1603,6 @@ local function chopSelectedNotes()
         end
     end
     noteSelection = newSelection
-    addMissingNoteOffForColumns()
     refreshPianoRollNeeded = true
     return true
 end
@@ -1683,7 +1663,6 @@ local function duplicateSelectedNotes(noOffset)
                 noteSelection[key].ghst
         )
     end
-    addMissingNoteOffForColumns()
     refreshPianoRollNeeded = true
     return true
 end
@@ -1811,7 +1790,6 @@ local function changeSizeSelectedNotes(len, add)
                 noteSelection[key].ghst
         )
     end
-    addMissingNoteOffForColumns()
     --set current scale length as new current length
     if #noteSelection == 1 and preferences.setVelPanDlyLenFromLastNote.value then
         currentNoteLength = newLen
@@ -2019,7 +1997,6 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
         end
     end
     if tostring(special) ~= "quick" and tostring(special) ~= "removecut" then
-        addMissingNoteOffForColumns()
         refreshPianoRollNeeded = true
     end
     return true
@@ -2578,7 +2555,6 @@ function pianoGridClick(x, y, released)
             table.insert(noteSelection, note_data)
             jumpToNoteInPattern(note_data)
             --
-            addMissingNoteOffForColumns()
             refreshPianoRollNeeded = true
         else
             --fast play from cursor
@@ -3422,6 +3398,13 @@ local function fillPianoRoll(quickRefresh)
             local panning_string = note_column.panning_string
             local delay_string = note_column.delay_string
             local instrument = note_column.instrument_value
+
+            --add missing note off
+            if line == 1 and preferences.addNoteOffToEmptyNoteColumns.value then
+                if note_column.note_value == 121 then
+                    note_column.note_value = 120
+                end
+            end
 
             if note < 120 then
                 if currentInstrument == nil and note_column.instrument_value < 255 then
