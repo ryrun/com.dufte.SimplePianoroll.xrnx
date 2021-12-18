@@ -17,13 +17,13 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 * Piano roll workflow (inspired by FL piano roll)
 * Mouse support for note moving, scaling and drawing
 * Mouse scroll support for scrolling through grid
-* It supports Renoise's native HDPI support
+* Follows Renoise user interface scaling option (Renoise's HDPI support)
 * Polyphony support (automatically adds note column, if needed)
 * Note preview via Renoise inbuild OSC Server
 * Ghost Track
-* Many useful keyboard shortcuts (inspired by FL, Bitwig, Ableton and Reason)
-* Can display notes with note cut effects and delayed ones
-* Scale highlighting can be changed (None, Minor scale, Major scale, Instrument scale, Automatic scale)
+* Many useful mouse and keyboard shortcuts (inspired by FL, Bitwig, Ableton and Reason)
+* Show several tracker related effects like note cut, note retrigger, delay
+* Scale highlighting support (None, Minor scale, Major scale, Instrument scale, Automatic scale)
 * Many useful options to change the behavior for your own taste
 * Tool Updater support
 * And more...
@@ -60,7 +60,7 @@ It supports to render different note column effects.
 * The key combination <kbd>alt + shift</kbd> is a default shortcut to change the keyboard layout on Windows OS. It is
   recommended to switch this off or change the keyboard shortcut to avoid problems. <br>See following for more
   details: https://answers.microsoft.com/en-us/windows/forum/all/how-to-disable-the-windows-10-language-shortcut/030016c9-bfed-48d9-8e4f-7d1030ced338
-* Renoise have a 12 column limit per tack. So when more than 12 columns are needed, then some notes will stuck in the current position. A hint shoulöd be displayed in Renoise toolbar.
+* Renoise have a 12 column limit per tack. So when more than 12 columns are needed, then some notes will stuck in the current position. A hint should be displayed in Renoise toolbar.
 
 ## Install and Update
 
