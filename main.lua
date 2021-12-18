@@ -72,6 +72,7 @@ local defaultPreferences = {
     clickAreaSizeForScalingPx = 7,
     disableKeyHandler = false,
     shadingType = 1,
+    previewPolyphony = 1,
     disableAltClickNoteRemove = true,
     resetVolPanDlyControlOnClick = true,
     minSizeOfNoteButton = 5,
@@ -146,6 +147,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     setVelPanDlyLenFromLastNote = defaultPreferences.setVelPanDlyLenFromLastNote,
     keyLabels = defaultPreferences.keyLabels,
     centerViewOnOpen = defaultPreferences.centerViewOnOpen,
+    previewPolyphony = defaultPreferences.previewPolyphony,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -215,8 +217,7 @@ local defaultColor = {}
 
 --note trigger vars
 local oscClient
-local lastTriggerNote
-local triggerTimer
+local lastTriggerNote = {}
 
 --missing block loop observable? use a variable for check there was a change
 local blockloopidx
@@ -1139,32 +1140,42 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
                                                                    { tag = "i", value = note_value } })
         )
     else
-        --when last note is still playing, cut off
-        if lastTriggerNote ~= nil then
-            tool:remove_timer(triggerTimer)
-            table.remove(lastTriggerNote) --remove velocity
-            oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote))
-            lastTriggerNote = nil
+        --check if the current note already playing
+        for i = 1, #lastTriggerNote do
+            if lastTriggerNote[i] and lastTriggerNote[i].packet[3].note_value == note_value then
+                return
+            end
         end
-        --build note event
-        lastTriggerNote = { { tag = "i", value = instrument },
-                            { tag = "i", value = song.selected_track_index },
-                            { tag = "i", value = note_value },
-                            { tag = "i", value = velocity } }
-        --send note event to osc server
-        successSend, errorSend = oscClient:send(renoise.Osc.Message("/renoise/trigger/note_on", lastTriggerNote))
-        --create a timer for note off, whenn note on was successful
-        if successSend then
-            triggerTimer = function()
-                table.remove(lastTriggerNote) --remove velocity
-                if oscClient then
-                    oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote))
-                    lastTriggerNote = nil
-                    tool:remove_timer(triggerTimer)
+        --check if previewPolyphony limit was hit
+        if #lastTriggerNote >= preferences.previewPolyphony.value then
+            local newLastTriggerNote = {}
+            --stop playing older notes
+            table.sort(lastTriggerNote, function(a, b)
+                return a.time < b.time
+            end)
+            for i = 1, #lastTriggerNote do
+                if i <= math.max(1, #lastTriggerNote - preferences.previewPolyphony.value) then
+                    table.remove(lastTriggerNote[i].packet, 4) --remove velocity
+                    oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote[i].packet))
+                else
+                    table.insert(newLastTriggerNote, lastTriggerNote[i])
                 end
             end
-            --start timer
-            tool:add_timer(triggerTimer, preferences.triggerTime.value)
+            lastTriggerNote = newLastTriggerNote
+        end
+        local packet = { { tag = "i", value = instrument },
+                         { tag = "i", value = song.selected_track_index },
+                         { tag = "i", value = note_value },
+                         { tag = "i", value = velocity } }
+        --send note event to osc server
+        successSend, errorSend = oscClient:send(renoise.Osc.Message("/renoise/trigger/note_on", packet))
+        --create a timer for note off, whenn note on was successful
+        if successSend then
+            table.insert(lastTriggerNote, {
+                time = os.clock(),
+                packet = packet,
+            }
+            )
         end
     end
     --on send fail, disable note preview, clsoe socket and show error
@@ -3633,6 +3644,20 @@ local function appIdleEvent()
             blockloopidx = currentblockloop
             refreshTimeline = true
         end
+
+        --
+        if #lastTriggerNote > 0 and oscClient then
+            local newLastTriggerNote = {}
+            for i = 1, #lastTriggerNote do
+                if lastTriggerNote[i].time < os.clock() - (preferences.triggerTime.value / 1000) then
+                    table.remove(lastTriggerNote[i].packet, 4) --remove velocity
+                    oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote[i].packet))
+                else
+                    table.insert(newLastTriggerNote, lastTriggerNote[i])
+                end
+            end
+            lastTriggerNote = newLastTriggerNote
+        end
     end
 end
 
@@ -5245,6 +5270,17 @@ local function showPreferences()
                 },
                 vbp:text {
                     text = "No note preview during song playback",
+                },
+            },
+            vbp:row {
+                vbp:text {
+                    text = "Note preview polyphony:",
+                },
+                vbp:valuebox {
+                    steps = { 1, 2 },
+                    min = 1,
+                    max = 32,
+                    bind = preferences.previewPolyphony,
                 },
             },
             vbp:row {
