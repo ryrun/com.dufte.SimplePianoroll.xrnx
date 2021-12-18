@@ -2212,7 +2212,7 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
         --reset note colors
         for key in pairs(wasInSelection) do
             note_data = noteData[key]
-            if note_data then
+            if vbw["b" .. note_data.idx] then
                 vbw["b" .. note_data.idx].color = colorNoteVelocity(note_data.vel, note_data.ghst)
                 vbw["bs" .. note_data.idx].color = shadeColor(vbw["b" .. note_data.idx].color, preferences.scaleBtnShadingAmount.value)
             end
