@@ -4746,7 +4746,7 @@ local function showPreferences()
                 vbp:valuebox {
                     steps = { 1, 2 },
                     min = 6,
-                    max = 10,
+                    max = 15,
                     bind = preferences.clickAreaSizeForScalingPx,
                     tostring = function(v)
                         return string.format("%i", v)
