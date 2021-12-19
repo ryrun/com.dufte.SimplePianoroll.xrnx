@@ -66,6 +66,7 @@ local defaultPreferences = {
     rowHighlightingAmount = 0.15,
     oddBarsShadingAmount = 0.10,
     scaleBtnShadingAmount = 0.25,
+    rootKeyShadingAmount = 0.15,
     outOfNoteScaleShadingAmount = 0.15,
     azertyMode = false,
     scrollWheelSpeed = 2,
@@ -134,6 +135,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     scaleHighlightingType = defaultPreferences.scaleHighlightingType,
     keyForSelectedScale = defaultPreferences.keyForSelectedScale,
     oddBarsShadingAmount = defaultPreferences.oddBarsShadingAmount,
+    rootKeyShadingAmount = defaultPreferences.rootKeyShadingAmount,
     outOfNoteScaleShadingAmount = defaultPreferences.outOfNoteScaleShadingAmount,
     azertyMode = defaultPreferences.azertyMode,
     scrollWheelSpeed = defaultPreferences.scrollWheelSpeed,
@@ -3371,6 +3373,9 @@ local function fillPianoRoll(quickRefresh)
                         if s == 1 then
                             local idx = "k" .. ystring
                             local key = l_vbw[idx]
+                            local isRootKey = (preferences.scaleHighlightingType.value ~= 5 and currentScale == 2 and noteIndexInScale((y + noffset) % 12) == 0) or
+                                    (preferences.scaleHighlightingType.value ~= 5 and currentScale == 3 and noteIndexInScale((y + noffset) % 12) == 9) or
+                                    (preferences.scaleHighlightingType.value == 5 and currentScale == 2 and noteIndexInScale((y + noffset) % 12) == 0)
                             if preferences.keyboardStyle.value == 2 then
                                 defaultColor[idx] = colorList
                             elseif noteInScale((y + noffset) % 12, true) then
@@ -3378,13 +3383,16 @@ local function fillPianoRoll(quickRefresh)
                             else
                                 defaultColor[idx] = colorKeyBlack
                             end
-                            key.color = defaultColor[idx]
+                            if isRootKey then
+                                key.color = shadeColor(defaultColor[idx], preferences.rootKeyShadingAmount.value)
+                            else
+                                key.color = defaultColor[idx]
+                            end
                             --set root label
                             if preferences.keyLabels.value == 4 or
                                     (preferences.keyLabels.value == 2 and (
-                                            ((currentScale == 1 or preferences.scaleHighlightingType.value == 5) and noteIndexInScale((y + noffset) % 12, true) == 0) or
-                                                    (preferences.scaleHighlightingType.value ~= 5 and currentScale == 2 and noteIndexInScale((y + noffset) % 12) == 0) or
-                                                    (preferences.scaleHighlightingType.value ~= 5 and currentScale == 3 and noteIndexInScale((y + noffset) % 12) == 9)))
+                                            ((currentScale == 1 or (preferences.scaleHighlightingType.value == 5 and currentScale == 1)) and noteIndexInScale((y + noffset) % 12, true) == 0) or
+                                                    isRootKey))
                                     or
                                     (preferences.keyLabels.value == 3 and
                                             noteInScale((y + noffset) % 12))
@@ -4792,6 +4800,23 @@ local function showPreferences()
                     min = 0,
                     max = 1,
                     bind = preferences.scaleBtnShadingAmount,
+                    tostring = function(v)
+                        return string.format("%.2f", v)
+                    end,
+                    tonumber = function(v)
+                        return tonumber(v)
+                    end
+                },
+            },
+            vbp:row {
+                vbp:text {
+                    text = "Shading amount of root keys:",
+                },
+                vbp:valuebox {
+                    steps = { 0.01, 0.1 },
+                    min = 0,
+                    max = 1,
+                    bind = preferences.rootKeyShadingAmount,
                     tostring = function(v)
                         return string.format("%.2f", v)
                     end,
