@@ -36,6 +36,110 @@ local scaleTypes = {
 
 }
 
+local chordProgression = {
+    --none
+    nil,
+    --maj
+    {
+        "I",
+        nil,
+        "ii",
+        nil,
+        "iii",
+        "IV",
+        nil,
+        "V",
+        nil,
+        "vi",
+        nil,
+        "vii",
+    },
+    --min
+    {
+        "i",
+        nil,
+        "ii",
+        "III",
+        nil,
+        "iv",
+        nil,
+        "v",
+        "VI",
+        nil,
+        "VII",
+    },
+}
+
+local chordsTable = {
+    d1_ = "minor 2nd",
+    d2_ = "Major 2nd",
+    d3_ = "minor 3nd",
+    d4_ = "Major 3nd",
+    d5_ = "Perfect 4th",
+    d6_ = "Tritone",
+    d7_ = "Perfect 5th",
+    d8_ = "minor 6th",
+    d9_ = "Major 6th",
+    d10_ = "minor 7th",
+    d11_ = "Major 7th",
+    d4_d7_ = "Major",
+    d3_d7_ = "Minor",
+    d4_d7_d10_ = "Dominant 7th",
+    d4_d7_d11_ = "Major 7th",
+    d4_d6_d7_d11_ = "Major 7th 11",
+    d3_d7_d10_ = "minor 7th",
+    d3_d7_d11_ = "MinMaj 7th",
+    d5_d7_ = "Sus 4",
+    d2_d7_ = "Sus 2",
+    d4_d7_d9_ = "6",
+    d3_d7_d9_ = "Minor 6",
+    d2_d3_d7_d11_ = "MinMaj 9",
+    d2_d4_d5_d7_d10_ = "11",
+    d2_d3_d5_d7_d10_ = "minor 11",
+    d2_d4_d5_d7_d11_ = "Major 11",
+    d2_d3_d5_d7_d11_ = "Min Major 11",
+    d2_d4_d7_d9_d10_ = "13",
+    d2_d3_d7_d9_d10_ = "minor 13",
+    d2_d4_d7_d9_d11_ = "Major 13",
+    d2_d3_d7_d9_d11_ = "Min Major 13",
+    d2_d4_d7_ = "add 9",
+    d2_d4_d7_d11_ = "Major 9",
+    d2_d3_d7_ = "Minor add 9",
+    d2_d4_d7_d9_ = "6 add 9",
+    d2_d3_d7_d9_ = "Minor 6 add 9",
+    d4_d5_d7_d10_ = "Dominant 7th add 11",
+    d4_d5_d7_d11_ = "Major 7th add 11",
+    d3_d5_d7_d10_ = "Minor 7th add 11",
+    d3_d5_d7_d11_ = "MinMaj 7th add 11",
+    d4_d7_d9_d10_ = "Dominant 7th add 13",
+    d4_d7_d9_d11_ = "Major 7th add 13",
+    d3_d7_d9_d10_ = "Minor 7th add 13",
+    d3_d7_d9_d11_ = "MinMaj 7th add 13",
+    d4_d6_d10_ = "7b5",
+    d4_d8_d10_ = "7#5",
+    d1_d4_d7_d10_ = "7b9",
+    d3_d4_d7_d10_ = "7#9",
+    d1_d4_d8_d10_ = "7#5b9",
+    d3_d6_d10_ = "m7b5",
+    d3_d8_d10_ = "m7#5",
+    d1_d3_d7_d10_ = "m7b9",
+    d2_d4_d6_d7_d10_ = "9#11",
+    d2_d4_d7_d8_d10_ = "9b13",
+    d5_d7_d9_ = "6sus4",
+    d5_d7_d10_ = "7sus4",
+    d5_d7_d11_ = "Maj 7th Sus4",
+    d2_d5_d7_d10_ = "9sus4",
+    d2_d5_d7_d11_ = "Maj 9 Sus4",
+    d2_d4_d7_d10_ = "9",
+    d3_d6_ = "dim",
+    d3_d6_d9_ = "dim7",
+    --chords with some missing notes
+    d3_d5_d7_ = "Min 11",
+    d4_d5_d7_ = "Maj 11",
+    d2_d4_ = "add 9",
+    d2_d3_ = "Min add 9",
+}
+
 --default values, can be used to reset to default
 local defaultPreferences = {
     gridStepSizeW = 20,
@@ -2675,41 +2779,41 @@ local function drawNoteToGrid(column,
             end
         end
 
-        --only process notes on steps and visibility, when there is a valid row
-        if l_vbw["row" .. current_note_rowIndex] then
-            --fill noteOnStep not just note start, also the full length
-            if noteOnStepIndex then
-                local len = current_note_len - 1
-                --when cut value is set, then change note length to 1
-                if (l_song_st.volume_column_visible and current_note_vel >= 192 and current_note_vel <= 207) or
-                        (l_song_st.panning_column_visible and current_note_pan >= 192 and current_note_pan <= 207)
-                then
-                    len = 0
-                end
-                for i = 0, len do
-                    --only when velocity is not 0 (muted)
-                    if current_note_vel > 0 then
-                        if noteOnStep[noteOnStepIndex + i] == nil then
-                            noteOnStep[noteOnStepIndex + i] = {}
-                        end
-                        table.insert(noteOnStep[noteOnStepIndex + i], {
-                            index = current_note_index,
-                            step = current_note_step,
-                            row = current_note_rowIndex,
-                            note = current_note,
-                            len = current_note_len - i,
-                            vel = current_note_vel,
-                            ghst = ghost
-                        })
-                        if l_song_transport.playing
-                                and l_song_transport.playback_pos.line - stepOffset == noteOnStepIndex + i
-                                and l_song.selected_pattern_index == l_song.sequencer:pattern(l_song_transport.playback_pos.sequence) then
-                            isOnStep = true
-                        end
+        --fill noteOnStep not just note start, also the full length
+        if noteOnStepIndex then
+            local len = current_note_len - 1
+            --when cut value is set, then change note length to 1
+            if (l_song_st.volume_column_visible and current_note_vel >= 192 and current_note_vel <= 207) or
+                    (l_song_st.panning_column_visible and current_note_pan >= 192 and current_note_pan <= 207)
+            then
+                len = 0
+            end
+            for i = 0, len do
+                --only when velocity is not 0 (muted)
+                if current_note_vel > 0 then
+                    if noteOnStep[noteOnStepIndex + i] == nil then
+                        noteOnStep[noteOnStepIndex + i] = {}
+                    end
+                    table.insert(noteOnStep[noteOnStepIndex + i], {
+                        index = current_note_index,
+                        step = current_note_step,
+                        row = current_note_rowIndex,
+                        note = current_note,
+                        len = current_note_len - i,
+                        vel = current_note_vel,
+                        ghst = ghost
+                    })
+                    if l_song_transport.playing
+                            and l_song_transport.playback_pos.line - stepOffset == noteOnStepIndex + i
+                            and l_song.selected_pattern_index == l_song.sequencer:pattern(l_song_transport.playback_pos.sequence) then
+                        isOnStep = true
                     end
                 end
             end
+        end
 
+        --only process notes on steps and visibility, when there is a valid row
+        if l_vbw["row" .. current_note_rowIndex] then
             --change note display len
             if current_note_step < 1 then
                 current_note_len = current_note_len + (current_note_step - 1)
@@ -3182,9 +3286,103 @@ local function setScaleHighlighting(afterPianoRollRefresh)
     return ret
 end
 
+--detect chords and progression
+local function detectChord(rawnotes)
+    local distance_string = {}
+    local notelabels = ""
+    local notes = {}
+    local dummy = {}
+    local chord
+    local chordprog = ""
+    local dis
+    --no notes?
+    if #rawnotes > 0 then
+        --sort notes
+        table.sort(rawnotes, function(a, b)
+            return a < b
+        end)
+        --cleaup notes, create notes labels
+        for i = 1, #rawnotes do
+            --check distance to first note
+            if i > 1 then
+                if rawnotes[i] - rawnotes[1] > 12 then
+                    rawnotes[i] = rawnotes[1] + (rawnotes[i] - rawnotes[1]) % 12
+                end
+            end
+            if not dummy[rawnotes[i] % 12] then
+                table.insert(notes, rawnotes[i])
+                if notelabels ~= "" then
+                    notelabels = notelabels .. ","
+                end
+                notelabels = notelabels .. notesTable[rawnotes[i] % 12 + 1]
+                dummy[rawnotes[i] % 12] = 1
+            end
+        end
+        --sort notes again
+        for j = 1, #notes do
+            distance_string[j] = {
+                note = 0,
+                key = "",
+            }
+            table.sort(notes, function(a, b)
+                return a < b
+            end)
+            --calc note distance
+            for i = 2, #notes do
+                dis = (notes[i] - notes[1]) % 12
+                if dis > 0 then
+                    distance_string[j].key = distance_string[j].key .. "d" .. dis .. "_"
+                end
+            end
+            --
+            distance_string[j].note = notes[1]
+            notes[#notes] = notes[#notes] - 12
+            --
+        end
+        --search for chord also try inversions
+        for i = 1, #distance_string do
+            if distance_string ~= "" then
+                if chordsTable[distance_string[i].key] then
+                    if chordProgression[currentScale] then
+                        chordprog = chordProgression[currentScale][(distance_string[i].note - (currentScaleOffset - 1)) % 12 + 1]
+                    end
+                    chord = notesTable[distance_string[i].note % 12 + 1] .. " " .. chordsTable[distance_string[i].key]
+                    break
+                end
+            end
+        end
+        if not chord and #rawnotes > 0 then
+            if chordProgression[currentScale] then
+                chordprog = chordProgression[currentScale][(rawnotes[1] % 12 - (currentScaleOffset - 1)) % 12 + 1]
+            end
+            if #rawnotes == 2 and rawnotes[1] % 12 == rawnotes[2] % 12 then
+                chord = notesTable[rawnotes[1] % 12 + 1] .. " octave"
+            elseif #rawnotes == 1 then
+                chord = notesTable[rawnotes[1] % 12 + 1] .. " unison"
+            end
+        end
+    end
+    if not chord or chord == "" then
+        vbw["currentnotes"].text = "-"
+    else
+        vbw["currentnotes"].text = notelabels
+    end
+    if not chord or chord == "" then
+        vbw["currentchord"].text = "-"
+    else
+        vbw["currentchord"].text = chord
+    end
+    if not chordprog or chordprog == "" then
+        vbw["chordprog"].text = "-"
+    else
+        vbw["chordprog"].text = chordprog
+    end
+end
+
 --highlight each note on the current playback pos
 local function highlightNotesOnStep(step, highlight)
     local rows = {}
+    local notes = {}
     if noteOnStep[step] ~= nil and #noteOnStep[step] > 0 then
         for i = 1, #noteOnStep[step] do
             --when notes are on current step and not selected
@@ -3192,21 +3390,24 @@ local function highlightNotesOnStep(step, highlight)
                 local note = noteOnStep[step][i]
                 local idx = "b" .. note.index
                 local sidx = "bs" .. note.index
-                rows[note.row] = note.note
-                if highlight then
-                    if not noteData[note.index] or not noteInSelection(noteData[note.index]) then
-                        if preferences.useTrackColorForNoteHighlighting.value then
-                            vbw[idx].color = vbw["trackcolor"].color
-                        else
-                            vbw[idx].color = colorNoteHighlight
+                table.insert(notes, note.note)
+                if vbw[idx] then
+                    rows[note.row] = note.note
+                    if highlight then
+                        if not noteData[note.index] or not noteInSelection(noteData[note.index]) then
+                            if preferences.useTrackColorForNoteHighlighting.value then
+                                vbw[idx].color = vbw["trackcolor"].color
+                            else
+                                vbw[idx].color = colorNoteHighlight
+                            end
+                        end
+                    else
+                        if not noteData[note.index] or not noteInSelection(noteData[note.index]) then
+                            vbw[idx].color = colorNoteVelocity(note.vel, note.ghst)
                         end
                     end
-                else
-                    if not noteData[note.index] or not noteInSelection(noteData[note.index]) then
-                        vbw[idx].color = colorNoteVelocity(note.vel, note.ghst)
-                    end
+                    vbw[sidx].color = shadeColor(vbw[idx].color, preferences.scaleBtnShadingAmount.value)
                 end
-                vbw[sidx].color = shadeColor(vbw[idx].color, preferences.scaleBtnShadingAmount.value)
             end
         end
     end
@@ -3215,6 +3416,7 @@ local function highlightNotesOnStep(step, highlight)
         setKeyboardKeyColor(key, false, highlight)
         highlightNoteRow(key, highlight)
     end
+    detectChord(notes)
 end
 
 --refresh playback pos indicator
@@ -6426,7 +6628,103 @@ local function createPianoRollDialog()
                                         --nothing
                                     end
                                 },
+                                vb:row {
+                                    width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2,
+                                    vb:horizontal_aligner {
+                                        width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2,
+                                        mode = "right",
+                                        spacing = -2,
+                                        vb:row {
+                                            style = "panel",
+                                            margin = 1,
+                                            vb:space {
+                                                width = 2,
+                                            },
+                                            vb:vertical_aligner {
+                                                mode = "center",
+                                                vb:bitmap {
+                                                    bitmap = "Icons/Browser_RenoiseSongFile.bmp",
+                                                    mode = "transparent",
+                                                    tooltip = "Notes",
+                                                },
+                                            },
+                                            vb:space {
+                                                width = 2,
+                                            },
+                                            vb:text {
+                                                id = "currentnotes",
+                                                width = 122,
+                                                text = "",
+                                                font = "bold",
+                                                style = "strong",
+                                                align = "center",
+                                            },
+                                            vb:space {
+                                                width = 4,
+                                            },
+                                        },
+                                        vb:row {
+                                            style = "panel",
+                                            margin = 1,
+                                            vb:space {
+                                                width = 2,
+                                            },
+                                            vb:vertical_aligner {
+                                                mode = "center",
+                                                vb:bitmap {
+                                                    bitmap = "Icons/Transport_ChordModeOff.bmp",
+                                                    mode = "transparent",
+                                                    tooltip = "Chord",
+                                                },
+                                            },
+                                            vb:space {
+                                                width = 2,
+                                            },
+                                            vb:text {
+                                                id = "currentchord",
+                                                width = 114,
+                                                text = "",
+                                                font = "bold",
+                                                style = "strong",
+                                                align = "center",
+                                            },
+                                            vb:space {
+                                                width = 4,
+                                            },
+                                        },
+                                        vb:row {
+                                            style = "panel",
+                                            margin = 1,
+                                            vb:space {
+                                                width = 2,
+                                            },
+                                            vb:vertical_aligner {
+                                                mode = "center",
+                                                vb:bitmap {
+                                                    bitmap = "Icons/Mixer_ShowDelay.bmp",
+                                                    mode = "transparent",
+                                                    tooltip = "Chord progression",
+                                                },
+                                            },
+                                            vb:space {
+                                                width = 2,
+                                            },
+                                            vb:text {
+                                                id = "chordprog",
+                                                width = 20,
+                                                text = "",
+                                                font = "bold",
+                                                style = "strong",
+                                                align = "center",
+                                            },
+                                            vb:space {
+                                                width = 4,
+                                            },
+                                        },
+                                    },
+                                },
                                 vb:column {
+                                    width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2,
                                     id = "key_state_panel",
                                     visible = false,
                                     vb:text {
@@ -6435,7 +6733,7 @@ local function createPianoRollDialog()
                                         font = "bold",
                                         style = "strong",
                                     },
-                                }
+                                },
                             }
                         },
                         vb:row {
