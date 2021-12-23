@@ -71,73 +71,76 @@ local chordProgression = {
 }
 
 local chordsTable = {
-    d1_ = "minor 2nd",
-    d2_ = "Major 2nd",
-    d3_ = "minor 3nd",
-    d4_ = "Major 3nd",
-    d5_ = "Perfect 4th",
-    d6_ = "Tritone",
-    d7_ = "Perfect 5th",
-    d8_ = "minor 6th",
-    d9_ = "Major 6th",
-    d10_ = "minor 7th",
-    d11_ = "Major 7th",
-    d4_d7_ = "Major",
-    d3_d7_ = "Minor",
-    d4_d7_d10_ = "Dominant 7th",
-    d4_d7_d11_ = "Major 7th",
-    d4_d6_d7_d11_ = "Major 7th 11",
-    d3_d7_d10_ = "minor 7th",
-    d3_d7_d11_ = "MinMaj 7th",
-    d5_d7_ = "Sus 4",
-    d2_d7_ = "Sus 2",
-    d4_d7_d9_ = "6",
-    d3_d7_d9_ = "Minor 6",
-    d2_d3_d7_d11_ = "MinMaj 9",
-    d2_d4_d5_d7_d10_ = "11",
-    d2_d3_d5_d7_d10_ = "minor 11",
-    d2_d4_d5_d7_d11_ = "Major 11",
-    d2_d3_d5_d7_d11_ = "Min Major 11",
-    d2_d4_d7_d9_d10_ = "13",
-    d2_d3_d7_d9_d10_ = "minor 13",
-    d2_d4_d7_d9_d11_ = "Major 13",
-    d2_d3_d7_d9_d11_ = "Min Major 13",
-    d2_d4_d7_ = "add 9",
-    d2_d4_d7_d11_ = "Major 9",
-    d2_d3_d7_ = "Minor add 9",
-    d2_d4_d7_d9_ = "6 add 9",
-    d2_d3_d7_d9_ = "Minor 6 add 9",
-    d4_d5_d7_d10_ = "Dominant 7th add 11",
-    d4_d5_d7_d11_ = "Major 7th add 11",
-    d3_d5_d7_d10_ = "Minor 7th add 11",
-    d3_d5_d7_d11_ = "MinMaj 7th add 11",
-    d4_d7_d9_d10_ = "Dominant 7th add 13",
-    d4_d7_d9_d11_ = "Major 7th add 13",
-    d3_d7_d9_d10_ = "Minor 7th add 13",
-    d3_d7_d9_d11_ = "MinMaj 7th add 13",
-    d4_d6_d10_ = "7b5",
-    d4_d8_d10_ = "7#5",
-    d1_d4_d7_d10_ = "7b9",
-    d3_d4_d7_d10_ = "7#9",
-    d1_d4_d8_d10_ = "7#5b9",
-    d3_d6_d10_ = "m7b5",
-    d3_d8_d10_ = "m7#5",
-    d1_d3_d7_d10_ = "m7b9",
-    d2_d4_d6_d7_d10_ = "9#11",
-    d2_d4_d7_d8_d10_ = "9b13",
-    d5_d7_d9_ = "6sus4",
-    d5_d7_d10_ = "7sus4",
-    d5_d7_d11_ = "Maj 7th Sus4",
-    d2_d5_d7_d10_ = "9sus4",
-    d2_d5_d7_d11_ = "Maj 9 Sus4",
-    d2_d4_d7_d10_ = "9",
-    d3_d6_ = "dim",
-    d3_d6_d9_ = "dim7",
+    ["0,1"] = "minor 2nd",
+    ["0,2"] = "Major 2nd",
+    ["0,3"] = "minor 3nd",
+    ["0,4"] = "Major 3nd",
+    ["0,5"] = "Perfect 4th",
+    ["0,6"] = "Tritone",
+    ["0,7"] = "Perfect 5th",
+    ["0,8"] = "minor 6th",
+    ["0,9"] = "Major 6th",
+    ["0,10"] = "minor 7th",
+    ["0,11"] = "Major 7th",
+    ["0,4,7"] = "Maj",
+    ["0,3,7"] = "min",
+    ["0,4,7,10"] = "7",
+    ["0,4,7,11"] = "Maj7",
+    ["0,4,6,7,11"] = "Maj7(#11)",
+    ["0,3,7,10"] = "min7",
+    ["0,3,7,11"] = "minMaj7",
+    ["0,5,7"] = "Sus4",
+    ["0,2,7"] = "Sus2",
+    ["0,4,7,9"] = "Maj6",
+    ["0,3,7,9"] = "min6",
+    ["0,2,3,7,11"] = "min(Maj9)",
+    ["0,2,4,5,7,10"] = "11",
+    ["0,2,3,5,7,10"] = "minor 11",
+    ["0,2,4,5,7,11"] = "Major 11",
+    ["0,2,3,5,7,11"] = "Min Major 11",
+    ["0,2,4,7,9,10"] = "13",
+    ["0,2,3,7,9,10"] = "minor 13",
+    ["0,2,4,7,9,11"] = "Major 13",
+    ["0,2,3,7,9,11"] = "Min Major 13",
+    ["0,2,4,7"] = "add 9",
+    ["0,2,4,7,11"] = "Major 9",
+    ["0,2,3,7"] = "Minor add 9",
+    ["0,2,4,7,9"] = "6 add 9",
+    ["0,2,3,7,9"] = "Minor 6 add 9",
+    ["0,4,5,7,10"] = "Dominant 7th add 11",
+    ["0,4,5,7,11"] = "Major 7th add 11",
+    ["0,3,5,7,10"] = "Minor 7th add 11",
+    ["0,3,5,7,11"] = "MinMaj 7th add 11",
+    ["0,4,7,9,10"] = "Dominant 7th add 13",
+    ["0,4,7,9,11"] = "Major 7th add 13",
+    ["0,3,7,9,10"] = "Minor 7th add 13",
+    ["0,3,7,9,11"] = "MinMaj 7th add 13",
+    ["0,4,6,10"] = "7b5",
+    ["0,4,8,10"] = "7#5",
+    ["0,1,4,7,10"] = "7b9",
+    ["0,3,4,7,10"] = "7#9",
+    ["0,1,4,8,10"] = "7#5b9",
+    ["0,3,6,10"] = "m7b5",
+    ["0,3,8,10"] = "m7#5",
+    ["0,1,3,7,10"] = "m7b9",
+    ["0,2,4,6,7,10"] = "9#11",
+    ["0,2,4,7,8,10"] = "9b13",
+    ["0,5,7,9"] = "6sus4",
+    ["0,5,7,10"] = "7sus4",
+    ["0,5,7,11"] = "Maj 7th Sus4",
+    ["0,2,5,7,10"] = "9sus4",
+    ["0,2,5,7,11"] = "Maj 9 Sus4",
+    ["0,2,4,7,10"] = "9",
+    ["0,3,6"] = "dim",
+    ["0,3,6,9"] = "dim7",
+    ["0,7,10"] = "7(no3)",
     --chords with some missing notes
-    d3_d5_d7_ = "Min 11",
-    d4_d5_d7_ = "Maj 11",
-    d2_d4_ = "add 9",
-    d2_d3_ = "Min add 9",
+    ["0,7,11"] = "Maj7",
+    ["0,4,11"] = "Maj7",
+    ["0,3,5,7"] = "Min 11",
+    ["0,4,5,7"] = "Maj 11",
+    ["0,2,4"] = "add 9",
+    ["0,2,3"] = "Min add 9",
 }
 
 --default values, can be used to reset to default
@@ -336,9 +339,14 @@ local refreshPianoRollNeeded = false
 local blockLineModifier = false
 local refreshControls = false
 local refreshTimeline = false
+local refreshChordDetection = false
 
 --table to save note indices per step for highlighting
 local noteOnStep = {}
+
+--table with all current playing notes on step
+local notesOnStep = {}
+local notesPlaying = {}
 
 --table for save used notes
 local noteButtons = {}
@@ -756,6 +764,7 @@ local function jumpToNoteInPattern(notedata)
     end
     --refresh edit pos
     refreshEditPosIndicator()
+    refreshChordDetection = true
 end
 
 --check if a note index is in major scale
@@ -1235,18 +1244,22 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
         velocity = currentNoteVelocityPreview
     end
     if pressed == true then
+        notesPlaying[note_value] = 1
         successSend, errorSend = oscClient:send(
                 renoise.Osc.Message("/renoise/trigger/note_on", { { tag = "i", value = instrument },
                                                                   { tag = "i", value = song.selected_track_index },
                                                                   { tag = "i", value = note_value },
                                                                   { tag = "i", value = velocity } })
         )
+        refreshChordDetection = true
     elseif pressed == false then
+        notesPlaying[note_value] = nil
         successSend, errorSend = oscClient:send(
                 renoise.Osc.Message("/renoise/trigger/note_off", { { tag = "i", value = instrument },
                                                                    { tag = "i", value = song.selected_track_index },
                                                                    { tag = "i", value = note_value } })
         )
+        refreshChordDetection = true
     else
         local polyLimit = preferences.previewPolyphony.value
         --check if the current note already playing
@@ -2680,6 +2693,7 @@ function pianoGridClick(x, y, released)
             jumpToNoteInPattern(note_data)
             --
             refreshPianoRollNeeded = true
+            refreshChordDetection = true
         else
             --fast play from cursor
             if keyControl and not keyAlt and not keyShift then
@@ -2689,6 +2703,7 @@ function pianoGridClick(x, y, released)
                 if #noteSelection > 0 then
                     if not keyShift then
                         noteSelection = {}
+                        refreshChordDetection = true
                     end
                     refreshPianoRollNeeded = true
                 elseif preferences.resetVolPanDlyControlOnClick.value then
@@ -3287,14 +3302,29 @@ local function setScaleHighlighting(afterPianoRollRefresh)
 end
 
 --detect chords and progression
-local function detectChord(rawnotes)
+local function refreshDetectedChord()
     local distance_string = {}
     local notelabels = ""
+    local rawnotes = {}
     local notes = {}
     local dummy = {}
     local chord
     local chordprog = ""
     local dis
+    --use current notes on step
+    if #noteSelection > 0 and not song.transport.playing then
+        for i = 1, #noteSelection do
+            table.insert(rawnotes, noteSelection[i].note)
+        end
+    end
+    if #rawnotes == 0 then
+        for key in pairs(notesPlaying) do
+            table.insert(rawnotes, key)
+        end
+    end
+    if #rawnotes == 0 and #notesOnStep > 0 then
+        rawnotes = notesOnStep
+    end
     --no notes?
     if #rawnotes > 0 then
         --sort notes
@@ -3322,7 +3352,7 @@ local function detectChord(rawnotes)
         for j = 1, #notes do
             distance_string[j] = {
                 note = 0,
-                key = "",
+                key = "0",
             }
             table.sort(notes, function(a, b)
                 return a < b
@@ -3331,7 +3361,7 @@ local function detectChord(rawnotes)
             for i = 2, #notes do
                 dis = (notes[i] - notes[1]) % 12
                 if dis > 0 then
-                    distance_string[j].key = distance_string[j].key .. "d" .. dis .. "_"
+                    distance_string[j].key = distance_string[j].key .. "," .. dis
                 end
             end
             --
@@ -3362,7 +3392,7 @@ local function detectChord(rawnotes)
             end
         end
     end
-    if not chord or chord == "" then
+    if not notelabels or notelabels == "" then
         vbw["currentnotes"].text = "-"
     else
         vbw["currentnotes"].text = notelabels
@@ -3377,12 +3407,13 @@ local function detectChord(rawnotes)
     else
         vbw["chordprog"].text = chordprog
     end
+    refreshChordDetection = false
 end
 
 --highlight each note on the current playback pos
 local function highlightNotesOnStep(step, highlight)
     local rows = {}
-    local notes = {}
+    notesOnStep = {}
     if noteOnStep[step] ~= nil and #noteOnStep[step] > 0 then
         for i = 1, #noteOnStep[step] do
             --when notes are on current step and not selected
@@ -3390,7 +3421,7 @@ local function highlightNotesOnStep(step, highlight)
                 local note = noteOnStep[step][i]
                 local idx = "b" .. note.index
                 local sidx = "bs" .. note.index
-                table.insert(notes, note.note)
+                table.insert(notesOnStep, note.note)
                 if vbw[idx] then
                     rows[note.row] = note.note
                     if highlight then
@@ -3416,7 +3447,7 @@ local function highlightNotesOnStep(step, highlight)
         setKeyboardKeyColor(key, false, highlight)
         highlightNoteRow(key, highlight)
     end
-    detectChord(notes)
+    refreshChordDetection = true
 end
 
 --refresh playback pos indicator
@@ -3449,10 +3480,16 @@ local function refreshPlaybackPosIndicator()
         else
             lastStepOn = nil
         end
-    elseif lastStepOn and (song.selected_pattern_index ~= seq or not song.transport.playing) then
-        vbw["s" .. tostring(lastStepOn)].color = colorStepOff
-        highlightNotesOnStep(lastStepOn, false)
-        lastStepOn = nil
+    elseif (song.selected_pattern_index ~= seq or not song.transport.playing) then
+        if #notesOnStep > 0 then
+            notesOnStep = {}
+            refreshChordDetection = true
+        end
+        if lastStepOn then
+            vbw["s" .. tostring(lastStepOn)].color = colorStepOff
+            highlightNotesOnStep(lastStepOn, false)
+            lastStepOn = nil
+        end
     end
 end
 
@@ -3842,6 +3879,11 @@ local function appIdleEvent()
             fillTimeline()
         end
 
+        --refresh chord states
+        if refreshChordDetection then
+            refreshDetectedChord()
+        end
+
         --key info state
         if lastKeyInfoTime and lastKeyInfoTime + preferences.keyInfoTime.value < os.clock() then
             vbw["key_state"].text = ""
@@ -4128,6 +4170,7 @@ local function handleKeyEvent(keyEvent)
             if #noteSelection > 0 then
                 noteSelection = {}
                 refreshPianoRollNeeded = true
+                refreshChordDetection = true
             end
         end
         handled = true
@@ -5983,6 +6026,8 @@ local function createPianoRollDialog()
                     tooltip = "Stop playing",
                     notifier = function()
                         song.transport:stop()
+                        notesPlaying = {}
+                        refreshChordDetection = true
                     end
                 },
             },
@@ -6654,7 +6699,7 @@ local function createPianoRollDialog()
                                             vb:text {
                                                 id = "currentnotes",
                                                 width = 122,
-                                                text = "",
+                                                text = "-",
                                                 font = "bold",
                                                 style = "strong",
                                                 align = "center",
@@ -6683,7 +6728,7 @@ local function createPianoRollDialog()
                                             vb:text {
                                                 id = "currentchord",
                                                 width = 114,
-                                                text = "",
+                                                text = "-",
                                                 font = "bold",
                                                 style = "strong",
                                                 align = "center",
@@ -6712,7 +6757,7 @@ local function createPianoRollDialog()
                                             vb:text {
                                                 id = "chordprog",
                                                 width = 20,
-                                                text = "",
+                                                text = "-",
                                                 font = "bold",
                                                 style = "strong",
                                                 align = "center",
