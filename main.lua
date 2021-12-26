@@ -191,6 +191,7 @@ local defaultPreferences = {
     autoEnableDelayWhenNeeded = true,
     setVelPanDlyLenFromLastNote = true,
     centerViewOnOpen = true,
+    chordDetection = true,
     keyLabels = 2,
     --colors
     colorBaseGridColor = "#34444E",
@@ -259,6 +260,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     centerViewOnOpen = defaultPreferences.centerViewOnOpen,
     previewPolyphony = defaultPreferences.previewPolyphony,
     limitPreviewBySelectionSize = defaultPreferences.limitPreviewBySelectionSize,
+    chordDetection = defaultPreferences.chordDetection,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -1184,6 +1186,7 @@ local function refreshNoteControls()
     else
         vbw.mute.color = colorDefault
     end
+    vbw.chorddetection.visible = preferences.chordDetection.value
     refreshControls = false
 end
 
@@ -3880,7 +3883,7 @@ local function appIdleEvent()
         end
 
         --refresh chord states
-        if refreshChordDetection then
+        if refreshChordDetection and preferences.chordDetection.value then
             refreshDetectedChord()
         end
 
@@ -5660,6 +5663,14 @@ local function showPreferences()
             },
             vbp:row {
                 vbp:checkbox {
+                    bind = preferences.chordDetection,
+                },
+                vbp:text {
+                    text = "Enable chord detection",
+                },
+            },
+            vbp:row {
+                vbp:checkbox {
                     bind = preferences.setVelPanDlyLenFromLastNote,
                 },
                 vbp:text {
@@ -6689,6 +6700,7 @@ local function createPianoRollDialog()
                                     end
                                 },
                                 vb:row {
+                                    id = "chorddetection",
                                     width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2,
                                     vb:horizontal_aligner {
                                         width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2,
@@ -6763,7 +6775,7 @@ local function createPianoRollDialog()
                                                 vb:bitmap {
                                                     bitmap = "Icons/Mixer_ShowDelay.bmp",
                                                     mode = "transparent",
-                                                    tooltip = "Chord progression",
+                                                    tooltip = "Roman numeral for chord progression",
                                                 },
                                             },
                                             vb:space {
