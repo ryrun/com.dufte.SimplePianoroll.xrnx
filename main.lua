@@ -1545,6 +1545,9 @@ local function transposeSelectedNotes(transpose, keepscale)
             noteSelection[key].note = 119
         end
         note_column.note_value = noteSelection[key].note
+    end
+    --trigger notes after transpose
+    for key = 1, #noteSelection do
         triggerNoteOfCurrentInstrument(noteSelection[key].note, nil, nil, true)
     end
     jumpToNoteInPattern("sel")
