@@ -5663,7 +5663,7 @@ local function showPreferences()
                     bind = preferences.chordDetection,
                 },
                 vbp:text {
-                    text = "Enable chord detection",
+                    text = "Enable chord detection for playing and selected notes",
                 },
             },
             vbp:row {
