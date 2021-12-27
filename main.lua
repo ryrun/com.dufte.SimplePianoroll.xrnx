@@ -2352,7 +2352,7 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
         --reset note colors
         for key in pairs(wasInSelection) do
             note_data = noteData[key]
-            if vbw["b" .. note_data.idx] then
+            if note_data and vbw["b" .. note_data.idx] then
                 vbw["b" .. note_data.idx].color = colorNoteVelocity(note_data.vel, note_data.ghst)
                 vbw["bs" .. note_data.idx].color = shadeColor(vbw["b" .. note_data.idx].color, preferences.scaleBtnShadingAmount.value)
             end
@@ -3314,17 +3314,17 @@ local function refreshDetectedChord()
     local chord
     local chordprog = ""
     local dis
-    --use current notes on step
-    if #noteSelection > 0 and not song.transport.playing then
+    --current playing notes?
+    for key in pairs(notesPlaying) do
+        table.insert(rawnotes, key)
+    end
+    --no notes found? current selected notes?
+    if #rawnotes == 0 and #noteSelection > 0 and not song.transport.playing then
         for i = 1, #noteSelection do
             table.insert(rawnotes, noteSelection[i].note)
         end
     end
-    if #rawnotes == 0 then
-        for key in pairs(notesPlaying) do
-            table.insert(rawnotes, key)
-        end
-    end
+    --no notes found, current notes on step?
     if #rawnotes == 0 and #notesOnStep > 0 then
         rawnotes = notesOnStep
     end
