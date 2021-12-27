@@ -2157,7 +2157,9 @@ end
 --color keyboard key
 local function setKeyboardKeyColor(row, pressed, highlighted)
     local idx = "k" .. row
-    if highlighted then
+    if notesPlaying[gridOffset2NoteValue(row)] then
+        vbw[idx].color = colorStepOn
+    elseif highlighted then
         if preferences.useTrackColorForNoteHighlighting.value then
             vbw[idx].color = vbw["trackcolor"].color
         else
@@ -3626,7 +3628,11 @@ local function fillPianoRoll(quickRefresh)
                             if isRootKey then
                                 defaultColor[idx] = shadeColor(defaultColor[idx], preferences.rootKeyShadingAmount.value)
                             end
-                            key.color = defaultColor[idx]
+                            if notesPlaying[y + noffset] then
+                                key.color = colorStepOn
+                            else
+                                key.color = defaultColor[idx]
+                            end
                             --set root label
                             if preferences.keyLabels.value == 4 or
                                     (preferences.keyLabels.value == 2 and (
@@ -6036,6 +6042,7 @@ local function createPianoRollDialog()
                         song.transport:stop()
                         notesPlaying = {}
                         refreshChordDetection = true
+                        refreshPianoRollNeeded = true
                     end
                 },
             },
