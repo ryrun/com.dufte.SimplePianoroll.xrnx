@@ -3938,6 +3938,7 @@ end
 local function obsColumnRefresh()
     refreshControls = true
     refreshPianoRollNeeded = true
+    refreshChordDetection = true
 end
 
 --will be called when something in the pattern will be changed
