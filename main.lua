@@ -3624,10 +3624,9 @@ local function fillPianoRoll(quickRefresh)
                                 defaultColor[idx] = colorKeyBlack
                             end
                             if isRootKey then
-                                key.color = shadeColor(defaultColor[idx], preferences.rootKeyShadingAmount.value)
-                            else
-                                key.color = defaultColor[idx]
+                                defaultColor[idx] = shadeColor(defaultColor[idx], preferences.rootKeyShadingAmount.value)
                             end
+                            key.color = defaultColor[idx]
                             --set root label
                             if preferences.keyLabels.value == 4 or
                                     (preferences.keyLabels.value == 2 and (
