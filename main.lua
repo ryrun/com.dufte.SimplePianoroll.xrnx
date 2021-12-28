@@ -6120,24 +6120,24 @@ local function createPianoRollDialog()
                     end
                 },
                 vb:button {
-                    text = "Dbl",
-                    tooltip = "Double current note length number",
-                    notifier = function()
-                        if #noteSelection > 0 then
-                            scaleNoteSelection(2)
-                        end
-                        currentNoteLength = math.min(math.floor(currentNoteLength * 2), 256)
-                        refreshControls = true
-                    end,
-                },
-                vb:button {
-                    text = "Hlv",
+                    text = ":2",
                     tooltip = "Halve current note length number",
                     notifier = function()
                         if #noteSelection > 0 then
                             scaleNoteSelection(0.5)
                         end
                         currentNoteLength = math.max(math.floor(currentNoteLength / 2), 1)
+                        refreshControls = true
+                    end,
+                },
+                vb:button {
+                    text = "*2",
+                    tooltip = "Double current note length number",
+                    notifier = function()
+                        if #noteSelection > 0 then
+                            scaleNoteSelection(2)
+                        end
+                        currentNoteLength = math.min(math.floor(currentNoteLength * 2), 256)
                         refreshControls = true
                     end,
                 },
@@ -6915,6 +6915,8 @@ local function main_function()
         highestNote = nil
         --reset note selection
         noteSelection = {}
+        --reset note playing
+        notesPlaying = {}
         --when needed set enable penmode
         penMode = preferences.forcePenMode.value
         --create main dialog
