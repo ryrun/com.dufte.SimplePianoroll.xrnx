@@ -344,6 +344,7 @@ local noteOnStep = {}
 --table with all current playing notes on step
 local notesOnStep = {}
 local notesPlaying = {}
+local notesPlayingLine = {}
 
 --table for save used notes
 local noteButtons = {}
@@ -1243,6 +1244,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
     end
     if pressed == true then
         notesPlaying[note_value] = 1
+        notesPlayingLine[note_value] = nil
         successSend, errorSend = oscClient:send(
                 renoise.Osc.Message("/renoise/trigger/note_on", { { tag = "i", value = instrument },
                                                                   { tag = "i", value = song.selected_track_index },
@@ -1252,6 +1254,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
         refreshChordDetection = true
     elseif pressed == false then
         notesPlaying[note_value] = nil
+        notesPlayingLine[note_value] = nil
         successSend, errorSend = oscClient:send(
                 renoise.Osc.Message("/renoise/trigger/note_off", { { tag = "i", value = instrument },
                                                                    { tag = "i", value = song.selected_track_index },
@@ -2184,6 +2187,99 @@ local function highlightNoteRow(row, highlighted)
             end
         end
     end
+end
+
+--step sequencing like in other daws
+local function stepSequencing(steps)
+    local refresh = false
+    local column
+    local newLen
+    local notedata
+    local pos = song.transport.edit_pos.line
+    if steps ~= 0 and math.abs(steps) == 1 and not song.transport.playing then
+        for note in pairs(notesPlaying) do
+            --search for a note
+            if steps < 0 and not notesPlayingLine[note] then
+                for key in pairs(noteData) do
+                    notedata = noteData[key]
+                    if note == notedata.note and
+                            ((notedata.line == pos and steps < 0) or (notedata.line <= pos - 1 and notedata.line + notedata.len - 1 >= pos - 1))
+                    then
+                        notesPlayingLine[note] = notedata.line
+                        break
+                    end
+                end
+            end
+            --no note found? create one
+            if not notesPlayingLine[note] and steps > 0 then
+                notedata = {
+                    column = 0,
+                    line = pos,
+                    len = 1,
+                    note = note,
+                    vel = currentNoteVelocity,
+                    end_vel = 0,
+                    pan = 0,
+                    dly = 0,
+                    end_dly = 0,
+                    ghst = currentNoteGhost
+                }
+                column = returnColumnWhenEnoughSpaceForNote(notedata.line, notedata.len, notedata.dly, notedata.end_dly)
+                if column then
+                    notedata.column = column
+                    notedata.noteoff = addNoteToPattern(
+                            notedata.column,
+                            notedata.line,
+                            notedata.len,
+                            notedata.note,
+                            notedata.vel,
+                            notedata.end_vel,
+                            notedata.pan,
+                            notedata.dly,
+                            notedata.end_dly,
+                            notedata.ghst
+                    )
+                    notesPlayingLine[note] = notedata.line
+                    refresh = true
+                end
+            elseif notesPlayingLine[note] then
+                for key in pairs(noteData) do
+                    notedata = noteData[key]
+                    if note == notedata.note and notesPlayingLine[note] == notedata.line then
+                        newLen = pos - notedata.line + steps
+                        removeNoteInPattern(notedata.column, notedata.line, notedata.len)
+                        if newLen > 0 then
+                            column = returnColumnWhenEnoughSpaceForNote(notedata.line, newLen, notedata.dly, notedata.end_dly)
+                            if column then
+                                notedata.len = newLen
+                                notedata.column = column
+                            end
+                            notedata.noteoff = addNoteToPattern(
+                                    notedata.column,
+                                    notedata.line,
+                                    notedata.len,
+                                    notedata.note,
+                                    notedata.vel,
+                                    notedata.end_vel,
+                                    notedata.pan,
+                                    notedata.dly,
+                                    notedata.end_dly,
+                                    notedata.ghst
+                            )
+                        else
+                            notesPlayingLine[note] = nil
+                        end
+                        refresh = true
+                    end
+                end
+            end
+        end
+    end
+    if refresh then
+        setUndoDescription("Step sequencing notes ...")
+        refreshPianoRollNeeded = true
+    end
+    return refresh
 end
 
 --move the current seleciton to the next desired note
@@ -4562,6 +4658,13 @@ local function handleKeyEvent(keyEvent)
                     keyInfoText = "Move edit cursor position"
                     local npos = renoise.SongPos()
                     npos.line = song.transport.edit_pos.line + steps
+                    --do step sequencing
+                    if npos.line >= 1 and npos.line <= song.selected_pattern.number_of_lines + 1 then
+                        if stepSequencing(steps) and npos.line == song.selected_pattern.number_of_lines + 1 then
+                            npos.line = song.selected_pattern.number_of_lines
+                        end
+                    end
+                    --move cursor
                     if npos.line >= 1 and npos.line <= song.selected_pattern.number_of_lines then
                         npos.sequence = song.transport.edit_pos.sequence
                         song.transport.edit_pos = npos
@@ -6042,6 +6145,7 @@ local function createPianoRollDialog()
                     notifier = function()
                         song.transport:stop()
                         notesPlaying = {}
+                        notesPlayingLine = {}
                         refreshChordDetection = true
                         refreshPianoRollNeeded = true
                     end
@@ -6917,6 +7021,7 @@ local function main_function()
         noteSelection = {}
         --reset note playing
         notesPlaying = {}
+        notesPlayingLine = {}
         --when needed set enable penmode
         penMode = preferences.forcePenMode.value
         --create main dialog
