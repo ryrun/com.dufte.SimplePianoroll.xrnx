@@ -451,6 +451,13 @@ local function badTrackError()
     end
 end
 
+--bring focus back to main dialog, when out of focus
+local function restoreFocus()
+    if windowObj and windowObj.visible then
+        windowObj:show()
+    end
+end
+
 --return special "hex" value which allow values like ZF
 local function toRenoiseHex(val)
     local t = string.format("%X", val)
@@ -4268,6 +4275,7 @@ local function handleKeyEvent(keyEvent)
             end
             key.modifiers = key.modifiers .. "control"
         end
+        restoreFocus()
     end
 
     if key.name == "del" then
@@ -5930,6 +5938,7 @@ local function showPreferences()
     refreshPianoRollNeeded = true
     --apply new highlighting colors
     initColors()
+    restoreFocus()
 end
 
 --create main piano roll dialog
@@ -6743,6 +6752,7 @@ local function createPianoRollDialog()
                                                             },
                                                         } }, { "Ok" })
                                             refreshPianoRollNeeded = true
+                                            restoreFocus()
                                         end
                                     },
                                 }
@@ -7101,8 +7111,7 @@ local function main_function()
     else
         --refresh pianoroll
         refreshPianoRollNeeded = true
-        --show window
-        windowObj:show()
+        restoreFocus()
     end
 end
 
@@ -7177,6 +7186,10 @@ tool:add_keybinding {
             local plugin = song.instruments[currentInstrument].plugin_properties
             if plugin and plugin.plugin_device and plugin.plugin_device.external_editor_available then
                 plugin.plugin_device.external_editor_visible = not plugin.plugin_device.external_editor_visible
+                if not plugin.plugin_device.external_editor_visible then
+                    --restore focus back to piano roll
+                    restoreFocus()
+                end
             else
                 showStatus("Current instrument doesn't have an editor window.")
             end
