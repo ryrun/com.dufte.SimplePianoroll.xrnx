@@ -284,6 +284,7 @@ local noteSlider
 --last step position for resetting the last step button
 local lastStepOn
 local lastEditPos
+local currentEditPos
 
 --current note offset and stepoffset (x/y) - sliders (scrollbars)
 local noteOffset
@@ -720,14 +721,26 @@ end
 
 --refresh edit pos
 local function refreshEditPosIndicator()
-    if lastEditPos == nil or lastEditPos ~= song.transport.edit_pos.line - stepOffset then
-        if vbw["se" .. tostring(lastEditPos)] then
-            vbw["se" .. tostring(lastEditPos)].visible = false
+    local eP = song.transport.edit_pos.line
+    local se = vbw["se" .. tostring(lastEditPos)]
+    if currentEditPos < song.selected_pattern.number_of_lines + 1 and currentEditPos ~= eP then
+        currentEditPos = eP
+    end
+    if se then
+        if currentEditPos == song.selected_pattern.number_of_lines + 1 then
+            se.color = shadeColor(colorStepOn, 0.5)
+        else
+            se.color = colorStepOn
         end
-        lastEditPos = song.transport.edit_pos.line - stepOffset
-        if vbw["se" .. tostring(lastEditPos)] then
-            vbw["se" .. tostring(lastEditPos)].color = colorStepOn
-            vbw["se" .. tostring(lastEditPos)].visible = true
+    end
+    if lastEditPos == nil or lastEditPos ~= eP - stepOffset then
+        if se then
+            se.visible = false
+        end
+        lastEditPos = eP - stepOffset
+        se = vbw["se" .. tostring(lastEditPos)]
+        if se then
+            se.visible = true
         end
     end
 end
@@ -2248,10 +2261,6 @@ local function stepSequencing(pos, steps)
                     newLen = pos - notedata.line + steps
                     removeNoteInPattern(notedata.column, notedata.line, notedata.len)
                     if newLen > 0 then
-                        --if note hits end of pattern, remove note from notesPlaying table
-                        if steps<0 and notedata.line + notedata.len - 1 == 64 then
-                            notesPlayingLine[note] = nil
-                        end
                         column = returnColumnWhenEnoughSpaceForNote(notedata.line, newLen, notedata.dly, notedata.end_dly)
                         if column then
                             notedata.len = newLen
@@ -4084,6 +4093,7 @@ local function appNewDoc()
     currentNoteEndDelay = 0
     currentNoteVelocityPreview = 127
     currentNoteEndVelocity = 255
+    currentEditPos = 0
     --set new observers
     song.transport.lpb_observable:add_notifier(function()
         refreshPianoRollNeeded = true
@@ -4658,25 +4668,29 @@ local function handleKeyEvent(keyEvent)
                     end
                 else
                     keyInfoText = "Move edit cursor position"
-                    local npos = renoise.SongPos()
-                    npos.line = song.transport.edit_pos.line + steps
                     --move cursor
-                    if npos.line >= 1 and npos.line <= song.selected_pattern.number_of_lines then
+                    if currentEditPos + steps >= 1 and currentEditPos + steps <= song.selected_pattern.number_of_lines + 1 then
                         --do step sequencing
                         if not song.transport.playing and math.abs(steps) == 1 then
-                            keyInfoText = keyInfoText .. ", do step sequencing ..."
-                            stepSequencing(song.transport.edit_pos.line, steps)
-                        end
-                        --move
-                        npos.sequence = song.transport.edit_pos.sequence
-                        song.transport.edit_pos = npos
-                        if npos.line > gridWidth + stepOffset or npos.line <= stepOffset then
-                            if npos.line - gridWidth >= stepSlider.min then
-                                stepSlider.value = npos.line - gridWidth
-                            elseif npos.line <= stepOffset then
-                                stepSlider.value = npos.line - 1
+                            if stepSequencing(currentEditPos, steps) then
+                                keyInfoText = keyInfoText .. ", do step sequencing ..."
                             end
                         end
+                        --move
+                        if currentEditPos + steps <= song.selected_pattern.number_of_lines then
+                            local npos = renoise.SongPos()
+                            npos.line = currentEditPos + steps
+                            npos.sequence = song.transport.edit_pos.sequence
+                            song.transport.edit_pos = npos
+                            if npos.line > gridWidth + stepOffset or npos.line <= stepOffset then
+                                if npos.line - gridWidth >= stepSlider.min then
+                                    stepSlider.value = npos.line - gridWidth
+                                elseif npos.line <= stepOffset then
+                                    stepSlider.value = npos.line - 1
+                                end
+                            end
+                        end
+                        currentEditPos = currentEditPos + steps
                     end
                 end
             end
