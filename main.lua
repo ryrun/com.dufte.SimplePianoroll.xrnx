@@ -3626,7 +3626,7 @@ local function fillPianoRoll(quickRefresh)
     local temp
 
     --set auto ghost track
-    if preferences.setLastEditedTrackAsGhost.value and lastTrackIndex and lastTrackIndex ~= l_song.selected_track_index then
+    if preferences.setLastEditedTrackAsGhost.value and lastTrackIndex and lastTrackIndex ~= l_song.selected_track_index and lastTrackIndex <= song.sequencer_track_count then
         l_vbw.ghosttracks.value = lastTrackIndex
     end
 
