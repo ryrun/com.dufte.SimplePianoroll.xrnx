@@ -36,7 +36,7 @@ local scaleTypes = {
 
 }
 
-local romanNumeralsTechnicalNames = {
+local scaleDegreeAndRomanNumeral = {
     --none
     nil,
     --maj
@@ -52,7 +52,7 @@ local romanNumeralsTechnicalNames = {
         nil,
         "vi - Submediant",
         nil,
-        "vii - Leading tone (Subtonic)",
+        "vii - Leading tone",
     },
     --min
     {
@@ -66,7 +66,7 @@ local romanNumeralsTechnicalNames = {
         "v - Dominant",
         "VI - Submediant",
         nil,
-        "VII - Leading tone (Subtonic)",
+        "VII - Subtonic",
     },
 }
 
@@ -3470,8 +3470,8 @@ local function refreshDetectedChord()
         for i = 1, #distance_string do
             if distance_string ~= "" then
                 if chordsTable[distance_string[i].key] then
-                    if romanNumeralsTechnicalNames[currentScale] then
-                        chordprog = romanNumeralsTechnicalNames[currentScale][(distance_string[i].note - (currentScaleOffset - 1)) % 12 + 1]
+                    if scaleDegreeAndRomanNumeral[currentScale] then
+                        chordprog = scaleDegreeAndRomanNumeral[currentScale][(distance_string[i].note - (currentScaleOffset - 1)) % 12 + 1]
                     end
                     chord = notesTable[distance_string[i].note % 12 + 1] .. " " .. chordsTable[distance_string[i].key]
                     break
@@ -3479,8 +3479,8 @@ local function refreshDetectedChord()
             end
         end
         if not chord and #rawnotes > 0 then
-            if romanNumeralsTechnicalNames[currentScale] then
-                chordprog = romanNumeralsTechnicalNames[currentScale][(rawnotes[1] % 12 - (currentScaleOffset - 1)) % 12 + 1]
+            if scaleDegreeAndRomanNumeral[currentScale] then
+                chordprog = scaleDegreeAndRomanNumeral[currentScale][(rawnotes[1] % 12 - (currentScaleOffset - 1)) % 12 + 1]
             end
             if #rawnotes == 2 and rawnotes[1] % 12 == rawnotes[2] % 12 then
                 chord = notesTable[rawnotes[1] % 12 + 1] .. " Octave"
@@ -6884,7 +6884,7 @@ local function createPianoRollDialog()
                                                 vb:bitmap {
                                                     bitmap = "Icons/Mixer_ShowDelay.bmp",
                                                     mode = "transparent",
-                                                    tooltip = "Roman numeral and technical name",
+                                                    tooltip = "Scale degree and roman numeral",
                                                 },
                                             },
                                             vb:space {
@@ -6892,7 +6892,7 @@ local function createPianoRollDialog()
                                             },
                                             vb:text {
                                                 id = "chordprog",
-                                                width = 160,
+                                                width = 110,
                                                 text = "-",
                                                 font = "bold",
                                                 style = "strong",
