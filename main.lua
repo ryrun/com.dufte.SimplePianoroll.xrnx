@@ -396,7 +396,6 @@ local xypadpos = {
     nlen = 0, --note len
     time = 0, --click time
     lastx = 0,
-    lasty = 0,
     lastval = nil,
     notemode = false, --when note mode is active
     scalemode = false, --is scale mode active?
@@ -2540,6 +2539,7 @@ function noteClick(x, y, c, released, forceScaling)
         end
         xypadpos.selection_key = noteInSelection(note_data)
         xypadpos.idx = note_data.idx
+        xypadpos.lastx = -1
         xypadpos.nx = x
         xypadpos.ny = y
         xypadpos.nlen = note_data.len
