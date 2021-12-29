@@ -764,7 +764,8 @@ local function jumpToNoteInPattern(notedata)
         --only when the edit cursor is in the correct pattern
         if song.selected_pattern_index == song.sequencer:pattern(song.transport.edit_pos.sequence) then
             local npos = renoise.SongPos()
-            npos.line = notedata.line
+            currentEditPos = notedata.line
+            npos.line = currentEditPos
             npos.sequence = song.transport.edit_pos.sequence
             song.transport.edit_pos = npos
             --switch to the correct note column
