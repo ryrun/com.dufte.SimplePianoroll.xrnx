@@ -2202,7 +2202,7 @@ local function stepSequencing(pos, steps)
             for key in pairs(noteData) do
                 notedata = noteData[key]
                 if note == notedata.note and
-                        ((notedata.line <= pos and notedata.line + notedata.len - 1 >= pos ))
+                        ((notedata.line <= pos and notedata.line + notedata.len >= pos))
                 then
                     notesPlayingLine[note] = notedata.line
                     break
@@ -2248,6 +2248,10 @@ local function stepSequencing(pos, steps)
                     newLen = pos - notedata.line + steps
                     removeNoteInPattern(notedata.column, notedata.line, notedata.len)
                     if newLen > 0 then
+                        --if note hits end of pattern, remove note from notesPlaying table
+                        if steps<0 and notedata.line + notedata.len - 1 == 64 then
+                            notesPlayingLine[note] = nil
+                        end
                         column = returnColumnWhenEnoughSpaceForNote(notedata.line, newLen, notedata.dly, notedata.end_dly)
                         if column then
                             notedata.len = newLen
@@ -4656,16 +4660,14 @@ local function handleKeyEvent(keyEvent)
                     keyInfoText = "Move edit cursor position"
                     local npos = renoise.SongPos()
                     npos.line = song.transport.edit_pos.line + steps
-                    --do step sequencing
-                    if not song.transport.playing and math.abs(steps) == 1 then
-                        keyInfoText = keyInfoText .. ", do step sequencing ..."
-                        if stepSequencing(song.transport.edit_pos.line, steps) and steps < 0 and song.transport.edit_pos.line == song.selected_pattern.number_of_lines then
-                            print("no")
-                            npos.line = song.transport.edit_pos.line
-                        end
-                    end
                     --move cursor
                     if npos.line >= 1 and npos.line <= song.selected_pattern.number_of_lines then
+                        --do step sequencing
+                        if not song.transport.playing and math.abs(steps) == 1 then
+                            keyInfoText = keyInfoText .. ", do step sequencing ..."
+                            stepSequencing(song.transport.edit_pos.line, steps)
+                        end
+                        --move
                         npos.sequence = song.transport.edit_pos.sequence
                         song.transport.edit_pos = npos
                         if npos.line > gridWidth + stepOffset or npos.line <= stepOffset then
