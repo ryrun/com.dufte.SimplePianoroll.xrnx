@@ -730,7 +730,7 @@ end
 local function refreshEditPosIndicator()
     local eP = song.transport.edit_pos.line
     local se = vbw["se" .. tostring(lastEditPos)]
-    if currentEditPos < song.selected_pattern.number_of_lines + 1 and currentEditPos ~= eP then
+    if (currentEditPos < song.selected_pattern.number_of_lines + 1 or currentEditPos > song.selected_pattern.number_of_lines + 1) and currentEditPos ~= eP then
         currentEditPos = eP
     end
     if se then
