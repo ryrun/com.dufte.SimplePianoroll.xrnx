@@ -36,37 +36,37 @@ local scaleTypes = {
 
 }
 
-local chordProgression = {
+local romanNumeralsTechnicalNames = {
     --none
     nil,
     --maj
     {
-        "I",
+        "I - Tonic",
         nil,
-        "ii",
+        "ii - Supertonic",
         nil,
-        "iii",
-        "IV",
+        "iii - Mediant",
+        "IV - Subdominant",
         nil,
-        "V",
+        "V - Dominant",
         nil,
-        "vi",
+        "vi - Submediant",
         nil,
-        "vii",
+        "vii - Leading tone (Subtonic)",
     },
     --min
     {
-        "i",
+        "i - Tonic",
         nil,
-        "ii",
-        "III",
+        "ii - Supertonic",
+        "III - Mediant",
         nil,
-        "iv",
+        "iv - Subdominant",
         nil,
-        "v",
-        "VI",
+        "v - Dominant",
+        "VI - Submediant",
         nil,
-        "VII",
+        "VII - Leading tone (Subtonic)",
     },
 }
 
@@ -2190,87 +2190,85 @@ local function highlightNoteRow(row, highlighted)
 end
 
 --step sequencing like in other daws
-local function stepSequencing(steps)
+local function stepSequencing(pos, steps)
     local refresh = false
     local column
     local newLen
     local notedata
-    local pos = song.transport.edit_pos.line
-    if steps ~= 0 and math.abs(steps) == 1 and not song.transport.playing then
-        for note in pairs(notesPlaying) do
-            --search for a note
-            if steps < 0 and not notesPlayingLine[note] then
-                for key in pairs(noteData) do
-                    notedata = noteData[key]
-                    if note == notedata.note and
-                            ((notedata.line == pos and steps < 0) or (notedata.line <= pos - 1 and notedata.line + notedata.len - 1 >= pos - 1))
-                    then
-                        notesPlayingLine[note] = notedata.line
-                        break
-                    end
+    --search for notes on negative steps
+    for note in pairs(notesPlaying) do
+        --search for a note
+        if steps < 0 and not notesPlayingLine[note] then
+            for key in pairs(noteData) do
+                notedata = noteData[key]
+                if note == notedata.note and
+                        ((notedata.line <= pos and notedata.line + notedata.len - 1 >= pos ))
+                then
+                    notesPlayingLine[note] = notedata.line
+                    break
                 end
             end
-            --no note found? create one
-            if not notesPlayingLine[note] and steps > 0 then
-                notedata = {
-                    column = 0,
-                    line = pos,
-                    len = 1,
-                    note = note,
-                    vel = currentNoteVelocity,
-                    end_vel = 0,
-                    pan = 0,
-                    dly = 0,
-                    end_dly = 0,
-                    ghst = currentNoteGhost
-                }
-                column = returnColumnWhenEnoughSpaceForNote(notedata.line, notedata.len, notedata.dly, notedata.end_dly)
-                if column then
-                    notedata.column = column
-                    notedata.noteoff = addNoteToPattern(
-                            notedata.column,
-                            notedata.line,
-                            notedata.len,
-                            notedata.note,
-                            notedata.vel,
-                            notedata.end_vel,
-                            notedata.pan,
-                            notedata.dly,
-                            notedata.end_dly,
-                            notedata.ghst
-                    )
-                    notesPlayingLine[note] = notedata.line
-                    refresh = true
-                end
-            elseif notesPlayingLine[note] then
-                for key in pairs(noteData) do
-                    notedata = noteData[key]
-                    if note == notedata.note and notesPlayingLine[note] == notedata.line then
-                        newLen = pos - notedata.line + steps
-                        removeNoteInPattern(notedata.column, notedata.line, notedata.len)
-                        if newLen > 0 then
-                            column = returnColumnWhenEnoughSpaceForNote(notedata.line, newLen, notedata.dly, notedata.end_dly)
-                            if column then
-                                notedata.len = newLen
-                                notedata.column = column
-                            end
-                            notedata.noteoff = addNoteToPattern(
-                                    notedata.column,
-                                    notedata.line,
-                                    notedata.len,
-                                    notedata.note,
-                                    notedata.vel,
-                                    notedata.end_vel,
-                                    notedata.pan,
-                                    notedata.dly,
-                                    notedata.end_dly,
-                                    notedata.ghst
-                            )
-                        else
-                            notesPlayingLine[note] = nil
+        end
+        --no note found? create one
+        if not notesPlayingLine[note] and steps > 0 then
+            notedata = {
+                column = 0,
+                line = pos,
+                len = 1,
+                note = note,
+                vel = currentNoteVelocity,
+                end_vel = 0,
+                pan = 0,
+                dly = 0,
+                end_dly = 0,
+                ghst = currentNoteGhost
+            }
+            column = returnColumnWhenEnoughSpaceForNote(notedata.line, notedata.len, notedata.dly, notedata.end_dly)
+            if column then
+                notedata.column = column
+                notedata.noteoff = addNoteToPattern(
+                        notedata.column,
+                        notedata.line,
+                        notedata.len,
+                        notedata.note,
+                        notedata.vel,
+                        notedata.end_vel,
+                        notedata.pan,
+                        notedata.dly,
+                        notedata.end_dly,
+                        notedata.ghst
+                )
+                notesPlayingLine[note] = notedata.line
+                refresh = true
+            end
+        elseif notesPlayingLine[note] then
+            for key in pairs(noteData) do
+                notedata = noteData[key]
+                if note == notedata.note and notesPlayingLine[note] == notedata.line then
+                    newLen = pos - notedata.line + steps
+                    removeNoteInPattern(notedata.column, notedata.line, notedata.len)
+                    if newLen > 0 then
+                        column = returnColumnWhenEnoughSpaceForNote(notedata.line, newLen, notedata.dly, notedata.end_dly)
+                        if column then
+                            notedata.len = newLen
+                            notedata.column = column
                         end
-                        refresh = true
+                        notedata.noteoff = addNoteToPattern(
+                                notedata.column,
+                                notedata.line,
+                                notedata.len,
+                                notedata.note,
+                                notedata.vel,
+                                notedata.end_vel,
+                                notedata.pan,
+                                notedata.dly,
+                                notedata.end_dly,
+                                notedata.ghst
+                        )
+                    else
+                        notesPlayingLine[note] = nil
                     end
+                    refresh = true
                 end
             end
         end
@@ -3472,8 +3470,8 @@ local function refreshDetectedChord()
         for i = 1, #distance_string do
             if distance_string ~= "" then
                 if chordsTable[distance_string[i].key] then
-                    if chordProgression[currentScale] then
-                        chordprog = chordProgression[currentScale][(distance_string[i].note - (currentScaleOffset - 1)) % 12 + 1]
+                    if romanNumeralsTechnicalNames[currentScale] then
+                        chordprog = romanNumeralsTechnicalNames[currentScale][(distance_string[i].note - (currentScaleOffset - 1)) % 12 + 1]
                     end
                     chord = notesTable[distance_string[i].note % 12 + 1] .. " " .. chordsTable[distance_string[i].key]
                     break
@@ -3481,8 +3479,8 @@ local function refreshDetectedChord()
             end
         end
         if not chord and #rawnotes > 0 then
-            if chordProgression[currentScale] then
-                chordprog = chordProgression[currentScale][(rawnotes[1] % 12 - (currentScaleOffset - 1)) % 12 + 1]
+            if romanNumeralsTechnicalNames[currentScale] then
+                chordprog = romanNumeralsTechnicalNames[currentScale][(rawnotes[1] % 12 - (currentScaleOffset - 1)) % 12 + 1]
             end
             if #rawnotes == 2 and rawnotes[1] % 12 == rawnotes[2] % 12 then
                 chord = notesTable[rawnotes[1] % 12 + 1] .. " Octave"
@@ -4659,9 +4657,11 @@ local function handleKeyEvent(keyEvent)
                     local npos = renoise.SongPos()
                     npos.line = song.transport.edit_pos.line + steps
                     --do step sequencing
-                    if npos.line >= 1 and npos.line <= song.selected_pattern.number_of_lines + 1 then
-                        if stepSequencing(steps) and npos.line == song.selected_pattern.number_of_lines + 1 then
-                            npos.line = song.selected_pattern.number_of_lines
+                    if not song.transport.playing and math.abs(steps) == 1 then
+                        keyInfoText = keyInfoText .. ", do step sequencing ..."
+                        if stepSequencing(song.transport.edit_pos.line, steps) and steps < 0 and song.transport.edit_pos.line == song.selected_pattern.number_of_lines then
+                            print("no")
+                            npos.line = song.transport.edit_pos.line
                         end
                     end
                     --move cursor
@@ -6884,7 +6884,7 @@ local function createPianoRollDialog()
                                                 vb:bitmap {
                                                     bitmap = "Icons/Mixer_ShowDelay.bmp",
                                                     mode = "transparent",
-                                                    tooltip = "Roman numeral for chord progression",
+                                                    tooltip = "Roman numeral and technical name",
                                                 },
                                             },
                                             vb:space {
@@ -6892,7 +6892,7 @@ local function createPianoRollDialog()
                                             },
                                             vb:text {
                                                 id = "chordprog",
-                                                width = 20,
+                                                width = 160,
                                                 text = "-",
                                                 font = "bold",
                                                 style = "strong",
