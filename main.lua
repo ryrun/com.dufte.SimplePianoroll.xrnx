@@ -6727,21 +6727,6 @@ local function createPianoRollDialog()
                                                                 width = "100%",
                                                                 items = scaleTypes,
                                                                 bind = preferences.scaleHighlightingType,
-                                                                tooltip = "Switch current scale type\n(when ctrl is holded, the note switched too. eg. C Maj->A Min)",
-                                                                notifier = function(i)
-                                                                    if i == 3 and currentScale == 2 then
-                                                                        if app.key_modifier_states["control"] == "pressed" then
-                                                                            preferences.keyForSelectedScale.value = ((preferences.keyForSelectedScale.value - 1 + 9) % 12) + 1
-                                                                        end
-                                                                        currentScale = i
-                                                                    end
-                                                                    if i == 2 and currentScale == 3 then
-                                                                        if app.key_modifier_states["control"] == "pressed" then
-                                                                            preferences.keyForSelectedScale.value = ((preferences.keyForSelectedScale.value - 1 + 3) % 12) + 1
-                                                                        end
-                                                                        currentScale = i
-                                                                    end
-                                                                end
                                                             },
                                                             vbp:text {
                                                                 text = "Key for selected scale:",
