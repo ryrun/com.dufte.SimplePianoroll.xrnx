@@ -1427,13 +1427,12 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
     if #noteSelection == 0 then
         return false
     end
-
     --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
     if #noteSelection > 1 then
         if microsteps < 0 or snapSpecialGrid then
             --left one notes first
             table.sort(noteSelection, function(a, b)
-                return a.line + a.dly / 0x100 < b.line + a.dly / 0x100
+                return a.line + a.dly / 0x100 < b.line + b.dly / 0x100
             end)
         else
             --right one notes first
