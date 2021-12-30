@@ -2472,6 +2472,8 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
             end
         end
         jumpToNoteInPattern("sel")
+        --chord deteciton refresh needed too
+        refreshChordDetection = true
     end
     return refreshNeeded
 end
