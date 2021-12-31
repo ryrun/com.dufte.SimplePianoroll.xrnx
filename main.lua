@@ -7109,6 +7109,16 @@ tool:add_menu_entry {
     end
 }
 
+--add main function to context menu of pattern editor
+tool:add_menu_entry {
+    name = "Mixer:Edit with Simple Pianoroll ...",
+    invoke = function()
+        --focus pattern editor
+        app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_PATTERN_EDITOR
+        main_function()
+    end
+}
+
 --add main function to context menu of pattern matrix
 tool:add_menu_entry {
     name = "Pattern Matrix:Edit with Simple Pianoroll ...",
