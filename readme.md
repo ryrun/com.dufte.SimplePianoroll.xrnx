@@ -25,6 +25,7 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 * Show several tracker related effects like note cut, note retrigger, delay
 * Scale highlighting support (None, Minor scale, Major scale, Instrument scale, Automatic scale)
 * Many useful options to change the behavior for your own taste
+* Chord detection for playing and selected notes
 * Tool Updater support
 * And more...
 
