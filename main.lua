@@ -420,6 +420,28 @@ local stepPreview = false
 --table to save last playing note for qwerty playing
 local lastKeyboardNote = {}
 
+--default sort functions
+local function sortLeftOneFirst(a, b)
+    local x = a.line + a.dly / 0x100
+    local y = b.line + b.dly / 0x100
+    if x == y then
+        x = a.column
+        y = b.column
+    end
+    return x < y
+end
+
+local function sortRightOneFirst(a, b)
+    local x = a.line + a.len + a.end_dly / 0x100
+    local y = b.line + b.len + a.end_dly / 0x100
+    if x == y then
+        --flip x and y, because column order shouldn't changed
+        y = a.column
+        x = b.column
+    end
+    return x > y
+end
+
 --force value between and inclusive min/max values
 local function clamp(val, min, max)
     if min > max then
@@ -756,9 +778,7 @@ local function jumpToNoteInPattern(notedata)
     --jump to the first note in selection, when needed
     if type(notedata) == "string" and notedata == "sel" then
         if #noteSelection > 0 then
-            table.sort(noteSelection, function(a, b)
-                return a.line + a.dly / 0x100 < b.line + a.dly / 0x100
-            end)
+            table.sort(noteSelection, sortLeftOneFirst)
             notedata = noteSelection[1]
         else
             --no selection, dont do anything
@@ -1365,14 +1385,10 @@ local function moveSelectedNotes(steps)
     if #noteSelection > 1 then
         if steps < 0 then
             --left one notes first
-            table.sort(noteSelection, function(a, b)
-                return a.line < b.line
-            end)
+            table.sort(noteSelection, sortLeftOneFirst)
         else
             --right one notes first
-            table.sort(noteSelection, function(a, b)
-                return a.line + a.len > b.line + b.len
-            end)
+            table.sort(noteSelection, sortRightOneFirst)
         end
     end
     --disable edit mode and following to prevent side effects
@@ -1431,14 +1447,10 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
     if #noteSelection > 1 then
         if microsteps < 0 or snapSpecialGrid then
             --left one notes first
-            table.sort(noteSelection, function(a, b)
-                return a.line + a.dly / 0x100 < b.line + b.dly / 0x100
-            end)
+            table.sort(noteSelection, sortLeftOneFirst)
         else
             --right one notes first
-            table.sort(noteSelection, function(a, b)
-                return a.line + a.len + a.end_dly / 0x100 > b.line + b.len + a.end_dly / 0x100
-            end)
+            table.sort(noteSelection, sortRightOneFirst)
         end
     end
 
@@ -1648,19 +1660,11 @@ end
 local function scaleNoteSelection(times)
     setUndoDescription("Scale note selection ...")
     --get offset
-    table.sort(noteSelection, function(a, b)
-        return a.line < b.line
-    end)
+    table.sort(noteSelection, sortLeftOneFirst)
     local first_line = noteSelection[1].line
-    --change note order depends of sclaing or shrinking
+    --change note order depends of scaling or shrinking
     if times > 1 then
-        table.sort(noteSelection, function(a, b)
-            return a.line > b.line
-        end)
-    else
-        table.sort(noteSelection, function(a, b)
-            return a.line < b.line
-        end)
+        table.sort(noteSelection, sortRightOneFirst)
     end
     --go through selection
     for key = 1, #noteSelection do
@@ -1706,9 +1710,7 @@ local function chopSelectedNotes()
     local newSelection = {}
     setUndoDescription("Chop notes ...")
     --first notes first
-    table.sort(noteSelection, function(a, b)
-        return a.line < b.line
-    end)
+    table.sort(noteSelection, sortLeftOneFirst)
     --go through selection
     for key = 1, #noteSelection do
         if noteSelection[key].len > 1 then
@@ -1772,14 +1774,10 @@ local function duplicateSelectedNotes(noOffset)
     local offset
     local column
     --first notes first
-    table.sort(noteSelection, function(a, b)
-        return a.line < b.line
-    end)
+    table.sort(noteSelection, sortLeftOneFirst)
     offset = noteSelection[1].line
     --last notes first
-    table.sort(noteSelection, function(a, b)
-        return a.line > b.line
-    end)
+    table.sort(noteSelection, sortRightOneFirst)
     --get offset
     offset = (noteSelection[1].line + noteSelection[1].len) - offset
     --disable edit mode and following to prevent side effects
@@ -1907,9 +1905,7 @@ local function changeSizeSelectedNotes(len, add)
     local column
     local newLen = len
     --first notes first
-    table.sort(noteSelection, function(a, b)
-        return a.line < b.line
-    end)
+    table.sort(noteSelection, sortLeftOneFirst)
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     song.transport.follow_player = false
@@ -4525,9 +4521,7 @@ local function handleKeyEvent(keyEvent)
                     table.insert(clipboard, note_data)
                 end
                 --set paste cursor, to the first note
-                table.sort(clipboard, function(a, b)
-                    return a.line < b.line
-                end)
+                table.sort(clipboard, sortLeftOneFirst)
                 pasteCursor = { clipboard[1].line, clipboard[1].note }
                 --set status
                 showStatus(#noteSelection .. " notes cut.", true)
