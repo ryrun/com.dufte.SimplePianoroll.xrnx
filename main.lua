@@ -2737,6 +2737,8 @@ function pianoGridClick(x, y, released)
             local column
             local note_value
             local noteoff
+            local notesOnLine = {}
+            local note_data
             --move x by stepoffset
             x = x + stepOffset
             --check if current note length is too long for pattern size, reduce len if needed
@@ -2765,6 +2767,7 @@ function pianoGridClick(x, y, released)
                 currentNoteEndDelay = 0
                 currentNoteDelay = 0
             end
+            --pre check if there is enough space
             column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay, currentNoteEndDelay)
             --no column found
             if column == nil then
@@ -2773,7 +2776,23 @@ function pianoGridClick(x, y, released)
             end
             --
             setUndoDescription("Draw a note ...")
-            --add new note
+
+            --save all notes on current line
+            for key in pairs(noteData) do
+                note_data = noteData[key]
+                if note_data.line == x then
+                    table.insert(notesOnLine, key)
+                end
+            end
+
+            --remove notes on same line
+            for i = 1, #notesOnLine do
+                note_data = noteData[notesOnLine[i]]
+                removeNoteInPattern(note_data.column, note_data.line, note_data.len)
+            end
+
+            --add new note, so its the first one on line, better for legato porta
+            column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay, currentNoteEndDelay)
             note_value = gridOffset2NoteValue(y)
             noteoff = addNoteToPattern(
                     column,
@@ -2787,8 +2806,9 @@ function pianoGridClick(x, y, released)
                     currentNoteEndDelay,
                     currentNoteGhost
             )
-            --
-            local note_data = {
+
+            --create note data table
+            note_data = {
                 idx = tostring(x - stepOffset) .. "_" .. tostring(y) .. "_" .. tostring(column),
                 line = x,
                 step = x - stepOffset,
@@ -2803,12 +2823,40 @@ function pianoGridClick(x, y, released)
                 column = column,
                 ghst = currentNoteGhost
             }
+
             --trigger preview notes
             triggerNoteOfCurrentInstrument(note_data.note, nil, nil, true)
             --clear selection and add new note as new selection
             noteSelection = {}
             table.insert(noteSelection, note_data)
             jumpToNoteInPattern(note_data)
+
+            --add other notes on this line back
+            for i = 1, #notesOnLine do
+                note_data = noteData[notesOnLine[i]]
+                column = returnColumnWhenEnoughSpaceForNote(
+                        note_data.line,
+                        note_data.len,
+                        note_data.dly,
+                        note_data.end_dly
+                )
+                if column then
+                    note_data.column = column
+                end
+                note_data.noteoff = addNoteToPattern(
+                        note_data.column,
+                        note_data.line,
+                        note_data.len,
+                        note_data.note,
+                        note_data.vel,
+                        note_data.end_vel,
+                        note_data.pan,
+                        note_data.dly,
+                        note_data.end_dly,
+                        note_data.ghst
+                )
+                noteData[notesOnLine[i]] = note_data
+            end
             --
             refreshPianoRollNeeded = true
             refreshChordDetection = true
