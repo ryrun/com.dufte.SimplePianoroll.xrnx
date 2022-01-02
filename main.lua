@@ -2210,6 +2210,7 @@ local function stepSequencing(pos, steps)
     local column
     local newLen
     local notedata
+    setUndoDescription("Step sequencing notes ...")
     --search for notes on negative steps
     for note in pairs(notesPlaying) do
         --search for a note
@@ -2289,7 +2290,6 @@ local function stepSequencing(pos, steps)
         end
     end
     if refresh then
-        setUndoDescription("Step sequencing notes ...")
         refreshPianoRollNeeded = true
     end
     return refresh
