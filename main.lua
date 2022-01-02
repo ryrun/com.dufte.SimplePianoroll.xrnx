@@ -188,6 +188,7 @@ local defaultPreferences = {
     centerViewOnOpen = true,
     chordDetection = true,
     keyLabels = 2,
+    invisibleSelectMarker = false,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -256,6 +257,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     previewPolyphony = defaultPreferences.previewPolyphony,
     limitPreviewBySelectionSize = defaultPreferences.limitPreviewBySelectionSize,
     chordDetection = defaultPreferences.chordDetection,
+    invisibleSelectMarker = defaultPreferences.invisibleSelectMarker,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -280,6 +282,7 @@ local windowObj
 local windowContent
 local stepSlider
 local noteSlider
+local snapBackVal = { x = 1.01234, y = 1.01234 }
 
 --last step position for resetting the last step button
 local lastStepOn
@@ -4831,8 +4834,8 @@ local function handleXypad(val)
     local quickRefresh
     local forceFullRefresh
     --snap back
-    if (val.x == 1.01234 or val.y == 1.01234) then
-        if val.x == 1.01234 and val.y == 1.01234 and xypadpos.leftClick then
+    if (val.x == snapBackVal.x or val.y == snapBackVal.y) then
+        if val.x == snapBackVal.x and val.y == snapBackVal.y and xypadpos.leftClick then
             xypadpos.leftClick = false
             drawRectangle(false)
         end
@@ -5038,7 +5041,9 @@ local function handleXypad(val)
             if xypadpos.x ~= math.floor(val.x) or xypadpos.y ~= math.floor(val.y) then
                 xypadpos.x = math.floor(val.x)
                 xypadpos.y = math.floor(val.y)
-                drawRectangle(true, xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny)
+                if not preferences.invisibleSelectMarker.value then
+                    drawRectangle(true, xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny)
+                end
                 selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, keyShift)
             end
         end
@@ -5886,6 +5891,17 @@ local function showPreferences()
             },
             vbp:row {
                 vbp:checkbox {
+                    bind = preferences.invisibleSelectMarker,
+                    notifier = function()
+                        rebuildWindowDialog = true
+                    end
+                },
+                vbp:text {
+                    text = "Hide select marker, so mouse warping can still be used",
+                },
+            },
+            vbp:row {
+                vbp:checkbox {
                     bind = preferences.enableKeyInfo,
                 },
                 vbp:text {
@@ -5931,6 +5947,12 @@ local function showPreferences()
     end
     refreshControls = true
     refreshPianoRollNeeded = true
+    --when invisible is enabled, no snapback needed
+    if not preferences.invisibleSelectMarker.value and vbw["xypad"] then
+        vbw["xypad"].snapback = snapBackVal
+    else
+        vbw["xypad"].snapback = nil
+    end
     --apply new highlighting colors
     initColors()
     restoreFocus()
@@ -6791,7 +6813,6 @@ local function createPianoRollDialog()
                             width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)),
                             height = (gridStepSizeH - 3) * gridHeight,
                             min = { x = 1, y = 1 },
-                            snapback = { x = 1.01234, y = 1.01234 },
                             max = { x = gridWidth + 1, y = gridHeight + 1 },
                             notifier = function(val)
                                 handleXypad(val)
@@ -7053,6 +7074,11 @@ local function main_function()
             vb = renoise.ViewBuilder()
             vbw = vb.views
             createPianoRollDialog()
+        end
+
+        --when invisible is enabled, no snapback needed
+        if not preferences.invisibleSelectMarker.value then
+            vbw["xypad"].snapback = snapBackVal
         end
 
         --fill new created pianoroll, timeline and refresh controls
