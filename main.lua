@@ -1041,19 +1041,74 @@ local function removeNoteInPattern(column, line, len)
     return false
 end
 
---remove selected notes
+--remove selected notes, resort all other notes on same line and bring them to free columns
 local function removeSelectedNotes(cut)
+    local notesOnLine = {}
+    local note_data
+    local column
+    local lines = {}
+    --get all lines
+    for i = 1, #noteSelection do
+        lines[noteSelection[i].line] = 1
+    end
     --different undo description for cut
     if cut then
         setUndoDescription("Cut notes ...")
     else
         setUndoDescription("Delete notes ...")
     end
+    --save all notes on current line and remove them
+    for key in pairs(noteData) do
+        note_data = noteData[key]
+        for x in pairs(lines) do
+            if note_data.line == x and not noteInSelection(note_data) then
+                table.insert(notesOnLine, key)
+                removeNoteInPattern(note_data.column, note_data.line, note_data.len)
+                break
+            end
+        end
+    end
+    --sort notes by line and column
+    table.sort(notesOnLine, function(a, b)
+        local x = noteData[a].line
+        local y = noteData[b].line
+        if x == y then
+            x = noteData[a].column
+            y = noteData[b].column
+        end
+        return x < y
+    end)
     --loop through selected notes
     for i = 1, #noteSelection do
         removeNoteInPattern(noteSelection[i].column, noteSelection[i].line, noteSelection[i].len)
     end
     noteSelection = {}
+    --add other notes on this line back
+    for i = 1, #notesOnLine do
+        note_data = noteData[notesOnLine[i]]
+        column = returnColumnWhenEnoughSpaceForNote(
+                note_data.line,
+                note_data.len,
+                note_data.dly,
+                note_data.end_dly
+        )
+        if column then
+            note_data.column = column
+        end
+        note_data.noteoff = addNoteToPattern(
+                note_data.column,
+                note_data.line,
+                note_data.len,
+                note_data.note,
+                note_data.vel,
+                note_data.end_vel,
+                note_data.pan,
+                note_data.dly,
+                note_data.end_dly,
+                note_data.ghst
+        )
+        noteData[notesOnLine[i]] = note_data
+    end
     refreshPianoRollNeeded = true
 end
 
@@ -2776,21 +2831,18 @@ function pianoGridClick(x, y, released)
             end
             --
             setUndoDescription("Draw a note ...")
-
-            --save all notes on current line
+            --save all notes on current line and remove them
             for key in pairs(noteData) do
                 note_data = noteData[key]
                 if note_data.line == x then
                     table.insert(notesOnLine, key)
+                    removeNoteInPattern(note_data.column, note_data.line, note_data.len)
                 end
             end
-
-            --remove notes on same line
-            for i = 1, #notesOnLine do
-                note_data = noteData[notesOnLine[i]]
-                removeNoteInPattern(note_data.column, note_data.line, note_data.len)
-            end
-
+            --sort notes by column
+            table.sort(notesOnLine, function(a, b)
+                return noteData[a].column < noteData[b].column
+            end)
             --add new note, so its the first one on line, better for legato porta
             column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay, currentNoteEndDelay)
             note_value = gridOffset2NoteValue(y)
@@ -2806,7 +2858,6 @@ function pianoGridClick(x, y, released)
                     currentNoteEndDelay,
                     currentNoteGhost
             )
-
             --create note data table
             note_data = {
                 idx = tostring(x - stepOffset) .. "_" .. tostring(y) .. "_" .. tostring(column),
@@ -2823,14 +2874,12 @@ function pianoGridClick(x, y, released)
                 column = column,
                 ghst = currentNoteGhost
             }
-
             --trigger preview notes
             triggerNoteOfCurrentInstrument(note_data.note, nil, nil, true)
             --clear selection and add new note as new selection
             noteSelection = {}
             table.insert(noteSelection, note_data)
             jumpToNoteInPattern(note_data)
-
             --add other notes on this line back
             for i = 1, #notesOnLine do
                 note_data = noteData[notesOnLine[i]]
