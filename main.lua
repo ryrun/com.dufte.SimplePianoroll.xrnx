@@ -3189,7 +3189,6 @@ local function drawNoteToGrid(column,
                                 id = "b" .. current_note_index,
                                 height = gridStepSizeH,
                                 width = math.max(buttonWidth - buttonSpace - 1, math.max(1, preferences.minSizeOfNoteButton.value + preferences.clickAreaSizeForScalingPx.value)),
-                                visible = true,
                                 color = color,
                                 text = current_note_string,
                                 notifier = loadstring(current_note_param .. ",true)"),
@@ -3232,7 +3231,6 @@ local function drawNoteToGrid(column,
                             id = "bs" .. current_note_index,
                             height = gridStepSizeH,
                             width = preferences.clickAreaSizeForScalingPx.value,
-                            visible = true,
                             color = shadeColor(color, preferences.scaleBtnShadingAmount.value),
                             notifier = loadstring(current_note_param .. ",true,true)"),
                             pressed = loadstring(current_note_param .. ",false,true)")
@@ -3269,7 +3267,6 @@ local function drawNoteToGrid(column,
                                     vb:button {
                                         height = gridStepSizeH,
                                         width = 2,
-                                        visible = true,
                                         active = false,
                                     }
                                 }
@@ -5149,7 +5146,6 @@ local function handleXypad(val)
         blockLineModifier = false
         fillPianoRoll()
     elseif quickRefresh then
-        --fillPianoRoll(quickRefresh)
         refreshSelectedNotes()
     end
 end
@@ -7172,12 +7168,10 @@ local function main_function()
             vbw = vb.views
             createPianoRollDialog()
         end
-
         --when invisible is enabled, no snapback needed
         if not preferences.invisibleSelectMarker.value then
             vbw["xypad"].snapback = snapBackVal
         end
-
         --fill new created pianoroll, timeline and refresh controls
         refreshNoteControls()
         fillTimeline()
