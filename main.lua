@@ -5161,42 +5161,45 @@ local function showPreferences()
         vbp:column {
             style = "group",
             margin = 5,
-            uniform = true,
             spacing = 4,
             vbp:text {
                 text = "Piano roll grid",
                 font = "big",
                 style = "strong",
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Grid size:",
                 },
-                vbp:valuebox {
-                    steps = { 1, 2 },
-                    min = 16,
-                    max = 256,
-                    bind = preferences.gridWidth,
-                    notifier = function()
-                        rebuildWindowDialog = true
-                    end
-                },
-                vbp:text { text = "x", align = "center", },
-                vbp:valuebox {
-                    steps = { 1, 2 },
-                    min = 16,
-                    max = 64,
-                    bind = preferences.gridHeight,
-                    notifier = function()
-                        rebuildWindowDialog = true
-                    end
+                vb:row {
+                    vbp:valuebox {
+                        steps = { 1, 2 },
+                        min = 16,
+                        max = 256,
+                        bind = preferences.gridWidth,
+                        notifier = function()
+                            rebuildWindowDialog = true
+                        end
+                    },
+                    vbp:text { text = "x", align = "center", },
+                    vbp:valuebox {
+                        steps = { 1, 2 },
+                        min = 16,
+                        max = 64,
+                        bind = preferences.gridHeight,
+                        notifier = function()
+                            rebuildWindowDialog = true
+                        end
+                    },
                 },
             },
             vbp:text {
                 text = "Grid size settings takes effect,\nwhen the piano roll will be reopened.",
             },
             vbp:space { height = 8 },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Min size of a note button (px):",
                 },
@@ -5212,7 +5215,8 @@ local function showPreferences()
                     end
                 },
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Click area size for scaling (px):",
                 },
@@ -5230,7 +5234,8 @@ local function showPreferences()
                 },
             },
             vbp:space { height = 8 },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Shading amount of out of scale notes:",
                 },
@@ -5247,7 +5252,8 @@ local function showPreferences()
                     end
                 },
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Shading amount of odd bars:",
                 },
@@ -5264,7 +5270,8 @@ local function showPreferences()
                     end
                 },
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Shading amount for scale part of notes:",
                 },
@@ -5281,7 +5288,8 @@ local function showPreferences()
                     end
                 },
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Shading amount of root keys:",
                 },
@@ -5307,7 +5315,8 @@ local function showPreferences()
                     text = "Shading note color according to velocity",
                 },
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Shading mode type:",
                 },
@@ -5320,7 +5329,8 @@ local function showPreferences()
                     bind = preferences.shadingType,
                 },
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Shading / alpha blending amount:",
                 },
@@ -5346,7 +5356,8 @@ local function showPreferences()
                     text = "Highlight the entire row of a playing note (slow)",
                 },
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Highlighting amount:",
                 },
@@ -5364,8 +5375,8 @@ local function showPreferences()
                 },
             },
             vbp:space { height = 8 },
-            vbp:row {
-                uniform = true,
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Scale highlighting:",
                 },
@@ -5375,7 +5386,8 @@ local function showPreferences()
                     bind = preferences.scaleHighlightingType,
                 },
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Key for selected scale:",
                     width = "50%"
@@ -5385,7 +5397,8 @@ local function showPreferences()
                     bind = preferences.keyForSelectedScale,
                 },
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Keyboard style:",
                     width = "50%"
@@ -5398,7 +5411,8 @@ local function showPreferences()
                     bind = preferences.keyboardStyle,
                 },
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Key labels:",
                     width = "50%"
@@ -5417,7 +5431,6 @@ local function showPreferences()
         vbp:column {
             style = "group",
             margin = 5,
-            uniform = true,
             spacing = 4,
             vbp:text {
                 text = "Color settings",
@@ -5440,7 +5453,9 @@ local function showPreferences()
                     text = "Use track color for note color",
                 },
             },
-            vbp:row {
+            vbp:space { height = 8 },
+            vbp:horizontal_aligner {
+                mode = "right",
                 vbp:text {
                     text = "Base grid:",
                     width = 104,
@@ -5460,7 +5475,8 @@ local function showPreferences()
                     color = colorBaseGridColor,
                 }
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "right",
                 vbp:text {
                     text = "Ghost track note:",
                     width = 104,
@@ -5480,7 +5496,8 @@ local function showPreferences()
                     color = colorGhostTrackNote,
                 }
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "right",
                 vbp:text {
                     text = "Note:",
                     width = 104,
@@ -5500,7 +5517,8 @@ local function showPreferences()
                     color = colorNote,
                 }
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "right",
                 vbp:text {
                     text = "Ghost note:",
                     width = 104,
@@ -5520,7 +5538,8 @@ local function showPreferences()
                     color = colorNoteGhost,
                 }
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "right",
                 vbp:text {
                     text = "Highlighting note:",
                     width = 104,
@@ -5540,7 +5559,8 @@ local function showPreferences()
                     color = colorNoteHighlight,
                 }
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "right",
                 vbp:text {
                     text = "Muted note:",
                     width = 104,
@@ -5560,7 +5580,8 @@ local function showPreferences()
                     color = colorNoteMuted,
                 }
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "right",
                 vbp:text {
                     text = "Selected note:",
                     width = 104,
@@ -5580,7 +5601,8 @@ local function showPreferences()
                     color = colorNoteSelected,
                 }
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "right",
                 vbp:text {
                     text = "Step on / Active btn:",
                     width = 104,
@@ -5600,7 +5622,8 @@ local function showPreferences()
                     color = colorStepOn,
                 }
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "right",
                 vbp:text {
                     text = "Step off:",
                     width = 104,
@@ -5620,7 +5643,8 @@ local function showPreferences()
                     color = colorStepOff,
                 }
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "right",
                 vbp:text {
                     text = "Keyboard list:",
                     width = 104,
@@ -5640,7 +5664,8 @@ local function showPreferences()
                     color = colorList,
                 }
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "right",
                 vbp:text {
                     text = "Keyboard white key:",
                     width = 104,
@@ -5660,7 +5685,8 @@ local function showPreferences()
                     color = colorKeyWhite,
                 }
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "right",
                 vbp:text {
                     text = "Keyboard black key:",
                     width = 104,
@@ -5680,7 +5706,8 @@ local function showPreferences()
                     color = colorKeyBlack,
                 }
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "right",
                 vbp:text {
                     text = "Vol button:",
                     width = 104,
@@ -5700,7 +5727,8 @@ local function showPreferences()
                     color = colorVelocity,
                 }
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "right",
                 vbp:text {
                     text = "Pan button:",
                     width = 104,
@@ -5720,7 +5748,8 @@ local function showPreferences()
                     color = colorPan,
                 }
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "right",
                 vbp:text {
                     text = "Dly button:",
                     width = 104,
@@ -5749,7 +5778,6 @@ local function showPreferences()
         vbp:column {
             style = "group",
             margin = 5,
-            uniform = true,
             spacing = 4,
             vbp:text {
                 text = "Note playback and preview",
@@ -5780,7 +5808,8 @@ local function showPreferences()
                     text = "No note preview during song playback",
                 },
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Note preview polyphony:",
                 },
@@ -5799,7 +5828,8 @@ local function showPreferences()
                     text = "Reduce preview polyphony to selection size",
                 },
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Note preview length (ms):",
                 },
@@ -5815,6 +5845,7 @@ local function showPreferences()
             },
             vbp:textfield {
                 bind = preferences.oscConnectionString,
+                width = "100%",
             },
             vbp:text {
                 text = "Please check in the Renoise preferences in the OSC\n" ..
@@ -5826,14 +5857,14 @@ local function showPreferences()
         vbp:column {
             style = "group",
             margin = 5,
-            uniform = true,
             spacing = 4,
             vbp:text {
                 text = "Misc",
                 font = "big",
                 style = "strong",
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Max double click time (ms):",
                 },
@@ -5844,7 +5875,8 @@ local function showPreferences()
                     bind = preferences.dblClickTime,
                 },
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Scroll wheel speed (lines):",
                 },
@@ -5861,7 +5893,8 @@ local function showPreferences()
                     end
                 },
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Snap to grid amount for scaling (%):",
                 },
@@ -6001,7 +6034,8 @@ local function showPreferences()
                     text = "Show current pressed keyboard keys in the status bar",
                 },
             },
-            vbp:row {
+            vbp:horizontal_aligner {
+                mode = "justify",
                 vbp:text {
                     text = "Max display time of status bar text (s):",
                 },
