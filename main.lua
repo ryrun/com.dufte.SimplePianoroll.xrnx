@@ -7363,3 +7363,19 @@ tool:add_keybinding {
         app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_MIXER
     end
 }
+
+tool:add_menu_entry {
+    name = "Main Menu:Tools:Simple Pianoroll:Open Simple Pianoroll ...",
+    invoke = function()
+        if not windowObj or not windowObj.visible then
+            main_function()
+        end
+    end
+}
+
+tool:add_menu_entry {
+    name = "Main Menu:Tools:Simple Pianoroll:Preferences ...",
+    invoke = function()
+        showPreferences()
+    end
+}
