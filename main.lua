@@ -1,9 +1,17 @@
 --some basic renoise vars for reuse
 local app = renoise.app()
 local tool = renoise.tool()
+local song
+
+--viewbuilder for pianoroll dialog
 local vb
 local vbw
-local song
+--viewbuilder for preferences and set scale
+local vbp = renoise.ViewBuilder()
+local vbwp = vbp.views
+--viewbuilder content
+local preferencesContent
+local setScaleContent
 
 --load manifest for fetching versionnumber
 local manifest = renoise.Document.create("RenoiseScriptingTool") {
@@ -5150,913 +5158,951 @@ local function handleXypad(val)
     end
 end
 
---preferences window
-local function showPreferences()
-    local vbp = renoise.ViewBuilder()
-    local vbwp = vbp.views
-    local btn = app:show_custom_prompt("Preferences", vbp:row {
-        uniform = true,
-        margin = 5,
-        spacing = 5,
-        vbp:column {
-            style = "group",
+--setscale window
+local function showSetScaleDialog()
+    if setScaleContent == nil then
+        setScaleContent = vbp:row {
+            uniform = true,
             margin = 5,
-            spacing = 4,
-            vbp:text {
-                text = "Piano roll grid",
-                font = "big",
-                style = "strong",
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Grid size:",
-                },
-                vb:row {
-                    vbp:valuebox {
-                        steps = { 1, 2 },
-                        min = 16,
-                        max = 256,
-                        bind = preferences.gridWidth,
-                        notifier = function()
-                            rebuildWindowDialog = true
-                        end
-                    },
-                    vbp:text { text = "x", align = "center", },
-                    vbp:valuebox {
-                        steps = { 1, 2 },
-                        min = 16,
-                        max = 64,
-                        bind = preferences.gridHeight,
-                        notifier = function()
-                            rebuildWindowDialog = true
-                        end
-                    },
-                },
-            },
-            vbp:text {
-                text = "Grid size settings takes effect,\nwhen the piano roll will be reopened.",
-            },
-            vbp:space { height = 8 },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Min size of a note button (px):",
-                },
-                vbp:valuebox {
-                    min = 2,
-                    max = 16,
-                    bind = preferences.minSizeOfNoteButton,
-                    tostring = function(v)
-                        return string.format("%i", v)
-                    end,
-                    tonumber = function(v)
-                        return tonumber(v)
-                    end
-                },
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Click area size for scaling (px):",
-                },
-                vbp:valuebox {
-                    steps = { 1, 2 },
-                    min = 6,
-                    max = 15,
-                    bind = preferences.clickAreaSizeForScalingPx,
-                    tostring = function(v)
-                        return string.format("%i", v)
-                    end,
-                    tonumber = function(v)
-                        return tonumber(v)
-                    end
-                },
-            },
-            vbp:space { height = 8 },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Shading amount of out of scale notes:",
-                },
-                vbp:valuebox {
-                    steps = { 0.01, 0.1 },
-                    min = 0,
-                    max = 1,
-                    bind = preferences.outOfNoteScaleShadingAmount,
-                    tostring = function(v)
-                        return string.format("%.2f", v)
-                    end,
-                    tonumber = function(v)
-                        return tonumber(v)
-                    end
-                },
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Shading amount of odd bars:",
-                },
-                vbp:valuebox {
-                    steps = { 0.01, 0.1 },
-                    min = 0,
-                    max = 1,
-                    bind = preferences.oddBarsShadingAmount,
-                    tostring = function(v)
-                        return string.format("%.2f", v)
-                    end,
-                    tonumber = function(v)
-                        return tonumber(v)
-                    end
-                },
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Shading amount for scale part of notes:",
-                },
-                vbp:valuebox {
-                    steps = { 0.01, 0.1 },
-                    min = 0,
-                    max = 1,
-                    bind = preferences.scaleBtnShadingAmount,
-                    tostring = function(v)
-                        return string.format("%.2f", v)
-                    end,
-                    tonumber = function(v)
-                        return tonumber(v)
-                    end
-                },
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Shading amount of root keys:",
-                },
-                vbp:valuebox {
-                    steps = { 0.01, 0.1 },
-                    min = 0,
-                    max = 1,
-                    bind = preferences.rootKeyShadingAmount,
-                    tostring = function(v)
-                        return string.format("%.2f", v)
-                    end,
-                    tonumber = function(v)
-                        return tonumber(v)
-                    end
-                },
-            },
-            vbp:space { height = 8 },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.applyVelocityColorShading
-                },
-                vbp:text {
-                    text = "Shading note color according to velocity",
-                },
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Shading mode type:",
-                },
-                vbp:popup {
-                    width = 110,
-                    items = {
-                        "Shading",
-                        "Alpha blending",
-                    },
-                    bind = preferences.shadingType,
-                },
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Shading / alpha blending amount:",
-                },
-                vbp:valuebox {
-                    steps = { 0.01, 0.1 },
-                    min = 0,
-                    max = 1,
-                    bind = preferences.velocityColorShadingAmount,
-                    tostring = function(v)
-                        return string.format("%.2f", v)
-                    end,
-                    tonumber = function(v)
-                        return tonumber(v)
-                    end
-                },
-            },
-            vbp:space { height = 8 },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.highlightEntireLineOfPlayingNote
-                },
-                vbp:text {
-                    text = "Highlight the entire row of a playing note (slow)",
-                },
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Highlighting amount:",
-                },
-                vbp:valuebox {
-                    steps = { 0.01, 0.1 },
-                    min = 0,
-                    max = 1,
-                    bind = preferences.rowHighlightingAmount,
-                    tostring = function(v)
-                        return string.format("%.2f", v)
-                    end,
-                    tonumber = function(v)
-                        return tonumber(v)
-                    end
-                },
-            },
-            vbp:space { height = 8 },
-            vbp:horizontal_aligner {
-                mode = "justify",
+            spacing = 5,
+            vbp:column {
+                style = "group",
+                margin = 5,
+                uniform = true,
+                spacing = 4,
+                width = 432,
                 vbp:text {
                     text = "Scale highlighting:",
                 },
-                vbp:popup {
-                    width = 110,
+                vbp:switch {
+                    width = "100%",
                     items = scaleTypes,
                     bind = preferences.scaleHighlightingType,
+                    notifier = function()
+                        if app.key_modifier_states["control"] == "pressed" then
+                            if preferences.scaleHighlightingType.value == 2 then
+                                vbwp["setscalekey"].value = ((vbwp["setscalekey"].value + 2) % 12) + 1
+                            elseif preferences.scaleHighlightingType.value == 3 then
+                                vbwp["setscalekey"].value = ((vbwp["setscalekey"].value - 4) % 12) + 1
+                            end
+                        end
+
+                    end,
+                    tooltip = "When ctrl is holded, it also switch the key (C Maj -> A Min)",
                 },
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
                 vbp:text {
                     text = "Key for selected scale:",
-                    width = "50%"
                 },
-                vbp:popup {
+                vbp:switch {
+                    width = "100%",
+                    id = "setscalekey",
                     items = notesTable,
                     bind = preferences.keyForSelectedScale,
                 },
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
+            } }
+    end
+    app:show_custom_prompt("Scale highlighting",
+            setScaleContent, { "Ok" })
+    refreshPianoRollNeeded = true
+    restoreFocus()
+end
+
+--preferences window
+local function showPreferences()
+    local btn
+    if preferencesContent == nil then
+        preferencesContent = vbp:row {
+            uniform = true,
+            margin = 5,
+            spacing = 5,
+            vbp:column {
+                style = "group",
+                margin = 5,
+                spacing = 4,
                 vbp:text {
-                    text = "Keyboard style:",
-                    width = "50%"
+                    text = "Piano roll grid",
+                    font = "big",
+                    style = "strong",
                 },
-                vbp:popup {
-                    items = {
-                        "Flat",
-                        "List",
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Grid size:",
                     },
-                    bind = preferences.keyboardStyle,
-                },
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Key labels:",
-                    width = "50%"
-                },
-                vbp:popup {
-                    items = {
-                        "None",
-                        "Root notes",
-                        "In scale",
-                        "All notes",
+                    vb:row {
+                        vbp:valuebox {
+                            steps = { 1, 2 },
+                            min = 16,
+                            max = 256,
+                            bind = preferences.gridWidth,
+                            notifier = function()
+                                rebuildWindowDialog = true
+                            end
+                        },
+                        vbp:text { text = "x", align = "center", },
+                        vbp:valuebox {
+                            steps = { 1, 2 },
+                            min = 16,
+                            max = 64,
+                            bind = preferences.gridHeight,
+                            notifier = function()
+                                rebuildWindowDialog = true
+                            end
+                        },
                     },
-                    bind = preferences.keyLabels,
-                },
-            },
-        },
-        vbp:column {
-            style = "group",
-            margin = 5,
-            spacing = 4,
-            vbp:text {
-                text = "Color settings",
-                font = "big",
-                style = "strong",
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.useTrackColorForNoteHighlighting
                 },
                 vbp:text {
-                    text = "Use track color for note highlighting",
+                    text = "Grid size settings takes effect,\nwhen the piano roll will be reopened.",
                 },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.useTrackColorForNoteColor
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Min size of a note button (px):",
+                    },
+                    vbp:valuebox {
+                        min = 2,
+                        max = 16,
+                        bind = preferences.minSizeOfNoteButton,
+                        tostring = function(v)
+                            return string.format("%i", v)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v)
+                        end
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Click area size for scaling (px):",
+                    },
+                    vbp:valuebox {
+                        steps = { 1, 2 },
+                        min = 6,
+                        max = 15,
+                        bind = preferences.clickAreaSizeForScalingPx,
+                        tostring = function(v)
+                            return string.format("%i", v)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v)
+                        end
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Shading amount of out of scale notes:",
+                    },
+                    vbp:valuebox {
+                        steps = { 0.01, 0.1 },
+                        min = 0,
+                        max = 1,
+                        bind = preferences.outOfNoteScaleShadingAmount,
+                        tostring = function(v)
+                            return string.format("%.2f", v)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v)
+                        end
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Shading amount of odd bars:",
+                    },
+                    vbp:valuebox {
+                        steps = { 0.01, 0.1 },
+                        min = 0,
+                        max = 1,
+                        bind = preferences.oddBarsShadingAmount,
+                        tostring = function(v)
+                            return string.format("%.2f", v)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v)
+                        end
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Shading amount for scale part of notes:",
+                    },
+                    vbp:valuebox {
+                        steps = { 0.01, 0.1 },
+                        min = 0,
+                        max = 1,
+                        bind = preferences.scaleBtnShadingAmount,
+                        tostring = function(v)
+                            return string.format("%.2f", v)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v)
+                        end
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Shading amount of root keys:",
+                    },
+                    vbp:valuebox {
+                        steps = { 0.01, 0.1 },
+                        min = 0,
+                        max = 1,
+                        bind = preferences.rootKeyShadingAmount,
+                        tostring = function(v)
+                            return string.format("%.2f", v)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v)
+                        end
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.applyVelocityColorShading
+                    },
+                    vbp:text {
+                        text = "Shading note color according to velocity",
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Shading mode type:",
+                    },
+                    vbp:popup {
+                        width = 110,
+                        items = {
+                            "Shading",
+                            "Alpha blending",
+                        },
+                        bind = preferences.shadingType,
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Shading / alpha blending amount:",
+                    },
+                    vbp:valuebox {
+                        steps = { 0.01, 0.1 },
+                        min = 0,
+                        max = 1,
+                        bind = preferences.velocityColorShadingAmount,
+                        tostring = function(v)
+                            return string.format("%.2f", v)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v)
+                        end
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.highlightEntireLineOfPlayingNote
+                    },
+                    vbp:text {
+                        text = "Highlight the entire row of a playing note (slow)",
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Highlighting amount:",
+                    },
+                    vbp:valuebox {
+                        steps = { 0.01, 0.1 },
+                        min = 0,
+                        max = 1,
+                        bind = preferences.rowHighlightingAmount,
+                        tostring = function(v)
+                            return string.format("%.2f", v)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v)
+                        end
+                    },
+                },
+                vbp:space {
+                    height = 8,
                 },
                 vbp:text {
-                    text = "Use track color for note color",
+                    text = "Scale and virtual piano keyboard",
+                    font = "big",
+                    style = "strong",
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Scale highlighting:",
+                    },
+                    vbp:popup {
+                        width = 110,
+                        items = scaleTypes,
+                        bind = preferences.scaleHighlightingType,
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Key for selected scale:",
+                        width = "50%"
+                    },
+                    vbp:popup {
+                        items = notesTable,
+                        bind = preferences.keyForSelectedScale,
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Keyboard style:",
+                        width = "50%"
+                    },
+                    vbp:popup {
+                        items = {
+                            "Flat",
+                            "List",
+                        },
+                        bind = preferences.keyboardStyle,
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Key labels:",
+                        width = "50%"
+                    },
+                    vbp:popup {
+                        items = {
+                            "None",
+                            "Root notes",
+                            "In scale",
+                            "All notes",
+                        },
+                        bind = preferences.keyLabels,
+                    },
                 },
             },
-            vbp:space { height = 8 },
-            vbp:horizontal_aligner {
-                mode = "right",
+            vbp:column {
+                style = "group",
+                margin = 5,
+                spacing = 4,
                 vbp:text {
-                    text = "Base grid:",
-                    width = 104,
-                    align = "right",
+                    text = "Color settings",
+                    font = "big",
+                    style = "strong",
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.useTrackColorForNoteHighlighting
+                    },
+                    vbp:text {
+                        text = "Use track color for note highlighting",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.useTrackColorForNoteColor
+                    },
+                    vbp:text {
+                        text = "Use track color for note color",
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Base grid:",
+                    },
+                    vb:row {
+                        vbp:textfield {
+                            id = "colorBaseGridColorField",
+                            bind = preferences.colorBaseGridColor,
+                            notifier = function()
+                                initColors()
+                                vbwp.colorBaseGridColor.color = colorBaseGridColor
+                                vbwp.colorBaseGridColorField.value = convertColorValueToString(colorBaseGridColor)
+                            end
+                        },
+                        vbp:button {
+                            id = "colorBaseGridColor",
+                            color = colorBaseGridColor,
+                        }, },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Ghost track note:",
+                    },
+                    vb:row {
+                        vbp:textfield {
+                            id = "colorGhostTrackNoteField",
+                            bind = preferences.colorGhostTrackNote,
+                            notifier = function()
+                                initColors()
+                                vbwp.colorGhostTrackNote.color = colorGhostTrackNote
+                                vbwp.colorGhostTrackNoteField.value = convertColorValueToString(colorGhostTrackNote)
+                            end
+                        },
+                        vbp:button {
+                            id = "colorGhostTrackNote",
+                            color = colorGhostTrackNote,
+                        }, },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Note:",
+                    },
+                    vb:row {
+                        vbp:textfield {
+                            id = "colorNoteField",
+                            bind = preferences.colorNote,
+                            notifier = function()
+                                initColors()
+                                vbwp.colorNote.color = colorNote
+                                vbwp.colorNoteField.value = convertColorValueToString(colorNote)
+                            end
+                        },
+                        vbp:button {
+                            id = "colorNote",
+                            color = colorNote,
+                        }, },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Ghost note:",
+                    },
+                    vb:row {
+                        vbp:textfield {
+                            id = "colorNoteGhostField",
+                            bind = preferences.colorNoteGhost,
+                            notifier = function()
+                                initColors()
+                                vbwp.colorNoteGhost.color = colorNoteGhost
+                                vbwp.colorNoteGhostField.value = convertColorValueToString(colorNoteGhost)
+                            end
+                        },
+                        vbp:button {
+                            id = "colorNoteGhost",
+                            color = colorNoteGhost,
+                        }, },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Highlighting note:",
+                    },
+                    vb:row {
+                        vbp:textfield {
+                            id = "colorNoteHighlightField",
+                            bind = preferences.colorNoteHighlight,
+                            notifier = function()
+                                initColors()
+                                vbwp.colorNoteHighlight.color = colorNoteHighlight
+                                vbwp.colorNoteHighlightField.value = convertColorValueToString(colorNoteHighlight)
+                            end
+                        },
+                        vbp:button {
+                            id = "colorNoteHighlight",
+                            color = colorNoteHighlight,
+                        }, },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Muted note:",
+                    },
+                    vb:row {
+                        vbp:textfield {
+                            id = "colorNoteMutedField",
+                            bind = preferences.colorNoteMuted,
+                            notifier = function()
+                                initColors()
+                                vbwp.colorNoteMuted.color = colorNoteMuted
+                                vbwp.colorNoteMutedField.value = convertColorValueToString(colorNoteMuted)
+                            end
+                        },
+                        vbp:button {
+                            id = "colorNoteMuted",
+                            color = colorNoteMuted,
+                        }, },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Selected note:",
+                    },
+                    vb:row {
+                        vbp:textfield {
+                            id = "colorNoteSelectedField",
+                            bind = preferences.colorNoteSelected,
+                            notifier = function()
+                                initColors()
+                                vbwp.colorNoteSelected.color = colorNoteSelected
+                                vbwp.colorNoteSelectedField.value = convertColorValueToString(colorNoteSelected)
+                            end
+                        },
+                        vbp:button {
+                            id = "colorNoteSelected",
+                            color = colorNoteSelected,
+                        }, },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Step on / Active btn:",
+                    },
+                    vb:row {
+                        vbp:textfield {
+                            id = "colorStepOnField",
+                            bind = preferences.colorStepOn,
+                            notifier = function()
+                                initColors()
+                                vbwp.colorStepOn.color = colorStepOn
+                                vbwp.colorStepOnField.value = convertColorValueToString(colorStepOn)
+                            end
+                        },
+                        vbp:button {
+                            id = "colorStepOn",
+                            color = colorStepOn,
+                        }, },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Step off:",
+                    },
+                    vb:row {
+                        vbp:textfield {
+                            id = "colorStepOffField",
+                            bind = preferences.colorStepOff,
+                            notifier = function()
+                                initColors()
+                                vbwp.colorStepOff.color = colorStepOff
+                                vbwp.colorStepOffField.value = convertColorValueToString(colorStepOff)
+                            end
+                        },
+                        vbp:button {
+                            id = "colorStepOff",
+                            color = colorStepOff,
+                        }, },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Keyboard list:",
+                    },
+                    vb:row {
+                        vbp:textfield {
+                            id = "colorListField",
+                            bind = preferences.colorList,
+                            notifier = function()
+                                initColors()
+                                vbwp.colorList.color = colorList
+                                vbwp.colorListField.value = convertColorValueToString(colorList)
+                            end
+                        },
+                        vbp:button {
+                            id = "colorList",
+                            color = colorList,
+                        }, },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Keyboard white key:",
+                    },
+                    vb:row {
+                        vbp:textfield {
+                            id = "colorKeyWhiteField",
+                            bind = preferences.colorKeyWhite,
+                            notifier = function()
+                                initColors()
+                                vbwp.colorKeyWhite.color = colorKeyWhite
+                                vbwp.colorKeyWhiteField.value = convertColorValueToString(colorKeyWhite)
+                            end
+                        },
+                        vbp:button {
+                            id = "colorKeyWhite",
+                            color = colorKeyWhite,
+                        }, },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Keyboard black key:",
+                    },
+                    vb:row {
+                        vbp:textfield {
+                            id = "colorKeyBlackField",
+                            bind = preferences.colorKeyBlack,
+                            notifier = function()
+                                initColors()
+                                vbwp.colorKeyBlack.color = colorKeyBlack
+                                vbwp.colorKeyBlackField.value = convertColorValueToString(colorKeyBlack)
+                            end
+                        },
+                        vbp:button {
+                            id = "colorKeyBlack",
+                            color = colorKeyBlack,
+                        }, },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Vol button:",
+                    },
+                    vb:row {
+                        vbp:textfield {
+                            id = "colorVelocityField",
+                            bind = preferences.colorVelocity,
+                            notifier = function()
+                                initColors()
+                                vbwp.colorVelocity.color = colorVelocity
+                                vbwp.colorVelocityField.value = convertColorValueToString(colorVelocity)
+                            end
+                        },
+                        vbp:button {
+                            id = "colorVelocity",
+                            color = colorVelocity,
+                        }, },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Pan button:",
+                    },
+                    vb:row {
+                        vbp:textfield {
+                            id = "colorPanField",
+                            bind = preferences.colorPan,
+                            notifier = function()
+                                initColors()
+                                vbwp.colorPan.color = colorPan
+                                vbwp.colorPanField.value = convertColorValueToString(colorPan)
+                            end
+                        },
+                        vbp:button {
+                            id = "colorPan",
+                            color = colorPan,
+                        }, },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Dly button:",
+                    },
+                    vb:row {
+                        vbp:textfield {
+                            id = "colorDelayField",
+                            bind = preferences.colorDelay,
+                            notifier = function()
+                                initColors()
+                                vbwp.colorDelay.color = colorDelay
+                                vbwp.colorDelayField.value = convertColorValueToString(colorDelay)
+                            end
+                        },
+                        vbp:button {
+                            id = "colorDelay",
+                            color = colorDelay,
+                        }, },
+                },
+                vbp:text {
+                    text = "IMPORTANT: Please note that color #000000\n" ..
+                            "will use the default control theme color. It's a\n" ..
+                            "Renoise Viewbuilder restriction, which can't be\n" .. "changed, yet."
+                },
+            },
+            vbp:column {
+                style = "group",
+                margin = 5,
+                spacing = 4,
+                vbp:text {
+                    text = "Note playback and preview",
+                    font = "big",
+                    style = "strong",
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.enableOSCClient
+                    },
+                    vbp:text {
+                        text = "Enable OSC client",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.notePreview
+                    },
+                    vbp:text {
+                        text = "Enable note preview",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.noNotePreviewDuringSongPlayback,
+                    },
+                    vbp:text {
+                        text = "No note preview during song playback",
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Note preview polyphony:",
+                    },
+                    vbp:valuebox {
+                        steps = { 1, 2 },
+                        min = 1,
+                        max = 32,
+                        bind = preferences.previewPolyphony,
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.limitPreviewBySelectionSize,
+                    },
+                    vbp:text {
+                        text = "Reduce preview polyphony to selection size",
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Note preview length (ms):",
+                    },
+                    vbp:valuebox {
+                        steps = { 1, 2 },
+                        min = 50,
+                        max = 2000,
+                        bind = preferences.triggerTime,
+                    },
+                },
+                vbp:text {
+                    text = "OSC connection string: [protocol]://[ip]:[port]",
                 },
                 vbp:textfield {
-                    id = "colorBaseGridColorField",
-                    bind = preferences.colorBaseGridColor,
-                    notifier = function()
-                        initColors()
-                        vbwp.colorBaseGridColor.color = colorBaseGridColor
-                        vbwp.colorBaseGridColorField.value = convertColorValueToString(colorBaseGridColor)
-                    end
-                },
-                vbp:button {
-                    id = "colorBaseGridColor",
-                    color = colorBaseGridColor,
-                }
-            },
-            vbp:horizontal_aligner {
-                mode = "right",
-                vbp:text {
-                    text = "Ghost track note:",
-                    width = 104,
-                    align = "right",
-                },
-                vbp:textfield {
-                    id = "colorGhostTrackNoteField",
-                    bind = preferences.colorGhostTrackNote,
-                    notifier = function()
-                        initColors()
-                        vbwp.colorGhostTrackNote.color = colorGhostTrackNote
-                        vbwp.colorGhostTrackNoteField.value = convertColorValueToString(colorGhostTrackNote)
-                    end
-                },
-                vbp:button {
-                    id = "colorGhostTrackNote",
-                    color = colorGhostTrackNote,
-                }
-            },
-            vbp:horizontal_aligner {
-                mode = "right",
-                vbp:text {
-                    text = "Note:",
-                    width = 104,
-                    align = "right",
-                },
-                vbp:textfield {
-                    id = "colorNoteField",
-                    bind = preferences.colorNote,
-                    notifier = function()
-                        initColors()
-                        vbwp.colorNote.color = colorNote
-                        vbwp.colorNoteField.value = convertColorValueToString(colorNote)
-                    end
-                },
-                vbp:button {
-                    id = "colorNote",
-                    color = colorNote,
-                }
-            },
-            vbp:horizontal_aligner {
-                mode = "right",
-                vbp:text {
-                    text = "Ghost note:",
-                    width = 104,
-                    align = "right",
-                },
-                vbp:textfield {
-                    id = "colorNoteGhostField",
-                    bind = preferences.colorNoteGhost,
-                    notifier = function()
-                        initColors()
-                        vbwp.colorNoteGhost.color = colorNoteGhost
-                        vbwp.colorNoteGhostField.value = convertColorValueToString(colorNoteGhost)
-                    end
-                },
-                vbp:button {
-                    id = "colorNoteGhost",
-                    color = colorNoteGhost,
-                }
-            },
-            vbp:horizontal_aligner {
-                mode = "right",
-                vbp:text {
-                    text = "Highlighting note:",
-                    width = 104,
-                    align = "right",
-                },
-                vbp:textfield {
-                    id = "colorNoteHighlightField",
-                    bind = preferences.colorNoteHighlight,
-                    notifier = function()
-                        initColors()
-                        vbwp.colorNoteHighlight.color = colorNoteHighlight
-                        vbwp.colorNoteHighlightField.value = convertColorValueToString(colorNoteHighlight)
-                    end
-                },
-                vbp:button {
-                    id = "colorNoteHighlight",
-                    color = colorNoteHighlight,
-                }
-            },
-            vbp:horizontal_aligner {
-                mode = "right",
-                vbp:text {
-                    text = "Muted note:",
-                    width = 104,
-                    align = "right",
-                },
-                vbp:textfield {
-                    id = "colorNoteMutedField",
-                    bind = preferences.colorNoteMuted,
-                    notifier = function()
-                        initColors()
-                        vbwp.colorNoteMuted.color = colorNoteMuted
-                        vbwp.colorNoteMutedField.value = convertColorValueToString(colorNoteMuted)
-                    end
-                },
-                vbp:button {
-                    id = "colorNoteMuted",
-                    color = colorNoteMuted,
-                }
-            },
-            vbp:horizontal_aligner {
-                mode = "right",
-                vbp:text {
-                    text = "Selected note:",
-                    width = 104,
-                    align = "right",
-                },
-                vbp:textfield {
-                    id = "colorNoteSelectedField",
-                    bind = preferences.colorNoteSelected,
-                    notifier = function()
-                        initColors()
-                        vbwp.colorNoteSelected.color = colorNoteSelected
-                        vbwp.colorNoteSelectedField.value = convertColorValueToString(colorNoteSelected)
-                    end
-                },
-                vbp:button {
-                    id = "colorNoteSelected",
-                    color = colorNoteSelected,
-                }
-            },
-            vbp:horizontal_aligner {
-                mode = "right",
-                vbp:text {
-                    text = "Step on / Active btn:",
-                    width = 104,
-                    align = "right",
-                },
-                vbp:textfield {
-                    id = "colorStepOnField",
-                    bind = preferences.colorStepOn,
-                    notifier = function()
-                        initColors()
-                        vbwp.colorStepOn.color = colorStepOn
-                        vbwp.colorStepOnField.value = convertColorValueToString(colorStepOn)
-                    end
-                },
-                vbp:button {
-                    id = "colorStepOn",
-                    color = colorStepOn,
-                }
-            },
-            vbp:horizontal_aligner {
-                mode = "right",
-                vbp:text {
-                    text = "Step off:",
-                    width = 104,
-                    align = "right",
-                },
-                vbp:textfield {
-                    id = "colorStepOffField",
-                    bind = preferences.colorStepOff,
-                    notifier = function()
-                        initColors()
-                        vbwp.colorStepOff.color = colorStepOff
-                        vbwp.colorStepOffField.value = convertColorValueToString(colorStepOff)
-                    end
-                },
-                vbp:button {
-                    id = "colorStepOff",
-                    color = colorStepOff,
-                }
-            },
-            vbp:horizontal_aligner {
-                mode = "right",
-                vbp:text {
-                    text = "Keyboard list:",
-                    width = 104,
-                    align = "right",
-                },
-                vbp:textfield {
-                    id = "colorListField",
-                    bind = preferences.colorList,
-                    notifier = function()
-                        initColors()
-                        vbwp.colorList.color = colorList
-                        vbwp.colorListField.value = convertColorValueToString(colorList)
-                    end
-                },
-                vbp:button {
-                    id = "colorList",
-                    color = colorList,
-                }
-            },
-            vbp:horizontal_aligner {
-                mode = "right",
-                vbp:text {
-                    text = "Keyboard white key:",
-                    width = 104,
-                    align = "right",
-                },
-                vbp:textfield {
-                    id = "colorKeyWhiteField",
-                    bind = preferences.colorKeyWhite,
-                    notifier = function()
-                        initColors()
-                        vbwp.colorKeyWhite.color = colorKeyWhite
-                        vbwp.colorKeyWhiteField.value = convertColorValueToString(colorKeyWhite)
-                    end
-                },
-                vbp:button {
-                    id = "colorKeyWhite",
-                    color = colorKeyWhite,
-                }
-            },
-            vbp:horizontal_aligner {
-                mode = "right",
-                vbp:text {
-                    text = "Keyboard black key:",
-                    width = 104,
-                    align = "right",
-                },
-                vbp:textfield {
-                    id = "colorKeyBlackField",
-                    bind = preferences.colorKeyBlack,
-                    notifier = function()
-                        initColors()
-                        vbwp.colorKeyBlack.color = colorKeyBlack
-                        vbwp.colorKeyBlackField.value = convertColorValueToString(colorKeyBlack)
-                    end
-                },
-                vbp:button {
-                    id = "colorKeyBlack",
-                    color = colorKeyBlack,
-                }
-            },
-            vbp:horizontal_aligner {
-                mode = "right",
-                vbp:text {
-                    text = "Vol button:",
-                    width = 104,
-                    align = "right",
-                },
-                vbp:textfield {
-                    id = "colorVelocityField",
-                    bind = preferences.colorVelocity,
-                    notifier = function()
-                        initColors()
-                        vbwp.colorVelocity.color = colorVelocity
-                        vbwp.colorVelocityField.value = convertColorValueToString(colorVelocity)
-                    end
-                },
-                vbp:button {
-                    id = "colorVelocity",
-                    color = colorVelocity,
-                }
-            },
-            vbp:horizontal_aligner {
-                mode = "right",
-                vbp:text {
-                    text = "Pan button:",
-                    width = 104,
-                    align = "right",
-                },
-                vbp:textfield {
-                    id = "colorPanField",
-                    bind = preferences.colorPan,
-                    notifier = function()
-                        initColors()
-                        vbwp.colorPan.color = colorPan
-                        vbwp.colorPanField.value = convertColorValueToString(colorPan)
-                    end
-                },
-                vbp:button {
-                    id = "colorPan",
-                    color = colorPan,
-                }
-            },
-            vbp:horizontal_aligner {
-                mode = "right",
-                vbp:text {
-                    text = "Dly button:",
-                    width = 104,
-                    align = "right",
-                },
-                vbp:textfield {
-                    id = "colorDelayField",
-                    bind = preferences.colorDelay,
-                    notifier = function()
-                        initColors()
-                        vbwp.colorDelay.color = colorDelay
-                        vbwp.colorDelayField.value = convertColorValueToString(colorDelay)
-                    end
-                },
-                vbp:button {
-                    id = "colorDelay",
-                    color = colorDelay,
-                }
-            },
-            vbp:text {
-                text = "IMPORTANT: Please note that color #000000\n" ..
-                        "will use the default control theme color. It's a\n" ..
-                        "Renoise Viewbuilder restriction, which can't be\n" .. "changed, yet."
-            },
-        },
-        vbp:column {
-            style = "group",
-            margin = 5,
-            spacing = 4,
-            vbp:text {
-                text = "Note playback and preview",
-                font = "big",
-                style = "strong",
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.enableOSCClient
+                    bind = preferences.oscConnectionString,
+                    width = "100%",
                 },
                 vbp:text {
-                    text = "Enable OSC client",
+                    text = "Please check in the Renoise preferences in the OSC\n" ..
+                            "section that the OSC server has been activated and is\n" ..
+                            "running with the same protocol (UDP, TCP) and port\n" ..
+                            "settings as specified here."
                 },
             },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.notePreview
+            vbp:column {
+                style = "group",
+                margin = 5,
+                spacing = 4,
+                vbp:text {
+                    text = "Misc",
+                    font = "big",
+                    style = "strong",
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Max double click time (ms):",
+                    },
+                    vbp:valuebox {
+                        steps = { 1, 2 },
+                        min = 50,
+                        max = 2000,
+                        bind = preferences.dblClickTime,
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Scroll wheel speed (lines):",
+                    },
+                    vbp:valuebox {
+                        steps = { 1, 2 },
+                        min = 1,
+                        max = 6,
+                        bind = preferences.scrollWheelSpeed,
+                        tostring = function(v)
+                            return string.format("%i", v)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v)
+                        end
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Snap to grid amount for scaling (%):",
+                    },
+                    vbp:valuebox {
+                        steps = { 1, 2 },
+                        min = 0,
+                        max = 50,
+                        bind = preferences.snapToGridSize,
+                        tostring = function(v)
+                            return string.format("%i", v)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v)
+                        end
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.forcePenMode,
+                    },
+                    vbp:text {
+                        text = "Enable pen mode by default",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.chordDetection,
+                    },
+                    vbp:text {
+                        text = "Enable chord detection for playing and selected notes",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.setVelPanDlyLenFromLastNote,
+                    },
+                    vbp:text {
+                        text = "Set vel, pan, dly and len from last drawn or selected note",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.resetVolPanDlyControlOnClick,
+                    },
+                    vbp:text {
+                        text = "Reset vol, pan and dly on grid click, when nothing is selected",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.followPlayCursor,
+                    },
+                    vbp:text {
+                        text = "Follow play cursor, when enabled in Renoise",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.centerViewOnOpen,
+                    },
+                    vbp:text {
+                        text = "Center piano roll when opening based on pattern notes",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.addNoteColumnsIfNeeded,
+                    },
+                    vbp:text {
+                        text = "Automatically add note columns, when needed",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.addNoteOffToEmptyNoteColumns,
+                    },
+                    vbp:text {
+                        text = "Automatically add Note-Off in empty note columns",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.autoEnableDelayWhenNeeded,
+                    },
+                    vbp:text {
+                        text = "Automatically enable delay column, when needed",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.setLastEditedTrackAsGhost,
+                    },
+                    vbp:text {
+                        text = "Automatically set the last edited track as ghost track",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.disableAltClickNoteRemove,
+                    },
+                    vbp:text {
+                        text = "Disable alt key click note remove",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.azertyMode,
+                    },
+                    vbp:text {
+                        text = "Enable AZERTY keyboard mode",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.disableKeyHandler,
+                    },
+                    vbp:text {
+                        text = "Disable all keyboard shortcuts",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.invisibleSelectMarker,
+                        notifier = function()
+                            rebuildWindowDialog = true
+                        end
+                    },
+                    vbp:text {
+                        text = "Hide select marker, so mouse warping can still be used",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.enableKeyInfo,
+                    },
+                    vbp:text {
+                        text = "Show current pressed keyboard keys in the status bar",
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Max display time of status bar text (s):",
+                    },
+                    vbp:valuebox {
+                        steps = { 1, 2 },
+                        min = 1,
+                        max = 10,
+                        bind = preferences.keyInfoTime,
+                        tostring = function(v)
+                            return string.format("%i", v)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v)
+                        end
+                    },
                 },
                 vbp:text {
-                    text = "Enable note preview",
+                    text = "IMPORTANT: To improve mouse control, please disable\nthe mouse warping option in the Renoise preferences\nin section GUI."
                 },
             },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.noNotePreviewDuringSongPlayback,
-                },
-                vbp:text {
-                    text = "No note preview during song playback",
-                },
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Note preview polyphony:",
-                },
-                vbp:valuebox {
-                    steps = { 1, 2 },
-                    min = 1,
-                    max = 32,
-                    bind = preferences.previewPolyphony,
-                },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.limitPreviewBySelectionSize,
-                },
-                vbp:text {
-                    text = "Reduce preview polyphony to selection size",
-                },
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Note preview length (ms):",
-                },
-                vbp:valuebox {
-                    steps = { 1, 2 },
-                    min = 50,
-                    max = 2000,
-                    bind = preferences.triggerTime,
-                },
-            },
-            vbp:text {
-                text = "OSC connection string: [protocol]://[ip]:[port]",
-            },
-            vbp:textfield {
-                bind = preferences.oscConnectionString,
-                width = "100%",
-            },
-            vbp:text {
-                text = "Please check in the Renoise preferences in the OSC\n" ..
-                        "section that the OSC server has been activated and is\n" ..
-                        "running with the same protocol (UDP, TCP) and port\n" ..
-                        "settings as specified here."
-            },
-        },
-        vbp:column {
-            style = "group",
-            margin = 5,
-            spacing = 4,
-            vbp:text {
-                text = "Misc",
-                font = "big",
-                style = "strong",
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Max double click time (ms):",
-                },
-                vbp:valuebox {
-                    steps = { 1, 2 },
-                    min = 50,
-                    max = 2000,
-                    bind = preferences.dblClickTime,
-                },
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Scroll wheel speed (lines):",
-                },
-                vbp:valuebox {
-                    steps = { 1, 2 },
-                    min = 1,
-                    max = 6,
-                    bind = preferences.scrollWheelSpeed,
-                    tostring = function(v)
-                        return string.format("%i", v)
-                    end,
-                    tonumber = function(v)
-                        return tonumber(v)
-                    end
-                },
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Snap to grid amount for scaling (%):",
-                },
-                vbp:valuebox {
-                    steps = { 1, 2 },
-                    min = 0,
-                    max = 50,
-                    bind = preferences.snapToGridSize,
-                    tostring = function(v)
-                        return string.format("%i", v)
-                    end,
-                    tonumber = function(v)
-                        return tonumber(v)
-                    end
-                },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.forcePenMode,
-                },
-                vbp:text {
-                    text = "Enable pen mode by default",
-                },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.chordDetection,
-                },
-                vbp:text {
-                    text = "Enable chord detection for playing and selected notes",
-                },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.setVelPanDlyLenFromLastNote,
-                },
-                vbp:text {
-                    text = "Set vel, pan, dly and len from last drawn or selected note",
-                },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.resetVolPanDlyControlOnClick,
-                },
-                vbp:text {
-                    text = "Reset vol, pan and dly on grid click, when nothing is selected",
-                },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.followPlayCursor,
-                },
-                vbp:text {
-                    text = "Follow play cursor, when enabled in Renoise",
-                },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.centerViewOnOpen,
-                },
-                vbp:text {
-                    text = "Center piano roll when opening based on pattern notes",
-                },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.addNoteColumnsIfNeeded,
-                },
-                vbp:text {
-                    text = "Automatically add note columns, when needed",
-                },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.addNoteOffToEmptyNoteColumns,
-                },
-                vbp:text {
-                    text = "Automatically add Note-Off in empty note columns",
-                },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.autoEnableDelayWhenNeeded,
-                },
-                vbp:text {
-                    text = "Automatically enable delay column, when needed",
-                },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.setLastEditedTrackAsGhost,
-                },
-                vbp:text {
-                    text = "Automatically set the last edited track as ghost track",
-                },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.disableAltClickNoteRemove,
-                },
-                vbp:text {
-                    text = "Disable alt key click note remove",
-                },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.azertyMode,
-                },
-                vbp:text {
-                    text = "Enable AZERTY keyboard mode",
-                },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.disableKeyHandler,
-                },
-                vbp:text {
-                    text = "Disable all keyboard shortcuts",
-                },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.invisibleSelectMarker,
-                    notifier = function()
-                        rebuildWindowDialog = true
-                    end
-                },
-                vbp:text {
-                    text = "Hide select marker, so mouse warping can still be used",
-                },
-            },
-            vbp:row {
-                vbp:checkbox {
-                    bind = preferences.enableKeyInfo,
-                },
-                vbp:text {
-                    text = "Show current pressed keyboard keys in the status bar",
-                },
-            },
-            vbp:horizontal_aligner {
-                mode = "justify",
-                vbp:text {
-                    text = "Max display time of status bar text (s):",
-                },
-                vbp:valuebox {
-                    steps = { 1, 2 },
-                    min = 1,
-                    max = 10,
-                    bind = preferences.keyInfoTime,
-                    tostring = function(v)
-                        return string.format("%i", v)
-                    end,
-                    tonumber = function(v)
-                        return tonumber(v)
-                    end
-                },
-            },
-            vbp:text {
-                text = "IMPORTANT: To improve mouse control, please disable\nthe mouse warping option in the Renoise preferences\nin section GUI."
-            },
-        },
-    }, { "Close", "Reset to default", "Help / Feedback" })
+        }
+    end
+    btn = app:show_custom_prompt("Preferences", preferencesContent, { "Close", "Reset to default", "Help / Feedback" })
     if btn == "Reset to default" then
         if app:show_prompt("Reset to default", "Are you sure you want to reset all settings to their default values?", { "Yes", "No" }) == "Yes" then
             for key in pairs(defaultPreferences) do
@@ -6851,37 +6897,7 @@ local function createPianoRollDialog()
                                         height = gridStepSizeH + 3,
                                         tooltip = "Scale highlighting",
                                         notifier = function()
-                                            local vbp = renoise.ViewBuilder()
-                                            app:show_custom_prompt("Scale highlighting",
-                                                    vbp:row {
-                                                        uniform = true,
-                                                        margin = 5,
-                                                        spacing = 5,
-                                                        vbp:column {
-                                                            style = "group",
-                                                            margin = 5,
-                                                            uniform = true,
-                                                            spacing = 4,
-                                                            width = 432,
-                                                            vbp:text {
-                                                                text = "Scale highlighting:",
-                                                            },
-                                                            vbp:switch {
-                                                                width = "100%",
-                                                                items = scaleTypes,
-                                                                bind = preferences.scaleHighlightingType,
-                                                            },
-                                                            vbp:text {
-                                                                text = "Key for selected scale:",
-                                                            },
-                                                            vbp:switch {
-                                                                width = "100%",
-                                                                items = notesTable,
-                                                                bind = preferences.keyForSelectedScale,
-                                                            },
-                                                        } }, { "Ok" })
-                                            refreshPianoRollNeeded = true
-                                            restoreFocus()
+                                            showSetScaleDialog()
                                         end
                                     },
                                 }
