@@ -600,9 +600,9 @@ local function shadeColor(color, shade)
         return color
     end
     return {
-        math.max(color[1] * (1 - shade), 1),
-        math.max(color[2] * (1 - shade), 1),
-        math.max(color[3] * (1 - shade), 1)
+        math.ceil(math.max(color[1] * (1 - shade), 1)),
+        math.ceil(math.max(color[2] * (1 - shade), 1)),
+        math.ceil(math.max(color[3] * (1 - shade), 1))
     }
 end
 
@@ -612,9 +612,9 @@ local function alphablendColors(color1, color2, alphablend)
         return color1
     end
     return {
-        math.max(color2[1] * (1 - alphablend) + color1[1] * alphablend, 1),
-        math.max(color2[2] * (1 - alphablend) + color1[2] * alphablend, 1),
-        math.max(color2[3] * (1 - alphablend) + color1[3] * alphablend, 1)
+        math.ceil(math.max(color2[1] * (1 - alphablend) + color1[1] * alphablend, 1)),
+        math.ceil(math.max(color2[2] * (1 - alphablend) + color1[2] * alphablend, 1)),
+        math.ceil(math.max(color2[3] * (1 - alphablend) + color1[3] * alphablend, 1))
     }
 end
 
