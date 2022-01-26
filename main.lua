@@ -9,9 +9,6 @@ local vbw
 --viewbuilder for preferences and set scale
 local vbp = renoise.ViewBuilder()
 local vbwp = vbp.views
---viewbuilder content
-local preferencesContent
-local setScaleContent
 
 --load manifest for fetching versionnumber
 local manifest = renoise.Document.create("RenoiseScriptingTool") {
@@ -288,6 +285,8 @@ tool.preferences = preferences
 --dialog vars
 local windowObj
 local windowContent
+local preferencesContent
+local setScaleContent
 local stepSlider
 local noteSlider
 local snapBackVal = { x = 1.01234, y = 1.01234 }
