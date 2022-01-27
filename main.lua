@@ -868,6 +868,39 @@ local function noteInSelection(notedata)
     return ret
 end
 
+--function set set note button colors
+local function setNoteColor(note_data, isOnStep, isInSelection)
+    local nB = vbw["b" .. note_data.idx]
+    if nB then
+        nB.color = colorNoteVelocity(note_data.vel, note_data.ghst, isOnStep, isInSelection)
+        vbw["bs" .. note_data.idx].color = shadeColor(nB.color, preferences.scaleBtnShadingAmount.value)
+    end
+end
+
+--clear selection and set note colors back
+local function updateNoteSelection(note_data, mode)
+    if mode == "clear" or mode == "delete" then
+        local wasInSelection = {}
+        if #noteSelection > 0 then
+            for i = 1, #noteSelection do
+                wasInSelection[noteSelection[i].idx] = 1
+            end
+            noteSelection = {}
+            if mode == "clear" then
+                for key in pairs(wasInSelection) do
+                    setNoteColor(noteData[key])
+                end
+            end
+        end
+    end
+    --refresh chord detection
+    refreshChordDetection = true
+    --jump sel start
+    if #noteSelection > 0 then
+        jumpToNoteInPattern("sel")
+    end
+end
+
 --return true, when a note off was set
 local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly, end_dly, ghst)
     local noteoff = false
@@ -1092,7 +1125,7 @@ local function removeSelectedNotes(cut)
     for i = 1, #noteSelection do
         removeNoteInPattern(noteSelection[i].column, noteSelection[i].line, noteSelection[i].len)
     end
-    noteSelection = {}
+    updateNoteSelection(nil, "delete")
     --add other notes on this line back
     for i = 1, #notesOnLine do
         note_data = noteData[notesOnLine[i]]
@@ -1680,7 +1713,7 @@ local function pasteNotesFromClipboard()
         return a.line > b.line
     end)
     --clear current note selection
-    noteSelection = {}
+    updateNoteSelection(nil, "clear")
     --go through clipboard
     for key in pairs(clipboard) do
         --search for valid column
@@ -2516,10 +2549,7 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
             --add to selection table
             table.insert(noteSelection, note_data)
             wasInSelection[note_data.idx] = nil
-            if vbw["b" .. note_data.idx] then
-                vbw["b" .. note_data.idx].color = colorNoteVelocity(note_data.vel, note_data.ghst, nil, true)
-                vbw["bs" .. note_data.idx].color = shadeColor(vbw["b" .. note_data.idx].color, preferences.scaleBtnShadingAmount.value)
-            end
+            setNoteColor(note_data, nil, true)
             --refresh of piano roll needed
             refreshNeeded = true
         end
@@ -2528,11 +2558,7 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
     if refreshNeeded then
         --reset note colors
         for key in pairs(wasInSelection) do
-            note_data = noteData[key]
-            if note_data and vbw["b" .. note_data.idx] then
-                vbw["b" .. note_data.idx].color = colorNoteVelocity(note_data.vel, note_data.ghst)
-                vbw["bs" .. note_data.idx].color = shadeColor(vbw["b" .. note_data.idx].color, preferences.scaleBtnShadingAmount.value)
-            end
+            setNoteColor(noteData[key])
         end
         jumpToNoteInPattern("sel")
         --chord deteciton refresh needed too
@@ -2737,8 +2763,7 @@ function pianoGridClick(x, y, released)
     if not released and not checkMode("preview") and not keyControl and not (outside and checkMode("pen")) then
         --deselect current notes, when outside was clicked
         if outside and #noteSelection > 0 then
-            noteSelection = {}
-            refreshPianoRollNeeded = true
+            updateNoteSelection(nil, "clear")
         end
         --remove and add the clicked button, disable all buttons in the row, so the xypad in the background can
         --receive the click event remove/add trick from joule:
@@ -2927,10 +2952,8 @@ function pianoGridClick(x, y, released)
                 --deselect selected notes
                 if #noteSelection > 0 then
                     if not keyShift then
-                        noteSelection = {}
-                        refreshChordDetection = true
+                        updateNoteSelection(nil, "clear")
                     end
-                    refreshPianoRollNeeded = true
                 elseif preferences.resetVolPanDlyControlOnClick.value then
                     --nothing selected reset vol, pan and dly
                     currentNoteVelocity = 255
@@ -3133,7 +3156,6 @@ local function drawNoteToGrid(column,
                     currentNoteEndDelay = current_note_end_dly
                     refreshControls = true
                 end
-                color = colorNoteVelocity(current_note_vel, ghost, isOnStep, isInSelection)
 
                 local btn = vb:row {
                     margin = -gridMargin,
@@ -3199,7 +3221,6 @@ local function drawNoteToGrid(column,
                                 id = "b" .. current_note_index,
                                 height = gridStepSizeH,
                                 width = math.max(buttonWidth - buttonSpace - 1, math.max(1, preferences.minSizeOfNoteButton.value + preferences.clickAreaSizeForScalingPx.value)),
-                                color = color,
                                 text = current_note_string,
                                 notifier = loadstring(current_note_param .. ",true)"),
                                 pressed = loadstring(current_note_param .. ",false)")
@@ -3241,7 +3262,6 @@ local function drawNoteToGrid(column,
                             id = "bs" .. current_note_index,
                             height = gridStepSizeH,
                             width = preferences.clickAreaSizeForScalingPx.value,
-                            color = shadeColor(color, preferences.scaleBtnShadingAmount.value),
                             notifier = loadstring(current_note_param .. ",true,true)"),
                             pressed = loadstring(current_note_param .. ",false,true)")
                         }
@@ -3249,6 +3269,9 @@ local function drawNoteToGrid(column,
                 });
                 l_vbw["row" .. current_note_rowIndex]:add_child(sizebutton)
                 table.insert(noteButtons[current_note_rowIndex], sizebutton);
+
+                --set color
+                setNoteColor(noteData[current_note_index], isOnStep, isInSelection)
 
                 --display retrigger effect
                 if retriggerWidth > 0 then
@@ -4447,9 +4470,7 @@ local function handleKeyEvent(keyEvent)
         if key.state == "pressed" then
             keyInfoText = "Deselect current note selection"
             if #noteSelection > 0 then
-                noteSelection = {}
-                refreshPianoRollNeeded = true
-                refreshChordDetection = true
+                updateNoteSelection(nil, "clear")
             end
         end
         handled = true
@@ -7300,7 +7321,6 @@ local function main_function()
             --process key shortcuts
             handled = handleKeyEvent(key)
             --return key to host
-            --TODO BUG sometimes key events got missed when bringed back to host
             if not handled then
                 return key
             end
