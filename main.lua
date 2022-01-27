@@ -348,6 +348,7 @@ local blockLineModifier = false
 local refreshControls = false
 local refreshTimeline = false
 local refreshChordDetection = false
+local afterEditProcessTime
 
 --table to save note indices per step for highlighting
 local noteOnStep = {}
@@ -1043,6 +1044,8 @@ local function removeNoteInPattern(column, line, len)
                 note_column:clear()
             end
         end
+        --trigger after edit
+        afterEditProcessTime = os.clock()
         return true
     end
     return false
@@ -3712,6 +3715,59 @@ local function refreshPlaybackPosIndicator()
     end
 end
 
+--process some features, which should be triggered once after a change
+local function afterEditProcess()
+    local l_song = song
+    local patterns = l_song.patterns
+    local maxColumns = l_song.selected_track.visible_note_columns
+    local patternTrack
+    local lineValues
+    local note_column
+    local empty
+    --reset timer
+    afterEditProcessTime = nil
+    setUndoDescription("Automatically add note offs and reduce note columns ...")
+    --go through active columns on all patterns, remove column if needed
+    if maxColumns > 1 and preferences.addNoteColumnsIfNeeded.value then
+        for c = maxColumns, 2, -1 do
+            empty = true
+            for i = 1, #patterns do
+                patternTrack = patterns[i]:track(l_song.selected_track_index)
+                lineValues = patternTrack.lines
+                for line = 1, #patternTrack.lines do
+                    note_column = lineValues[line]:note_column(c)
+                    if not note_column.is_empty then
+                        if not (line == 1 and note_column.note_value == 120) then
+                            empty = false
+                            break
+                        end
+                    end
+                end
+                if not empty then
+                    break
+                end
+            end
+            if not empty then
+                break
+            else
+                l_song.selected_track.visible_note_columns = c - 1
+            end
+        end
+    end
+    --add missing note off for current track
+    if preferences.addNoteOffToEmptyNoteColumns.value then
+        maxColumns = l_song.selected_track.visible_note_columns
+        patternTrack = patterns[l_song.selected_pattern_index]:track(l_song.selected_track_index)
+        lineValues = patternTrack.lines
+        for c = 1, maxColumns do
+            note_column = lineValues[1]:note_column(c)
+            if note_column.note_value == 121 then
+                note_column.note_value = 120
+            end
+        end
+    end
+end
+
 --reset pianoroll and enable notes
 local function fillPianoRoll(quickRefresh)
     local l_vbw = vbw
@@ -3885,13 +3941,6 @@ local function fillPianoRoll(quickRefresh)
             local panning_string = note_column.panning_string
             local delay_string = note_column.delay_string
             local instrument = note_column.instrument_value
-
-            --add missing note off
-            if line == 1 and preferences.addNoteOffToEmptyNoteColumns.value then
-                if note_column.note_value == 121 then
-                    note_column.note_value = 120
-                end
-            end
 
             if note < 120 then
                 if currentInstrument == nil and note_column.instrument_value < 255 then
@@ -4084,6 +4133,11 @@ local function appIdleEvent()
         if (keyState["shift"] == "pressed" and keyShift == false) or (keyState["shift"] == "released" and keyShift == true) then
             keyShift = not keyShift
             refreshControls = true
+        end
+
+        --process after edit features
+        if afterEditProcessTime ~= nil and afterEditProcessTime < os.clock() - 0.1 then
+            afterEditProcess()
         end
 
         --refresh pianoroll, when needed
@@ -6007,7 +6061,7 @@ local function showPreferences()
                         bind = preferences.addNoteColumnsIfNeeded,
                     },
                     vbp:text {
-                        text = "Automatically add note columns, when needed",
+                        text = "Automatically add or remove note columns, when needed",
                     },
                 },
                 vbp:row {
