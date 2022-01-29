@@ -1,6 +1,6 @@
 # Simple Pianoroll Tool for Renoise
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pianorollanim3.gif?raw=true" width="754">
+<img src="docs/images/pianorollanim3.gif?raw=true" width="754">
 
 ## Video on Youtube
 
@@ -45,23 +45,23 @@ It supports different note column effects.
 
 #### Note overlapping
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/noteoverlapping.png?raw=true" width="300">
+<img src="docs/images/noteoverlapping.png?raw=true" width="300">
 
 #### Note cut fx
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/notecutfx.png?raw=true" width="300">
+<img src="docs/images/notecutfx.png?raw=true" width="300">
 
 #### Note retrigger fx
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/noteretriggerfx.png?raw=true" width="300">
+<img src="docs/images/noteretriggerfx.png?raw=true" width="300">
 
 #### Note delay
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/notedelay.png?raw=true" width="300">
+<img src="docs/images/notedelay.png?raw=true" width="300">
 
 #### Note delay for note off
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/noteoffdelay.png?raw=true" width="300">
+<img src="docs/images/noteoffdelay.png?raw=true" width="300">
 
 ## Install and Update
 
@@ -81,12 +81,12 @@ More information about how you can install and update Renoise tools:
 ### In Pattern Editor
 
 Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/openit.gif?raw=true" width="300">
+<img src="docs/images/openit.gif?raw=true" width="300">
 
 ### In Pattern Matrix
 
 Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/editviamatrix.gif?raw=true" width="300">
+<img src="docs/images/editviamatrix.gif?raw=true" width="300">
 
 ## Mouse actions
 
