@@ -5232,6 +5232,19 @@ local function handleXypad(val)
     end
 end
 
+--function to switch between relative major and minor
+local function switchToRelativeScale()
+    if preferences.scaleHighlightingType.value == 3 then
+        preferences.scaleHighlightingType.value = 2
+        preferences.keyForSelectedScale.value = ((preferences.keyForSelectedScale.value + 2) % 12) + 1
+        refreshPianoRollNeeded = true
+    elseif preferences.scaleHighlightingType.value == 2 then
+        preferences.scaleHighlightingType.value = 3
+        preferences.keyForSelectedScale.value = ((preferences.keyForSelectedScale.value - 4) % 12) + 1
+        refreshPianoRollNeeded = true
+    end
+end
+
 --setscale window
 local function showSetScaleDialog()
     if setScaleContent == nil then
@@ -5252,28 +5265,23 @@ local function showSetScaleDialog()
                     width = "100%",
                     items = scaleTypes,
                     bind = preferences.scaleHighlightingType,
+                },
+                vbp:button {
+                    text = "Switch to relative Minor or Major",
                     notifier = function()
-                        if app.key_modifier_states["control"] == "pressed" then
-                            if preferences.scaleHighlightingType.value == 2 then
-                                vbwp["setscalekey"].value = ((vbwp["setscalekey"].value + 2) % 12) + 1
-                            elseif preferences.scaleHighlightingType.value == 3 then
-                                vbwp["setscalekey"].value = ((vbwp["setscalekey"].value - 4) % 12) + 1
-                            end
-                        end
-
-                    end,
-                    tooltip = "When ctrl is holded, it also switch the key (C Maj -> A Min)",
+                        switchToRelativeScale()
+                    end
                 },
                 vbp:text {
                     text = "Key for selected scale:",
                 },
                 vbp:switch {
                     width = "100%",
-                    id = "setscalekey",
                     items = notesTable,
                     bind = preferences.keyForSelectedScale,
                 },
-            } }
+            }
+        }
     end
     app:show_custom_prompt("Scale highlighting",
             setScaleContent, { "Ok" })
@@ -6969,9 +6977,13 @@ local function createPianoRollDialog()
                                         text = "",
                                         width = pianoKeyWidth,
                                         height = gridStepSizeH + 3,
-                                        tooltip = "Scale highlighting",
+                                        tooltip = "Scale highlighting\nIf you hold down the Ctrl key while clicking, you switch to relative minor or major.",
                                         notifier = function()
-                                            showSetScaleDialog()
+                                            if keyControl then
+                                                switchToRelativeScale()
+                                            else
+                                                showSetScaleDialog()
+                                            end
                                         end
                                     },
                                 }
