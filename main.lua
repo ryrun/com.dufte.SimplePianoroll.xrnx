@@ -7355,13 +7355,67 @@ tool:add_menu_entry {
     end
 }
 
---add main function to context menu of pattern editor
+--add main function to context menu of mixer
 tool:add_menu_entry {
     name = "Mixer:Edit with Simple Pianoroll ...",
     invoke = function()
         --focus pattern editor
         app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_PATTERN_EDITOR
         main_function()
+    end
+}
+
+--add main function to context menu of instruments
+tool:add_menu_entry {
+    name = "Instrument Box:Edit Pattern with Simple Pianoroll ...",
+    invoke = function()
+        --search track for current instrument
+        song = renoise.song()
+        local l_song = song
+        local patterns = l_song.patterns
+        local tracks
+        local maxColumns
+        local patternTrack
+        local lineValues
+        local note_column
+        local idx = song.selected_instrument_index - 1
+        local trackidx
+        for i = 1, #patterns do
+            tracks = patterns[i].tracks
+            for j = 1, #tracks do
+                patternTrack = patterns[i]:track(j)
+                maxColumns = song.tracks[j].visible_note_columns
+                for c = 1, maxColumns do
+                    lineValues = patternTrack.lines
+                    for line = 1, #lineValues do
+                        note_column = lineValues[line]:note_column(c)
+                        if note_column.instrument_value == idx then
+                            trackidx = j
+                            break
+                        elseif note_column.instrument_value ~= 255 then
+                            break
+                        end
+                    end
+                    if trackidx ~= nil then
+                        break
+                    end
+                end
+                if trackidx ~= nil then
+                    break
+                end
+            end
+            if trackidx ~= nil then
+                break
+            end
+        end
+        --focus pattern editor
+        if trackidx then
+            song.selected_track_index = trackidx
+            app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_PATTERN_EDITOR
+            main_function()
+        else
+            showStatus("No pattern found, which is using the selected instrument.")
+        end
     end
 }
 
