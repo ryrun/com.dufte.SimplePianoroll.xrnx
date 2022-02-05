@@ -886,7 +886,11 @@ local function updateNoteSelection(note_data, clear)
     local newNotes = {}
     local wasInSelection = {}
     if note_data ~= nil then
-        if #note_data == 0 and note_data.idx then
+        if note_data == "all" then
+            for k in pairs(noteData) do
+                table.insert(newNotes, noteData[k])
+            end
+        elseif #note_data == 0 and note_data.idx then
             table.insert(newNotes, note_data)
         elseif #note_data > 0 then
             newNotes = note_data
@@ -2457,10 +2461,7 @@ local function moveSelectionThroughNotes(dx, dy, addToSelection)
         --select one of the note when shift is not holded
         if #noteSelection > 1 and not (keyShift or keyRShift) then
             note_data = noteSelection[#noteSelection]
-            noteSelection = {}
-            table.insert(noteSelection, note_data)
-            jumpToNoteInPattern(note_data)
-            refreshPianoRollNeeded = true
+            updateNoteSelection(note_data, true)
             return true
         else
             x1 = noteSelection[1].step + (noteSelection[1].len - 1) / 2
@@ -2508,12 +2509,7 @@ local function moveSelectionThroughNotes(dx, dy, addToSelection)
     end
 
     if note_data then
-        if not addToSelection then
-            noteSelection = {}
-        end
-        table.insert(noteSelection, note_data)
-        jumpToNoteInPattern(note_data)
-        refreshPianoRollNeeded = true
+        updateNoteSelection(note_data, not addToSelection)
         return true
     end
     return false
@@ -4501,8 +4497,7 @@ local function handleKeyEvent(keyEvent)
                         table.insert(newSelection, noteData[k])
                     end
                 end
-                noteSelection = newSelection
-                refreshPianoRollNeeded = true
+                updateNoteSelection(newSelection, true)
             end
         end
         handled = true
@@ -4562,8 +4557,7 @@ local function handleKeyEvent(keyEvent)
                 local ret = chopSelectedNotes()
                 --was not possible then deselect
                 if not ret then
-                    noteSelection = {}
-                    refreshPianoRollNeeded = true
+                    updateNoteSelection(nil, true)
                 else
                     showStatus((#noteSelection / 2) .. " notes chopped.")
                     keyInfoText = "Chop selected notes"
@@ -4632,10 +4626,7 @@ local function handleKeyEvent(keyEvent)
         if key.state == "pressed" then
             if #noteSelection == 0 then
                 --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
-                for k in pairs(noteData) do
-                    local note_data = noteData[k]
-                    table.insert(noteSelection, note_data)
-                end
+                updateNoteSelection("all", true)
             end
             if #noteSelection > 0 then
                 local ret = duplicateSelectedNotes()
@@ -4711,17 +4702,9 @@ local function handleKeyEvent(keyEvent)
     end
     if key.name == "a" and key.modifiers == "control" then
         if key.state == "pressed" then
-            --clear current selection
-            noteSelection = {}
-            --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
-            for k in pairs(noteData) do
-                local note_data = noteData[k]
-                table.insert(noteSelection, note_data)
-            end
+            updateNoteSelection("all", true)
             keyInfoText = "Select all notes"
             showStatus(#noteSelection .. " notes selected.", true)
-            jumpToNoteInPattern("sel")
-            refreshPianoRollNeeded = true
         end
         handled = true
     end
