@@ -930,11 +930,14 @@ local function updateNoteSelection(note_data, clear)
     end
     --add new notes to selection
     for i = 1, #newNotes do
-        table.insert(noteSelection, newNotes[i])
-        if wasInSelection[newNotes[i].idx] == 1 then
-            wasInSelection[newNotes[i].idx] = 0
-        else
-            setNoteColor(newNotes[i], nil, true)
+        --pre check, if note is a note and not already in selection
+        if newNotes[i].idx and not noteInSelection(newNotes[i]) then
+            table.insert(noteSelection, newNotes[i])
+            if wasInSelection[newNotes[i].idx] == 1 then
+                wasInSelection[newNotes[i].idx] = 0
+            else
+                setNoteColor(newNotes[i], nil, true)
+            end
         end
     end
     --change color of old notes back
