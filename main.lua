@@ -419,6 +419,7 @@ local xypadpos = {
     selection_key = nil,
     idx = nil,
     leftClick = false,
+    disabled = {},
 }
 
 --pen mode
@@ -2597,17 +2598,16 @@ function keyClick(y, pressed)
     song.transport.edit_mode = false
     --select all note events which have the specific note
     if keyControl then
-        if not keyShift then
-            noteSelection = {}
-        end
-        for key in pairs(noteData) do
-            local note_data = noteData[key]
-            if note_data.note == note and noteInSelection(note_data) == nil then
-                table.insert(noteSelection, note_data)
+        if not pressed then
+            local newNoteSelection = {}
+            for key in pairs(noteData) do
+                local note_data = noteData[key]
+                if note_data.note == note and noteInSelection(note_data) == nil then
+                    table.insert(newNoteSelection, note_data)
+                end
             end
+            updateNoteSelection(newNoteSelection, not keyShift)
         end
-        jumpToNoteInPattern("sel")
-        refreshPianoRollNeeded = true
     else
         local row = noteValue2GridRowOffset(note)
         if row ~= nil then
@@ -2625,9 +2625,11 @@ function noteClick(x, y, c, released, forceScaling)
 
     --mouse drag support, very very hacky
     if not released and not checkMode("preview") then
+        xypadpos.disabled = {}
         --disable grid buttons, so these doesn't receive click events
         for i = 1, gridWidth do
             vbw["p" .. i .. "_" .. y].active = false
+            table.insert(xypadpos.disabled, "p" .. i .. "_" .. y)
         end
         --disable all notes on step, so other notes doesn't receive click events
         for j = 1, note_data.len do
@@ -2636,6 +2638,7 @@ function noteClick(x, y, c, released, forceScaling)
                 for i = 1, #ns do
                     if ns[i] ~= nil and ns[i].note == note_data.note and ns[i].index ~= index then
                         vbw["b" .. ns[i].index].active = false
+                        table.insert(xypadpos.disabled, "b" .. ns[i].index)
                     end
                 end
             end
@@ -2670,7 +2673,6 @@ function noteClick(x, y, c, released, forceScaling)
         xypadpos.duplicate = (keyShift or keyControl) and not checkMode("pen") and not keyAlt
         xypadpos.time = os.clock()
         triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true)
-        refreshPianoRollNeeded = true
         return
     end
 
@@ -2751,6 +2753,7 @@ function pianoGridClick(x, y, released)
     end
 
     if not released and not checkMode("preview") and not keyControl and not (outside and checkMode("pen")) then
+        xypadpos.disabled = {}
         --deselect current notes, when outside was clicked
         if outside and #noteSelection > 0 then
             updateNoteSelection(nil, true)
@@ -2758,11 +2761,14 @@ function pianoGridClick(x, y, released)
         --remove and add the clicked button, disable all buttons in the row, so the xypad in the background can
         --receive the click event remove/add trick from joule:
         --https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
+        --disabled buttons need to be enabled again outside this call when just one click was triggered
         for i = 1, gridWidth do
             vbw["p" .. i .. "_" .. y].active = false
+            table.insert(xypadpos.disabled, "p" .. i .. "_" .. y)
             --prevent accidentally note drawing "twins", when piano grid buttons overlap
             if vbw["p" .. i .. "_" .. y + 1] then
                 vbw["p" .. i .. "_" .. y + 1].active = false
+                table.insert(xypadpos.disabled, "p" .. i .. "_" .. y + 1)
             end
         end
         vbw["ppp" .. index]:remove_child(vbw["p" .. index])
@@ -2780,9 +2786,6 @@ function pianoGridClick(x, y, released)
             xypadpos.notemode = false
             xypadpos.leftClick = true
         end
-        --disabled button need to be enabled again outside this call when just one click was triggered,
-        --use idle function
-        refreshPianoRollNeeded = true
         return
     end
 
@@ -4994,6 +4997,16 @@ end
 local function handleXypad(val)
     local quickRefresh
     local forceFullRefresh
+    --reenabled disable elements
+    if #xypadpos.disabled > 0 then
+        for i = 1, #xypadpos.disabled do
+            local el = vbw[xypadpos.disabled[i]]
+            if el then
+                el.active = true
+            end
+        end
+        xypadpos.disabled = {}
+    end
     --snap back
     if (val.x == snapBackVal.x or val.y == snapBackVal.y) then
         if val.x == snapBackVal.x and val.y == snapBackVal.y and xypadpos.leftClick then
