@@ -939,7 +939,7 @@ local function updateNoteSelection(note_data, clear)
     end
     --change color of old notes back
     for key, val in pairs(wasInSelection) do
-        if val == 1 then
+        if val == 1 and noteData[key] then
             setNoteColor(noteData[key])
         end
     end
