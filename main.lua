@@ -855,10 +855,13 @@ local function noteInScale(note, forceMajorC)
 end
 
 --return index, when note is in selection
-local function noteInSelection(notedata)
+local function noteInSelection(notedata, otherTable)
     local ret
-    for i = 1, #noteSelection do
-        local note_data = noteSelection[i]
+    if otherTable == nil then
+        otherTable = noteSelection
+    end
+    for i = 1, #otherTable do
+        local note_data = otherTable[i]
         --just search for line in pattern and column
         if note_data.line == notedata.line and note_data.column == notedata.column then
             ret = i
@@ -878,26 +881,69 @@ local function setNoteColor(note_data, isOnStep, isInSelection)
 end
 
 --clear selection and set note colors back
-local function updateNoteSelection(note_data, mode)
-    if mode == "clear" or mode == "delete" then
-        local wasInSelection = {}
+local function updateNoteSelection(note_data, clear)
+    local newNotes = {}
+    local wasInSelection = {}
+    if note_data ~= nil then
+        if #note_data == 0 and note_data.idx then
+            table.insert(newNotes, note_data)
+        elseif #note_data > 0 then
+            newNotes = note_data
+        end
+    end
+    if clear ~= nil then
         if #noteSelection > 0 then
-            for i = 1, #noteSelection do
-                wasInSelection[noteSelection[i].idx] = 1
-            end
-            noteSelection = {}
-            if mode == "clear" then
-                for key in pairs(wasInSelection) do
-                    setNoteColor(noteData[key])
+            if type(clear) == "table" then
+                local idx = noteInSelection(clear)
+                local nidx = noteInSelection(clear, newNotes)
+                if idx then
+                    wasInSelection[noteSelection[idx].idx] = 1
+                    table.remove(noteSelection, idx)
+                    --also remove note, when its in new note table
+                    if nidx then
+                        table.remove(newNotes, nidx)
+                    end
                 end
+            elseif clear == "note" then
+                local idx = noteInSelection(note_data)
+                if idx then
+                    wasInSelection[noteSelection[idx].idx] = 1
+                    table.remove(noteSelection, idx)
+                else
+                    for i = 1, #noteSelection do
+                        wasInSelection[noteSelection[i].idx] = 1
+                    end
+                    noteSelection = {}
+                end
+            elseif clear == true then
+                for i = 1, #noteSelection do
+                    wasInSelection[noteSelection[i].idx] = 1
+                end
+                noteSelection = {}
             end
         end
     end
-    --refresh chord detection
-    refreshChordDetection = true
+    --add new notes to selection
+    for i = 1, #newNotes do
+        table.insert(noteSelection, newNotes[i])
+        if wasInSelection[newNotes[i].idx] == 1 then
+            wasInSelection[newNotes[i].idx] = 0
+        else
+            setNoteColor(newNotes[i], nil, true)
+        end
+    end
+    --change color of old notes back
+    for key, val in pairs(wasInSelection) do
+        if val == 1 then
+            setNoteColor(noteData[key])
+        end
+    end
     --jump sel start
     if #noteSelection > 0 then
         jumpToNoteInPattern("sel")
+    else
+        --refresh chord detection
+        refreshChordDetection = true
     end
 end
 
@@ -1125,7 +1171,7 @@ local function removeSelectedNotes(cut)
     for i = 1, #noteSelection do
         removeNoteInPattern(noteSelection[i].column, noteSelection[i].line, noteSelection[i].len)
     end
-    updateNoteSelection(nil, "delete")
+    updateNoteSelection(nil, true)
     --add other notes on this line back
     for i = 1, #notesOnLine do
         note_data = noteData[notesOnLine[i]]
@@ -1713,7 +1759,7 @@ local function pasteNotesFromClipboard()
         return a.line > b.line
     end)
     --clear current note selection
-    updateNoteSelection(nil, "clear")
+    updateNoteSelection(nil, true)
     --go through clipboard
     for key in pairs(clipboard) do
         --search for valid column
@@ -2525,15 +2571,7 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
     local nmin = gridOffset2NoteValue(math.min(y, y2))
     local nmax = gridOffset2NoteValue(math.max(y, y2))
     local note_data
-    local refreshNeeded = false
-    local wasInSelection = {}
-    if not addToSelection and #noteSelection > 0 then
-        for i = 1, #noteSelection do
-            wasInSelection[noteSelection[i].idx] = 1
-        end
-        noteSelection = {}
-        refreshNeeded = true
-    end
+    local newNoteSelection = {}
     --loop through all notes
     for key in pairs(noteData) do
         note_data = noteData[key]
@@ -2543,28 +2581,13 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
                         (smin >= note_data.step and smin <= note_data.step + note_data.len - 1) or
                                 (smax >= note_data.step and smax <= note_data.step + note_data.len - 1) or
                                 (note_data.step >= smin and note_data.step + note_data.len - 1 <= smax)
-                ) and
-                not noteInSelection(note_data)
+                )
         then
             --add to selection table
-            table.insert(noteSelection, note_data)
-            wasInSelection[note_data.idx] = nil
-            setNoteColor(note_data, nil, true)
-            --refresh of piano roll needed
-            refreshNeeded = true
+            table.insert(newNoteSelection, note_data)
         end
     end
-    --piano refresh only when something was found
-    if refreshNeeded then
-        --reset note colors
-        for key in pairs(wasInSelection) do
-            setNoteColor(noteData[key])
-        end
-        jumpToNoteInPattern("sel")
-        --chord deteciton refresh needed too
-        refreshChordDetection = true
-    end
-    return refreshNeeded
+    updateNoteSelection(newNoteSelection, not addToSelection)
 end
 
 --keyboard preview
@@ -2696,54 +2719,21 @@ function noteClick(x, y, c, released, forceScaling)
             if note_data ~= nil then
                 if preferences.disableAltClickNoteRemove.value and keyAlt then
                     --dont delete notes, when use altKey in non pen mode
-                    if not noteInSelection(note_data) then
-                        noteSelection = {}
-                        table.insert(noteSelection, note_data)
-                        jumpToNoteInPattern("sel")
-                    end
-                    refreshPianoRollNeeded = true
+                    updateNoteSelection(note_data, note_data)
                 else
-                    noteSelection = {}
-                    table.insert(noteSelection, note_data)
-                    jumpToNoteInPattern("sel")
+                    updateNoteSelection(note_data, true)
                     removeSelectedNotes()
                 end
             end
         else
             if note_data ~= nil then
                 if not checkMode("preview") then
-                    local deselect = false
                     --clear selection, when ctrl is not holded
                     if #noteSelection > 0 and keyControl and not forceScaling then
-                        --check if the note is in selection, then just deselect
-                        for i = 1, #noteSelection do
-                            if noteSelection[i].line == note_data.line
-                                    and noteSelection[i].len == note_data.len
-                                    and noteSelection[i].column == note_data.column then
-                                deselect = true
-                                table.remove(noteSelection, i)
-                                jumpToNoteInPattern("sel")
-                                break
-                            end
-                        end
+                        updateNoteSelection(note_data, note_data)
                     else
-                        if #noteSelection > 0 then
-                            for i = 1, #noteSelection do
-                                if noteSelection[i].line == note_data.line
-                                        and noteSelection[i].len == note_data.len
-                                        and noteSelection[i].column == note_data.column then
-                                    return
-                                end
-                            end
-                        end
-                        noteSelection = {}
+                        updateNoteSelection(note_data, "note")
                     end
-                    --when note was not deselected, then add this note to selection
-                    if not deselect and not noteInSelection(note_data) then
-                        table.insert(noteSelection, note_data)
-                        jumpToNoteInPattern("sel")
-                    end
-                    refreshPianoRollNeeded = true
                 end
             end
         end
@@ -2763,7 +2753,7 @@ function pianoGridClick(x, y, released)
     if not released and not checkMode("preview") and not keyControl and not (outside and checkMode("pen")) then
         --deselect current notes, when outside was clicked
         if outside and #noteSelection > 0 then
-            updateNoteSelection(nil, "clear")
+            updateNoteSelection(nil, true)
         end
         --remove and add the clicked button, disable all buttons in the row, so the xypad in the background can
         --receive the click event remove/add trick from joule:
@@ -2912,9 +2902,7 @@ function pianoGridClick(x, y, released)
             --trigger preview notes
             triggerNoteOfCurrentInstrument(note_data.note, nil, nil, true)
             --clear selection and add new note as new selection
-            noteSelection = {}
-            table.insert(noteSelection, note_data)
-            jumpToNoteInPattern(note_data)
+            updateNoteSelection(note_data, true)
             --add other notes on this line back
             for i = 1, #notesOnLine do
                 note_data = noteData[notesOnLine[i]]
@@ -2952,7 +2940,7 @@ function pianoGridClick(x, y, released)
                 --deselect selected notes
                 if #noteSelection > 0 then
                     if not keyShift then
-                        updateNoteSelection(nil, "clear")
+                        updateNoteSelection(nil, true)
                     end
                 elseif preferences.resetVolPanDlyControlOnClick.value then
                     --nothing selected reset vol, pan and dly
@@ -4121,18 +4109,15 @@ end
 function setPlaybackPos(pos)
     --select all note events which are on specific pos
     if keyControl then
+        local newNotes = {}
         local line = pos + stepOffset
-        if not keyShift then
-            noteSelection = {}
-        end
         for key in pairs(noteData) do
             local note_data = noteData[key]
             if line >= note_data.line and line < note_data.line + note_data.len then
-                table.insert(noteSelection, note_data)
+                table.insert(newNotes, note_data)
             end
         end
-        jumpToNoteInPattern("sel")
-        refreshPianoRollNeeded = true
+        updateNoteSelection(newNotes, not keyShift)
     else
         playPatternFromLine(pos + stepOffset)
     end
