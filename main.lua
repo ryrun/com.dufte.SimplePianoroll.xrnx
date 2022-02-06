@@ -2637,7 +2637,9 @@ function noteClick(x, y, c, released, forceScaling)
                 for i = 1, #ns do
                     if ns[i] ~= nil and ns[i].note == note_data.note and ns[i].index ~= index then
                         vbw["b" .. ns[i].index].active = false
+                        vbw["bs" .. ns[i].index].active = false
                         table.insert(xypadpos.disabled, "b" .. ns[i].index)
+                        table.insert(xypadpos.disabled, "bs" .. ns[i].index)
                     end
                 end
             end
@@ -2649,6 +2651,7 @@ function noteClick(x, y, c, released, forceScaling)
             vbw["bbbs" .. index]:remove_child(vbw["bs" .. index])
             vbw["bbbs" .. index]:add_child(vbw["bs" .. index])
             vbw["b" .. index].active = false
+            table.insert(xypadpos.disabled, "b" .. index)
         else
             vbw["bbb" .. index]:remove_child(vbw["b" .. index])
             vbw["bbb" .. index]:add_child(vbw["b" .. index])
