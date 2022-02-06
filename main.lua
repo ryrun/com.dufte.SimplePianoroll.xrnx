@@ -949,6 +949,95 @@ local function updateNoteSelection(note_data, clear)
     --jump sel start
     if #noteSelection > 0 then
         jumpToNoteInPattern("sel")
+        --set control values
+        if preferences.setVelPanDlyLenFromLastNote.value then
+            --set note length
+            if note_data and note_data.idx then
+                currentNoteLength = note_data.len
+                refreshControls = true
+            end
+
+            local vel, end_vel, pan, dly, end_dly
+            for i = 1, #noteSelection do
+                if vel == nil then
+                    vel = noteSelection[i].vel
+                elseif type(vel) == "number" and vel ~= noteSelection[i].vel and noteSelection[i].vel < 129 then
+                    vel = math.max(vel, noteSelection[i].vel)
+                elseif vel ~= noteSelection[i].vel then
+                    vel = "mixed"
+                end
+                if end_vel == nil then
+                    end_vel = noteSelection[i].end_vel
+                elseif type(end_vel) == "number" and end_vel ~= noteSelection[i].end_vel and noteSelection[i].end_vel < 129 then
+                    end_vel = math.max(end_vel, noteSelection[i].end_vel)
+                elseif end_vel ~= noteSelection[i].end_vel then
+                    end_vel = "mixed"
+                end
+                if pan == nil then
+                    pan = noteSelection[i].pan
+                elseif type(pan) == "number" and pan ~= noteSelection[i].pan and noteSelection[i].pan < 129 then
+                    pan = math.max(pan, noteSelection[i].pan)
+                elseif pan ~= noteSelection[i].pan then
+                    pan = "mixed"
+                end
+                if dly == nil then
+                    dly = noteSelection[i].dly
+                elseif dly ~= noteSelection[i].dly then
+                    dly = math.max(dly, noteSelection[i].dly)
+                end
+                if end_dly == nil then
+                    end_dly = noteSelection[i].end_dly
+                elseif end_dly ~= noteSelection[i].end_dly then
+                    end_dly = math.max(end_dly, noteSelection[i].end_dly)
+                end
+            end
+
+            if vel == "mixed" and currentNoteVelocity ~= 255 then
+                currentNoteVelocity = 255
+                currentNoteVelocityPreview = 127
+                refreshControls = true
+            elseif type(vel) == "number" and vel ~= currentNoteVelocity then
+                currentNoteVelocity = vel
+                if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
+                    currentNoteVelocityPreview = currentNoteVelocity
+                else
+                    currentNoteVelocityPreview = 127
+                end
+                refreshControls = true
+            end
+
+            if end_vel == "mixed" and currentNoteEndVelocity ~= 255 then
+                currentNoteEndVelocity = 255
+                refreshControls = true
+            elseif type(end_vel) == "number" and end_vel ~= currentNoteEndVelocity then
+                currentNoteEndVelocity = end_vel
+                refreshControls = true
+            end
+
+            if pan == "mixed" and currentNotePan ~= 255 then
+                currentNotePan = 255
+                refreshControls = true
+            elseif type(pan) == "number" and pan ~= currentNotePan then
+                currentNotePan = pan
+                refreshControls = true
+            end
+
+            if dly == "mixed" and currentNoteDelay ~= 0 then
+                currentNoteDelay = 0
+                refreshControls = true
+            elseif type(dly) == "number" and dly ~= currentNoteDelay then
+                currentNoteDelay = dly
+                refreshControls = true
+            end
+
+            if end_dly == "mixed" and currentNoteEndDelay ~= 0 then
+                currentNoteEndDelay = 0
+                refreshControls = true
+            elseif type(end_dly) == "number" and end_dly ~= currentNoteEndDelay then
+                currentNoteEndDelay = end_dly
+                refreshControls = true
+            end
+        end
     else
         --refresh chord detection
         refreshChordDetection = true
@@ -2688,35 +2777,6 @@ function noteClick(x, y, c, released, forceScaling)
 
     if released then
         local dbclk = dbclkDetector("b" .. index)
-        --always set note date for the next new note
-        if note_data ~= nil then
-            if preferences.setVelPanDlyLenFromLastNote.value then
-                currentNoteGhost = note_data.ghst
-                currentNoteLength = note_data.len
-                currentNoteVelocity = note_data.vel
-                if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
-                    currentNoteVelocityPreview = currentNoteVelocity
-                else
-                    currentNoteVelocityPreview = 127
-                end
-                if note_data.len > 1 then
-                    currentNoteEndVelocity = note_data.end_vel
-                else
-                    if toRenoiseHex(note_data.vel):sub(1, 1) == "C" then
-                        currentNoteVelocity = 255
-                        currentNoteEndVelocity = note_data.vel
-                    else
-                        currentNoteEndVelocity = 255
-                    end
-                end
-                currentNotePan = note_data.pan
-                currentNoteDelay = note_data.dly
-                currentNoteEndDelay = note_data.end_dly
-                refreshControls = true
-            end
-            --always jump to the note
-            jumpToNoteInPattern(note_data)
-        end
         --remove on dblclk or when in penmode or previewmode
         if checkMode("pen") or (dbclk and not checkMode("preview")) then
             --set clicked note as selected for remove function
@@ -3139,15 +3199,6 @@ local function drawNoteToGrid(column,
                     if cutValue < l_song_transport.tpl then
                         buttonWidth = buttonWidth - ((gridStepSizeW - gridSpacing) / 100 * (100 / l_song_transport.tpl * (l_song_transport.tpl - cutValue)))
                     end
-                end
-
-                if isInSelection and #noteSelection == 1 and preferences.setVelPanDlyLenFromLastNote.value then
-                    currentNotePan = current_note_pan
-                    currentNoteVelocity = current_note_vel
-                    currentNoteEndVelocity = current_note_end_vel
-                    currentNoteDelay = current_note_dly
-                    currentNoteEndDelay = current_note_end_dly
-                    refreshControls = true
                 end
 
                 local btn = vb:row {
@@ -4460,7 +4511,7 @@ local function handleKeyEvent(keyEvent)
         if key.state == "pressed" then
             keyInfoText = "Deselect current note selection"
             if #noteSelection > 0 then
-                updateNoteSelection(nil, "clear")
+                updateNoteSelection(nil, true)
             end
         end
         handled = true
@@ -6045,7 +6096,7 @@ local function showPreferences()
                         bind = preferences.setVelPanDlyLenFromLastNote,
                     },
                     vbp:text {
-                        text = "Set vel, pan, dly and len from last drawn or selected note",
+                        text = "Set vel, pan, dly and len from last drawn note or selection",
                     },
                 },
                 vbp:row {
