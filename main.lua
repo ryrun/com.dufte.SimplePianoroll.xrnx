@@ -6588,7 +6588,6 @@ local function createPianoRollDialog()
                 style = "panel",
                 vb:button {
                     id = "notecolumn_vel",
-                    --text = "Vol",
                     bitmap = "Icons/Transport_ViewVolumeColumn.bmp",
                     width = 24,
                     tooltip = "Enable / disable note volume column",
@@ -6705,7 +6704,6 @@ local function createPianoRollDialog()
                 },
                 vb:button {
                     id = "notecolumn_pan",
-                    --text = "Pan",
                     bitmap = "Icons/Transport_ViewPanColumn.bmp",
                     width = 24,
                     tooltip = "Enable / disable note pan column",
@@ -6773,7 +6771,6 @@ local function createPianoRollDialog()
                 },
                 vb:button {
                     id = "notecolumn_delay",
-                    --text = "Dly",
                     bitmap = "Icons/Transport_ViewDelayColumn.bmp",
                     width = 24,
                     tooltip = "Enable / disable note delay column",
