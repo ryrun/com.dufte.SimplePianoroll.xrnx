@@ -6492,7 +6492,7 @@ local function createPianoRollDialog()
                 spacing = -3,
                 style = "panel",
                 vb:button {
-                    text = "↖",
+                    bitmap = "Icons/AutomationList_Empty.bmp",
                     width = 24,
                     tooltip = "Select mode (F1)",
                     id = "mode_select",
