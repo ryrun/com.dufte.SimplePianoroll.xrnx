@@ -2745,6 +2745,7 @@ function noteClick(x, y, c, released, forceScaling)
             vbw["bbb" .. index]:remove_child(vbw["b" .. index])
             vbw["bbb" .. index]:add_child(vbw["b" .. index])
         end
+        xypadpos.leftClick = true
         xypadpos.selection_key = noteInSelection(note_data)
         xypadpos.idx = note_data.idx
         xypadpos.lastx = -1
@@ -4179,87 +4180,6 @@ function setPlaybackPos(pos)
     end
 end
 
---app idle
-local function appIdleEvent()
-    --only process when window is created and visible
-    if windowObj and windowObj.visible then
-
-        --refresh modifier states, when keys are pressed outside focus
-        local keyState = app.key_modifier_states
-        if (keyState["alt"] == "pressed" and keyAlt == false) or (keyState["alt"] == "released" and keyAlt == true) then
-            keyAlt = not keyAlt
-            refreshControls = true
-        end
-        if (keyState["control"] == "pressed" and keyControl == false) or (keyState["control"] == "released" and keyControl == true) then
-            keyControl = not keyControl
-            refreshControls = true
-        end
-        if (keyState["shift"] == "pressed" and keyShift == false) or (keyState["shift"] == "released" and keyShift == true) then
-            keyShift = not keyShift
-            refreshControls = true
-        end
-
-        --process after edit features
-        if afterEditProcessTime ~= nil and afterEditProcessTime < os.clock() - 0.1 then
-            afterEditProcess()
-        end
-
-        --refresh pianoroll, when needed
-        if refreshPianoRollNeeded then
-            fillPianoRoll()
-        end
-
-        --refresh control, when needed
-        if refreshControls then
-            refreshNoteControls()
-        end
-
-        --refresh timeline, when needed
-        if refreshTimeline then
-            fillTimeline()
-        end
-
-        --refresh chord states
-        if refreshChordDetection and preferences.chordDetection.value then
-            refreshDetectedChord()
-        end
-
-        --key info state
-        if lastKeyInfoTime and lastKeyInfoTime + preferences.keyInfoTime.value < os.clock() then
-            vbw["key_state"].text = ""
-        end
-
-        --refresh playback pos indicator
-        refreshPlaybackPosIndicator()
-
-        --edit pos render
-        refreshEditPosIndicator()
-
-        --block loop, create an index for comparison, because obserable's are missing here
-        local currentblockloop = tostring(song.transport.loop_block_enabled)
-                .. tostring(song.transport.loop_block_start_pos)
-                .. tostring(song.transport.loop_block_range_coeff)
-        if blockloopidx ~= currentblockloop then
-            blockloopidx = currentblockloop
-            refreshTimeline = true
-        end
-
-        --
-        if #lastTriggerNote > 0 and oscClient then
-            local newLastTriggerNote = {}
-            for i = 1, #lastTriggerNote do
-                if lastTriggerNote[i].time < os.clock() - (preferences.triggerTime.value / 1000) then
-                    table.remove(lastTriggerNote[i].packet, 4) --remove velocity
-                    oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote[i].packet))
-                else
-                    table.insert(newLastTriggerNote, lastTriggerNote[i])
-                end
-            end
-            lastTriggerNote = newLastTriggerNote
-        end
-    end
-end
-
 --refresh notifier for observers
 local function obsPianoRefresh()
     --clear note selection
@@ -5267,6 +5187,83 @@ local function handleXypad(val)
         fillPianoRoll()
     elseif quickRefresh then
         refreshSelectedNotes()
+    end
+end
+
+--app idle
+local function appIdleEvent()
+    --only process when window is created and visible
+    if windowObj and windowObj.visible then
+        --scroll via idle, more instant
+        if xypadpos.leftClick then
+            local val = vbw["xypad"].value
+            if val.y == 1 or val.y - 1 == gridHeight or val.x == 1 or val.x - 1 == gridWidth then
+                handleXypad(val)
+            end
+        end
+        --refresh modifier states, when keys are pressed outside focus
+        local keyState = app.key_modifier_states
+        if (keyState["alt"] == "pressed" and keyAlt == false) or (keyState["alt"] == "released" and keyAlt == true) then
+            keyAlt = not keyAlt
+            refreshControls = true
+        end
+        if (keyState["control"] == "pressed" and keyControl == false) or (keyState["control"] == "released" and keyControl == true) then
+            keyControl = not keyControl
+            refreshControls = true
+        end
+        if (keyState["shift"] == "pressed" and keyShift == false) or (keyState["shift"] == "released" and keyShift == true) then
+            keyShift = not keyShift
+            refreshControls = true
+        end
+        --process after edit features
+        if afterEditProcessTime ~= nil and afterEditProcessTime < os.clock() - 0.1 then
+            afterEditProcess()
+        end
+        --refresh pianoroll, when needed
+        if refreshPianoRollNeeded then
+            fillPianoRoll()
+        end
+        --refresh control, when needed
+        if refreshControls then
+            refreshNoteControls()
+        end
+        --refresh timeline, when needed
+        if refreshTimeline then
+            fillTimeline()
+        end
+        --refresh chord states
+        if refreshChordDetection and preferences.chordDetection.value then
+            refreshDetectedChord()
+        end
+        --key info state
+        if lastKeyInfoTime and lastKeyInfoTime + preferences.keyInfoTime.value < os.clock() then
+            vbw["key_state"].text = ""
+        end
+        --refresh playback pos indicator
+        refreshPlaybackPosIndicator()
+        --edit pos render
+        refreshEditPosIndicator()
+        --block loop, create an index for comparison, because obserable's are missing here
+        local currentblockloop = tostring(song.transport.loop_block_enabled)
+                .. tostring(song.transport.loop_block_start_pos)
+                .. tostring(song.transport.loop_block_range_coeff)
+        if blockloopidx ~= currentblockloop then
+            blockloopidx = currentblockloop
+            refreshTimeline = true
+        end
+        --
+        if #lastTriggerNote > 0 and oscClient then
+            local newLastTriggerNote = {}
+            for i = 1, #lastTriggerNote do
+                if lastTriggerNote[i].time < os.clock() - (preferences.triggerTime.value / 1000) then
+                    table.remove(lastTriggerNote[i].packet, 4) --remove velocity
+                    oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote[i].packet))
+                else
+                    table.insert(newLastTriggerNote, lastTriggerNote[i])
+                end
+            end
+            lastTriggerNote = newLastTriggerNote
+        end
     end
 end
 
