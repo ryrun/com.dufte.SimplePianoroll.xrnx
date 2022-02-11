@@ -193,7 +193,7 @@ local defaultPreferences = {
     centerViewOnOpen = true,
     chordDetection = true,
     keyLabels = 2,
-    invisibleSelectMarker = false,
+    mouseWarpingCompatibilityMode = false,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -262,7 +262,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     previewPolyphony = defaultPreferences.previewPolyphony,
     limitPreviewBySelectionSize = defaultPreferences.limitPreviewBySelectionSize,
     chordDetection = defaultPreferences.chordDetection,
-    invisibleSelectMarker = defaultPreferences.invisibleSelectMarker,
+    mouseWarpingCompatibilityMode = defaultPreferences.mouseWarpingCompatibilityMode,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -5175,7 +5175,7 @@ local function handleXypad(val)
             if xypadpos.x ~= math.floor(val.x) or xypadpos.y ~= math.floor(val.y) then
                 xypadpos.x = math.floor(val.x)
                 xypadpos.y = math.floor(val.y)
-                if not preferences.invisibleSelectMarker.value then
+                if not preferences.mouseWarpingCompatibilityMode.value then
                     drawRectangle(true, xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny)
                 end
                 selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, keyShift)
@@ -6178,13 +6178,14 @@ local function showPreferences()
                 },
                 vbp:row {
                     vbp:checkbox {
-                        bind = preferences.invisibleSelectMarker,
+                        bind = preferences.mouseWarpingCompatibilityMode,
                         notifier = function()
                             rebuildWindowDialog = true
                         end
                     },
                     vbp:text {
-                        text = "Hide select marker, so mouse warping can still be used",
+                        text = "Mouse warping compatibility mode",
+                        tooltip = "Disable select marker and other mouse related functions, where left mouse button state is needed to prevent mouse jumping.",
                     },
                 },
                 vbp:row {
@@ -6238,7 +6239,7 @@ local function showPreferences()
     refreshControls = true
     refreshPianoRollNeeded = true
     --when invisible is enabled, no snapback needed
-    if not preferences.invisibleSelectMarker.value and vbw["xypad"] then
+    if not preferences.mouseWarpingCompatibilityMode.value and vbw["xypad"] then
         vbw["xypad"].snapback = snapBackVal
     else
         vbw["xypad"].snapback = nil
@@ -7337,7 +7338,7 @@ local function main_function()
             createPianoRollDialog()
         end
         --when invisible is enabled, no snapback needed
-        if not preferences.invisibleSelectMarker.value then
+        if not preferences.mouseWarpingCompatibilityMode.value then
             vbw["xypad"].snapback = snapBackVal
         end
         --fill new created pianoroll, timeline and refresh controls
