@@ -6181,11 +6181,11 @@ local function showPreferences()
                         bind = preferences.mouseWarpingCompatibilityMode,
                         notifier = function()
                             rebuildWindowDialog = true
-                        end
+                        end,
+                        tooltip = "Disable select marker and other mouse related functions, where left mouse button state is needed to prevent mouse jumping."
                     },
                     vbp:text {
                         text = "Mouse warping compatibility mode",
-                        tooltip = "Disable select marker and other mouse related functions, where left mouse button state is needed to prevent mouse jumping.",
                     },
                 },
                 vbp:row {
