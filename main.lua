@@ -175,6 +175,7 @@ local defaultPreferences = {
     scaleBtnShadingAmount = 0.25,
     rootKeyShadingAmount = 0.15,
     outOfNoteScaleShadingAmount = 0.15,
+    outOfPentatonicScaleHighlightingAmount = 0.00,
     azertyMode = false,
     scrollWheelSpeed = 2,
     clickAreaSizeForScalingPx = 7,
@@ -263,6 +264,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     limitPreviewBySelectionSize = defaultPreferences.limitPreviewBySelectionSize,
     chordDetection = defaultPreferences.chordDetection,
     mouseWarpingCompatibilityMode = defaultPreferences.mouseWarpingCompatibilityMode,
+    outOfPentatonicScaleHighlightingAmount = defaultPreferences.outOfPentatonicScaleHighlightingAmount,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -3955,9 +3957,26 @@ local function fillPianoRoll(quickRefresh)
                         if s == 1 then
                             local idx = "k" .. ystring
                             local key = l_vbw[idx]
-                            local isRootKey = (preferences.scaleHighlightingType.value ~= 5 and currentScale == 2 and noteIndexInScale((y + noffset) % 12) == 0) or
-                                    (preferences.scaleHighlightingType.value ~= 5 and currentScale == 3 and noteIndexInScale((y + noffset) % 12) == 9) or
-                                    (preferences.scaleHighlightingType.value == 5 and currentScale == 2 and noteIndexInScale((y + noffset) % 12) == 0)
+                            local isRootKey = false
+                            local outOfPentatnicScale = false
+                            local nIdx
+                            if preferences.scaleHighlightingType.value ~= 5 then
+                                nIdx = noteIndexInScale((y + noffset) % 12)
+                                if nIdx == 5 or nIdx == 11 then
+                                    outOfPentatnicScale = true
+                                end
+                                if currentScale == 2 then
+                                    if nIdx == 0 then
+                                        isRootKey = true
+                                    end
+                                elseif currentScale == 3 then
+                                    if nIdx == 9 then
+                                        isRootKey = true
+                                    end
+                                end
+                            elseif preferences.scaleHighlightingType.value == 5 and currentScale == 2 and noteIndexInScale((y + noffset) % 12) == 0 then
+                                isRootKey = true
+                            end
                             if preferences.keyboardStyle.value == 2 then
                                 defaultColor[idx] = colorList
                             elseif noteInScale((y + noffset) % 12, true) then
@@ -3967,6 +3986,8 @@ local function fillPianoRoll(quickRefresh)
                             end
                             if isRootKey then
                                 defaultColor[idx] = shadeColor(defaultColor[idx], preferences.rootKeyShadingAmount.value)
+                            elseif outOfPentatnicScale then
+                                defaultColor[idx] = alphablendColors(colorNoteHighlight, defaultColor[idx], preferences.outOfPentatonicScaleHighlightingAmount.value)
                             end
                             if notesPlaying[y + noffset] then
                                 key.color = colorStepOn
@@ -5473,6 +5494,24 @@ local function showPreferences()
                         min = 0,
                         max = 1,
                         bind = preferences.rootKeyShadingAmount,
+                        tostring = function(v)
+                            return string.format("%.2f", v)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v)
+                        end
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Highlighting amount of non pentatonic keys:",
+                    },
+                    vbp:valuebox {
+                        steps = { 0.01, 0.1 },
+                        min = 0,
+                        max = 1,
+                        bind = preferences.outOfPentatonicScaleHighlightingAmount,
                         tostring = function(v)
                             return string.format("%.2f", v)
                         end,
