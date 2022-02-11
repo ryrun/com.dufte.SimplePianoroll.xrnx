@@ -3986,7 +3986,7 @@ local function fillPianoRoll(quickRefresh)
                             if isRootKey then
                                 defaultColor[idx] = shadeColor(defaultColor[idx], preferences.rootKeyShadingAmount.value)
                             elseif outOfPentatnicScale then
-                                defaultColor[idx] = alphablendColors(defaultColor[idx], colorNoteHighlight, preferences.outOfPentatonicScaleHighlightingAmount.value)
+                                defaultColor[idx] = alphablendColors(defaultColor[idx], colorNoteGhost, preferences.outOfPentatonicScaleHighlightingAmount.value)
                             end
                             if notesPlaying[y + noffset] then
                                 key.color = colorStepOn
