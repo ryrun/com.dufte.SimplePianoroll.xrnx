@@ -615,9 +615,9 @@ local function alphablendColors(color1, color2, alphablend)
         return color1
     end
     return {
-        math.ceil(math.max(color2[1] * (1 - alphablend) + color1[1] * alphablend, 1)),
-        math.ceil(math.max(color2[2] * (1 - alphablend) + color1[2] * alphablend, 1)),
-        math.ceil(math.max(color2[3] * (1 - alphablend) + color1[3] * alphablend, 1))
+        math.ceil(math.max(color1[1] * (1 - alphablend) + color2[1] * alphablend, 1)),
+        math.ceil(math.max(color1[2] * (1 - alphablend) + color2[2] * alphablend, 1)),
+        math.ceil(math.max(color1[3] * (1 - alphablend) + color2[3] * alphablend, 1))
     }
 end
 
@@ -642,8 +642,7 @@ local function colorNoteVelocity(vel, ghost, isOnStep, isInSelection)
     end
     if vel < 0x7f and preferences.applyVelocityColorShading.value then
         if preferences.shadingType.value == 2 then
-            color = alphablendColors(colorBaseGridColor,
-                    noteColor,
+            color = alphablendColors(noteColor, colorBaseGridColor,
                     preferences.velocityColorShadingAmount.value / 0x7f * (0x7f - vel))
         else
             color = shadeColor(noteColor, preferences.velocityColorShadingAmount.value / 0x7f * (0x7f - vel))
@@ -3987,7 +3986,7 @@ local function fillPianoRoll(quickRefresh)
                             if isRootKey then
                                 defaultColor[idx] = shadeColor(defaultColor[idx], preferences.rootKeyShadingAmount.value)
                             elseif outOfPentatnicScale then
-                                defaultColor[idx] = alphablendColors(colorNoteHighlight, defaultColor[idx], preferences.outOfPentatonicScaleHighlightingAmount.value)
+                                defaultColor[idx] = alphablendColors(defaultColor[idx], colorNoteHighlight, preferences.outOfPentatonicScaleHighlightingAmount.value)
                             end
                             if notesPlaying[y + noffset] then
                                 key.color = colorStepOn
