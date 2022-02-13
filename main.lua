@@ -195,6 +195,7 @@ local defaultPreferences = {
     chordDetection = true,
     keyLabels = 2,
     mouseWarpingCompatibilityMode = false,
+    setComputerKeyboardVelocity = false,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -265,6 +266,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     chordDetection = defaultPreferences.chordDetection,
     mouseWarpingCompatibilityMode = defaultPreferences.mouseWarpingCompatibilityMode,
     outOfPentatonicScaleHighlightingAmount = defaultPreferences.outOfPentatonicScaleHighlightingAmount,
+    setComputerKeyboardVelocity = defaultPreferences.setComputerKeyboardVelocity,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -1337,8 +1339,15 @@ local function refreshNoteControls()
         end
         if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
             currentNoteVelocityPreview = currentNoteVelocity
+            if preferences.setComputerKeyboardVelocity.value then
+                song.transport.keyboard_velocity_enabled = true
+                song.transport.keyboard_velocity = currentNoteVelocityPreview
+            end
         else
             currentNoteVelocityPreview = 127
+            if preferences.setComputerKeyboardVelocity.value then
+                song.transport.keyboard_velocity_enabled = false
+            end
         end
         if currentNoteEndVelocity == 255 then
             vbw.note_end_vel.value = -1
@@ -6146,6 +6155,14 @@ local function showPreferences()
                     },
                     vbp:text {
                         text = "Reset vol, pan and dly on grid click, when nothing is selected",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.setComputerKeyboardVelocity,
+                    },
+                    vbp:text {
+                        text = "Set preview velocity also to Renoise computer keyboard velocity",
                     },
                 },
                 vbp:row {
