@@ -4154,6 +4154,9 @@ local function fillPianoRoll(quickRefresh)
     --for automatic mode or empty patterns, set scale highlighting again, if needed
     if setScaleHighlighting(true) then
         refreshPianoRollNeeded = true
+    else
+        --just refresh selection also values of controls, when enabled
+        updateNoteSelection()
     end
 
     --enable buttons when something selected
