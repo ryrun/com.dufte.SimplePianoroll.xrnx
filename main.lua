@@ -439,8 +439,9 @@ local lastKeyboardNote = {}
 
 --default sort functions
 local function sortLeftOneFirst(a, b)
-    local x = a.line + a.dly / 0x100
-    local y = b.line + b.dly / 0x100
+    local x, y
+    x = a.line + a.dly / 0x100
+    y = b.line + b.dly / 0x100
     if x == y then
         x = a.column
         y = b.column
@@ -449,14 +450,22 @@ local function sortLeftOneFirst(a, b)
 end
 
 local function sortRightOneFirst(a, b)
-    local x = a.line + a.len + a.end_dly / 0x100
-    local y = b.line + b.len + a.end_dly / 0x100
+    local x, y
+    x = a.line + a.len + a.end_dly / 0x100
+    y = b.line + b.len + a.end_dly / 0x100
     if x == y then
         --flip x and y, because column order shouldn't changed
         y = a.column
         x = b.column
     end
     return x > y
+end
+
+local function sortFirstColumnFirst(a, b)
+    local x, y
+    x = a.column
+    y = b.column
+    return x < y
 end
 
 --force value between and inclusive min/max values
@@ -1868,6 +1877,8 @@ local function pasteNotesFromClipboard()
     end)
     --clear current note selection
     updateNoteSelection(nil, true)
+    --resort so column order stays
+    table.sort(clipboard, sortFirstColumnFirst)
     --go through clipboard
     for key in pairs(clipboard) do
         --search for valid column
@@ -2046,6 +2057,8 @@ local function duplicateSelectedNotes(noOffset)
     else
         setUndoDescription("Duplicate notes to right ...")
     end
+    --resort so column order stays
+    table.sort(noteSelection, sortFirstColumnFirst)
     --go through selection
     for key = 1, #noteSelection do
         --search for valid column
