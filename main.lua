@@ -197,6 +197,7 @@ local defaultPreferences = {
     keyLabels = 2,
     mouseWarpingCompatibilityMode = false,
     setComputerKeyboardVelocity = false,
+    moveNoteInPenMode = false,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -268,6 +269,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     mouseWarpingCompatibilityMode = defaultPreferences.mouseWarpingCompatibilityMode,
     outOfPentatonicScaleHighlightingAmount = defaultPreferences.outOfPentatonicScaleHighlightingAmount,
     setComputerKeyboardVelocity = defaultPreferences.setComputerKeyboardVelocity,
+    moveNoteInPenMode = defaultPreferences.moveNoteInPenMode,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -2803,7 +2805,7 @@ function noteClick(x, y, c, released, forceScaling)
     if released then
         local dbclk = dbclkDetector("b" .. index)
         --remove on dblclk or when in penmode or previewmode
-        if checkMode("pen") or (dbclk and not checkMode("preview")) then
+        if (checkMode("pen") and not preferences.moveNoteInPenMode.value) or (dbclk and not checkMode("preview")) then
             --set clicked note as selected for remove function
             if note_data ~= nil then
                 if preferences.disableAltClickNoteRemove.value and keyAlt then
@@ -6145,6 +6147,14 @@ local function showPreferences()
                     },
                     vbp:text {
                         text = "Enable pen mode by default",
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.moveNoteInPenMode,
+                    },
+                    vbp:text {
+                        text = "Allow move and scale of notes in pen mode",
                     },
                 },
                 vbp:row {
