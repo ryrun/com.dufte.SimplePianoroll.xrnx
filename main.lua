@@ -6083,63 +6083,13 @@ local function showPreferences()
                             "running with the same protocol (UDP, TCP) and port\n" ..
                             "settings as specified here."
                 },
-            },
-            vbp:column {
-                style = "group",
-                margin = 5,
-                spacing = 4,
+                vbp:space {
+                    height = 8,
+                },
                 vbp:text {
-                    text = "Misc",
+                    text = "Workflow",
                     font = "big",
                     style = "strong",
-                },
-                vbp:horizontal_aligner {
-                    mode = "justify",
-                    vbp:text {
-                        text = "Max double click time (ms):",
-                    },
-                    vbp:valuebox {
-                        steps = { 1, 2 },
-                        min = 50,
-                        max = 2000,
-                        bind = preferences.dblClickTime,
-                    },
-                },
-                vbp:horizontal_aligner {
-                    mode = "justify",
-                    vbp:text {
-                        text = "Scroll wheel speed (lines):",
-                    },
-                    vbp:valuebox {
-                        steps = { 1, 2 },
-                        min = 1,
-                        max = 6,
-                        bind = preferences.scrollWheelSpeed,
-                        tostring = function(v)
-                            return string.format("%i", v)
-                        end,
-                        tonumber = function(v)
-                            return tonumber(v)
-                        end
-                    },
-                },
-                vbp:horizontal_aligner {
-                    mode = "justify",
-                    vbp:text {
-                        text = "Snap to grid amount for scaling (%):",
-                    },
-                    vbp:valuebox {
-                        steps = { 1, 2 },
-                        min = 0,
-                        max = 50,
-                        bind = preferences.snapToGridSize,
-                        tostring = function(v)
-                            return string.format("%i", v)
-                        end,
-                        tonumber = function(v)
-                            return tonumber(v)
-                        end
-                    },
                 },
                 vbp:row {
                     vbp:checkbox {
@@ -6155,14 +6105,6 @@ local function showPreferences()
                     },
                     vbp:text {
                         text = "Allow move and scale of notes in pen mode",
-                    },
-                },
-                vbp:row {
-                    vbp:checkbox {
-                        bind = preferences.chordDetection,
-                    },
-                    vbp:text {
-                        text = "Enable chord detection for playing and selected notes",
                     },
                 },
                 vbp:row {
@@ -6237,13 +6179,15 @@ local function showPreferences()
                         text = "Automatically set the last edited track as ghost track",
                     },
                 },
-                vbp:row {
-                    vbp:checkbox {
-                        bind = preferences.disableAltClickNoteRemove,
-                    },
-                    vbp:text {
-                        text = "Disable alt key click note remove",
-                    },
+            },
+            vbp:column {
+                style = "group",
+                margin = 5,
+                spacing = 4,
+                vbp:text {
+                    text = "Keyboard",
+                    font = "big",
+                    style = "strong",
                 },
                 vbp:row {
                     vbp:checkbox {
@@ -6255,22 +6199,18 @@ local function showPreferences()
                 },
                 vbp:row {
                     vbp:checkbox {
-                        bind = preferences.disableKeyHandler,
+                        bind = preferences.disableAltClickNoteRemove,
                     },
                     vbp:text {
-                        text = "Disable all keyboard shortcuts",
+                        text = "Disable alt key click note remove",
                     },
                 },
                 vbp:row {
                     vbp:checkbox {
-                        bind = preferences.mouseWarpingCompatibilityMode,
-                        notifier = function()
-                            rebuildWindowDialog = true
-                        end,
-                        tooltip = "Disable select marker and other mouse related functions, where left mouse button state is needed to prevent mouse jumping."
+                        bind = preferences.disableKeyHandler,
                     },
                     vbp:text {
-                        text = "Mouse warping compatibility mode",
+                        text = "Disable all keyboard shortcuts",
                     },
                 },
                 vbp:row {
@@ -6299,8 +6239,92 @@ local function showPreferences()
                         end
                     },
                 },
+                vbp:space {
+                    height = 8,
+                },
+                vbp:text {
+                    text = "Mouse",
+                    font = "big",
+                    style = "strong",
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Max double click time (ms):",
+                    },
+                    vbp:valuebox {
+                        steps = { 1, 2 },
+                        min = 50,
+                        max = 2000,
+                        bind = preferences.dblClickTime,
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Scroll wheel speed (lines):",
+                    },
+                    vbp:valuebox {
+                        steps = { 1, 2 },
+                        min = 1,
+                        max = 6,
+                        bind = preferences.scrollWheelSpeed,
+                        tostring = function(v)
+                            return string.format("%i", v)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v)
+                        end
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Snap to grid amount for scaling (%):",
+                    },
+                    vbp:valuebox {
+                        steps = { 1, 2 },
+                        min = 0,
+                        max = 50,
+                        bind = preferences.snapToGridSize,
+                        tostring = function(v)
+                            return string.format("%i", v)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v)
+                        end
+                    },
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.mouseWarpingCompatibilityMode,
+                        notifier = function()
+                            rebuildWindowDialog = true
+                        end,
+                        tooltip = "Disable select marker and other mouse related functions to prevent mouse jumping."
+                    },
+                    vbp:text {
+                        text = "Mouse warping compatibility mode",
+                    },
+                },
                 vbp:text {
                     text = "IMPORTANT: To improve mouse control, please disable\nthe mouse warping option in the Renoise preferences\nin section GUI."
+                },
+                vbp:space {
+                    height = 8,
+                },
+                vbp:text {
+                    text = "Additional features",
+                    font = "big",
+                    style = "strong",
+                },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.chordDetection,
+                    },
+                    vbp:text {
+                        text = "Enable chord detection for playing and selected notes",
+                    },
                 },
             },
         }
