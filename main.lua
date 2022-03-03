@@ -5270,13 +5270,13 @@ local function appIdleEvent()
         if afterEditProcessTime ~= nil and afterEditProcessTime < os.clock() - 0.1 then
             afterEditProcess()
         end
-        --refresh pianoroll, when needed
-        if refreshPianoRollNeeded then
-            fillPianoRoll()
-        end
         --refresh control, when needed
         if refreshControls then
             refreshNoteControls()
+        end
+        --refresh pianoroll, when needed
+        if refreshPianoRollNeeded then
+            fillPianoRoll()
         end
         --refresh timeline, when needed
         if refreshTimeline then
