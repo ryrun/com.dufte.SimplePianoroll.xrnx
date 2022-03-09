@@ -198,6 +198,7 @@ local defaultPreferences = {
     mouseWarpingCompatibilityMode = false,
     setComputerKeyboardVelocity = false,
     moveNoteInPenMode = false,
+    mirroringGhostTrack = false,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -270,6 +271,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     outOfPentatonicScaleHighlightingAmount = defaultPreferences.outOfPentatonicScaleHighlightingAmount,
     setComputerKeyboardVelocity = defaultPreferences.setComputerKeyboardVelocity,
     moveNoteInPenMode = defaultPreferences.moveNoteInPenMode,
+    mirroringGhostTrack = defaultPreferences.mirroringGhostTrack,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -1489,6 +1491,11 @@ local function refreshNoteControls()
         vbw.mute.color = colorDefault
     end
     vbw.chorddetection.visible = preferences.chordDetection.value
+    if preferences.mirroringGhostTrack.value then
+        vbw.ghosttrackmirror.color = colorStepOn
+    else
+        vbw.ghosttrackmirror.color = colorDefault
+    end
     refreshControls = false
 end
 
@@ -3475,15 +3482,16 @@ local function ghostTrack(trackIndex)
     local steps = song.selected_pattern.number_of_lines
     local stepsCount = math.min(steps, gridWidth)
     local lineValues = song.selected_pattern:track(trackIndex).lines
+    local mirrorMode = preferences.mirroringGhostTrack.value
+    local note, note_column, rowoffset
     for c = 1, columns do
-        local rowoffset
 
         if stepOffset > 0 then
             for i = stepOffset + 1, 1, -1 do
-                local note_column = lineValues[i]:note_column(c)
-                local note = note_column.note_value
+                note_column = lineValues[i]:note_column(c)
+                note = note_column.note_value
                 if note < 120 then
-                    rowoffset = noteValue2GridRowOffset(note)
+                    rowoffset = noteValue2GridRowOffset(note, mirrorMode)
                     break
                 elseif note == 120 then
                     break
@@ -3492,20 +3500,31 @@ local function ghostTrack(trackIndex)
         end
 
         for s = 1, stepsCount do
-            local note_column = lineValues[s + stepOffset]:note_column(c)
-            local note = note_column.note_value
+            note_column = lineValues[s + stepOffset]:note_column(c)
+            note = note_column.note_value
 
             if note < 120 then
-                rowoffset = noteValue2GridRowOffset(note)
+                rowoffset = noteValue2GridRowOffset(note, mirrorMode)
             elseif note == 120 then
                 rowoffset = nil
             end
 
             if rowoffset then
-                local p = vbw["p" .. s .. "_" .. rowoffset]
+                local idx = "p" .. s .. "_"
+                local p
+                p = vbw[idx .. rowoffset]
                 if p then
                     p.color = colorGhostTrackNote
-                    defaultColor["p" .. s .. "_" .. rowoffset] = p.color
+                    defaultColor[idx] = p.color
+                end
+                if mirrorMode then
+                    for i = -108, 108, 12 do
+                        p = vbw[idx .. (rowoffset + i)]
+                        if p then
+                            p.color = colorGhostTrackNote
+                            defaultColor[idx] = p.color
+                        end
+                    end
                 end
             end
         end
@@ -6326,6 +6345,14 @@ local function showPreferences()
                         text = "Enable chord detection for playing and selected notes",
                     },
                 },
+                vbp:row {
+                    vbp:checkbox {
+                        bind = preferences.mirroringGhostTrack,
+                    },
+                    vbp:text {
+                        text = "Mirror notes of the current ghost track",
+                    },
+                },
             },
         }
     end
@@ -7018,6 +7045,17 @@ local function createPianoRollDialog()
                             refreshPianoRollNeeded = true
                         end
                     end,
+                },
+                vb:button {
+                    id = "ghosttrackmirror",
+                    bitmap = "Icons/Clone.bmp",
+                    width = 24,
+                    tooltip = "Mirror notes of the current ghost track",
+                    notifier = function()
+                        preferences.mirroringGhostTrack.value = not preferences.mirroringGhostTrack.value
+                        refreshPianoRollNeeded = true
+                        refreshControls = true
+                    end
                 },
             },
             vb:row {
