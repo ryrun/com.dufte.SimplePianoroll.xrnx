@@ -825,7 +825,7 @@ local function jumpToNoteInPattern(notedata)
             song.transport.edit_pos = npos
             --switch to the correct note column
             if song.selected_note_column_index ~= notedata.column then
-                song.selected_note_column_index = math.max(notedata.column, song.selected_track.visible_note_columns)
+                song.selected_note_column_index = clamp(notedata.column, 1, song.selected_track.visible_note_columns)
             end
         end
     end
