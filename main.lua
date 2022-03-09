@@ -6693,27 +6693,30 @@ local function createPianoRollDialog()
                         return tostring(number)
                     end
                 },
-                vb:button {
-                    text = ":2",
-                    tooltip = "Halve current note length number",
-                    notifier = function()
-                        if #noteSelection > 0 then
-                            scaleNoteSelection(0.5)
-                        end
-                        currentNoteLength = math.max(math.floor(currentNoteLength / 2), 1)
-                        refreshControls = true
-                    end,
-                },
-                vb:button {
-                    text = "*2",
-                    tooltip = "Double current note length number",
-                    notifier = function()
-                        if #noteSelection > 0 then
-                            scaleNoteSelection(2)
-                        end
-                        currentNoteLength = math.min(math.floor(currentNoteLength * 2), 256)
-                        refreshControls = true
-                    end,
+                vb:row {
+                    spacing = -3,
+                    vb:button {
+                        text = ":2",
+                        tooltip = "Halve current note length number",
+                        notifier = function()
+                            if #noteSelection > 0 then
+                                scaleNoteSelection(0.5)
+                            end
+                            currentNoteLength = math.max(math.floor(currentNoteLength / 2), 1)
+                            refreshControls = true
+                        end,
+                    },
+                    vb:button {
+                        text = "*2",
+                        tooltip = "Double current note length number",
+                        notifier = function()
+                            if #noteSelection > 0 then
+                                scaleNoteSelection(2)
+                            end
+                            currentNoteLength = math.min(math.floor(currentNoteLength * 2), 256)
+                            refreshControls = true
+                        end,
+                    },
                 },
             },
             vb:row {
@@ -6766,31 +6769,34 @@ local function createPianoRollDialog()
                         refreshControls = true
                     end,
                 },
-                vb:button {
-                    id = "note_vel_clear",
-                    text = "C",
-                    tooltip = "Clear note velocity\n(While holding shift: Clear both velocity values)",
-                    notifier = function()
-                        currentNoteVelocity = 255
-                        if #noteSelection > 0 then
-                            changePropertiesOfSelectedNotes(currentNoteVelocity)
-                            if keyShift then
-                                currentNoteEndVelocity = 255
-                                changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity)
+                vb:row {
+                    spacing = -3,
+                    vb:button {
+                        id = "note_vel_clear",
+                        text = "C",
+                        tooltip = "Clear note velocity\n(While holding shift: Clear both velocity values)",
+                        notifier = function()
+                            currentNoteVelocity = 255
+                            if #noteSelection > 0 then
+                                changePropertiesOfSelectedNotes(currentNoteVelocity)
+                                if keyShift then
+                                    currentNoteEndVelocity = 255
+                                    changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity)
+                                end
                             end
-                        end
-                        refreshControls = true
-                    end,
-                },
-                vb:button {
-                    id = "note_vel_humanize",
-                    text = "H",
-                    tooltip = "Humanize note velocity of selected notes",
-                    notifier = function()
-                        if #noteSelection > 0 then
-                            changePropertiesOfSelectedNotes("h")
-                        end
-                    end,
+                            refreshControls = true
+                        end,
+                    },
+                    vb:button {
+                        id = "note_vel_humanize",
+                        text = "H",
+                        tooltip = "Humanize note velocity of selected notes",
+                        notifier = function()
+                            if #noteSelection > 0 then
+                                changePropertiesOfSelectedNotes("h")
+                            end
+                        end,
+                    },
                 },
                 vb:valuebox {
                     id = "note_end_vel",
@@ -6882,26 +6888,29 @@ local function createPianoRollDialog()
                         refreshControls = true
                     end,
                 },
-                vb:button {
-                    id = "note_pan_clear",
-                    text = "C",
-                    tooltip = "Clear note panning",
-                    notifier = function()
-                        currentNotePan = 255
-                        changePropertiesOfSelectedNotes(nil, nil, nil, nil, currentNotePan)
-                        refreshControls = true
-                        refreshPianoRollNeeded = true
-                    end,
-                },
-                vb:button {
-                    id = "note_pan_humanize",
-                    text = "H",
-                    tooltip = "Humanize note panning of selected notes",
-                    notifier = function()
-                        if #noteSelection > 0 then
-                            changePropertiesOfSelectedNotes(nil, nil, nil, nil, "h")
-                        end
-                    end,
+                vb:row {
+                    spacing = -3,
+                    vb:button {
+                        id = "note_pan_clear",
+                        text = "C",
+                        tooltip = "Clear note panning",
+                        notifier = function()
+                            currentNotePan = 255
+                            changePropertiesOfSelectedNotes(nil, nil, nil, nil, currentNotePan)
+                            refreshControls = true
+                            refreshPianoRollNeeded = true
+                        end,
+                    },
+                    vb:button {
+                        id = "note_pan_humanize",
+                        text = "H",
+                        tooltip = "Humanize note panning of selected notes",
+                        notifier = function()
+                            if #noteSelection > 0 then
+                                changePropertiesOfSelectedNotes(nil, nil, nil, nil, "h")
+                            end
+                        end,
+                    },
                 },
                 vb:button {
                     id = "notecolumn_delay",
@@ -6945,30 +6954,33 @@ local function createPianoRollDialog()
                         refreshControls = true
                     end,
                 },
-                vb:button {
-                    id = "note_dly_clear",
-                    text = "C",
-                    tooltip = "Clear note delay\n(While holding shift: Clear both delay values)",
-                    notifier = function()
-                        currentNoteDelay = 0
-                        changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay)
-                        if keyShift then
-                            currentNoteEndDelay = 0
-                            changePropertiesOfSelectedNotes(nil, nil, nil, currentNoteEndDelay)
-                        end
-                        refreshControls = true
-                        refreshPianoRollNeeded = true
-                    end,
-                },
-                vb:button {
-                    id = "note_dly_humanize",
-                    text = "H",
-                    tooltip = "Humanize note delay of selected notes",
-                    notifier = function()
-                        if #noteSelection > 0 then
-                            changePropertiesOfSelectedNotes(nil, nil, "h")
-                        end
-                    end,
+                vb:row {
+                    spacing = -3,
+                    vb:button {
+                        id = "note_dly_clear",
+                        text = "C",
+                        tooltip = "Clear note delay\n(While holding shift: Clear both delay values)",
+                        notifier = function()
+                            currentNoteDelay = 0
+                            changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay)
+                            if keyShift then
+                                currentNoteEndDelay = 0
+                                changePropertiesOfSelectedNotes(nil, nil, nil, currentNoteEndDelay)
+                            end
+                            refreshControls = true
+                            refreshPianoRollNeeded = true
+                        end,
+                    },
+                    vb:button {
+                        id = "note_dly_humanize",
+                        text = "H",
+                        tooltip = "Humanize note delay of selected notes",
+                        notifier = function()
+                            if #noteSelection > 0 then
+                                changePropertiesOfSelectedNotes(nil, nil, "h")
+                            end
+                        end,
+                    },
                 },
                 vb:valuebox {
                     id = "note_end_dly",
