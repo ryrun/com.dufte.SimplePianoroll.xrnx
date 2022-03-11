@@ -2795,7 +2795,7 @@ function noteClick(x, y, c, released, forceScaling)
         xypadpos.resetscale = false
         xypadpos.notemode = true
         xypadpos.lastval = nil
-        xypadpos.duplicate = (keyShift or keyControl) and not checkMode("pen") and not keyAlt
+        xypadpos.duplicate = (keyShift or keyControl) and (not checkMode("pen") or preferences.moveNoteInPenMode.value) and not keyAlt
         xypadpos.time = os.clock()
         triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true)
         return
@@ -6123,7 +6123,7 @@ local function showPreferences()
                         bind = preferences.moveNoteInPenMode,
                     },
                     vbp:text {
-                        text = "Allow move and scale of notes in pen mode",
+                        text = "Allow move, scale and duplication of notes in pen mode",
                     },
                 },
                 vbp:row {
