@@ -3075,7 +3075,6 @@ local function drawNoteToGrid(column,
     local l_song_transport = l_song.transport
     local l_song_st = l_song.selected_track
     local l_vbw = vbw
-    local isOnStep = false
     local isInSelection = false
     --save highest and lowest note
     if lowestNote == nil then
@@ -3153,11 +3152,6 @@ local function drawNoteToGrid(column,
                         vel = current_note_vel,
                         ghst = ghost
                     })
-                    if l_song_transport.playing
-                            and l_song_transport.playback_pos.line - stepOffset == noteOnStepIndex + i
-                            and l_song.selected_pattern_index == l_song.sequencer:pattern(l_song_transport.playback_pos.sequence) then
-                        isOnStep = true
-                    end
                 end
             end
         end
@@ -3349,7 +3343,7 @@ local function drawNoteToGrid(column,
                 table.insert(noteButtons[current_note_rowIndex], sizebutton);
 
                 --set color
-                setNoteColor(noteData[current_note_index], isOnStep, isInSelection)
+                setNoteColor(noteData[current_note_index], false, isInSelection)
 
                 --display retrigger effect
                 if retriggerWidth > 0 then
@@ -3996,7 +3990,7 @@ local function fillPianoRoll(quickRefresh)
                             l_vbw["se" .. stepString].visible = false
                             l_vbw["s" .. stepString].color = colorStepOff
                         end
-                        --refresh keyboad
+                        --refresh keyboard
                         if s == 1 then
                             local idx = "k" .. ystring
                             local key = l_vbw[idx]
