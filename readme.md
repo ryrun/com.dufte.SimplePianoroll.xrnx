@@ -1,6 +1,6 @@
 # Simple Pianoroll Tool for Renoise
 
-<img src="docs/images/pianorollanim3.gif?raw=true" width="754">
+<img src="docs/images/pianorollanim3.gif?raw=true" width="754" alt="Simple Pianoroll Tool for Renoise">
 
 ## Video on Youtube
 
@@ -45,23 +45,23 @@ It supports different note column effects.
 
 #### Note overlapping
 
-<img src="docs/images/noteoverlapping.png?raw=true" width="300">
+<img src="docs/images/noteoverlapping.png?raw=true" width="300" alt="Note overlapping">
 
 #### Note cut fx
 
-<img src="docs/images/notecutfx.png?raw=true" width="300">
+<img src="docs/images/notecutfx.png?raw=true" width="300" alt="Note cut fx">
 
 #### Note retrigger fx
 
-<img src="docs/images/noteretriggerfx.png?raw=true" width="300">
+<img src="docs/images/noteretriggerfx.png?raw=true" width="300" alt="Note retrigger fx">
 
 #### Note delay
 
-<img src="docs/images/notedelay.png?raw=true" width="300">
+<img src="docs/images/notedelay.png?raw=true" width="300" alt="Note delay">
 
 #### Note delay for note off
 
-<img src="docs/images/noteoffdelay.png?raw=true" width="300">
+<img src="docs/images/noteoffdelay.png?raw=true" width="300" alt="Note delay for note off">
 
 ## Install and Update
 
@@ -90,27 +90,27 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 
 ## Mouse actions
 
-|Actions||
-|---|---|
-|Add notes|Double click on a free spot in the grid<br>Alternative: While hold <kbd>alt</kbd> its just one click|
-|Remove notes|Double click on a note<br>Alternative: While hold <kbd>alt</kbd> its just one click|
-|Select a note|Click on a note.<br>*It also reads out note length and velocity of the selected note and set these values for new notes.*|
-|Move one note or multiple notes|Click and drag a note. It will also move all selected notes, too.<br><br>When <kbd>alt</kbd> is holded, the notes will be moved in micro steps (using delay values). Please note, that alt + note click is note removing. So you need to click first, before you hold <kbd>alt</kbd>. Alternative: Alt click note remove can be disabled in options, so its easier to use. Using <kbd>shift</kbd> during micro step note movement, forces the note to snap into a special grid (0, 0x55, 0xaa).|
-|Change note length|Click and hold the end of a note and move the mouse to the right. It will also increase the length of all selected notes. To decrease the note length, just move the mouse to the left. Using <kbd>alt</kbd> also allows you to change the length by micro steps|
-|Change velocity of selected notes|Hold <kbd>alt</kbd> and use the scroll whell
-|Preview a note|Click on a note or use preview mode|
-|Play from mouse cursor|While holding <kbd>ctrl</kbd>, click on a freespot in the grid|
-|Play all notes from mouse cursor|While holding <kbd>ctrl + shift</kbd>, click and hold on a freespot in the grid|
-|Select multiple individual notes|While holding <kbd>ctrl</kbd>, click on a note|
-|Deselect individual notes in selection|While holding <kbd>ctrl</kbd>, click on a selected note|
-|Deselect notes|Click on a free spot in the grid|
-|Rectangle select notes|Click and hold left mouse button on a free spot, it starts to select all notes inside mouse position and start point. When you hold <kbd>shift</kbd>, the notes will be added to the current selection.
-|Select all notes with a specific note value|Hold <kbd>ctrl</kbd> and click one of the notes in the piano keyboard control
-|Select all notes with on a specific position|Hold <kbd>ctrl</kbd> and click one of the position indicators above the piano grid
-|Duplicate selected notes|Hold <kbd>shift</kbd> or <kbd>ctrl</kbd> and start dragging the selection to duplicate the notes
-|Scroll vertically|Use your mouse wheel above the piano roll grid or the piano roll keys on the left.
-|Scroll horizontally|Use your mouse wheel and hold <kbd>alt</kbd> or <kbd>shift</kbd> above the piano roll grid or the piano roll keys on the left.
-|Quick clear of vol, pan and dly controls|Left mouse click on the grid, when no note is selected. (can be disabled)
+| Actions                                      ||     |
+|----------------------------------------------|---|
+| Add notes                                    |Double click on a free spot in the grid<br>Alternative: While hold <kbd>alt</kbd> its just one click|
+| Remove notes                                 |Double click on a note<br>Alternative: While hold <kbd>alt</kbd> its just one click|
+| Select a note                                |Click on a note.<br>*It also reads out note length and velocity of the selected note and set these values for new notes.*|
+| Move one note or multiple notes              |Click and drag a note. It will also move all selected notes, too.<br><br>When <kbd>alt</kbd> is holded, the notes will be moved in micro steps (using delay values). Please note, that alt + note click is note removing. So you need to click first, before you hold <kbd>alt</kbd>. Alternative: Alt click note remove can be disabled in options, so its easier to use. Using <kbd>shift</kbd> during micro step note movement, forces the note to snap into a special grid (0, 0x55, 0xaa).|
+| Change note length                           |Click and hold the end of a note and move the mouse to the right. It will also increase the length of all selected notes. To decrease the note length, just move the mouse to the left. Using <kbd>alt</kbd> also allows you to change the length by micro steps|
+| Change velocity of selected notes            |Hold <kbd>alt</kbd> and use the scroll whell|
+| Preview a note                               |Click on a note or use preview mode|
+| Play from mouse cursor                       |While holding <kbd>ctrl</kbd>, click on a freespot in the grid|
+| Play all notes from mouse cursor             |While holding <kbd>ctrl + shift</kbd>, click and hold on a freespot in the grid|
+| Select multiple individual notes             |While holding <kbd>ctrl</kbd>, click on a note|
+| Deselect individual notes in selection       |While holding <kbd>ctrl</kbd>, click on a selected note|
+| Deselect notes                               |Click on a free spot in the grid|
+| Rectangle select notes                       |Click and hold left mouse button on a free spot, it starts to select all notes inside mouse position and start point. When you hold <kbd>shift</kbd>, the notes will be added to the current selection.|
+| Select all notes with a specific note value  |Hold <kbd>ctrl</kbd> and click one of the notes in the piano keyboard control|
+| Select all notes with on a specific position |Hold <kbd>ctrl</kbd> and click one of the position indicators above the piano grid|
+| Duplicate selected notes                     |Hold <kbd>shift</kbd> or <kbd>ctrl</kbd> and start dragging the selection to duplicate the notes|
+| Scroll vertically                            |Use your mouse wheel above the piano roll grid or the piano roll keys on the left.|
+| Scroll horizontally                          |Use your mouse wheel and hold <kbd>alt</kbd> or <kbd>shift</kbd> above the piano roll grid or the piano roll keys on the left.|
+| Quick clear of vol, pan and dly controls     |Left mouse click on the grid, when no note is selected. (can be disabled)|
 
 ## Keyboard actions
 
@@ -121,66 +121,66 @@ So you don't need to hold <kbd>shift</kbd>.
 
 ### Nothing selected
 
-|Keys|Description|
-|---|---|
-|<kbd>F1</kbd>|Switch to select tool|
-|<kbd>F2</kbd>|Switch to pen tool|
-|<kbd>F3</kbd>|Switch to audio preview tool|
-|<kbd>up</kbd>|Move in the grid upwards|
-|<kbd>down</kbd>|Move in the grid downwards|
-|<kbd>left</kbd>|Move edit position cursor leftwards, scroll when cursor get's outside the grid|
-|<kbd>right</kbd>|Move edit position cursor rightwards, scroll when cursor get's outside the grid|
-|<kbd>page up</kbd>|Move in the grid 16 steps upwards|
-|<kbd>page down</kbd>|Move in the grid 16 steps downwards|
-|<kbd>shift + up</kbd>|Move in the grid 12 steps upwards|
-|<kbd>shift + down</kbd>|Move in the grid 12 steps downwards|
-|<kbd>shift + left</kbd>|Move in the grid 4 steps leftwards|
-|<kbd>shift + right</kbd>|Move in the grid 4 steps rightwards|
-|<kbd>ctrl + a</kbd>|Select all visible notes|
-|<kbd>ctrl + b</kbd> or<br><kbd>ctrl + d</kbd>|Select all visible notes and duplicate it to the right|
-|<kbd>ctrl + u</kbd>|Select all visible notes and quick chop it|
-|<kbd>ctrl + 1 .. 9</kbd>|Set current note length|
-|<kbd>ctrl + 0</kbd>|Double current note length|
-|<kbd>ctrl + shift + 0</kbd>|Halve current note length|
-|<kbd>alt + m</kbd>|Mute all visible notes (set volume to 0)|
-|<kbd>alt + shift + m</kbd>|Unmute all visible notes (remove volume value)|
-|<kbd>ctrl + space</kbd> or<br><kbd>shift + space</kbd>|Play from edit cursor position|
+| Keys                                                   | Description                                                                     |
+|--------------------------------------------------------|---------------------------------------------------------------------------------|
+| <kbd>F1</kbd>                                          | Switch to select tool                                                           |
+| <kbd>F2</kbd>                                          | Switch to pen tool                                                              |
+| <kbd>F3</kbd>                                          | Switch to audio preview tool                                                    |
+| <kbd>up</kbd>                                          | Move in the grid upwards                                                        |
+| <kbd>down</kbd>                                        | Move in the grid downwards                                                      |
+| <kbd>left</kbd>                                        | Move edit position cursor leftwards, scroll when cursor get's outside the grid  |
+| <kbd>right</kbd>                                       | Move edit position cursor rightwards, scroll when cursor get's outside the grid |
+| <kbd>page up</kbd>                                     | Move in the grid 16 steps upwards                                               |
+| <kbd>page down</kbd>                                   | Move in the grid 16 steps downwards                                             |
+| <kbd>shift + up</kbd>                                  | Move in the grid 12 steps upwards                                               |
+| <kbd>shift + down</kbd>                                | Move in the grid 12 steps downwards                                             |
+| <kbd>shift + left</kbd>                                | Move in the grid 4 steps leftwards                                              |
+| <kbd>shift + right</kbd>                               | Move in the grid 4 steps rightwards                                             |
+| <kbd>ctrl + a</kbd>                                    | Select all visible notes                                                        |
+| <kbd>ctrl + b</kbd> or<br><kbd>ctrl + d</kbd>          | Select all visible notes and duplicate it to the right                          |
+| <kbd>ctrl + u</kbd>                                    | Select all visible notes and quick chop it                                      |
+| <kbd>ctrl + 1 .. 9</kbd>                               | Set current note length                                                         |
+| <kbd>ctrl + 0</kbd>                                    | Double current note length                                                      |
+| <kbd>ctrl + shift + 0</kbd>                            | Halve current note length                                                       |
+| <kbd>alt + m</kbd>                                     | Mute all visible notes (set volume to 0)                                        |
+| <kbd>alt + shift + m</kbd>                             | Unmute all visible notes (remove volume value)                                  |
+| <kbd>ctrl + space</kbd> or<br><kbd>shift + space</kbd> | Play from edit cursor position                                                  |
 
 ### One or more notes selected
 
-|Keys|Description|
-|---|---|
-|<kbd>ctrl + space</kbd>|Play selection|
-|<kbd>ctrl + b</kbd> or<br><kbd>ctrl + d</kbd>|Duplicate selected notes to the right|
-|<kbd>ctrl + u</kbd>|Quick chop all selected notes|
-|<kbd>ctrl + 1 .. 9</kbd>|Set current note length and for very selected note|
-|<kbd>ctrl + 0</kbd>|Double current note length and for very selected note|
-|<kbd>ctrl + shift + 0</kbd>|Halve current note length and for very selected note|
-|<kbd>ctrl + c</kbd>|Copy selected notes to internal clipboard|
-|<kbd>ctrl + x</kbd>|Cut selected notes to internal clipboard|
-|<kbd>ctrl + v</kbd>|Paste notes to the last click grid position|
-|<kbd>alt + n</kbd>|Match note value to the first selected one|
-|<kbd>alt + m</kbd>|Mute selected notes (set volume to 0)|
-|<kbd>alt + shift + m</kbd>|Unmute selected notes (remove volume value)|
-|<kbd>alt + left</kbd> or<br><kbd>alt + right</kbd> or<br><kbd>alt + up</kbd> or<br><kbd>alt + down</kbd><br>|Move note selection. When <kbd>shift</kbd> is holded, it add notes to the current selection.|
-|<kbd>up</kbd>|Transpose note 1 semitone up|
-|<kbd>down</kbd>|Transpose note 1 semitone down|
-|<kbd>shift + up</kbd>|Transpose note 12 semitones up|
-|<kbd>shift + down</kbd>|Transpose note 12 semitones down|
-|<kbd>ctrl + shift + up</kbd>|Transpose note 7 semitones up|
-|<kbd>ctrl + shift + down</kbd>|Transpose note 7 semitones down|
-|<kbd>ctrl + up</kbd>|Transpose note 1 semitone up but stay in scale|
-|<kbd>ctrl + down</kbd>|Transpose note 1 semitone down but stay in scale|
-|<kbd>ctrl + shift + up</kbd>|Transpose note 12 semitone up but stay in scale|
-|<kbd>ctrl + shift + down</kbd>|Transpose note 12 semitone down but stay in scale|
-|<kbd>left</kbd>|Move note 1 step left|
-|<kbd>right</kbd>|Move note 1 step right|
-|<kbd>shift + left</kbd>|Move note 4 steps left|
-|<kbd>shift + right</kbd>|Move note 4 steps right|
-|<kbd>ctrl + alt + left</kbd>|Move note 1 micro steps left (using note delay)|
-|<kbd>ctrl + alt + right</kbd>|Move note 1 micro steps right (using note delay)|
-|<kbd>ctrl + left</kbd>|Increase note length by 1|
-|<kbd>ctrl + right</kbd>|Decrease note length by 1|
-|<kbd>shift + i</kbd>|Invert note selection|
-|<kbd>del</kbd>|Remove selected notes|
-|<kbd>esc</kbd>|Deselect all notes|
+| Keys                                                                                                         | Description                                                                                  |
+|--------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
+| <kbd>ctrl + space</kbd>                                                                                      | Play selection                                                                               |
+| <kbd>ctrl + b</kbd> or<br><kbd>ctrl + d</kbd>                                                                | Duplicate selected notes to the right                                                        |
+| <kbd>ctrl + u</kbd>                                                                                          | Quick chop all selected notes                                                                |
+| <kbd>ctrl + 1 .. 9</kbd>                                                                                     | Set current note length and for very selected note                                           |
+| <kbd>ctrl + 0</kbd>                                                                                          | Double current note length and for very selected note                                        |
+| <kbd>ctrl + shift + 0</kbd>                                                                                  | Halve current note length and for very selected note                                         |
+| <kbd>ctrl + c</kbd>                                                                                          | Copy selected notes to internal clipboard                                                    |
+| <kbd>ctrl + x</kbd>                                                                                          | Cut selected notes to internal clipboard                                                     |
+| <kbd>ctrl + v</kbd>                                                                                          | Paste notes to the last click grid position                                                  |
+| <kbd>alt + n</kbd>                                                                                           | Match note value to the first selected one                                                   |
+| <kbd>alt + m</kbd>                                                                                           | Mute selected notes (set volume to 0)                                                        |
+| <kbd>alt + shift + m</kbd>                                                                                   | Unmute selected notes (remove volume value)                                                  |
+| <kbd>alt + left</kbd> or<br><kbd>alt + right</kbd> or<br><kbd>alt + up</kbd> or<br><kbd>alt + down</kbd><br> | Move note selection. When <kbd>shift</kbd> is holded, it add notes to the current selection. |
+| <kbd>up</kbd>                                                                                                | Transpose note 1 semitone up                                                                 |
+| <kbd>down</kbd>                                                                                              | Transpose note 1 semitone down                                                               |
+| <kbd>shift + up</kbd>                                                                                        | Transpose note 12 semitones up                                                               |
+| <kbd>shift + down</kbd>                                                                                      | Transpose note 12 semitones down                                                             |
+| <kbd>ctrl + shift + up</kbd>                                                                                 | Transpose note 7 semitones up                                                                |
+| <kbd>ctrl + shift + down</kbd>                                                                               | Transpose note 7 semitones down                                                              |
+| <kbd>ctrl + up</kbd>                                                                                         | Transpose note 1 semitone up but stay in scale                                               |
+| <kbd>ctrl + down</kbd>                                                                                       | Transpose note 1 semitone down but stay in scale                                             |
+| <kbd>ctrl + shift + up</kbd>                                                                                 | Transpose note 12 semitone up but stay in scale                                              |
+| <kbd>ctrl + shift + down</kbd>                                                                               | Transpose note 12 semitone down but stay in scale                                            |
+| <kbd>left</kbd>                                                                                              | Move note 1 step left                                                                        |
+| <kbd>right</kbd>                                                                                             | Move note 1 step right                                                                       |
+| <kbd>shift + left</kbd>                                                                                      | Move note 4 steps left                                                                       |
+| <kbd>shift + right</kbd>                                                                                     | Move note 4 steps right                                                                      |
+| <kbd>ctrl + alt + left</kbd>                                                                                 | Move note 1 micro steps left (using note delay)                                              |
+| <kbd>ctrl + alt + right</kbd>                                                                                | Move note 1 micro steps right (using note delay)                                             |
+| <kbd>ctrl + left</kbd>                                                                                       | Increase note length by 1                                                                    |
+| <kbd>ctrl + right</kbd>                                                                                      | Decrease note length by 1                                                                    |
+| <kbd>shift + i</kbd>                                                                                         | Invert note selection                                                                        |
+| <kbd>del</kbd> or <kbd>backspace</kbd>                                                                       | Remove selected notes                                                                        |
+| <kbd>esc</kbd>                                                                                               | Deselect all notes                                                                           |

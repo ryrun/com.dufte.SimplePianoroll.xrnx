@@ -4478,7 +4478,7 @@ local function handleKeyEvent(keyEvent)
         restoreFocus()
     end
 
-    if key.name == "del" then
+    if key.name == "del" or key.name == "back" then
         if key.state == "pressed" then
             keyInfoText = "Delete selected notes"
             if #noteSelection > 0 then
