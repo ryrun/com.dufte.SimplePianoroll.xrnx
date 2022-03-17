@@ -376,6 +376,7 @@ local clipboard = {}
 --edit vars
 local lastClickCache = {}
 local pasteCursor = {}
+local currentInstrument = 0
 local currentNoteLength = 2
 local currentNoteVelocity = 255
 local currentNotePan = 255
@@ -1430,6 +1431,17 @@ local function refreshNoteControls()
         vbw.ghosttracks.value = currentGhostTrack
     end
 
+    local instruments = {}
+    table.insert(instruments, "Ghost note [FF]")
+    for i = 1, #song.instruments do
+        if string.len(song.instruments[i].name) > 0 then
+            table.insert(instruments, song.instruments[i].name .. " [" .. toRenoiseHex(i - 1) .. "]")
+        else
+            table.insert(instruments, "-- [" .. toRenoiseHex(i - 1) .. "]")
+        end
+    end
+    vbw.ins.items = instruments
+
     if checkMode("pen") then
         vbw.mode_pen.color = colorStepOn
         vbw.mode_select.color = colorDefault
@@ -1499,7 +1511,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
         end
     end
     --when no instrument is set, use the current selected one
-    local instrument = vbw.ins.value
+    local instrument = currentInstrument
     --disable record mode, when enabled
     song.transport.edit_mode = false
     --init server connection, when not ready
@@ -2212,7 +2224,7 @@ local function changeSizeSelectedNotes(len, add)
 end
 
 --change note properties
-local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, special)
+local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, ins, special)
     local lineValues = song.selected_pattern_track.lines
     --randomize seed for humanizing
     math.randomseed(os.clock() * 100000000000)
@@ -2257,6 +2269,10 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
             if selection.pan >= fromRenoiseHex("C0") and selection.pan <= fromRenoiseHex("CF") then
                 pan = 255
             end
+        end
+        if ins ~= nil then
+            note.instrument_value = ins - 1
+            selection.ins = ins - 1
         end
         if vel ~= nil then
             if tostring(vel) == "h" then
@@ -2486,7 +2502,7 @@ local function stepSequencing(pos, steps)
                 pan = 0,
                 dly = 0,
                 end_dly = 0,
-                ins = vbw.ins.value
+                ins = currentInstrument
             }
             column = returnColumnWhenEnoughSpaceForNote(notedata.line, notedata.len, notedata.dly, notedata.end_dly)
             if column then
@@ -2952,7 +2968,7 @@ function pianoGridClick(x, y, released)
                     currentNotePan,
                     currentNoteDelay,
                     currentNoteEndDelay,
-                    vbw.ins.value
+                    currentInstrument
             )
             --create note data table
             note_data = {
@@ -2968,7 +2984,7 @@ function pianoGridClick(x, y, released)
                 len = currentNoteLength,
                 noteoff = noteoff,
                 column = column,
-                ins = vbw.ins.value
+                ins = currentInstrument
             }
             --trigger preview notes
             triggerNoteOfCurrentInstrument(note_data.note, nil, nil, true)
@@ -3516,7 +3532,7 @@ local function setScaleHighlighting(afterPianoRollRefresh)
         currentScaleOffset = preferences.keyForSelectedScale.value
         ret = true
     elseif preferences.scaleHighlightingType.value == 4 then
-        local idx = vbw.ins.value
+        local idx = currentInstrument
         if not idx then
             idx = song.selected_instrument_index
         end
@@ -4266,6 +4282,7 @@ local function appNewDoc()
         refreshPianoRollNeeded = true
         refreshTimeline = true
     end)
+    song.instruments_observable:add_notifier(obsColumnRefresh)
     song.selected_pattern_track_observable:add_notifier(obsPianoRefresh)
     song.selected_pattern_observable:add_notifier(function()
         if not song.selected_pattern:has_line_notifier(lineNotifier) then
@@ -4589,7 +4606,7 @@ local function handleKeyEvent(keyEvent)
     if key.name == "n" and key.modifiers == "alt" then
         if key.state == "pressed" then
             if #noteSelection > 0 then
-                changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, "matchingnotes")
+                changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, nil, "matchingnotes")
                 keyInfoText = "Match notes"
                 showStatus(#noteSelection .. " notes was matched.")
             end
@@ -4718,7 +4735,7 @@ local function handleKeyEvent(keyEvent)
                     else
                         keyInfoText = "Decrease velocity of selected notes"
                     end
-                    changePropertiesOfSelectedNotes(steps, nil, nil, nil, nil, "add")
+                    changePropertiesOfSelectedNotes(steps, nil, nil, nil, nil, nil, "add")
                     --play new velocity
                     triggerNoteOfCurrentInstrument(noteSelection[1].note, nil, noteSelection[1].vel, true)
                 elseif #noteSelection > 0 and keyShift and not keyAlt and not keyControl then
@@ -5020,7 +5037,7 @@ local function handleXypad(val)
                     --when a new len will be drawn, then reset len to 1
                     changeSizeSelectedNotes(1)
                     --and remove delay
-                    changePropertiesOfSelectedNotes(nil, nil, 0, 0, nil, "removecut")
+                    changePropertiesOfSelectedNotes(nil, nil, 0, 0, nil, nil, "removecut")
                     --switch to scale mode, when note was resettet
                     xypadpos.scaling = true
                     xypadpos.resetscale = false
@@ -6676,23 +6693,25 @@ local function createPianoRollDialog()
                 margin = 3,
                 spacing = 3,
                 style = "panel",
-                vb:valuebox {
+                vb:popup {
                     id = "ins",
-                    width = 50,
-                    min = 0,
-                    max = 254,
-                    tostring = function(number)
-                        if number == -1 then
-                            return "--"
+                    width = 74,
+                    notifier = function(idx)
+                        local val = string.match(
+                                vbw.ins.items[idx],
+                                '%[([0-9A-Z-]+)%]$'
+                        )
+                        if val then
+                            --first item is always ghost note
+                            currentInstrument = fromRenoiseHex(val) + 1
+                            if currentInstrument <= #song.instruments then
+                                song.selected_instrument_index = currentInstrument
+                            end
+                            if #noteSelection > 0 then
+                                changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, currentInstrument)
+                            end
                         end
-                        return toRenoiseHex(number)
-                    end,
-                    tonumber = function(string)
-                        if string == "--" then
-                            return -1
-                        end
-                        return fromRenoiseHex(string)
-                    end,
+                    end
                 },
                 vb:button {
                     id = "notecolumn_vel",
@@ -7028,7 +7047,7 @@ local function createPianoRollDialog()
                 spacing = 3,
                 style = "panel",
                 vb:button {
-                    text = "Preferences",
+                    text = "Prefs",
                     tooltip = "Simple Pianoroll Preferences ...",
                     notifier = function()
                         showPreferences()
@@ -7620,11 +7639,11 @@ tool:add_keybinding {
         if not song then
             song = renoise.song()
         end
-        if not vbw.ins.value or not (windowObj and windowObj.visible) then
-            vbw.ins.value = song.selected_instrument_index
+        if not currentInstrument or not (windowObj and windowObj.visible) then
+            currentInstrument = song.selected_instrument_index
         end
-        if vbw.ins.value and song.instruments[vbw.ins.value] then
-            local plugin = song.instruments[vbw.ins.value].plugin_properties
+        if currentInstrument and song.instruments[currentInstrument] then
+            local plugin = song.instruments[currentInstrument].plugin_properties
             if plugin and plugin.plugin_device and plugin.plugin_device.external_editor_available then
                 plugin.plugin_device.external_editor_visible = not plugin.plugin_device.external_editor_visible
                 if not plugin.plugin_device.external_editor_visible then
