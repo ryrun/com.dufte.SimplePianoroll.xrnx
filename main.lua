@@ -376,7 +376,7 @@ local clipboard = {}
 --edit vars
 local lastClickCache = {}
 local pasteCursor = {}
-local currentInstrument = 255
+local currentInstrument
 local currentNoteLength = 2
 local currentNoteVelocity = 255
 local currentNotePan = 255
@@ -1441,10 +1441,12 @@ local function refreshNoteControls()
         end
     end
     vbw.ins.items = instruments
-    if currentInstrument == 255 then
-        vbw.ins.value = 1
-    else
-        vbw.ins.value = currentInstrument + 2
+    if currentInstrument ~= nil then
+        if currentInstrument == 255 then
+            vbw.ins.value = 1
+        else
+            vbw.ins.value = currentInstrument + 2
+        end
     end
 
     if checkMode("pen") then
@@ -1500,7 +1502,7 @@ local function refreshNoteControls()
 end
 
 --simple note trigger
-local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, newOrChanged, ins)
+local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, newOrChanged, instrument)
     local socket_error, successSend, errorSend
     --if osc client is enabled
     if not preferences.enableOSCClient.value then
@@ -1516,9 +1518,8 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
         end
     end
     --when no instrument is set, use the current selected one
-    local instrument = currentInstrument
-    if ins then
-        instrument = ins
+    if instrument == nil then
+        instrument = currentInstrument
     end
     --disable record mode, when enabled
     song.transport.edit_mode = false
@@ -1603,7 +1604,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
             end
             lastTriggerNote = newLastTriggerNote
         end
-        local packet = { { tag = "i", value = instrument },
+        local packet = { { tag = "i", value = instrument + 1 },
                          { tag = "i", value = song.selected_track_index },
                          { tag = "i", value = note_value },
                          { tag = "i", value = velocity } }
@@ -4063,6 +4064,10 @@ local function fillPianoRoll(quickRefresh)
             local instrument = note_column.instrument_value
 
             if note < 120 then
+                if currentInstrument == nil and note_column.instrument_value < 255 then
+                    currentInstrument = note_column.instrument_value
+                    refreshControls = true
+                end
                 if current_note ~= nil then
                     drawNoteToGrid(c,
                             current_note_line,
@@ -4170,6 +4175,12 @@ local function fillPianoRoll(quickRefresh)
     if not l_vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible then
         l_vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible = true
         l_vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible = false
+    end
+
+    --set current instrument, when no instrument is used
+    if currentInstrument == nil then
+        currentInstrument = l_song.selected_instrument_index - 1
+        refreshControls = true
     end
 
     --for automatic mode or empty patterns, set scale highlighting again, if needed
@@ -4322,6 +4333,7 @@ local function appNewDoc()
             song.selected_track.delay_column_visible_observable:add_notifier(obsColumnRefresh)
         end
         pasteCursor = {}
+        currentInstrument = nil
         refreshControls = true
     end)
     song.selected_track.volume_column_visible_observable:add_notifier(obsColumnRefresh)
@@ -6712,7 +6724,7 @@ local function createPianoRollDialog()
                         if val then
                             --first item is always ghost note
                             currentInstrument = fromRenoiseHex(val)
-                            if currentInstrument > 0 and currentInstrument <= #song.instruments then
+                            if currentInstrument >= 0 and currentInstrument <= #song.instruments then
                                 song.selected_instrument_index = currentInstrument + 1
                             end
                             if #noteSelection > 0 then
@@ -7446,6 +7458,7 @@ local function main_function()
         --reset lowest / highest note for center view
         lowestNote = nil
         highestNote = nil
+        currentInstrument = nil
         --reset note selection
         noteSelection = {}
         --reset note playing
