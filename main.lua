@@ -376,7 +376,7 @@ local clipboard = {}
 --edit vars
 local lastClickCache = {}
 local pasteCursor = {}
-local currentInstrument = 0
+local currentInstrument = 255
 local currentNoteLength = 2
 local currentNoteVelocity = 255
 local currentNotePan = 255
@@ -1432,7 +1432,7 @@ local function refreshNoteControls()
     end
 
     local instruments = {}
-    table.insert(instruments, "Ghost note [FF]")
+    table.insert(instruments, "- Ghost note - [FF]")
     for i = 1, #song.instruments do
         if string.len(song.instruments[i].name) > 0 then
             table.insert(instruments, song.instruments[i].name .. " [" .. toRenoiseHex(i - 1) .. "]")
@@ -1441,6 +1441,11 @@ local function refreshNoteControls()
         end
     end
     vbw.ins.items = instruments
+    if currentInstrument == 255 then
+        vbw.ins.value = 1
+    else
+        vbw.ins.value = currentInstrument + 2
+    end
 
     if checkMode("pen") then
         vbw.mode_pen.color = colorStepOn
@@ -1495,7 +1500,7 @@ local function refreshNoteControls()
 end
 
 --simple note trigger
-local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, newOrChanged)
+local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, newOrChanged, ins)
     local socket_error, successSend, errorSend
     --if osc client is enabled
     if not preferences.enableOSCClient.value then
@@ -1512,6 +1517,9 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
     end
     --when no instrument is set, use the current selected one
     local instrument = currentInstrument
+    if ins then
+        instrument = ins
+    end
     --disable record mode, when enabled
     song.transport.edit_mode = false
     --init server connection, when not ready
@@ -1551,7 +1559,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
         notesPlaying[note_value] = 1
         notesPlayingLine[note_value] = nil
         successSend, errorSend = oscClient:send(
-                renoise.Osc.Message("/renoise/trigger/note_on", { { tag = "i", value = instrument },
+                renoise.Osc.Message("/renoise/trigger/note_on", { { tag = "i", value = instrument + 1 },
                                                                   { tag = "i", value = song.selected_track_index },
                                                                   { tag = "i", value = note_value },
                                                                   { tag = "i", value = velocity } })
@@ -1561,7 +1569,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
         notesPlaying[note_value] = nil
         notesPlayingLine[note_value] = nil
         successSend, errorSend = oscClient:send(
-                renoise.Osc.Message("/renoise/trigger/note_off", { { tag = "i", value = instrument },
+                renoise.Osc.Message("/renoise/trigger/note_off", { { tag = "i", value = instrument + 1 },
                                                                    { tag = "i", value = song.selected_track_index },
                                                                    { tag = "i", value = note_value } })
         )
@@ -2271,8 +2279,8 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
             end
         end
         if ins ~= nil then
-            note.instrument_value = ins - 1
-            selection.ins = ins - 1
+            note.instrument_value = ins
+            selection.ins = ins
         end
         if vel ~= nil then
             if tostring(vel) == "h" then
@@ -2785,7 +2793,7 @@ function noteClick(x, y, c, released, forceScaling)
         xypadpos.lastval = nil
         xypadpos.duplicate = (keyShift or keyControl) and (not checkMode("pen") or preferences.moveNoteInPenMode.value) and not keyAlt
         xypadpos.time = os.clock()
-        triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true)
+        triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true, note_data.ins)
         return
     end
 
@@ -6703,9 +6711,9 @@ local function createPianoRollDialog()
                         )
                         if val then
                             --first item is always ghost note
-                            currentInstrument = fromRenoiseHex(val) + 1
-                            if currentInstrument <= #song.instruments then
-                                song.selected_instrument_index = currentInstrument
+                            currentInstrument = fromRenoiseHex(val)
+                            if currentInstrument > 0 and currentInstrument <= #song.instruments then
+                                song.selected_instrument_index = currentInstrument + 1
                             end
                             if #noteSelection > 0 then
                                 changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, currentInstrument)
