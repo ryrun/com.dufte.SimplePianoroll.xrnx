@@ -1850,7 +1850,7 @@ local function transposeSelectedNotes(transpose, keepscale)
     end
     --trigger notes after transpose
     for key = 1, #noteSelection do
-        triggerNoteOfCurrentInstrument(noteSelection[key].note, nil, nil, true)
+        triggerNoteOfCurrentInstrument(noteSelection[key].note, nil, nil, true, noteSelection[key].ins)
     end
     jumpToNoteInPattern("sel")
     return ret
@@ -2798,7 +2798,7 @@ function noteClick(x, y, c, released, forceScaling)
     end
 
     if checkMode("preview") then
-        triggerNoteOfCurrentInstrument(note_data.note, not released, note_data.vel)
+        triggerNoteOfCurrentInstrument(note_data.note, not released, note_data.vel, nil, note_data.ins)
         if row ~= nil then
             setKeyboardKeyColor(row, not released, false)
             highlightNoteRow(row, not released)
@@ -2892,7 +2892,7 @@ function pianoGridClick(x, y, released)
         for key in pairs(noteData) do
             local note_data = noteData[key]
             if line >= note_data.line and line < note_data.line + note_data.len then
-                triggerNoteOfCurrentInstrument(note_data.note, not released, note_data.vel)
+                triggerNoteOfCurrentInstrument(note_data.note, not released, note_data.vel, note_data.ins)
                 local row = noteValue2GridRowOffset(note_data.note)
                 if row ~= nil then
                     setKeyboardKeyColor(row, not released, false)
@@ -2995,7 +2995,7 @@ function pianoGridClick(x, y, released)
                 ins = currentInstrument
             }
             --trigger preview notes
-            triggerNoteOfCurrentInstrument(note_data.note, nil, nil, true)
+            triggerNoteOfCurrentInstrument(note_data.note, nil, nil, true, note_data.ins)
             --clear selection and add new note as new selection
             updateNoteSelection(note_data, true)
             --add other notes on this line back
@@ -4745,7 +4745,7 @@ local function handleKeyEvent(keyEvent)
                     end
                     changePropertiesOfSelectedNotes(steps, nil, nil, nil, nil, nil, "add")
                     --play new velocity
-                    triggerNoteOfCurrentInstrument(noteSelection[1].note, nil, noteSelection[1].vel, true)
+                    triggerNoteOfCurrentInstrument(noteSelection[1].note, nil, noteSelection[1].vel, true, noteSelection[1].ins)
                 elseif #noteSelection > 0 and keyShift and not keyAlt and not keyControl then
                     steps = -steps
                     keyInfoText = "Move notes by " .. steps .. " micro steps"
