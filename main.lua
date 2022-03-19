@@ -350,6 +350,9 @@ local lastTriggerNote = {}
 --missing block loop observable? use a variable for check there was a change
 local blockloopidx
 
+--backup state values, to set it back when piano roll was closed
+local wasFollowPlayer
+
 --main flag for refreshing pianoroll
 local rebuildWindowDialog = true
 local refreshPianoRollNeeded = false
@@ -5334,6 +5337,12 @@ local function appIdleEvent()
             end
             lastTriggerNote = newLastTriggerNote
         end
+    else
+        --set follow player back
+        if wasFollowPlayer ~= nil then
+            song.transport.follow_player = wasFollowPlayer
+            wasFollowPlayer = nil
+        end
     end
 end
 
@@ -7476,6 +7485,8 @@ local function main_function()
         notesPlayingLine = {}
         --when needed set enable penmode
         penMode = preferences.forcePenMode.value
+        --save some states
+        wasFollowPlayer = song.transport.follow_player
         --create main dialog
         if not windowContent or rebuildWindowDialog then
             --init colors
