@@ -6670,7 +6670,7 @@ local function createPianoRollDialog()
             },
             vb:row {
                 margin = 3,
-                spacing = 2,
+                spacing = 1,
                 style = "panel",
                 vb:text {
                     text = "Len",
@@ -6730,11 +6730,11 @@ local function createPianoRollDialog()
             },
             vb:row {
                 margin = 3,
-                spacing = 2,
+                spacing = 1,
                 style = "panel",
                 vb:popup {
                     id = "ins",
-                    width = 108,
+                    width = 124,
                     notifier = function(idx)
                         local val = string.match(
                                 vbw.ins.items[idx],
@@ -7052,7 +7052,7 @@ local function createPianoRollDialog()
             },
             vb:row {
                 margin = 3,
-                spacing = 2,
+                spacing = 1,
                 style = "panel",
                 vb:text {
                     text = "Ghost Track",
@@ -7082,7 +7082,7 @@ local function createPianoRollDialog()
             },
             vb:row {
                 margin = 3,
-                spacing = 3,
+                spacing = 1,
                 style = "panel",
                 vb:button {
                     bitmap = "Icons/Options.bmp",
