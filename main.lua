@@ -375,6 +375,7 @@ local clipboard = {}
 
 --edit vars
 local lastClickCache = {}
+local lastClickIndex = nil
 local pasteCursor = {}
 local currentInstrument
 local currentNoteLength = 2
@@ -971,8 +972,11 @@ local function updateNoteSelection(note_data, clear)
                 refreshControls = true
             end
 
-            local vel, end_vel, pan, dly, end_dly
+            local vel, end_vel, pan, dly, end_dly, ins
             for i = 1, #noteSelection do
+                if ins == nil then
+                    ins = noteSelection[i].ins
+                end
                 if vel == nil then
                     vel = noteSelection[i].vel
                 elseif type(vel) == "number" and vel ~= noteSelection[i].vel and noteSelection[i].vel < 129 then
@@ -1017,6 +1021,11 @@ local function updateNoteSelection(note_data, clear)
                 else
                     currentNoteVelocityPreview = 127
                 end
+                refreshControls = true
+            end
+
+            if type(ins) == "number" and ins ~= currentInstrument then
+                currentInstrument = ins
                 refreshControls = true
             end
 
@@ -1307,10 +1316,11 @@ end
 
 --simple function for double click detection for buttons
 local function dbclkDetector(index)
-    if lastClickCache[index] ~= nil and os.clock() - lastClickCache[index] < preferences.dblClickTime.value / 1000 then
+    if lastClickIndex == index and lastClickCache[index] ~= nil and os.clock() - lastClickCache[index] < preferences.dblClickTime.value / 1000 then
         return true
     end
     lastClickCache[index] = os.clock()
+    lastClickIndex = index
     return false
 end
 
