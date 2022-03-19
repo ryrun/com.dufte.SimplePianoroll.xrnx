@@ -5372,7 +5372,7 @@ local function showSetScaleDialog()
                     bind = preferences.scaleHighlightingType,
                 },
                 vbp:button {
-                    text = "Switch to relative Minor or Major",
+                    text = "Switch to relative minor or major key",
                     notifier = function()
                         switchToRelativeScale()
                     end
@@ -6732,7 +6732,6 @@ local function createPianoRollDialog()
                                 '%[([0-9A-Z-]+)%]$'
                         )
                         if val then
-                            --first item is always ghost note
                             currentInstrument = fromRenoiseHex(val)
                             if currentInstrument >= 0 and currentInstrument <= #song.instruments then
                                 song.selected_instrument_index = currentInstrument + 1
