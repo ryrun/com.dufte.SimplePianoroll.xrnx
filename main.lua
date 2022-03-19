@@ -7671,10 +7671,10 @@ tool:add_keybinding {
             song = renoise.song()
         end
         if not currentInstrument or not (windowObj and windowObj.visible) then
-            currentInstrument = song.selected_instrument_index
+            currentInstrument = song.selected_instrument_index - 1
         end
-        if currentInstrument and song.instruments[currentInstrument] then
-            local plugin = song.instruments[currentInstrument].plugin_properties
+        if currentInstrument and song.instruments[currentInstrument + 1] then
+            local plugin = song.instruments[currentInstrument + 1].plugin_properties
             if plugin and plugin.plugin_device and plugin.plugin_device.external_editor_available then
                 plugin.plugin_device.external_editor_visible = not plugin.plugin_device.external_editor_visible
                 if not plugin.plugin_device.external_editor_visible then
