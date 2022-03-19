@@ -6725,7 +6725,7 @@ local function createPianoRollDialog()
                 style = "panel",
                 vb:popup {
                     id = "ins",
-                    width = 92,
+                    width = 108,
                     notifier = function(idx)
                         local val = string.match(
                                 vbw.ins.items[idx],
@@ -7077,8 +7077,9 @@ local function createPianoRollDialog()
                 spacing = 3,
                 style = "panel",
                 vb:button {
-                    text = "Prefs",
-                    tooltip = "Simple Pianoroll Preferences ...",
+                    bitmap = "Icons/Options.bmp",
+                    width = 24,
+                    tooltip = "Preferences ...",
                     notifier = function()
                         showPreferences()
                     end,
