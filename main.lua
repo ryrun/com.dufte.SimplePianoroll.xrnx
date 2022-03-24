@@ -814,6 +814,11 @@ local function jumpToNoteInPattern(notedata)
             --no selection, dont do anything
             return false
         end
+    elseif type(notedata) == "number" and #noteSelection == 0 then
+        notedata = {
+            line = notedata,
+            column = 1
+        }
     end
     --only when not playing or follow player
     if not song.transport.playing or not song.transport.follow_player then
@@ -3052,6 +3057,7 @@ function pianoGridClick(x, y, released)
                         updateNoteSelection(nil, true)
                     end
                 elseif preferences.resetVolPanDlyControlOnClick.value then
+                    jumpToNoteInPattern(x + stepOffset)
                     --nothing selected reset vol, pan and dly
                     currentNoteVelocity = 255
                     currentNotePan = 255
