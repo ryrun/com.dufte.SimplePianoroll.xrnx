@@ -3055,6 +3055,7 @@ function pianoGridClick(x, y, released)
                 if #noteSelection > 0 then
                     if not keyShift then
                         updateNoteSelection(nil, true)
+                        jumpToNoteInPattern(x + stepOffset)
                     end
                 elseif preferences.resetVolPanDlyControlOnClick.value then
                     jumpToNoteInPattern(x + stepOffset)
