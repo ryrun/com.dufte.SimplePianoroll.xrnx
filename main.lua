@@ -38,41 +38,6 @@ local scaleTypes = {
     "Minor scale",
     "Instrument scale",
     "Automatic scale",
-
-}
-
-local scaleDegreeAndRomanNumeral = {
-    --none
-    nil,
-    --maj
-    {
-        "I - Tonic",
-        nil,
-        "ii - Supertonic",
-        nil,
-        "iii - Mediant",
-        "IV - Subdominant",
-        nil,
-        "V - Dominant",
-        "bVI - Flattened Sixth",
-        "vi - Submediant",
-        "bVII - Flattened Seventh",
-        "vii - Leading tone",
-    },
-    --min
-    {
-        "i - Tonic",
-        nil,
-        "ii - Supertonic",
-        "III - Mediant",
-        nil,
-        "iv - Subdominant",
-        nil,
-        "v - Dominant",
-        "VI - Submediant",
-        nil,
-        "VII - Subtonic",
-    },
 }
 
 local chordsTable = {
@@ -3646,6 +3611,97 @@ local function setScaleHighlighting(afterPianoRollRefresh)
     return ret
 end
 
+--returns corresponding numeral and degree
+local function romanNumeralsAndScaleDegree(scale, note, chordname)
+    --realign note
+    local roman = ""
+    local before = ""
+    local after = ""
+    local name = ""
+    note = (note - (currentScaleOffset - 1)) % 12
+    if scale == 2 then
+        if note == 0 then
+            roman = "I"
+            name = "Tonic"
+        elseif note == 2 then
+            roman = "ii"
+            name = "Supertonic"
+        elseif note == 4 then
+            roman = "iii"
+            name = "Mediant"
+        elseif note == 5 then
+            roman = "IV"
+            name = "Subdominant"
+        elseif note == 7 then
+            roman = "V"
+            name = "Dominant"
+        elseif note == 8 then
+            roman = "VI"
+            before = "b"
+            name = "Flattened Sixth"
+        elseif note == 9 then
+            roman = "vi"
+            name = "Submediant"
+        elseif note == 10 then
+            roman = "VII"
+            before = "b"
+            name = "Flattened Seventh"
+        elseif note == 11 then
+            roman = "vii"
+            name = "Leading tone"
+        end
+    elseif scale == 3 then
+        if note == 0 then
+            roman = "i"
+            name = "Tonic"
+        elseif note == 2 then
+            roman = "ii"
+            name = "Supertonic"
+        elseif note == 3 then
+            roman = "III"
+            name = "Mediant"
+        elseif note == 5 then
+            roman = "iv"
+            name = "Subdominant"
+        elseif note == 7 then
+            roman = "v"
+            name = "Dominant"
+        elseif note == 8 then
+            roman = "VI"
+            name = "Submediant"
+        elseif note == 10 then
+            roman = "VII"
+            name = "Subtonic"
+        end
+    else
+        return "-"
+    end
+    if name ~= "" then
+        name = " - " .. name
+    end
+    --change case of numeral, if needed
+    if chordname ~= nil then
+        if string.match(chordname, '^Maj7') then
+            roman = string.upper(roman)
+            after = "7"
+        elseif string.match(chordname, '^min7') then
+            roman = string.lower(roman)
+            after = "7"
+        elseif string.match(chordname, '^Maj') then
+            roman = string.upper(roman)
+        elseif string.match(chordname, '^min') then
+            roman = string.lower(roman)
+        elseif string.match(chordname, '^dim') then
+            roman = string.lower(roman)
+            after = "°"
+        elseif string.match(chordname, '^aug') then
+            roman = string.upper(roman)
+            after = "+"
+        end
+    end
+    return before .. roman .. after .. name
+end
+
 --detect chords and progression
 local function refreshDetectedChord()
     local distance_string = {}
@@ -3718,23 +3774,19 @@ local function refreshDetectedChord()
         for i = 1, #distance_string do
             if distance_string ~= "" then
                 if chordsTable[distance_string[i].key] then
-                    if scaleDegreeAndRomanNumeral[currentScale] then
-                        chordprog = scaleDegreeAndRomanNumeral[currentScale][(distance_string[i].note - (currentScaleOffset - 1)) % 12 + 1]
-                    end
                     chord = notesTable[distance_string[i].note % 12 + 1] .. " " .. chordsTable[distance_string[i].key]
+                    chordprog = romanNumeralsAndScaleDegree(currentScale, distance_string[i].note, chordsTable[distance_string[i].key])
                     break
                 end
             end
         end
         if not chord and #rawnotes > 0 then
-            if scaleDegreeAndRomanNumeral[currentScale] then
-                chordprog = scaleDegreeAndRomanNumeral[currentScale][(rawnotes[1] % 12 - (currentScaleOffset - 1)) % 12 + 1]
-            end
             if #rawnotes == 2 and rawnotes[1] % 12 == rawnotes[2] % 12 then
                 chord = notesTable[rawnotes[1] % 12 + 1] .. " Octave"
             elseif #rawnotes == 1 then
                 chord = notesTable[rawnotes[1] % 12 + 1] .. " unison"
             end
+            chordprog = romanNumeralsAndScaleDegree(currentScale, rawnotes[1])
         end
     end
     if not notelabels or notelabels == "" then
