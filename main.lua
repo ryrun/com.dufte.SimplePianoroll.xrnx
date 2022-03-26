@@ -54,9 +54,9 @@ local scaleDegreeAndRomanNumeral = {
         "IV - Subdominant",
         nil,
         "V - Dominant",
-        nil,
+        "bVI - Flattened Sixth",
         "vi - Submediant",
-        nil,
+        "bVII - Flattened Seventh",
         "vii - Leading tone",
     },
     --min
