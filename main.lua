@@ -949,6 +949,8 @@ local function updateNoteSelection(note_data, clear)
             for i = 1, #noteSelection do
                 if ins == nil then
                     ins = noteSelection[i].ins
+                elseif ins ~= noteSelection[i].ins then
+                    ins = "mixed"
                 end
                 if vel == nil then
                     vel = noteSelection[i].vel
