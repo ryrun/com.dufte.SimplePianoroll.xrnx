@@ -3683,7 +3683,7 @@ local function romanNumeralsAndScaleDegree(scale, note, chordname)
     end
     --change case of numeral, if needed
     if chordname ~= nil then
-        if string.match(chordname, '^Maj7') then
+        if string.match(chordname, '^Maj7') or chordname == '7' then
             roman = string.upper(roman)
             after = "7"
         elseif string.match(chordname, '^min7') then
@@ -3699,6 +3699,9 @@ local function romanNumeralsAndScaleDegree(scale, note, chordname)
         elseif string.match(chordname, '^aug') then
             roman = string.upper(roman)
             after = "+"
+        elseif string.match(chordname, '^Sus') then
+            roman = string.upper(roman)
+            after = "sus"
         end
     end
     return before .. roman .. after .. name
