@@ -334,6 +334,7 @@ local noteOnStep = {}
 local notesOnStep = {}
 local notesPlaying = {}
 local notesPlayingLine = {}
+local patternInstrument
 
 --table for save used notes
 local noteButtons = {}
@@ -605,10 +606,26 @@ local function alphablendColors(color1, color2, alphablend)
     }
 end
 
+--dirty shift color function
+local function dirtyShiftColor(color, shift)
+    local color2 = {
+        math.sin(shift + 0) * 127 + 128,
+        math.sin(shift + 2) * 127 + 128,
+        math.sin(shift + 4) * 127 + 128
+    }
+    return alphablendColors(color, color2, 0.5)
+end
+
 --simple function for coloring velocity
-local function colorNoteVelocity(vel, ins, isOnStep, isInSelection)
+local function colorNoteVelocity(vel, isOnStep, isInSelection, ins)
     local color
     local noteColor = colorNote
+    if preferences.useTrackColorForNoteColor.value then
+        noteColor = vbw["trackcolor"].color
+    end
+    if ins ~= nil and patternInstrument ~= nil and patternInstrument ~= ins then
+        noteColor = dirtyShiftColor(noteColor, ins)
+    end
     if isInSelection then
         noteColor = colorNoteSelected
     elseif isOnStep == true then
@@ -619,8 +636,6 @@ local function colorNoteVelocity(vel, ins, isOnStep, isInSelection)
         end
     elseif vel == 0 then
         return colorNoteMuted
-    elseif preferences.useTrackColorForNoteColor.value then
-        noteColor = vbw["trackcolor"].color
     end
     if vel < 0x7f and preferences.applyVelocityColorShading.value then
         if preferences.shadingType.value == 2 then
@@ -864,7 +879,7 @@ end
 local function setNoteColor(note_data, isOnStep, isInSelection)
     local nB = vbw["b" .. note_data.idx]
     if nB then
-        nB.color = colorNoteVelocity(note_data.vel, note_data.ins, isOnStep, isInSelection)
+        nB.color = colorNoteVelocity(note_data.vel, isOnStep, isInSelection, note_data.ins)
         vbw["bs" .. note_data.idx].color = shadeColor(nB.color, preferences.scaleBtnShadingAmount.value)
     end
 end
@@ -3062,6 +3077,10 @@ local function drawNoteToGrid(column,
     local l_song_st = l_song.selected_track
     local l_vbw = vbw
     local isInSelection = false
+    --try to set pattern instrument
+    if patternInstrument == nil then
+        patternInstrument = current_note_ins
+    end
     --save highest and lowest note
     if lowestNote == nil then
         lowestNote = current_note
@@ -3328,7 +3347,7 @@ local function drawNoteToGrid(column,
                 table.insert(noteButtons[current_note_rowIndex], sizebutton);
 
                 --set color
-                setNoteColor(noteData[current_note_index], false, isInSelection)
+                setNoteColor(noteData[current_note_index], false, isInSelection, current_note_ins)
 
                 --display retrigger effect
                 if retriggerWidth > 0 then
@@ -3838,7 +3857,7 @@ local function highlightNotesOnStep(step, highlight)
                         end
                     else
                         if not noteData[note.index] or not noteInSelection(noteData[note.index]) then
-                            vbw[idx].color = colorNoteVelocity(note.vel, note.ins)
+                            vbw[idx].color = colorNoteVelocity(note.vel, nil, nil, note.ins)
                         end
                     end
                     vbw[sidx].color = shadeColor(vbw[idx].color, preferences.scaleBtnShadingAmount.value)
@@ -3991,6 +4010,7 @@ local function fillPianoRoll(quickRefresh)
     noteButtons = {}
     noteOnStep = {}
     noteData = {}
+    patternInstrument = nil
 
     if not quickRefresh then
         usedNoteIndices = {}
