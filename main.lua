@@ -1445,6 +1445,8 @@ local function refreshNoteControls()
     if currentInstrument ~= nil then
         if currentInstrument == 255 then
             vbw.ins.value = 1
+        elseif currentInstrument + 2 > #instruments then
+            currentInstrument = nil
         else
             vbw.ins.value = currentInstrument + 2
         end
