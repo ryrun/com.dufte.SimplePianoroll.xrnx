@@ -168,8 +168,8 @@ local defaultPreferences = {
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
     colorGhostTrackNote = "#50616B",
-    colorNoteGhost = "#C2B1E2",
     colorNoteHighlight = "#E8CC6E",
+    colorNoteHighlight2 = "#C2B1E2",
     colorNoteMuted = "#ABBBC6",
     colorNoteSelected = "#F49695",
     colorStepOff = "#1E0600",
@@ -241,8 +241,8 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
     colorGhostTrackNote = defaultPreferences.colorGhostTrackNote,
-    colorNoteGhost = defaultPreferences.colorNoteGhost,
     colorNoteHighlight = defaultPreferences.colorNoteHighlight,
+    colorNoteHighlight2 = defaultPreferences.colorNoteHighlight2,
     colorNoteMuted = defaultPreferences.colorNoteMuted,
     colorNoteSelected = defaultPreferences.colorNoteSelected,
     colorStepOff = defaultPreferences.colorStepOff,
@@ -289,8 +289,8 @@ local colorBaseGridColor
 local colorGhostTrackNote
 local colorList
 local colorNote
-local colorNoteGhost
 local colorNoteHighlight
+local colorNoteHighlight2
 local colorNoteMuted
 local colorNoteSelected
 local colorStepOff
@@ -624,7 +624,7 @@ local function colorNoteVelocity(vel, isOnStep, isInSelection, ins)
         noteColor = vbw["trackcolor"].color
     end
     if ins ~= nil and patternInstrument ~= nil and patternInstrument ~= ins then
-        noteColor = dirtyShiftColor(noteColor, ins)
+        noteColor = dirtyShiftColor(colorNote, ins)
     end
     if isInSelection then
         noteColor = colorNoteSelected
@@ -722,8 +722,8 @@ local function initColors()
     colorBaseGridColor = convertStringToColorValue(preferences.colorBaseGridColor.value, defaultPreferences.colorBaseGridColor)
     colorNote = convertStringToColorValue(preferences.colorNote.value, defaultPreferences.colorNote)
     colorGhostTrackNote = convertStringToColorValue(preferences.colorGhostTrackNote.value, defaultPreferences.colorGhostTrackNote)
-    colorNoteGhost = convertStringToColorValue(preferences.colorNoteGhost.value, defaultPreferences.colorNoteGhost)
     colorNoteHighlight = convertStringToColorValue(preferences.colorNoteHighlight.value, defaultPreferences.colorNoteHighlight)
+    colorNoteHighlight2 = convertStringToColorValue(preferences.colorNoteHighlight2.value, defaultPreferences.colorNoteHighlight2)
     colorNoteMuted = convertStringToColorValue(preferences.colorNoteMuted.value, defaultPreferences.colorNoteMuted)
     colorNoteSelected = convertStringToColorValue(preferences.colorNoteSelected.value, defaultPreferences.colorNoteSelected)
     colorStepOn = convertStringToColorValue(preferences.colorStepOn.value, defaultPreferences.colorStepOn)
@@ -4118,7 +4118,7 @@ local function fillPianoRoll(quickRefresh)
                             if isRootKey then
                                 defaultColor[idx] = shadeColor(defaultColor[idx], preferences.rootKeyShadingAmount.value)
                             elseif outOfPentatnicScale then
-                                defaultColor[idx] = alphablendColors(defaultColor[idx], colorNoteGhost, preferences.outOfPentatonicScaleHighlightingAmount.value)
+                                defaultColor[idx] = alphablendColors(defaultColor[idx], colorNoteHighlight2, preferences.outOfPentatonicScaleHighlightingAmount.value)
                             end
                             if notesPlaying[y + noffset] then
                                 key.color = colorStepOn
@@ -5876,26 +5876,6 @@ local function showPreferences()
                 vbp:horizontal_aligner {
                     mode = "justify",
                     vbp:text {
-                        text = "Ghost note:",
-                    },
-                    vb:row {
-                        vbp:textfield {
-                            id = "colorNoteGhostField",
-                            bind = preferences.colorNoteGhost,
-                            notifier = function()
-                                initColors()
-                                vbwp.colorNoteGhost.color = colorNoteGhost
-                                vbwp.colorNoteGhostField.value = convertColorValueToString(colorNoteGhost)
-                            end
-                        },
-                        vbp:button {
-                            id = "colorNoteGhost",
-                            color = colorNoteGhost,
-                        }, },
-                },
-                vbp:horizontal_aligner {
-                    mode = "justify",
-                    vbp:text {
                         text = "Highlighting note:",
                     },
                     vb:row {
@@ -5911,6 +5891,26 @@ local function showPreferences()
                         vbp:button {
                             id = "colorNoteHighlight",
                             color = colorNoteHighlight,
+                        }, },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Highlighting note 2:",
+                    },
+                    vb:row {
+                        vbp:textfield {
+                            id = "colorNoteHighlight2Field",
+                            bind = preferences.colorNoteHighlight2,
+                            notifier = function()
+                                initColors()
+                                vbwp.colorNoteHighlight2.color = colorNoteHighlight2
+                                vbwp.colorNoteHighlight2Field.value = convertColorValueToString(colorNoteHighlight2)
+                            end
+                        },
+                        vbp:button {
+                            id = "colorNoteHighlight2",
+                            color = colorNoteHighlight2,
                         }, },
                 },
                 vbp:horizontal_aligner {
