@@ -613,7 +613,7 @@ local function dirtyShiftColor(color, shift)
         math.sin(shift + 2) * 127 + 128,
         math.sin(shift + 4) * 127 + 128
     }
-    return alphablendColors(color, color2, 0.6)
+    return alphablendColors(color, color2, 0.4)
 end
 
 --simple function for coloring velocity
