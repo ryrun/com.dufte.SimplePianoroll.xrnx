@@ -1432,6 +1432,7 @@ local function refreshNoteControls()
     end
 
     local instruments = {}
+    vbw.ins.active = false
     table.insert(instruments, "- Ghost note - [FF]")
     for i = 1, #song.instruments do
         if string.len(song.instruments[i].name) > 0 then
@@ -1448,6 +1449,7 @@ local function refreshNoteControls()
             vbw.ins.value = currentInstrument + 2
         end
     end
+    vbw.ins.active = true
 
     if checkMode("pen") then
         vbw.mode_pen.color = colorStepOn
@@ -6829,7 +6831,7 @@ local function createPianoRollDialog()
                                 vbw.ins.items[idx],
                                 '%[([0-9A-Z-]+)%]$'
                         )
-                        if val then
+                        if val and vbw["ins"].active then
                             currentInstrument = fromRenoiseHex(val)
                             if currentInstrument >= 0 and currentInstrument <= #song.instruments then
                                 song.selected_instrument_index = currentInstrument + 1
