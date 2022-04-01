@@ -3034,6 +3034,8 @@ function pianoGridClick(x, y, released)
                     currentNoteVelocityPreview = 127
                     currentNoteEndVelocity = 255
                     refreshControls = true
+                else
+                    jumpToNoteInPattern(x + stepOffset)
                 end
             end
         end
