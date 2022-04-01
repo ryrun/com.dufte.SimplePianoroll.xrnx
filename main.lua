@@ -3077,6 +3077,7 @@ local function drawNoteToGrid(column,
     local l_song_st = l_song.selected_track
     local l_vbw = vbw
     local isInSelection = false
+    local isScaleBtnHidden = false
     --try to set pattern instrument
     if patternInstrument == nil then
         patternInstrument = current_note_ins
@@ -3169,8 +3170,9 @@ local function drawNoteToGrid(column,
             end
             if current_note_step > gridWidth then
                 current_note_len = 0
-            elseif current_note_step + current_note_len > gridWidth and current_note_step <= gridWidth then
+            elseif current_note_step + current_note_len > gridWidth + 1 and current_note_step <= gridWidth then
                 current_note_len = current_note_len - (current_note_step + current_note_len - gridWidth - 1)
+                isScaleBtnHidden = true
             end
             if current_note_len > gridWidth then
                 current_note_len = gridWidth
@@ -3325,6 +3327,7 @@ local function drawNoteToGrid(column,
                 l_vbw["bbbs" .. current_note_index] = nil
                 sizebutton:add_child(vb:row {
                     spacing = -2,
+                    visible = not isScaleBtnHidden,
                     vb:space {
                         width = l_vbw["b" .. current_note_index].width - (preferences.clickAreaSizeForScalingPx.value - 4),
                     },
