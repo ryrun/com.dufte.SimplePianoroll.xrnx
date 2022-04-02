@@ -3679,6 +3679,8 @@ local function romanNumeralsAndScaleDegree(scale, note, chordname)
         elseif note == 11 then
             roman = "vii"
             name = "Leading tone"
+        else
+            return "-"
         end
     elseif scale == 3 then
         if note == 0 then
@@ -3702,6 +3704,8 @@ local function romanNumeralsAndScaleDegree(scale, note, chordname)
         elseif note == 10 then
             roman = "VII"
             name = "Subtonic"
+        else
+            return "-"
         end
     else
         return "-"
