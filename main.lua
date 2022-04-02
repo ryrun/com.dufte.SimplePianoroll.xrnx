@@ -7437,7 +7437,7 @@ local function createPianoRollDialog()
                                                 vb:bitmap {
                                                     bitmap = "Icons/Mixer_ShowDelay.bmp",
                                                     mode = "transparent",
-                                                    tooltip = "Scale degree and roman numeral",
+                                                    tooltip = "Scale degree and roman numeral\n\nCan help in creating chord progressions. Some common chord progressions used are:\n\nI V IV vi - Axis of Awesome\nvi IV I V - Axis of Awesome\ni bVII bVI V - Andalusian cadence\nI vi IV V - doo-wop progression\nI bVII IV I - Mixolydian Vamp\nIV V7 iii vi - Common japanese chords\nIV V7 vi - Common japanese chords\nii V I - Jazz chord progression / Changing key progression\n\nAnd there are more ... :)",
                                                 },
                                             },
                                             vb:space {
