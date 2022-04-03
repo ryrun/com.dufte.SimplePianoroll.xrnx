@@ -6777,7 +6777,7 @@ local function createPianoRollDialog()
                     tooltip = "Note length",
                     steps = { 1, 2 },
                     min = 1,
-                    max = 256,
+                    max = 512,
                     value = currentNoteLength,
                     notifier = function(number)
                         if #noteSelection > 0 and currentNoteLength ~= number then
@@ -6819,7 +6819,7 @@ local function createPianoRollDialog()
                             if #noteSelection > 0 then
                                 scaleNoteSelection(2)
                             end
-                            currentNoteLength = math.min(math.floor(currentNoteLength * 2), 256)
+                            currentNoteLength = math.min(math.floor(currentNoteLength * 2), 512)
                             refreshControls = true
                         end,
                     },
