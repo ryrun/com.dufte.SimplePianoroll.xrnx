@@ -2,11 +2,15 @@
 
 <img src="docs/images/pianorollanim3.gif?raw=true" width="754" alt="Simple Pianoroll Tool for Renoise">
 
-## Video on Youtube
+## Videos on Youtube
 
 Showing version 2.0 in action:
 
 [<img src="https://img.youtube.com/vi/EZJcpnwaY1I/0.jpg" width="300">](https://www.youtube.com/watch?v=EZJcpnwaY1I)
+
+### Older ones
+
+[<img src="https://img.youtube.com/vi/zUIjN6Wwrgs/0.jpg" width="150">](https://www.youtube.com/watch?v=zUIjN6Wwrgs) [<img src="https://img.youtube.com/vi/5qJCNvbco7M/0.jpg" width="150">](https://www.youtube.com/watch?v=5qJCNvbco7M)
 
 ## Thread on official Renoise forum
 
@@ -16,9 +20,9 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 
 * Piano roll workflow (inspired by FL piano roll)
 * Mouse support for note moving, scaling and drawing
-* Mouse scroll support for scrolling through grid
-* Follows Renoise user interface scaling option (Renoise's HDPI support)
-* Polyphony support (automatically adds note column, if needed)
+* Mouse scroll wheel support for scrolling through grid or change the velocity of selected notes
+* Follows Renoise user interface scaling option
+* Polyphony support (automatically adds and remove note columns, if needed)
 * Note preview via Renoise inbuild OSC Server
 * Ghost Track
 * Many useful mouse and keyboard shortcuts (inspired by FL, Bitwig, Ableton and Reason)
@@ -31,17 +35,15 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 
 ## Important
 
-* To improve mouse handling, please disable mouse warping in Renoise preferences. This also fix the jumping mouse cursor.
-* You draw notes with the instrument, which is used in the current track of the pattern. In empty track's, it's using
-  the current selected one.
+* To improve mouse handling, please disable mouse warping in Renoise preferences. This also fix the jumping mouse cursor. There is an option called "Mouse warping compatibility mode", if you still want to use mouse warping in Renoise. It will disable some internal functions, where disabled mouse warping is needed.
 * The key combination <kbd>alt + shift</kbd> is a default shortcut to change the keyboard layout on Windows OS. It is
   recommended to switch this off or change the keyboard shortcut to avoid problems. <br>See following for more
   details: https://answers.microsoft.com/en-us/windows/forum/all/how-to-disable-the-windows-10-language-shortcut/030016c9-bfed-48d9-8e4f-7d1030ced338
-* Renoise have a 12 column limit per tack. So when more than 12 columns are needed, then some notes will stuck in the current position. A hint should be displayed in Renoise toolbar.
+* Renoise have a 12 column limit per tack. So when more than 12 columns are needed, then some notes will stick in the current position. A hint should be displayed in Renoise toolbar.
 
 ## Note rendering in piano roll
 
-It supports different note column effects.
+It supports different note column effects, and it will also use different note colors, when more than one instrument was used in the pattern.
 
 #### Note overlapping
 
@@ -62,6 +64,10 @@ It supports different note column effects.
 #### Note delay for note off
 
 <img src="docs/images/noteoffdelay.png?raw=true" width="300" alt="Note delay for note off">
+
+#### Different instruments in one pattern
+
+<img src="docs/images/diffinsinpattern.png?raw=true" width="300" alt="Note delay for note off">
 
 ## Install and Update
 
@@ -87,6 +93,14 @@ Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 
 Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
 <img src="docs/images/editviamatrix.gif?raw=true" width="300">
+
+### In Mixer View
+
+Right-click on a track and choose "Edit with Simple Pianoroll ...".
+
+### In the Instruments Box
+
+Right-click on an instrument and choose "Edit Pattern with Simple Pianoroll ...". It will search for the right track, switch to it.
 
 ## Mouse actions
 
