@@ -606,14 +606,29 @@ local function alphablendColors(color1, color2, alphablend)
     }
 end
 
---dirty shift color function
-local function dirtyShiftColor(color, shift)
-    local color2 = {
-        math.sin(shift + 0) * 127 + 128,
-        math.sin(shift + 2) * 127 + 128,
-        math.sin(shift + 4) * 127 + 128
+--shift hue value
+local function shiftHueColor(col, degree)
+    local m = {
+        { 1, 0, 0 },
+        { 0, 1, 0 },
+        { 0, 0, 1 }
     }
-    return alphablendColors(color, color2, 0.4)
+    local sinA = math.sin(math.rad(degree))
+    local cosA = math.cos(math.rad(degree))
+    m[1][1] = cosA + (1 - cosA) / 3
+    m[1][2] = 1 / 3 * (1 - cosA) - math.sqrt(1 / 3) * sinA
+    m[1][3] = 1 / 3 * (1 - cosA) + math.sqrt(1 / 3) * sinA
+    m[2][1] = 1 / 3 * (1 - cosA) + math.sqrt(1 / 3) * sinA
+    m[2][2] = cosA + 1 / 3 * (1 - cosA)
+    m[2][3] = 1 / 3 * (1 - cosA) - math.sqrt(1 / 3) * sinA
+    m[3][1] = 1 / 3 * (1 - cosA) - math.sqrt(1 / 3) * sinA
+    m[3][2] = 1 / 3 * (1 - cosA) + math.sqrt(1 / 3) * sinA
+    m[3][3] = cosA + 1 / 3 * (1 - cosA)
+    return {
+        clamp(math.floor((col[1] * m[1][1] + col[2] * m[1][2] + col[3] * m[1][3]) + 0.5), 1, 254),
+        clamp(math.floor((col[1] * m[2][1] + col[2] * m[2][2] + col[3] * m[2][3]) + 0.5), 1, 254),
+        clamp(math.floor((col[1] * m[3][1] + col[2] * m[3][2] + col[3] * m[3][3]) + 0.5), 1, 254)
+    }
 end
 
 --simple function for coloring velocity
@@ -624,7 +639,7 @@ local function colorNoteVelocity(vel, isOnStep, isInSelection, ins)
         noteColor = vbw["trackcolor"].color
     end
     if ins ~= nil and patternInstrument ~= nil and patternInstrument ~= ins then
-        noteColor = dirtyShiftColor(noteColor, 3 - (patternInstrument - ins))
+        noteColor = shiftHueColor(noteColor, (patternInstrument - ins) * -45)
     end
     if isInSelection then
         noteColor = colorNoteSelected
