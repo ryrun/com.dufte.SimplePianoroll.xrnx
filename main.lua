@@ -84,6 +84,7 @@ local chordsTable = {
     ["0,3,5,7,10"] = "Minor Pentatonic",
     ["0,4,7,9,10"] = "13(no 9)",
     ["0,4,7,9,11"] = "Maj13(no9)",
+    ["0,2,3,7,10"] = "min9",
     ["0,3,7,9,10"] = "min7(13)",
     ["0,3,7,9,11"] = "minMaj7(13)",
     ["0,4,6,10"] = "7b5",
@@ -3733,9 +3734,15 @@ local function romanNumeralsAndScaleDegree(scale, note, chordname)
         if string.match(chordname, '^Maj7') or chordname == '7' then
             roman = string.upper(roman)
             after = "7"
+        elseif string.match(chordname, '^Maj9') or chordname == '9' then
+            roman = string.upper(roman)
+            after = "9"
         elseif string.match(chordname, '^min7') then
             roman = string.lower(roman)
             after = "7"
+        elseif string.match(chordname, '^min9') then
+            roman = string.lower(roman)
+            after = "9"
         elseif string.match(chordname, '^Maj') then
             roman = string.upper(roman)
         elseif string.match(chordname, '^min') then
