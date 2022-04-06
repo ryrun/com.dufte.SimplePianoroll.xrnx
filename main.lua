@@ -2775,10 +2775,14 @@ function noteClick(x, y, c, released, forceScaling)
             if ns ~= nil and #ns > 0 then
                 for i = 1, #ns do
                     if ns[i] ~= nil and ns[i].note == note_data.note and ns[i].index ~= index then
-                        vbw["b" .. ns[i].index].active = false
-                        vbw["bs" .. ns[i].index].active = false
-                        table.insert(xypadpos.disabled, "b" .. ns[i].index)
-                        table.insert(xypadpos.disabled, "bs" .. ns[i].index)
+                        if vbw["b" .. ns[i].index] then
+                            vbw["b" .. ns[i].index].active = false
+                            table.insert(xypadpos.disabled, "b" .. ns[i].index)
+                        end
+                        if vbw["bs" .. ns[i].index] then
+                            vbw["bs" .. ns[i].index].active = false
+                            table.insert(xypadpos.disabled, "bs" .. ns[i].index)
+                        end
                     end
                 end
             end
@@ -4902,6 +4906,10 @@ local function handleKeyEvent(keyEvent)
                     steps = steps * -1
                     stepSlider.value = forceValueToRange(stepSlider.value + steps, stepSlider.min, stepSlider.max)
                 end
+            elseif not keyAlt and keyControl and not keyShift and not keyRShift then
+                keyInfoText = "Move through the grid"
+                steps = steps * -1
+                stepSlider.value = forceValueToRange(stepSlider.value + steps, stepSlider.min, stepSlider.max)
             elseif not keyAlt and not keyControl and not keyShift and not keyRShift then
                 keyInfoText = "Move through the grid"
                 noteSlider.value = forceValueToRange(noteSlider.value + steps, noteSlider.min, noteSlider.max)
