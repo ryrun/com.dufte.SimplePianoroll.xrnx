@@ -3347,7 +3347,6 @@ local function drawNoteToGrid(column,
                 l_vbw["bbbs" .. current_note_index] = nil
                 sizebutton:add_child(vb:row {
                     spacing = -2,
-                    visible = not isScaleBtnHidden,
                     vb:space {
                         width = l_vbw["b" .. current_note_index].width - (preferences.clickAreaSizeForScalingPx.value - 4),
                     },
@@ -3366,8 +3365,10 @@ local function drawNoteToGrid(column,
                         }
                     }
                 });
-                l_vbw["row" .. current_note_rowIndex]:add_child(sizebutton)
-                table.insert(noteButtons[current_note_rowIndex], sizebutton);
+                if not isScaleBtnHidden then
+                    l_vbw["row" .. current_note_rowIndex]:add_child(sizebutton)
+                    table.insert(noteButtons[current_note_rowIndex], sizebutton);
+                end
 
                 --set color
                 setNoteColor(noteData[current_note_index], false, isInSelection, current_note_ins)
