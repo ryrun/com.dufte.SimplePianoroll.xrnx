@@ -4020,6 +4020,7 @@ local function fillPianoRoll(quickRefresh)
     local noffset = noteOffset - 1
     local blackKey
     local temp
+    local newNotes = {}
 
     --set auto ghost track
     if preferences.setLastEditedTrackAsGhost.value and lastTrackIndex and lastTrackIndex ~= l_song.selected_track_index and lastTrackIndex <= song.sequencer_track_count then
@@ -4206,21 +4207,20 @@ local function fillPianoRoll(quickRefresh)
                     refreshControls = true
                 end
                 if current_note ~= nil then
-                    drawNoteToGrid(c,
-                            current_note_line,
-                            current_note_step,
-                            current_note_rowIndex,
-                            current_note,
-                            current_note_len,
-                            current_note_string,
-                            current_note_vel,
-                            current_note_end_vel,
-                            current_note_pan,
-                            current_note_dly,
-                            current_note_end_dly,
-                            current_note_ins,
-                            false
-                    )
+                    table.insert(newNotes, { c,
+                                             current_note_line,
+                                             current_note_step,
+                                             current_note_rowIndex,
+                                             current_note,
+                                             current_note_len,
+                                             current_note_string,
+                                             current_note_vel,
+                                             current_note_end_vel,
+                                             current_note_pan,
+                                             current_note_dly,
+                                             current_note_end_dly,
+                                             current_note_ins,
+                                             false })
                 end
                 current_note = note
                 current_note_string = note_string
@@ -4242,21 +4242,20 @@ local function fillPianoRoll(quickRefresh)
                 if not current_note_step and s then
                     current_note_step = current_note_line - stepOffset
                 end
-                drawNoteToGrid(c,
-                        current_note_line,
-                        current_note_step,
-                        current_note_rowIndex,
-                        current_note,
-                        current_note_len,
-                        current_note_string,
-                        current_note_vel,
-                        current_note_end_vel,
-                        current_note_pan,
-                        current_note_dly,
-                        current_note_end_dly,
-                        current_note_ins,
-                        true
-                )
+                table.insert(newNotes, { c,
+                                         current_note_line,
+                                         current_note_step,
+                                         current_note_rowIndex,
+                                         current_note,
+                                         current_note_len,
+                                         current_note_string,
+                                         current_note_vel,
+                                         current_note_end_vel,
+                                         current_note_pan,
+                                         current_note_dly,
+                                         current_note_end_dly,
+                                         current_note_ins,
+                                         false })
                 current_note = nil
                 current_note_len = 0
                 current_note_rowIndex = nil
@@ -4271,22 +4270,56 @@ local function fillPianoRoll(quickRefresh)
         end
         --pattern end, no note off, enable last note
         if current_note ~= nil then
-            drawNoteToGrid(c,
-                    current_note_line,
-                    current_note_step,
-                    current_note_rowIndex,
-                    current_note,
-                    current_note_len,
-                    current_note_string,
-                    current_note_vel,
-                    current_note_end_vel,
-                    current_note_pan,
-                    current_note_dly,
-                    current_note_end_dly,
-                    current_note_ins,
-                    false
-            )
+            table.insert(newNotes, { c,
+                                     current_note_line,
+                                     current_note_step,
+                                     current_note_rowIndex,
+                                     current_note,
+                                     current_note_len,
+                                     current_note_string,
+                                     current_note_vel,
+                                     current_note_end_vel,
+                                     current_note_pan,
+                                     current_note_dly,
+                                     current_note_end_dly,
+                                     current_note_ins,
+                                     false })
         end
+    end
+
+    --resort, left ones first, higest column
+    table.sort(newNotes, function(a, b)
+        local v1 = a[2]
+        local v2 = b[2]
+        if a[11] then
+            v1 = v1 + a[11] / 0x100
+        end
+        if b[11] then
+            v2 = v2 + b[11] / 0x100
+        end
+        if v1 == v2 then
+            v1 = a[1]
+            v2 = b[1]
+        end
+        return v1 < v2
+    end)
+    --add note buttons
+    for i = 1, #newNotes do
+        drawNoteToGrid(newNotes[i][1],
+                newNotes[i][2],
+                newNotes[i][3],
+                newNotes[i][4],
+                newNotes[i][5],
+                newNotes[i][6],
+                newNotes[i][7],
+                newNotes[i][8],
+                newNotes[i][9],
+                newNotes[i][10],
+                newNotes[i][11],
+                newNotes[i][12],
+                newNotes[i][13],
+                newNotes[i][14]
+        )
     end
 
     --nothing else to do in quick refresh
