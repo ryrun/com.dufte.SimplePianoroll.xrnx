@@ -4528,6 +4528,7 @@ local function appNewDoc()
         end
         pasteCursor = {}
         currentInstrument = nil
+        patternInstrument = nil
         refreshControls = true
     end)
     song.selected_track.volume_column_visible_observable:add_notifier(obsColumnRefresh)
