@@ -879,19 +879,16 @@ end
 
 --return index, when note is in selection
 local function noteInSelection(notedata, otherTable)
-    local ret
     if otherTable == nil then
         otherTable = noteSelection
     end
     for i = 1, #otherTable do
-        local note_data = otherTable[i]
         --just search for line in pattern and column
-        if note_data.line == notedata.line and note_data.column == notedata.column then
-            ret = i
-            break
+        if otherTable[i].line == notedata.line and otherTable[i].column == notedata.column then
+            return i
         end
     end
-    return ret
+    return nil
 end
 
 --function set set note button colors
