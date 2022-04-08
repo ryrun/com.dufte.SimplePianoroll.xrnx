@@ -165,6 +165,7 @@ local defaultPreferences = {
     setComputerKeyboardVelocity = false,
     moveNoteInPenMode = false,
     mirroringGhostTrack = false,
+    noteColorShiftDegree = 45,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -238,6 +239,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     setComputerKeyboardVelocity = defaultPreferences.setComputerKeyboardVelocity,
     moveNoteInPenMode = defaultPreferences.moveNoteInPenMode,
     mirroringGhostTrack = defaultPreferences.mirroringGhostTrack,
+    noteColorShiftDegree = defaultPreferences.noteColorShiftDegree,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -640,7 +642,7 @@ local function colorNoteVelocity(vel, isOnStep, isInSelection, ins)
         noteColor = vbw["trackcolor"].color
     end
     if ins ~= nil and patternInstrument ~= nil and patternInstrument ~= ins then
-        noteColor = shiftHueColor(noteColor, (patternInstrument - ins) * -45)
+        noteColor = shiftHueColor(noteColor, (ins - patternInstrument) * preferences.noteColorShiftDegree.value)
     end
     if isInSelection then
         noteColor = colorNoteSelected
@@ -4046,7 +4048,6 @@ local function fillPianoRoll(quickRefresh)
     noteButtons = {}
     noteOnStep = {}
     noteData = {}
-    patternInstrument = nil
 
     if not quickRefresh then
         usedNoteIndices = {}
@@ -4299,16 +4300,18 @@ local function fillPianoRoll(quickRefresh)
         end
     end
     --search for the most used instrument in pattern
-    temp = 0
-    for key,value in pairs(usedInstruments) do
-        if value > temp then
-            patternInstrument = key
-            temp = value
+    if patternInstrument == nil or not usedInstruments[patternInstrument] then
+        temp = 0
+        for key, value in pairs(usedInstruments) do
+            if value > temp then
+                patternInstrument = key
+                temp = value
+            end
         end
-    end
-    --no notes? try to set pattern instrument via current instrument
-    if patternInstrument == nil then
-        patternInstrument = currentInstrument
+        --no notes? try to set pattern instrument via current instrument
+        if patternInstrument == nil then
+            patternInstrument = currentInstrument
+        end
     end
     --resort, left ones first, higest column
     table.sort(newNotes, function(a, b)
@@ -5753,6 +5756,23 @@ local function showPreferences()
                         bind = preferences.outOfPentatonicScaleHighlightingAmount,
                         tostring = function(v)
                             return string.format("%.2f", v)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v)
+                        end
+                    },
+                },
+                vbp:horizontal_aligner {
+                    mode = "justify",
+                    vbp:text {
+                        text = "Base hue shift value (degree):",
+                    },
+                    vbp:valuebox {
+                        min = 0,
+                        max = 360,
+                        bind = preferences.noteColorShiftDegree,
+                        tostring = function(v)
+                            return string.format("%i°", v)
                         end,
                         tonumber = function(v)
                             return tonumber(v)
