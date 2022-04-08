@@ -3102,10 +3102,6 @@ local function drawNoteToGrid(column,
     local l_vbw = vbw
     local isInSelection = false
     local isScaleBtnHidden = false
-    --try to set pattern instrument
-    if patternInstrument == nil then
-        patternInstrument = current_note_ins
-    end
     --save highest and lowest note
     if lowestNote == nil then
         lowestNote = current_note
@@ -4021,6 +4017,7 @@ local function fillPianoRoll(quickRefresh)
     local blackKey
     local temp
     local newNotes = {}
+    local usedInstruments = {}
 
     --set auto ghost track
     if preferences.setLastEditedTrackAsGhost.value and lastTrackIndex and lastTrackIndex ~= l_song.selected_track_index and lastTrackIndex <= song.sequencer_track_count then
@@ -4207,6 +4204,11 @@ local function fillPianoRoll(quickRefresh)
                     refreshControls = true
                 end
                 if current_note ~= nil then
+                    if usedInstruments[current_note_ins] then
+                        usedInstruments[current_note_ins] = usedInstruments[current_note_ins] + 1
+                    else
+                        usedInstruments[current_note_ins] = 1
+                    end
                     table.insert(newNotes, { c,
                                              current_note_line,
                                              current_note_step,
@@ -4242,6 +4244,11 @@ local function fillPianoRoll(quickRefresh)
                 if not current_note_step and s then
                     current_note_step = current_note_line - stepOffset
                 end
+                if usedInstruments[current_note_ins] then
+                    usedInstruments[current_note_ins] = usedInstruments[current_note_ins] + 1
+                else
+                    usedInstruments[current_note_ins] = 1
+                end
                 table.insert(newNotes, { c,
                                          current_note_line,
                                          current_note_step,
@@ -4270,6 +4277,11 @@ local function fillPianoRoll(quickRefresh)
         end
         --pattern end, no note off, enable last note
         if current_note ~= nil then
+            if usedInstruments[current_note_ins] then
+                usedInstruments[current_note_ins] = usedInstruments[current_note_ins] + 1
+            else
+                usedInstruments[current_note_ins] = 1
+            end
             table.insert(newNotes, { c,
                                      current_note_line,
                                      current_note_step,
@@ -4286,7 +4298,18 @@ local function fillPianoRoll(quickRefresh)
                                      false })
         end
     end
-
+    --search for the most used instrument in pattern
+    temp = 0
+    for key,value in pairs(usedInstruments) do
+        if value > temp then
+            patternInstrument = key
+            temp = value
+        end
+    end
+    --no notes? try to set pattern instrument via current instrument
+    if patternInstrument == nil then
+        patternInstrument = currentInstrument
+    end
     --resort, left ones first, higest column
     table.sort(newNotes, function(a, b)
         local v1 = a[2]
