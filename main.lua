@@ -616,8 +616,9 @@ local function shiftHueColor(col, degree)
         { 0, 1, 0 },
         { 0, 0, 1 }
     }
-    local sinA = math.sin(math.rad(degree))
-    local cosA = math.cos(math.rad(degree))
+    local rad = math.rad(degree)
+    local sinA = math.sin(rad)
+    local cosA = math.cos(rad)
     m[1][1] = cosA + (1 - cosA) / 3
     m[1][2] = 1 / 3 * (1 - cosA) - math.sqrt(1 / 3) * sinA
     m[1][3] = 1 / 3 * (1 - cosA) + math.sqrt(1 / 3) * sinA
@@ -3663,10 +3664,10 @@ end
 --returns corresponding numeral and degree
 local function romanNumeralsAndScaleDegree(scale, note, chordname)
     --realign note
-    local roman = ""
+    local roman
     local before = ""
     local after = ""
-    local name = ""
+    local name
     note = (note - (currentScaleOffset - 1)) % 12
     if scale == 2 then
         if note == 0 then
@@ -7548,7 +7549,13 @@ local function createPianoRollDialog()
                                                 vb:bitmap {
                                                     bitmap = "Icons/Mixer_ShowDelay.bmp",
                                                     mode = "transparent",
-                                                    tooltip = "Scale degree and roman numeral\n\nCan help in creating chord progressions. Some common chord progressions used are:\n\nI V IV vi - Axis of Awesome\nvi IV I V - Axis of Awesome\ni bVII bVI V - Andalusian cadence\nI vi IV V - doo-wop progression\nI bVII IV I - Mixolydian Vamp\nIV V7 iii vi - Common japanese chords\nIV V7 vi - Common japanese chords\nii V I - Jazz chord progression / Changing key progression\n\nAnd there are more ... :)",
+                                                    tooltip = "Scale degree and roman numeral\n\n" ..
+                                                            "Can help in creating chord progressions. Some common chord progressions used are:\n\n" ..
+                                                            "I V IV vi - Axis of Awesome\nvi IV I V - Axis of Awesome\n" ..
+                                                            "i bVII bVI V - Andalusian cadence\nI vi IV V - doo-wop progression\n" ..
+                                                            "I bVII IV I - Mixolydian Vamp\nIV V7 iii vi - Common japanese chords\n" ..
+                                                            "IV V7 vi - Common japanese chords\nii V I - Jazz chord progression / Changing key progression\n\n" ..
+                                                            "And there are more ... :)",
                                                 },
                                             },
                                             vb:space {
