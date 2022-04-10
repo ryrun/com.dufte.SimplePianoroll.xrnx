@@ -3507,6 +3507,7 @@ local function ghostTrack(trackIndex)
     local mirrorMode = preferences.mirroringGhostTrack.value
     local note, note_column, rowoffset
     for c = 1, columns do
+        rowoffset = nil
 
         if stepOffset > 0 then
             for i = stepOffset + 1, 1, -1 do
