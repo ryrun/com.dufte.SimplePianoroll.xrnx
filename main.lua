@@ -1687,7 +1687,10 @@ local function moveSelectedNotes(steps)
     end
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
-    song.transport.follow_player = false
+    if song.transport.follow_player then
+        wasFollowPlayer = song.transport.follow_player
+        song.transport.follow_player = false
+    end
     --
     setUndoDescription("Move notes ...")
     --go through selection
@@ -1769,7 +1772,10 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
 
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
-    song.transport.follow_player = false
+    if song.transport.follow_player then
+        wasFollowPlayer = song.transport.follow_player
+        song.transport.follow_player = false
+    end
     --
     setUndoDescription("Move notes ...")
     --go through selection
@@ -1835,7 +1841,10 @@ local function transposeSelectedNotes(transpose, keepscale)
     end
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
-    song.transport.follow_player = false
+    if song.transport.follow_player then
+        wasFollowPlayer = song.transport.follow_player
+        song.transport.follow_player = false
+    end
     --
     setUndoDescription("Transpose notes ...")
     --go through selection
@@ -1884,7 +1893,10 @@ local function pasteNotesFromClipboard()
     local lineoffset = 0
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
-    song.transport.follow_player = false
+    if song.transport.follow_player then
+        wasFollowPlayer = song.transport.follow_player
+        song.transport.follow_player = false
+    end
     --describe undo for renoise
     setUndoDescription("Paste notes from clipboard ...")
     if #pasteCursor > 0 then
@@ -2078,7 +2090,10 @@ local function duplicateSelectedNotes(noOffset)
     offset = (noteSelection[1].line + noteSelection[1].len) - offset
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
-    song.transport.follow_player = false
+    if song.transport.follow_player then
+        wasFollowPlayer = song.transport.follow_player
+        song.transport.follow_player = false
+    end
     --
     --remove offset to duplicate on same pos
     if noOffset then
@@ -2137,7 +2152,10 @@ local function changeSizeSelectedNotesByMicroSteps(microsteps)
 
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
-    song.transport.follow_player = false
+    if song.transport.follow_player then
+        wasFollowPlayer = song.transport.follow_player
+        song.transport.follow_player = false
+    end
     --
     setUndoDescription("Change note lengths ...")
     --go through selection
@@ -2206,7 +2224,10 @@ local function changeSizeSelectedNotes(len, add)
     table.sort(noteSelection, sortLeftOneFirst)
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
-    song.transport.follow_player = false
+    if song.transport.follow_player then
+        wasFollowPlayer = song.transport.follow_player
+        song.transport.follow_player = false
+    end
     --
     setUndoDescription("Change note lengths ...")
     --go through selection
@@ -2273,7 +2294,10 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
     end
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
-    song.transport.follow_player = false
+    if song.transport.follow_player then
+        wasFollowPlayer = song.transport.follow_player
+        song.transport.follow_player = false
+    end
     --go through selection
     local selection
     local note
@@ -7695,8 +7719,6 @@ local function main_function()
         notesPlayingLine = {}
         --when needed set enable penmode
         penMode = preferences.forcePenMode.value
-        --save some states
-        wasFollowPlayer = song.transport.follow_player
         --create main dialog
         if not windowContent or rebuildWindowDialog then
             --init colors
@@ -7845,8 +7867,11 @@ tool:add_menu_entry {
                 if song.sequencer:track_sequence_slot_is_selected(t, s) then
                     --focus pattern editor
                     app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_PATTERN_EDITOR
-                    --disable follow player
-                    song.transport.follow_player = false
+                    --when current sequnce not the editing one, disable follow player, when playing
+                    if song.transport.playing and song.transport.follow_player and song.selected_sequence_index ~= s then
+                        wasFollowPlayer = song.transport.follow_player
+                        song.transport.follow_player = false
+                    end
                     --switch to sequence and track
                     song.selected_sequence_index = s
                     song.selected_track_index = t
