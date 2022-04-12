@@ -3578,6 +3578,17 @@ local function ghostTrack(trackIndex)
     end
 end
 
+--switch to current selected ghost if possible
+local function switchGhostTrack()
+    if currentGhostTrack and currentGhostTrack ~= song.selected_track_index then
+        local temp = currentGhostTrack
+        vbw.ghosttracks.value = song.selected_track_index
+        song.selected_track_index = temp
+    else
+        showStatus("Info: Can't switch to ghost track, please select a ghost track first.")
+    end
+end
+
 --set scale highlighting, none, manual modes, instrument scale, automatic mode
 local function setScaleHighlighting(afterPianoRollRefresh)
     local ret = false
@@ -6820,9 +6831,11 @@ local function createPianoRollDialog()
     end
 
     windowContent = vb:column {
-        vb:row {
+        vb:horizontal_aligner {
             margin = 3,
             spacing = -1,
+            width = gridStepSizeW * (math.max(gridWidth, 64) + 5) - (gridSpacing * (math.max(gridWidth, 64) + 5)) + 2,
+            mode = "justify",
             vb:row {
                 margin = 3,
                 spacing = -3,
@@ -6900,6 +6913,25 @@ local function createPianoRollDialog()
                 margin = 3,
                 spacing = 1,
                 style = "panel",
+                vb:popup {
+                    id = "ins",
+                    width = 134,
+                    notifier = function(idx)
+                        local val = string.match(
+                                vbw.ins.items[idx],
+                                '%[([0-9A-Z-]+)%]$'
+                        )
+                        if val and vbw["ins"].active then
+                            currentInstrument = fromRenoiseHex(val)
+                            if currentInstrument >= 0 and currentInstrument <= #song.instruments then
+                                song.selected_instrument_index = currentInstrument + 1
+                            end
+                            if #noteSelection > 0 then
+                                changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, currentInstrument)
+                            end
+                        end
+                    end
+                },
                 vb:text {
                     text = "Len",
                 },
@@ -6954,30 +6986,6 @@ local function createPianoRollDialog()
                             refreshControls = true
                         end,
                     },
-                },
-            },
-            vb:row {
-                margin = 3,
-                spacing = 1,
-                style = "panel",
-                vb:popup {
-                    id = "ins",
-                    width = 124,
-                    notifier = function(idx)
-                        local val = string.match(
-                                vbw.ins.items[idx],
-                                '%[([0-9A-Z-]+)%]$'
-                        )
-                        if val and vbw["ins"].active then
-                            currentInstrument = fromRenoiseHex(val)
-                            if currentInstrument >= 0 and currentInstrument <= #song.instruments then
-                                song.selected_instrument_index = currentInstrument + 1
-                            end
-                            if #noteSelection > 0 then
-                                changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, currentInstrument)
-                            end
-                        end
-                    end
                 },
                 vb:button {
                     id = "notecolumn_vel",
@@ -7296,31 +7304,29 @@ local function createPianoRollDialog()
                         end
                     end,
                 },
-                vb:button {
-                    id = "ghosttrackmirror",
-                    bitmap = "Icons/Clone.bmp",
-                    width = 24,
-                    tooltip = "Mirror notes of the current ghost track",
-                    notifier = function()
-                        preferences.mirroringGhostTrack.value = not preferences.mirroringGhostTrack.value
-                        refreshPianoRollNeeded = true
-                        refreshControls = true
-                    end
+                vb:row {
+                    spacing = -3,
+                    vb:button {
+                        bitmap = "Icons/Browser_Rescan.bmp",
+                        width = 24,
+                        tooltip = "Switch to selected ghost track",
+                        notifier = function()
+                            switchGhostTrack()
+                        end
+                    },
+                    vb:button {
+                        id = "ghosttrackmirror",
+                        bitmap = "Icons/Clone.bmp",
+                        width = 24,
+                        tooltip = "Mirror notes of the current ghost track",
+                        notifier = function()
+                            preferences.mirroringGhostTrack.value = not preferences.mirroringGhostTrack.value
+                            refreshPianoRollNeeded = true
+                            refreshControls = true
+                        end
+                    },
                 },
             },
-            vb:row {
-                margin = 3,
-                spacing = 1,
-                style = "panel",
-                vb:button {
-                    bitmap = "Icons/Options.bmp",
-                    width = 24,
-                    tooltip = "Preferences ...",
-                    notifier = function()
-                        showPreferences()
-                    end,
-                },
-            }
         },
         vb:row {
             vb:column {
@@ -7343,13 +7349,7 @@ local function createPianoRollDialog()
                                     active = true,
                                     width = pianoKeyWidth,
                                     notifier = function()
-                                        if currentGhostTrack and currentGhostTrack ~= song.selected_track_index then
-                                            local temp = currentGhostTrack
-                                            vbw.ghosttracks.value = song.selected_track_index
-                                            song.selected_track_index = temp
-                                        else
-                                            showStatus("Info: Can't switch to ghost track, please select a ghost track first.")
-                                        end
+                                        switchGhostTrack()
                                     end
                                 }
                             },
@@ -7497,103 +7497,121 @@ local function createPianoRollDialog()
                                     end
                                 },
                                 vb:row {
-                                    id = "chorddetection",
                                     width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2,
                                     vb:horizontal_aligner {
                                         width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2,
                                         mode = "right",
                                         spacing = -2,
                                         vb:row {
-                                            style = "panel",
-                                            margin = 1,
-                                            vb:space {
-                                                width = 2,
-                                            },
-                                            vb:vertical_aligner {
-                                                mode = "center",
-                                                vb:bitmap {
-                                                    bitmap = "Icons/Browser_RenoiseSongFile.bmp",
-                                                    mode = "transparent",
-                                                    tooltip = "Notes",
+                                            id = "chorddetection",
+                                            spacing = -2,
+                                            vb:row {
+                                                style = "panel",
+                                                margin = 1,
+                                                vb:space {
+                                                    width = 2,
+                                                },
+                                                vb:vertical_aligner {
+                                                    mode = "center",
+                                                    vb:bitmap {
+                                                        bitmap = "Icons/Browser_RenoiseSongFile.bmp",
+                                                        mode = "transparent",
+                                                        tooltip = "Notes",
+                                                    },
+                                                },
+                                                vb:space {
+                                                    width = 2,
+                                                },
+                                                vb:text {
+                                                    id = "currentnotes",
+                                                    width = 122,
+                                                    text = "-",
+                                                    font = "bold",
+                                                    style = "strong",
+                                                    align = "center",
+                                                },
+                                                vb:space {
+                                                    width = 4,
                                                 },
                                             },
-                                            vb:space {
-                                                width = 2,
+                                            vb:row {
+                                                style = "panel",
+                                                margin = 1,
+                                                vb:space {
+                                                    width = 2,
+                                                },
+                                                vb:vertical_aligner {
+                                                    mode = "center",
+                                                    vb:bitmap {
+                                                        bitmap = "Icons/Transport_ChordModeOff.bmp",
+                                                        mode = "transparent",
+                                                        tooltip = "Chord",
+                                                    },
+                                                },
+                                                vb:space {
+                                                    width = 2,
+                                                },
+                                                vb:text {
+                                                    id = "currentchord",
+                                                    width = 114,
+                                                    text = "-",
+                                                    font = "bold",
+                                                    style = "strong",
+                                                    align = "center",
+                                                },
+                                                vb:space {
+                                                    width = 4,
+                                                },
                                             },
-                                            vb:text {
-                                                id = "currentnotes",
-                                                width = 122,
-                                                text = "-",
-                                                font = "bold",
-                                                style = "strong",
-                                                align = "center",
-                                            },
-                                            vb:space {
-                                                width = 4,
+                                            vb:row {
+                                                style = "panel",
+                                                margin = 1,
+                                                vb:space {
+                                                    width = 2,
+                                                },
+                                                vb:vertical_aligner {
+                                                    mode = "center",
+                                                    vb:bitmap {
+                                                        bitmap = "Icons/Mixer_ShowDelay.bmp",
+                                                        mode = "transparent",
+                                                        tooltip = "Scale degree and roman numeral\n\n" ..
+                                                                "Can help in creating chord progressions. Some common chord progressions used are:\n\n" ..
+                                                                "I V IV vi - Axis of Awesome\nvi IV I V - Axis of Awesome\n" ..
+                                                                "i bVII bVI V - Andalusian cadence\nI vi IV V - doo-wop progression\n" ..
+                                                                "I bVII IV I - Mixolydian Vamp\nIV V7 iii vi - Common japanese chords\n" ..
+                                                                "IV V7 vi - Common japanese chords\nii V I - Jazz chord progression / Changing key progression\n\n" ..
+                                                                "And there are more ... :)",
+                                                    },
+                                                },
+                                                vb:space {
+                                                    width = 2,
+                                                },
+                                                vb:text {
+                                                    id = "chordprog",
+                                                    width = 110,
+                                                    text = "-",
+                                                    font = "bold",
+                                                    style = "strong",
+                                                    align = "center",
+                                                },
+                                                vb:space {
+                                                    width = 4,
+                                                },
                                             },
                                         },
                                         vb:row {
                                             style = "panel",
                                             margin = 1,
-                                            vb:space {
-                                                width = 2,
-                                            },
                                             vb:vertical_aligner {
                                                 mode = "center",
-                                                vb:bitmap {
-                                                    bitmap = "Icons/Transport_ChordModeOff.bmp",
-                                                    mode = "transparent",
-                                                    tooltip = "Chord",
+                                                vb:button {
+                                                    bitmap = "Icons/Options.bmp",
+                                                    width = 24,
+                                                    tooltip = "Preferences ...",
+                                                    notifier = function()
+                                                        showPreferences()
+                                                    end,
                                                 },
-                                            },
-                                            vb:space {
-                                                width = 2,
-                                            },
-                                            vb:text {
-                                                id = "currentchord",
-                                                width = 114,
-                                                text = "-",
-                                                font = "bold",
-                                                style = "strong",
-                                                align = "center",
-                                            },
-                                            vb:space {
-                                                width = 4,
-                                            },
-                                        },
-                                        vb:row {
-                                            style = "panel",
-                                            margin = 1,
-                                            vb:space {
-                                                width = 2,
-                                            },
-                                            vb:vertical_aligner {
-                                                mode = "center",
-                                                vb:bitmap {
-                                                    bitmap = "Icons/Mixer_ShowDelay.bmp",
-                                                    mode = "transparent",
-                                                    tooltip = "Scale degree and roman numeral\n\n" ..
-                                                            "Can help in creating chord progressions. Some common chord progressions used are:\n\n" ..
-                                                            "I V IV vi - Axis of Awesome\nvi IV I V - Axis of Awesome\n" ..
-                                                            "i bVII bVI V - Andalusian cadence\nI vi IV V - doo-wop progression\n" ..
-                                                            "I bVII IV I - Mixolydian Vamp\nIV V7 iii vi - Common japanese chords\n" ..
-                                                            "IV V7 vi - Common japanese chords\nii V I - Jazz chord progression / Changing key progression\n\n" ..
-                                                            "And there are more ... :)",
-                                                },
-                                            },
-                                            vb:space {
-                                                width = 2,
-                                            },
-                                            vb:text {
-                                                id = "chordprog",
-                                                width = 110,
-                                                text = "-",
-                                                font = "bold",
-                                                style = "strong",
-                                                align = "center",
-                                            },
-                                            vb:space {
-                                                width = 4,
                                             },
                                         },
                                     },
