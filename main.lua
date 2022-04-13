@@ -264,6 +264,7 @@ local windowObj
 local windowContent
 local preferencesContent
 local setScaleContent
+local histogramContent
 local stepSlider
 local noteSlider
 local snapBackVal = { x = 1.01234, y = 1.01234 }
@@ -1341,11 +1342,6 @@ local function refreshNoteControls()
         vbw.notecolumn_vel.color = colorVelocity
         vbw.note_vel.active = true
         vbw.note_vel_clear.active = true
-        if #noteSelection > 0 then
-            vbw.note_vel_humanize.active = true
-        else
-            vbw.note_vel_humanize.active = false
-        end
         if currentNoteVelocity == 255 then
             vbw.note_vel.value = -1
         else
@@ -1379,7 +1375,6 @@ local function refreshNoteControls()
         vbw.note_vel.active = false
         vbw.note_end_vel.active = false
         vbw.note_vel_clear.active = false
-        vbw.note_vel_humanize.active = false
         vbw.note_end_vel_clear.active = false
     end
 
@@ -1392,17 +1387,11 @@ local function refreshNoteControls()
         end
         vbw.note_pan.active = true
         vbw.note_pan_clear.active = true
-        if #noteSelection > 0 then
-            vbw.note_pan_humanize.active = true
-        else
-            vbw.note_pan_humanize.active = false
-        end
     else
         vbw.notecolumn_pan.color = colorDefault
         vbw.note_pan.value = -1
         vbw.note_pan.active = false
         vbw.note_pan_clear.active = false
-        vbw.note_pan_humanize.active = false
     end
 
     if song.selected_track.delay_column_visible then
@@ -1413,17 +1402,11 @@ local function refreshNoteControls()
         vbw.note_end_dly.value = currentNoteEndDelay
         vbw.note_end_dly.active = true
         vbw.note_end_dly_clear.active = true
-        if #noteSelection > 0 then
-            vbw.note_dly_humanize.active = true
-        else
-            vbw.note_dly_humanize.active = false
-        end
     else
         vbw.notecolumn_delay.color = colorDefault
         vbw.note_dly.value = 0
         vbw.note_dly.active = false
         vbw.note_dly_clear.active = false
-        vbw.note_dly_humanize.active = false
         vbw.note_end_dly.value = 0
         vbw.note_end_dly.active = false
         vbw.note_end_dly_clear.active = false
@@ -4421,17 +4404,6 @@ local function fillPianoRoll(quickRefresh)
         updateNoteSelection()
     end
 
-    --enable buttons when something selected
-    if #noteSelection > 0 then
-        l_vbw.note_vel_humanize.active = vbw.note_vel_clear.active
-        l_vbw.note_pan_humanize.active = vbw.note_pan_clear.active
-        l_vbw.note_dly_humanize.active = vbw.note_dly_clear.active
-    else
-        l_vbw.note_vel_humanize.active = false
-        l_vbw.note_pan_humanize.active = false
-        l_vbw.note_dly_humanize.active = false
-    end
-
     --render ghost notes, only when index is not the current track
     if currentGhostTrack and currentGhostTrack ~= l_song.selected_track_index then
         if l_song:track(currentGhostTrack).type == renoise.Track.TRACK_TYPE_SEQUENCER then
@@ -5579,6 +5551,175 @@ local function switchToRelativeScale()
         preferences.keyForSelectedScale.value = ((preferences.keyForSelectedScale.value - 4) % 12) + 1
         refreshPianoRollNeeded = true
     end
+end
+
+local function refreshHistogram(randomValues)
+    local max = 127
+    local val = 0
+    local maxVal = 0
+    local midVal = 0
+    local minVal = 99999
+    local maxNotes = 0
+    local maxValue = {}
+    local values = {}
+    local newvalues = {}
+    local index
+    --fill values with empty
+    for i = 1, 100 do
+        values[i] = 0
+        newvalues[i] = 0
+    end
+    --fill value table
+    for i = 1, #noteSelection do
+        val = noteSelection[i].vel
+        maxVal = math.max(maxVal, val)
+        minVal = math.min(minVal, val)
+    end
+    midVal = (minVal + maxVal) / 2
+    print(minVal, midVal, maxVal, 1 / maxVal * midVal)
+    --set mean base value
+    vbwp["histogrammean"].value = 1 / maxVal * midVal
+    --change values by scale
+    for i = 1, #noteSelection do
+        val = noteSelection[i].vel
+        --apply chaos
+        --apply scale
+        val = val + ((vbwp["histogramscale"].value - 1) * (val - midVal))
+        index = clamp(math.floor(100 / max * val), 1, 100)
+        values[index] = values[index] + 1
+        maxNotes = math.max(maxNotes, values[index])
+    end
+    --set histogram
+    for i = 1, 100 do
+        vbwp["histogram" .. tostring(i)].height = math.max(5, 100 / maxNotes * values[i])
+    end
+end
+
+--histogram window
+local function showHistogram()
+    local randomValues = {}
+    if histogramContent == nil then
+        histogramContent = vbp:row {
+            uniform = true,
+            margin = 5,
+            spacing = 5,
+            vbp:column {
+                style = "group",
+                margin = 5,
+                uniform = true,
+                spacing = 4,
+                width = 432,
+                vbp:text {
+                    id = "histocount",
+                    text = "",
+                },
+                vbp:switch {
+                    width = "100%",
+                    items = {
+                        "Vol",
+                        "Pan",
+                        "Dly",
+                    },
+                },
+                vbp:row {
+                    id = "histogram",
+                    spacing = -4,
+                    style = "border",
+                },
+                vbp:horizontal_aligner {
+                    mode = "distribute",
+                    vbp:text {
+                        text = "Mean:",
+                    },
+                    vbp:valuebox {
+                        id = "histogrammean",
+                        steps = { 0.01, 0.1 },
+                        min = 0,
+                        max = 1,
+                        width = 80,
+                        tostring = function(v)
+                            return string.format("%.1f %%", v * 100)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v / 100)
+                        end,
+                        notifier = function()
+                            refreshHistogram(randomValues)
+                        end
+                    },
+                    vbp:text {
+                        text = "Scale:",
+                    },
+                    vbp:valuebox {
+                        id = "histogramscale",
+                        steps = { 0.01, 0.1 },
+                        min = 0,
+                        max = 2,
+                        value = 1,
+                        width = 80,
+                        tostring = function(v)
+                            return string.format("%.1f %%", v * 100)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v / 100)
+                        end,
+                        notifier = function()
+                            refreshHistogram(randomValues)
+                        end
+                    },
+                    vbp:text {
+                        text = "Chaos:",
+                    },
+                    vbp:valuebox {
+                        id = "histogramchaos",
+                        steps = { 0.01, 0.1 },
+                        min = 0,
+                        max = 1,
+                        width = 80,
+                        tostring = function(v)
+                            return string.format("%.1f %%", v * 100)
+                        end,
+                        tonumber = function(v)
+                            return tonumber(v / 100)
+                        end,
+                        notifier = function()
+                            refreshHistogram(randomValues)
+                        end
+                    },
+                }
+            }
+        }
+        for i = 1, 100 do
+            vbwp.histogram:add_child(
+                    vb:vertical_aligner {
+                        mode = "bottom",
+                        height = 100,
+                        vbp:button {
+                            id = "histogram" .. tostring(i),
+                            width = 8,
+                            height = 1 + i,
+                            active = false,
+                            color = colorStepOn,
+                        }
+                    }
+            )
+        end
+    end
+    vbwp.histocount.text = "Humanizing " .. tostring(#noteSelection) .. " note values:"
+    vbwp.histogramscale.value = 1
+    vbwp.histogramchaos.value = 0
+    --set random values
+    math.randomseed(os.time())
+    for i = 1, #noteSelection do
+        randomValues[i] = math.random(1, 1000) / 1000
+    end
+    --
+    refreshHistogram(randomValues)
+    --
+    app:show_custom_prompt("Histogram",
+            histogramContent, { "Close" })
+    refreshPianoRollNeeded = true
+    restoreFocus()
 end
 
 --setscale window
@@ -6915,7 +7056,7 @@ local function createPianoRollDialog()
                 style = "panel",
                 vb:popup {
                     id = "ins",
-                    width = 134,
+                    width = 154,
                     notifier = function(idx)
                         local val = string.match(
                                 vbw.ins.items[idx],
@@ -7033,34 +7174,21 @@ local function createPianoRollDialog()
                         refreshControls = true
                     end,
                 },
-                vb:row {
-                    spacing = -3,
-                    vb:button {
-                        id = "note_vel_clear",
-                        text = "C",
-                        tooltip = "Clear note velocity\n(While holding shift: Clear both velocity values)",
-                        notifier = function()
-                            currentNoteVelocity = 255
-                            if #noteSelection > 0 then
-                                changePropertiesOfSelectedNotes(currentNoteVelocity)
-                                if keyShift then
-                                    currentNoteEndVelocity = 255
-                                    changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity)
-                                end
+                vb:button {
+                    id = "note_vel_clear",
+                    text = "C",
+                    tooltip = "Clear note velocity\n(While holding shift: Clear both velocity values)",
+                    notifier = function()
+                        currentNoteVelocity = 255
+                        if #noteSelection > 0 then
+                            changePropertiesOfSelectedNotes(currentNoteVelocity)
+                            if keyShift then
+                                currentNoteEndVelocity = 255
+                                changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity)
                             end
-                            refreshControls = true
-                        end,
-                    },
-                    vb:button {
-                        id = "note_vel_humanize",
-                        text = "H",
-                        tooltip = "Humanize note velocity of selected notes",
-                        notifier = function()
-                            if #noteSelection > 0 then
-                                changePropertiesOfSelectedNotes("h")
-                            end
-                        end,
-                    },
+                        end
+                        refreshControls = true
+                    end,
                 },
                 vb:valuebox {
                     id = "note_end_vel",
@@ -7152,29 +7280,16 @@ local function createPianoRollDialog()
                         refreshControls = true
                     end,
                 },
-                vb:row {
-                    spacing = -3,
-                    vb:button {
-                        id = "note_pan_clear",
-                        text = "C",
-                        tooltip = "Clear note panning",
-                        notifier = function()
-                            currentNotePan = 255
-                            changePropertiesOfSelectedNotes(nil, nil, nil, nil, currentNotePan)
-                            refreshControls = true
-                            refreshPianoRollNeeded = true
-                        end,
-                    },
-                    vb:button {
-                        id = "note_pan_humanize",
-                        text = "H",
-                        tooltip = "Humanize note panning of selected notes",
-                        notifier = function()
-                            if #noteSelection > 0 then
-                                changePropertiesOfSelectedNotes(nil, nil, nil, nil, "h")
-                            end
-                        end,
-                    },
+                vb:button {
+                    id = "note_pan_clear",
+                    text = "C",
+                    tooltip = "Clear note panning",
+                    notifier = function()
+                        currentNotePan = 255
+                        changePropertiesOfSelectedNotes(nil, nil, nil, nil, currentNotePan)
+                        refreshControls = true
+                        refreshPianoRollNeeded = true
+                    end,
                 },
                 vb:button {
                     id = "notecolumn_delay",
@@ -7218,33 +7333,20 @@ local function createPianoRollDialog()
                         refreshControls = true
                     end,
                 },
-                vb:row {
-                    spacing = -3,
-                    vb:button {
-                        id = "note_dly_clear",
-                        text = "C",
-                        tooltip = "Clear note delay\n(While holding shift: Clear both delay values)",
-                        notifier = function()
-                            currentNoteDelay = 0
-                            changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay)
-                            if keyShift then
-                                currentNoteEndDelay = 0
-                                changePropertiesOfSelectedNotes(nil, nil, nil, currentNoteEndDelay)
-                            end
-                            refreshControls = true
-                            refreshPianoRollNeeded = true
-                        end,
-                    },
-                    vb:button {
-                        id = "note_dly_humanize",
-                        text = "H",
-                        tooltip = "Humanize note delay of selected notes",
-                        notifier = function()
-                            if #noteSelection > 0 then
-                                changePropertiesOfSelectedNotes(nil, nil, "h")
-                            end
-                        end,
-                    },
+                vb:button {
+                    id = "note_dly_clear",
+                    text = "C",
+                    tooltip = "Clear note delay\n(While holding shift: Clear both delay values)",
+                    notifier = function()
+                        currentNoteDelay = 0
+                        changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay)
+                        if keyShift then
+                            currentNoteEndDelay = 0
+                            changePropertiesOfSelectedNotes(nil, nil, nil, currentNoteEndDelay)
+                        end
+                        refreshControls = true
+                        refreshPianoRollNeeded = true
+                    end,
                 },
                 vb:valuebox {
                     id = "note_end_dly",
@@ -7283,6 +7385,14 @@ local function createPianoRollDialog()
                         changePropertiesOfSelectedNotes(nil, nil, nil, currentNoteEndDelay)
                         refreshControls = true
                         refreshPianoRollNeeded = true
+                    end,
+                },
+                vb:button {
+                    bitmap = "Icons/LofiMat_Crunch.bmp",
+                    tooltip = "Histogram",
+                    width = 24,
+                    notifier = function()
+                        showHistogram()
                     end,
                 },
             },
