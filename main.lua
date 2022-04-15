@@ -5799,6 +5799,7 @@ local function showHistogram()
                                     "Asc by Pos",
                                     "Asc by Note",
                                 },
+                                tooltip = "Apply ascending values by note position or by note pitch",
                             },
                             vbp:valuebox {
                                 id = "histogramasc",
