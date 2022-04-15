@@ -266,6 +266,7 @@ local windowContent
 local preferencesContent
 local setScaleObj
 local setScaleContent
+local histogramObj
 local histogramContent
 local stepSlider
 local noteSlider
@@ -5540,6 +5541,13 @@ local function appIdleEvent()
             song.transport.follow_player = wasFollowPlayer
             wasFollowPlayer = nil
         end
+        --close editing windows
+        if setScaleObj and setScaleObj.visible then
+            setScaleObj:close()
+        end
+        if histogramObj and histogramObj.visible then
+            histogramObj:close()
+        end
     end
 end
 
@@ -5658,6 +5666,13 @@ end
 
 --init histogram start values and random values
 local function initHistogram()
+    vbwp.histocount.text = "Humanizing " .. tostring(#noteSelection) .. " note values. Please note hat notes with column effects will be ignored."
+    --
+    song.transport.edit_mode = false
+    if song.transport.follow_player then
+        wasFollowPlayer = song.transport.follow_player
+        song.transport.follow_player = false
+    end
     randomHistogramValues = {}
     --set random values
     math.randomseed(os.time())
@@ -5674,154 +5689,171 @@ end
 --histogram window
 local function showHistogram()
     if histogramContent == nil then
-        histogramContent = vbp:row {
-            uniform = true,
-            margin = 5,
-            spacing = 5,
-            vbp:column {
-                style = "group",
-                margin = 5,
+        histogramContent = vbp:column {
+            spacing = -8,
+            vbp:row {
                 uniform = true,
-                spacing = 4,
-                width = 432,
-                vbp:switch {
-                    id = "histogrammode",
-                    width = "100%",
-                    items = {
-                        "Vol",
-                        "Pan",
-                        "Dly",
+                margin = 5,
+                spacing = 5,
+                vbp:column {
+                    style = "group",
+                    margin = 5,
+                    uniform = true,
+                    spacing = 4,
+                    width = 432,
+                    vbp:switch {
+                        id = "histogrammode",
+                        width = "100%",
+                        items = {
+                            "Vol",
+                            "Pan",
+                            "Dly",
+                        },
+                        notifier = function()
+                            refreshHistogram()
+                        end
                     },
+                    vbp:row {
+                        id = "histogram",
+                        spacing = -4,
+                        style = "border",
+                    },
+                    vbp:horizontal_aligner {
+                        mode = "center",
+                        vbp:text {
+                            id = "histocount",
+                            text = "",
+                        },
+                    },
+                    vbp:horizontal_aligner {
+                        mode = "distribute",
+                        vb:column {
+                            vbp:text {
+                                text = "Offset:",
+                            },
+                            vbp:valuebox {
+                                id = "histogramoffset",
+                                steps = { 0.02, 0.01 },
+                                min = -1,
+                                max = 1,
+                                value = 0,
+                                width = 80,
+                                tostring = function(v)
+                                    return string.format("%.1f %%", v * 100)
+                                end,
+                                tonumber = function(v)
+                                    return tonumber(v / 100)
+                                end,
+                                notifier = function()
+                                    refreshHistogram()
+                                end
+                            },
+                        },
+                        vb:column {
+                            vbp:text {
+                                text = "Scale:",
+                            },
+                            vbp:valuebox {
+                                id = "histogramscale",
+                                steps = { 0.02, 0.01 },
+                                min = 0,
+                                max = 2,
+                                value = 1,
+                                width = 80,
+                                tostring = function(v)
+                                    return string.format("%.1f %%", v * 100)
+                                end,
+                                tonumber = function(v)
+                                    return tonumber(v / 100)
+                                end,
+                                notifier = function()
+                                    refreshHistogram()
+                                end
+                            },
+                        },
+                        vb:column {
+                            vbp:text {
+                                text = "Chaos:",
+                            },
+                            vbp:valuebox {
+                                id = "histogramchaos",
+                                steps = { 0.02, 0.01 },
+                                min = 0,
+                                max = 1,
+                                width = 80,
+                                tostring = function(v)
+                                    return string.format("%.1f %%", v * 100)
+                                end,
+                                tonumber = function(v)
+                                    return tonumber(v / 100)
+                                end,
+                                notifier = function()
+                                    refreshHistogram()
+                                end
+                            },
+                        },
+                        vb:column {
+                            vbp:popup {
+                                id = "histogramasctype",
+                                items = {
+                                    "Asc by Pos",
+                                    "Asc by Note",
+                                },
+                            },
+                            vbp:valuebox {
+                                id = "histogramasc",
+                                steps = { 0.02, 0.01 },
+                                min = -1,
+                                max = 1,
+                                width = 80,
+                                tostring = function(v)
+                                    return string.format("%.1f %%", v * 100)
+                                end,
+                                tonumber = function(v)
+                                    return tonumber(v / 100)
+                                end,
+                                notifier = function()
+                                    refreshHistogram()
+                                end
+                            },
+                        },
+                        vbp:vertical_aligner {
+                            mode = "bottom",
+                            vbp:row {
+                                vbp:button {
+                                    text = "Apply",
+                                    notifier = function()
+                                        setUndoDescription("Change note properties via histogram ...")
+                                        refreshHistogram(true)
+                                        refreshPianoRollNeeded = true
+                                        initHistogram()
+                                    end
+                                },
+                                vbp:button {
+                                    text = "Reset",
+                                    notifier = function()
+                                        initHistogram()
+                                    end
+                                },
+                            },
+                        },
+                    },
+                }
+            },
+            vbp:horizontal_aligner {
+                mode = "center",
+                margin = vbc.DEFAULT_DIALOG_MARGIN,
+                spacing = vbc.DEFAULT_CONTROL_SPACING,
+                vbp:button {
+                    text = "Ok",
+                    height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
+                    width = 100,
                     notifier = function()
-                        refreshHistogram()
+                        refreshPianoRollNeeded = true
+                        histogramObj:close()
                     end
                 },
-                vbp:row {
-                    id = "histogram",
-                    spacing = -4,
-                    style = "border",
-                },
-                vbp:horizontal_aligner {
-                    mode = "center",
-                    vbp:text {
-                        id = "histocount",
-                        text = "",
-                    },
-                },
-                vbp:horizontal_aligner {
-                    mode = "distribute",
-                    vb:column {
-                        vbp:text {
-                            text = "Offset:",
-                        },
-                        vbp:valuebox {
-                            id = "histogramoffset",
-                            steps = { 0.02, 0.01 },
-                            min = -1,
-                            max = 1,
-                            value = 0,
-                            width = 80,
-                            tostring = function(v)
-                                return string.format("%.1f %%", v * 100)
-                            end,
-                            tonumber = function(v)
-                                return tonumber(v / 100)
-                            end,
-                            notifier = function()
-                                refreshHistogram()
-                            end
-                        },
-                    },
-                    vb:column {
-                        vbp:text {
-                            text = "Scale:",
-                        },
-                        vbp:valuebox {
-                            id = "histogramscale",
-                            steps = { 0.02, 0.01 },
-                            min = 0,
-                            max = 2,
-                            value = 1,
-                            width = 80,
-                            tostring = function(v)
-                                return string.format("%.1f %%", v * 100)
-                            end,
-                            tonumber = function(v)
-                                return tonumber(v / 100)
-                            end,
-                            notifier = function()
-                                refreshHistogram()
-                            end
-                        },
-                    },
-                    vb:column {
-                        vbp:text {
-                            text = "Chaos:",
-                        },
-                        vbp:valuebox {
-                            id = "histogramchaos",
-                            steps = { 0.02, 0.01 },
-                            min = 0,
-                            max = 1,
-                            width = 80,
-                            tostring = function(v)
-                                return string.format("%.1f %%", v * 100)
-                            end,
-                            tonumber = function(v)
-                                return tonumber(v / 100)
-                            end,
-                            notifier = function()
-                                refreshHistogram()
-                            end
-                        },
-                    },
-                    vb:column {
-                        vbp:popup {
-                            id = "histogramasctype",
-                            items = {
-                                "Asc by Pos",
-                                "Asc by Note",
-                            },
-                        },
-                        vbp:valuebox {
-                            id = "histogramasc",
-                            steps = { 0.02, 0.01 },
-                            min = -1,
-                            max = 1,
-                            width = 80,
-                            tostring = function(v)
-                                return string.format("%.1f %%", v * 100)
-                            end,
-                            tonumber = function(v)
-                                return tonumber(v / 100)
-                            end,
-                            notifier = function()
-                                refreshHistogram()
-                            end
-                        },
-                    },
-                    vbp:vertical_aligner {
-                        mode = "bottom",
-                        vbp:row {
-                            vbp:button {
-                                text = "Apply",
-                                notifier = function()
-                                    setUndoDescription("Change note properties via histogram ...")
-                                    refreshHistogram(true)
-                                    refreshPianoRollNeeded = true
-                                    initHistogram()
-                                end
-                            },
-                            vbp:button {
-                                text = "Reset",
-                                notifier = function()
-                                    initHistogram()
-                                end
-                            },
-                        },
-                    },
-                },
-            }
+            },
         }
         for i = 1, 100 do
             vbwp.histogram:add_child(
@@ -5839,17 +5871,13 @@ local function showHistogram()
             )
         end
     end
-    vbwp.histocount.text = "Humanizing " .. tostring(#noteSelection) .. " note values. Please note hat notes with column effects will be ignored."
     initHistogram()
-    song.transport.edit_mode = false
-    if song.transport.follow_player then
-        wasFollowPlayer = song.transport.follow_player
-        song.transport.follow_player = false
+    if not histogramObj or not histogramObj.visible then
+        histogramObj = app:show_custom_dialog("Histogram",
+                histogramContent)
+    else
+        histogramObj:show()
     end
-    app:show_custom_prompt("Histogram",
-            histogramContent, { "Close" })
-    refreshPianoRollNeeded = true
-    restoreFocus()
 end
 
 --setscale window
