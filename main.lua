@@ -8,6 +8,7 @@ local vb
 local vbw
 --viewbuilder for preferences and set scale
 local vbp = renoise.ViewBuilder()
+local vbc = renoise.ViewBuilder
 local vbwp = vbp.views
 
 --load manifest for fetching versionnumber
@@ -263,6 +264,7 @@ tool.preferences = preferences
 local windowObj
 local windowContent
 local preferencesContent
+local setScaleObj
 local setScaleContent
 local histogramContent
 local stepSlider
@@ -5853,45 +5855,74 @@ end
 --setscale window
 local function showSetScaleDialog()
     if setScaleContent == nil then
-        setScaleContent = vbp:row {
-            uniform = true,
-            margin = 5,
-            spacing = 5,
-            vbp:column {
-                style = "group",
-                margin = 5,
+        setScaleContent = vbp:column {
+            spacing = -8,
+            vbp:row {
                 uniform = true,
-                spacing = 4,
-                width = 432,
-                vbp:text {
-                    text = "Scale highlighting:",
-                },
-                vbp:switch {
-                    width = "100%",
-                    items = scaleTypes,
-                    bind = preferences.scaleHighlightingType,
-                },
+                margin = 5,
+                spacing = 5,
+                vbp:column {
+                    style = "group",
+                    margin = 5,
+                    uniform = true,
+                    spacing = 4,
+                    width = 432,
+                    vbp:text {
+                        text = "Scale highlighting:",
+                    },
+                    vbp:switch {
+                        width = "100%",
+                        items = scaleTypes,
+                        bind = preferences.scaleHighlightingType,
+                        notifier = function()
+                            refreshPianoRollNeeded = true
+                        end
+                    },
+                    vbp:horizontal_aligner {
+                        mode = "center",
+                        vbp:button {
+                            text = "Switch to relative minor or major key",
+                            notifier = function()
+                                switchToRelativeScale()
+                            end
+                        },
+                    },
+                    vbp:text {
+                        text = "Key for selected scale:",
+                    },
+                    vbp:switch {
+                        width = "100%",
+                        items = notesTable,
+                        bind = preferences.keyForSelectedScale,
+                        notifier = function()
+                            refreshPianoRollNeeded = true
+                        end
+                    },
+
+                }
+            },
+            vbp:horizontal_aligner {
+                mode = "center",
+                margin = vbc.DEFAULT_DIALOG_MARGIN,
+                spacing = vbc.DEFAULT_CONTROL_SPACING,
                 vbp:button {
-                    text = "Switch to relative minor or major key",
+                    text = "Ok",
+                    height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
+                    width = 100,
                     notifier = function()
-                        switchToRelativeScale()
+                        refreshPianoRollNeeded = true
+                        setScaleObj:close()
                     end
                 },
-                vbp:text {
-                    text = "Key for selected scale:",
-                },
-                vbp:switch {
-                    width = "100%",
-                    items = notesTable,
-                    bind = preferences.keyForSelectedScale,
-                },
-            }
+            },
         }
     end
-    app:show_custom_prompt("Scale highlighting",
-            setScaleContent, { "Ok" })
-    refreshPianoRollNeeded = true
-    restoreFocus()
+    if not setScaleObj or not setScaleObj.visible then
+        setScaleObj = app:show_custom_dialog("Scale highlighting",
+                setScaleContent)
+    else
+        setScaleObj:show()
+    end
 end
 
 --preferences window
