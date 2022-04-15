@@ -332,6 +332,7 @@ local blockLineModifier = false
 local refreshControls = false
 local refreshTimeline = false
 local refreshChordDetection = false
+local refreshHistogram = false
 local afterEditProcessTime
 
 --table to save note indices per step for highlighting
@@ -1092,9 +1093,11 @@ local function updateNoteSelection(note_data, clear)
                 refreshControls = true
             end
         end
+        refreshHistogram = true
     else
         --refresh chord detection
         refreshChordDetection = true
+        refreshHistogram = true
     end
 end
 
@@ -4421,6 +4424,9 @@ local function fillPianoRoll(quickRefresh)
 
     --refresh playback pos indicator
     refreshPlaybackPosIndicator()
+
+    --refresh histogram if needed
+    refreshHistogram = true
 end
 
 --set playback pos via playback pos indicator
@@ -5460,6 +5466,120 @@ local function handleXypad(val)
     end
 end
 
+--refresh histogram / apply values
+local function refreshHistogramWindow(apply)
+    local max = 128
+    local min = 0
+    local val = 0
+    local maxVal = 0
+    local midVal = 0
+    local minVal = 99999
+    local values = {}
+    local notevalue = {}
+    local index
+    local note
+    local lineValues = song.selected_pattern_track.lines
+    --fill values with empty
+    for i = 1, 100 do
+        values[i] = 0
+    end
+    vbwp.histocount.text = "Humanizing " .. tostring(#noteSelection) .. " note values."
+    if #noteSelection > 0 then
+        --resort note selection
+        if vbwp["histogramasctype"].value == 2 then
+            table.sort(noteSelection, sortFromLowToTop)
+        else
+            table.sort(noteSelection, sortLeftOneFirstFromLowToTop)
+        end
+        --fill value table
+        for i = 1, #noteSelection do
+            if vbwp["histogrammode"].value == 1 then
+                val = noteSelection[i].vel
+                max = 0x80
+                min = 1
+                if val == 255 then
+                    val = max
+                end
+            elseif vbwp["histogrammode"].value == 2 then
+                val = noteSelection[i].pan
+                if val == 255 then
+                    val = 0x40
+                end
+                max = 0x80
+            elseif vbwp["histogrammode"].value == 3 then
+                val = noteSelection[i].dly
+                max = 0xff
+            end
+            notevalue[i] = val
+            maxVal = math.max(maxVal, val)
+            minVal = math.min(minVal, val)
+        end
+        midVal = (minVal + maxVal) / 2
+        vbwp.histomin.text = tostring(min)
+        vbwp.histomax.text = tostring(max)
+        --change values by scale
+        for i = 1, #noteSelection do
+            val = notevalue[i]
+            if vbwp["histogrammode"].value == 3 or (val >= min and val <= max) then
+                --apply ascending
+                if i > 1 then
+                    val = val + (max / (#noteSelection - 1) * (i - 1)) * vbwp["histogramasc"].value
+                end
+                --apply chaos
+                val = val + (
+                        randomHistogramValues[i] *
+                                max *
+                                vbwp["histogramchaos"].value
+                )
+                --apply scale
+                val = val + ((vbwp["histogramscale"].value - 1) * (val - midVal))
+                --apply offset
+                val = val + (max * vbwp["histogramoffset"].value)
+                --round value
+                val = clamp(math.floor(val + 0.5), min, max)
+                index = clamp(math.floor(#values / max * val), 1, #values)
+                values[index] = values[index] + 1
+                --apply values
+                note = lineValues[noteSelection[i].line]:note_column(noteSelection[i].column)
+                if apply ~= nil then
+                    if vbwp["histogrammode"].value == 1 then
+                        --no value = max vel, so set no value
+                        if val == 0x80 then
+                            val = 255
+                        end
+                        note.volume_value = val
+                        noteSelection[i].vel = val
+                    elseif vbwp["histogrammode"].value == 2 then
+                        song.selected_track.panning_column_visible = true
+                        --no value = center, so set no value when center
+                        if val == 0x40 then
+                            val = 255
+                        end
+                        note.panning_value = val
+                        noteSelection[i].pan = val
+                    elseif vbwp["histogrammode"].value == 3 then
+                        song.selected_track.delay_column_visible = true
+                        note.delay_value = val
+                        noteSelection[i].dly = val
+                    end
+                end
+            end
+        end
+    end
+    --set histogram
+    for i = 1, #values do
+        note = vbwp["histogram" .. tostring(i)]
+        note.height = clamp(100 / math.min(#noteSelection, 5) * values[i], 5, 100)
+        if vbwp["histogrammode"].value == 1 then
+            note.color = colorVelocity
+        elseif vbwp["histogrammode"].value == 2 then
+            note.color = colorPan
+        elseif vbwp["histogrammode"].value == 3 then
+            note.color = colorDelay
+        end
+    end
+end
+
 --app idle
 local function appIdleEvent()
     --only process when window is created and visible
@@ -5505,6 +5625,13 @@ local function appIdleEvent()
         --refresh chord states
         if refreshChordDetection and preferences.chordDetection.value then
             refreshDetectedChord()
+        end
+        --if needed refresh histogram
+        if refreshHistogram then
+            refreshHistogram = false
+            if histogramObj and histogramObj.visible then
+                refreshHistogramWindow()
+            end
         end
         --key info state
         if lastKeyInfoTime and lastKeyInfoTime + preferences.keyInfoTime.value < os.clock() then
@@ -5564,111 +5691,8 @@ local function switchToRelativeScale()
     end
 end
 
---refresh histogram / apply values
-local function refreshHistogram(apply)
-    local max = 128
-    local val = 0
-    local maxVal = 0
-    local midVal = 0
-    local minVal = 99999
-    local values = {}
-    local notevalue = {}
-    local index
-    local note
-    local lineValues = song.selected_pattern_track.lines
-    --resort note selection
-    if vbwp["histogramasctype"].value == 2 then
-        table.sort(noteSelection, sortFromLowToTop)
-    else
-        table.sort(noteSelection, sortLeftOneFirstFromLowToTop)
-    end
-    --fill values with empty
-    for i = 1, 100 do
-        values[i] = 0
-    end
-    --fill value table
-    for i = 1, #noteSelection do
-        if vbwp["histogrammode"].value == 1 then
-            val = noteSelection[i].vel
-            max = 0x80
-            if val == 255 then
-                val = max
-            end
-        elseif vbwp["histogrammode"].value == 2 then
-            val = noteSelection[i].pan
-            if val == 255 then
-                val = 0x40
-            end
-            max = 0x80
-        elseif vbwp["histogrammode"].value == 3 then
-            val = noteSelection[i].dly
-            max = 0xff
-        end
-        notevalue[i] = val
-        maxVal = math.max(maxVal, val)
-        minVal = math.min(minVal, val)
-    end
-    midVal = (minVal + maxVal) / 2
-    --change values by scale
-    for i = 1, #noteSelection do
-        val = notevalue[i]
-        if vbwp["histogrammode"].value == 3 or (val >= 0 and val <= 0x80) then
-            --apply ascending
-            if i > 1 then
-                val = val + (max / (#noteSelection - 1) * (i - 1)) * vbwp["histogramasc"].value
-            end
-            --apply chaos
-            val = val + (
-                    randomHistogramValues[i] *
-                            max *
-                            vbwp["histogramchaos"].value
-            )
-            --apply scale
-            val = val + ((vbwp["histogramscale"].value - 1) * (val - midVal))
-            --apply offset
-            val = val + (max * vbwp["histogramoffset"].value)
-            --round value
-            val = clamp(math.floor(val + 0.5), 0, max)
-            index = clamp(math.floor(#values / max * val), 1, #values)
-            values[index] = values[index] + 1
-            --apply values
-            note = lineValues[noteSelection[i].line]:note_column(noteSelection[i].column)
-            if apply ~= nil then
-                if vbwp["histogrammode"].value == 1 then
-                    if val == 0x80 then
-                        val = 255
-                    end
-                    note.volume_value = val
-                    noteSelection[i].vel = val
-                elseif vbwp["histogrammode"].value == 2 then
-                    song.selected_track.panning_column_visible = true
-                    note.panning_value = val
-                    noteSelection[i].pan = val
-                elseif vbwp["histogrammode"].value == 3 then
-                    song.selected_track.delay_column_visible = true
-                    note.delay_value = val
-                    noteSelection[i].dly = val
-                end
-            end
-        end
-    end
-    --set histogram
-    for i = 1, #values do
-        note = vbwp["histogram" .. tostring(i)]
-        note.height = clamp(100 / math.min(#noteSelection, 5) * values[i], 5, 100)
-        if vbwp["histogrammode"].value == 1 then
-            note.color = colorVelocity
-        elseif vbwp["histogrammode"].value == 2 then
-            note.color = colorPan
-        elseif vbwp["histogrammode"].value == 3 then
-            note.color = colorDelay
-        end
-    end
-end
-
 --init histogram start values and random values
 local function initHistogram()
-    vbwp.histocount.text = "Humanizing " .. tostring(#noteSelection) .. " note values. Please note hat notes with column effects will be ignored."
     --
     song.transport.edit_mode = false
     if song.transport.follow_player then
@@ -5678,14 +5702,14 @@ local function initHistogram()
     randomHistogramValues = {}
     --set random values
     math.randomseed(os.time())
-    for i = 1, #noteSelection do
+    for i = 1, math.max(#noteSelection, 1000) do
         randomHistogramValues[i] = math.random(1, 1000) / 1000 - 0.5
     end
     vbwp.histogramscale.value = 1
     vbwp.histogramchaos.value = 0
     vbwp.histogramoffset.value = 0
     vbwp.histogramasc.value = 0
-    refreshHistogram()
+    refreshHistogramWindow()
 end
 
 --histogram window
@@ -5712,7 +5736,7 @@ local function showHistogram()
                             "Dly",
                         },
                         notifier = function()
-                            refreshHistogram()
+                            refreshHistogramWindow()
                         end
                     },
                     vbp:row {
@@ -5721,10 +5745,21 @@ local function showHistogram()
                         style = "border",
                     },
                     vbp:horizontal_aligner {
-                        mode = "center",
+                        mode = "justify",
                         vbp:text {
+                            id = "histomin",
+                            text = "",
+                            font = "mono",
+                        },
+                        vbp:text {
+                            align = "center",
                             id = "histocount",
                             text = "",
+                        },
+                        vbp:text {
+                            id = "histomax",
+                            text = "",
+                            font = "mono",
                         },
                     },
                     vbp:horizontal_aligner {
@@ -5747,7 +5782,7 @@ local function showHistogram()
                                     return tonumber(v / 100)
                                 end,
                                 notifier = function()
-                                    refreshHistogram()
+                                    refreshHistogramWindow()
                                 end
                             },
                         },
@@ -5769,7 +5804,7 @@ local function showHistogram()
                                     return tonumber(v / 100)
                                 end,
                                 notifier = function()
-                                    refreshHistogram()
+                                    refreshHistogramWindow()
                                 end
                             },
                         },
@@ -5790,7 +5825,7 @@ local function showHistogram()
                                     return tonumber(v / 100)
                                 end,
                                 notifier = function()
-                                    refreshHistogram()
+                                    refreshHistogramWindow()
                                 end
                             },
                         },
@@ -5816,7 +5851,7 @@ local function showHistogram()
                                     return tonumber(v / 100)
                                 end,
                                 notifier = function()
-                                    refreshHistogram()
+                                    refreshHistogramWindow()
                                 end
                             },
                         },
@@ -5827,7 +5862,7 @@ local function showHistogram()
                                     text = "Apply",
                                     notifier = function()
                                         setUndoDescription("Change note properties via histogram ...")
-                                        refreshHistogram(true)
+                                        refreshHistogramWindow(true)
                                         refreshPianoRollNeeded = true
                                         initHistogram()
                                     end
@@ -5841,6 +5876,11 @@ local function showHistogram()
                             },
                         },
                     },
+                    vbp:text {
+                        align = "center",
+                        text = "Please note that muted notes for volume changes\n" ..
+                                "and generally notes with column effects will be ignored."
+                    }
                 }
             },
             vbp:horizontal_aligner {
