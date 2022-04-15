@@ -5614,7 +5614,9 @@ local function refreshHistogram(apply)
         val = notevalue[i]
         if vbwp["histogrammode"].value == 3 or (val >= 0 and val <= 0x80) then
             --apply ascending
-            val = val + (max / (#noteSelection - 1) * (i - 1)) * vbwp["histogramasc"].value
+            if i > 1 then
+                val = val + (max / (#noteSelection - 1) * (i - 1)) * vbwp["histogramasc"].value
+            end
             --apply chaos
             val = val + (
                     randomHistogramValues[i] *
