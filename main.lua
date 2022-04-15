@@ -346,6 +346,9 @@ local noteButtons = {}
 --table for clipboard function
 local clipboard = {}
 
+--table for histogram
+local randomHistogramValues = {}
+
 --edit vars
 local lastClickCache = {}
 local lastClickIndex = nil
@@ -426,6 +429,17 @@ local function sortLeftOneFirst(a, b)
     return x < y
 end
 
+local function sortLeftOneFirstFromLowToTop(a, b)
+    local x, y
+    x = a.line + a.dly / 0x100
+    y = b.line + b.dly / 0x100
+    if x == y then
+        x = a.note
+        y = b.note
+    end
+    return x < y
+end
+
 local function sortRightOneFirst(a, b)
     local x, y
     x = a.line + a.len + a.end_dly / 0x100
@@ -436,6 +450,13 @@ local function sortRightOneFirst(a, b)
         x = b.column
     end
     return x > y
+end
+
+local function sortFromLowToTop(a, b)
+    local x, y
+    x = a.note
+    y = b.note
+    return x < y
 end
 
 local function sortFirstColumnFirst(a, b)
@@ -2311,12 +2332,7 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
             selection.ins = ins
         end
         if vel ~= nil then
-            if tostring(vel) == "h" then
-                if note.volume_value <= 127 then
-                    note.volume_value = randomizeValue(note.volume_value, 2, 1, 127)
-                    selection.vel = note.volume_value
-                end
-            elseif tostring(vel) == "mute" then
+            if tostring(vel) == "mute" then
                 note.volume_value = 0
                 selection.vel = note.volume_value
             elseif tostring(vel) == "unmute" then
@@ -2350,25 +2366,10 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
             end
         end
         if pan ~= nil then
-            if tostring(pan) == "h" then
-                if note.panning_value <= 127 then
-                    note.panning_value = randomizeValue(note.panning_value, 2, 1, 127)
-                    selection.pan = note.panning_value
-                end
-            else
-                note.panning_string = toRenoiseHex(pan)
-                selection.pan = pan
-            end
+            note.panning_string = toRenoiseHex(pan)
+            selection.pan = pan
         end
         if dly ~= nil then
-            if tostring(dly) == "h" then
-                if note.delay_value <= 127 then
-                    dly = randomizeValue(note.delay_value, 2, 0, 127)
-                    selection.dly = note.delay_value
-                else
-                    dly = nil
-                end
-            end
             if dly then
                 --when a note get a delay value, check if an off is before or no notes, otherwise
                 --search for a new column, because the note before will not be played correctly (bleeding over),
@@ -5553,51 +5554,123 @@ local function switchToRelativeScale()
     end
 end
 
-local function refreshHistogram(randomValues)
-    local max = 127
+--refresh histogram / apply values
+local function refreshHistogram(apply)
+    local max = 128
     local val = 0
     local maxVal = 0
     local midVal = 0
     local minVal = 99999
-    local maxNotes = 0
-    local maxValue = {}
     local values = {}
-    local newvalues = {}
+    local notevalue = {}
     local index
+    local note
+    local lineValues = song.selected_pattern_track.lines
+    --resort note selection
+    if vbwp["histogramasctype"].value == 2 then
+        table.sort(noteSelection, sortFromLowToTop)
+    else
+        table.sort(noteSelection, sortLeftOneFirstFromLowToTop)
+    end
     --fill values with empty
     for i = 1, 100 do
         values[i] = 0
-        newvalues[i] = 0
     end
     --fill value table
     for i = 1, #noteSelection do
-        val = noteSelection[i].vel
+        if vbwp["histogrammode"].value == 1 then
+            val = noteSelection[i].vel
+            max = 0x80
+            if val == 255 then
+                val = max
+            end
+        elseif vbwp["histogrammode"].value == 2 then
+            val = noteSelection[i].pan
+            if val == 255 then
+                val = 0x40
+            end
+            max = 0x80
+        elseif vbwp["histogrammode"].value == 3 then
+            val = noteSelection[i].dly
+            max = 0xff
+        end
+        notevalue[i] = val
         maxVal = math.max(maxVal, val)
         minVal = math.min(minVal, val)
     end
     midVal = (minVal + maxVal) / 2
-    print(minVal, midVal, maxVal, 1 / maxVal * midVal)
-    --set mean base value
-    vbwp["histogrammean"].value = 1 / maxVal * midVal
     --change values by scale
     for i = 1, #noteSelection do
-        val = noteSelection[i].vel
-        --apply chaos
-        --apply scale
-        val = val + ((vbwp["histogramscale"].value - 1) * (val - midVal))
-        index = clamp(math.floor(100 / max * val), 1, 100)
-        values[index] = values[index] + 1
-        maxNotes = math.max(maxNotes, values[index])
+        val = notevalue[i]
+        if vbwp["histogrammode"].value == 3 or (val >= 0 and val <= 0x80) then
+            --apply ascending
+            val = val + (max / (#noteSelection - 1) * (i - 1)) * vbwp["histogramasc"].value
+            --apply chaos
+            val = val + (
+                    randomHistogramValues[i] *
+                            max *
+                            vbwp["histogramchaos"].value
+            )
+            --apply scale
+            val = val + ((vbwp["histogramscale"].value - 1) * (val - midVal))
+            --apply offset
+            val = val + (max * vbwp["histogramoffset"].value)
+            --round value
+            val = clamp(math.floor(val + 0.5), 0, max)
+            index = clamp(math.floor(#values / max * val), 1, #values)
+            values[index] = values[index] + 1
+            --apply values
+            note = lineValues[noteSelection[i].line]:note_column(noteSelection[i].column)
+            if apply ~= nil then
+                if vbwp["histogrammode"].value == 1 then
+                    if val == 0x80 then
+                        val = 255
+                    end
+                    note.volume_value = val
+                    noteSelection[i].vel = val
+                elseif vbwp["histogrammode"].value == 2 then
+                    song.selected_track.panning_column_visible = true
+                    note.panning_value = val
+                    noteSelection[i].pan = val
+                elseif vbwp["histogrammode"].value == 3 then
+                    song.selected_track.delay_column_visible = true
+                    note.delay_value = val
+                    noteSelection[i].dly = val
+                end
+            end
+        end
     end
     --set histogram
-    for i = 1, 100 do
-        vbwp["histogram" .. tostring(i)].height = math.max(5, 100 / maxNotes * values[i])
+    for i = 1, #values do
+        note = vbwp["histogram" .. tostring(i)]
+        note.height = clamp(100 / math.min(#noteSelection, 5) * values[i], 5, 100)
+        if vbwp["histogrammode"].value == 1 then
+            note.color = colorVelocity
+        elseif vbwp["histogrammode"].value == 2 then
+            note.color = colorPan
+        elseif vbwp["histogrammode"].value == 3 then
+            note.color = colorDelay
+        end
     end
+end
+
+--init histogram start values and random values
+local function initHistogram()
+    randomHistogramValues = {}
+    --set random values
+    math.randomseed(os.time())
+    for i = 1, #noteSelection do
+        randomHistogramValues[i] = math.random(1, 1000) / 1000 - 0.5
+    end
+    vbwp.histogramscale.value = 1
+    vbwp.histogramchaos.value = 0
+    vbwp.histogramoffset.value = 0
+    vbwp.histogramasc.value = 0
+    refreshHistogram()
 end
 
 --histogram window
 local function showHistogram()
-    local randomValues = {}
     if histogramContent == nil then
         histogramContent = vbp:row {
             uniform = true,
@@ -5609,17 +5682,17 @@ local function showHistogram()
                 uniform = true,
                 spacing = 4,
                 width = 432,
-                vbp:text {
-                    id = "histocount",
-                    text = "",
-                },
                 vbp:switch {
+                    id = "histogrammode",
                     width = "100%",
                     items = {
                         "Vol",
                         "Pan",
                         "Dly",
                     },
+                    notifier = function()
+                        refreshHistogram()
+                    end
                 },
                 vbp:row {
                     id = "histogram",
@@ -5627,66 +5700,125 @@ local function showHistogram()
                     style = "border",
                 },
                 vbp:horizontal_aligner {
+                    mode = "center",
+                    vbp:text {
+                        id = "histocount",
+                        text = "",
+                    },
+                },
+                vbp:horizontal_aligner {
                     mode = "distribute",
-                    vbp:text {
-                        text = "Mean:",
+                    vb:column {
+                        vbp:text {
+                            text = "Offset:",
+                        },
+                        vbp:valuebox {
+                            id = "histogramoffset",
+                            steps = { 0.02, 0.01 },
+                            min = -1,
+                            max = 1,
+                            value = 0,
+                            width = 80,
+                            tostring = function(v)
+                                return string.format("%.1f %%", v * 100)
+                            end,
+                            tonumber = function(v)
+                                return tonumber(v / 100)
+                            end,
+                            notifier = function()
+                                refreshHistogram()
+                            end
+                        },
                     },
-                    vbp:valuebox {
-                        id = "histogrammean",
-                        steps = { 0.01, 0.1 },
-                        min = 0,
-                        max = 1,
-                        width = 80,
-                        tostring = function(v)
-                            return string.format("%.1f %%", v * 100)
-                        end,
-                        tonumber = function(v)
-                            return tonumber(v / 100)
-                        end,
-                        notifier = function()
-                            refreshHistogram(randomValues)
-                        end
+                    vb:column {
+                        vbp:text {
+                            text = "Scale:",
+                        },
+                        vbp:valuebox {
+                            id = "histogramscale",
+                            steps = { 0.02, 0.01 },
+                            min = 0,
+                            max = 2,
+                            value = 1,
+                            width = 80,
+                            tostring = function(v)
+                                return string.format("%.1f %%", v * 100)
+                            end,
+                            tonumber = function(v)
+                                return tonumber(v / 100)
+                            end,
+                            notifier = function()
+                                refreshHistogram()
+                            end
+                        },
                     },
-                    vbp:text {
-                        text = "Scale:",
+                    vb:column {
+                        vbp:text {
+                            text = "Chaos:",
+                        },
+                        vbp:valuebox {
+                            id = "histogramchaos",
+                            steps = { 0.02, 0.01 },
+                            min = 0,
+                            max = 1,
+                            width = 80,
+                            tostring = function(v)
+                                return string.format("%.1f %%", v * 100)
+                            end,
+                            tonumber = function(v)
+                                return tonumber(v / 100)
+                            end,
+                            notifier = function()
+                                refreshHistogram()
+                            end
+                        },
                     },
-                    vbp:valuebox {
-                        id = "histogramscale",
-                        steps = { 0.01, 0.1 },
-                        min = 0,
-                        max = 2,
-                        value = 1,
-                        width = 80,
-                        tostring = function(v)
-                            return string.format("%.1f %%", v * 100)
-                        end,
-                        tonumber = function(v)
-                            return tonumber(v / 100)
-                        end,
-                        notifier = function()
-                            refreshHistogram(randomValues)
-                        end
+                    vb:column {
+                        vbp:popup {
+                            id = "histogramasctype",
+                            items = {
+                                "Asc by Pos",
+                                "Asc by Note",
+                            },
+                        },
+                        vbp:valuebox {
+                            id = "histogramasc",
+                            steps = { 0.02, 0.01 },
+                            min = -1,
+                            max = 1,
+                            width = 80,
+                            tostring = function(v)
+                                return string.format("%.1f %%", v * 100)
+                            end,
+                            tonumber = function(v)
+                                return tonumber(v / 100)
+                            end,
+                            notifier = function()
+                                refreshHistogram()
+                            end
+                        },
                     },
-                    vbp:text {
-                        text = "Chaos:",
+                    vbp:vertical_aligner {
+                        mode = "bottom",
+                        vbp:row {
+                            vbp:button {
+                                text = "Apply",
+                                notifier = function()
+                                    setUndoDescription("Change note properties via histogram ...")
+                                    refreshHistogram(true)
+                                    refreshPianoRollNeeded = true
+                                    initHistogram()
+                                end
+                            },
+                            vbp:button {
+                                text = "Reset",
+                                notifier = function()
+                                    initHistogram()
+                                end
+                            },
+                        },
                     },
-                    vbp:valuebox {
-                        id = "histogramchaos",
-                        steps = { 0.01, 0.1 },
-                        min = 0,
-                        max = 1,
-                        width = 80,
-                        tostring = function(v)
-                            return string.format("%.1f %%", v * 100)
-                        end,
-                        tonumber = function(v)
-                            return tonumber(v / 100)
-                        end,
-                        notifier = function()
-                            refreshHistogram(randomValues)
-                        end
-                    },
-                }
+                },
             }
         }
         for i = 1, 100 do
@@ -5697,25 +5829,21 @@ local function showHistogram()
                         vbp:button {
                             id = "histogram" .. tostring(i),
                             width = 8,
-                            height = 1 + i,
+                            height = 100,
                             active = false,
-                            color = colorStepOn,
-                        }
+                            color = colorVelocity,
+                        },
                     }
             )
         end
     end
-    vbwp.histocount.text = "Humanizing " .. tostring(#noteSelection) .. " note values:"
-    vbwp.histogramscale.value = 1
-    vbwp.histogramchaos.value = 0
-    --set random values
-    math.randomseed(os.time())
-    for i = 1, #noteSelection do
-        randomValues[i] = math.random(1, 1000) / 1000
+    vbwp.histocount.text = "Humanizing " .. tostring(#noteSelection) .. " note values. Please note hat notes with column effects will be ignored."
+    initHistogram()
+    song.transport.edit_mode = false
+    if song.transport.follow_player then
+        wasFollowPlayer = song.transport.follow_player
+        song.transport.follow_player = false
     end
-    --
-    refreshHistogram(randomValues)
-    --
     app:show_custom_prompt("Histogram",
             histogramContent, { "Close" })
     refreshPianoRollNeeded = true
@@ -7388,10 +7516,13 @@ local function createPianoRollDialog()
                     end,
                 },
                 vb:button {
-                    bitmap = "Icons/LofiMat_Crunch.bmp",
+                    bitmap = "Icons/Instrument_Volume.bmp",
                     tooltip = "Histogram",
                     width = 24,
                     notifier = function()
+                        if #noteSelection == 0 then
+                            updateNoteSelection("all", true)
+                        end
                         showHistogram()
                     end,
                 },
