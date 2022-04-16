@@ -5765,7 +5765,7 @@ local function showHistogram()
                             vbp:valuebox {
                                 id = "histogramscale",
                                 steps = { 0.02, 0.01 },
-                                min = 0,
+                                min = -2,
                                 max = 2,
                                 value = 1,
                                 width = 80,
