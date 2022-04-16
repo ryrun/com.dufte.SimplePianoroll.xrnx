@@ -355,7 +355,7 @@ local randomHistogramValues = {}
 
 --edit vars
 local lastClickCache = {}
-local lastClickIndex = nil
+local lastClickIndex
 local pasteCursor = {}
 local currentInstrument
 local currentNoteLength = 2
@@ -5459,6 +5459,7 @@ local function refreshHistogramWindow(apply)
     local max = 128
     local min = 0
     local val = 0
+    local oldval
     local maxVal = 0
     local midVal
     local minVal = 99999
@@ -5470,6 +5471,11 @@ local function refreshHistogramWindow(apply)
     --fill values with empty
     for i = 1, 100 do
         values[i] = 0
+    end
+    if vbwp["histogrammode"].value == 4 then
+        vbwp["histogrampitchmode"].visible = true
+    else
+        vbwp["histogrampitchmode"].visible = false
     end
     vbwp.histocount.text = "Humanizing " .. tostring(#noteSelection) .. " note values."
     if #noteSelection > 0 then
@@ -5497,6 +5503,9 @@ local function refreshHistogramWindow(apply)
             elseif vbwp["histogrammode"].value == 3 then
                 val = noteSelection[i].dly
                 max = 0xff
+            elseif vbwp["histogrammode"].value == 4 then
+                val = noteSelection[i].note
+                max = 119
             end
             notevalue[i] = val
             maxVal = math.max(maxVal, val)
@@ -5508,7 +5517,8 @@ local function refreshHistogramWindow(apply)
         --change values by scale
         for i = 1, #noteSelection do
             val = notevalue[i]
-            if vbwp["histogrammode"].value == 3 or (val >= min and val <= max) then
+            if vbwp["histogrammode"].value >= 3 or (val >= min and val <= max) then
+                oldval = val
                 --apply ascending
                 if i > 1 then
                     val = val + (max / (#noteSelection - 1) * (i - 1)) * vbwp["histogramasc"].value
@@ -5524,7 +5534,28 @@ local function refreshHistogramWindow(apply)
                 --apply offset
                 val = val + (max * vbwp["histogramoffset"].value)
                 --round value
-                val = clamp(math.floor(val + 0.5), min, max)
+                val = math.floor(val + 0.5)
+                --pitch correction
+                if vbwp["histogrammode"].value == 4 and vbwp["histogrampitchmode"].value > 1 then
+                    --force in scale
+                    if not noteInScale(val) then
+                        if val > oldval then
+                            val = val + 1
+                        else
+                            val = val - 1
+                        end
+                    end
+                    --force in pentatonic
+                    if vbwp["histogrampitchmode"].value == 3 then
+                        if noteIndexInScale(val) == 5 then
+                            val = val - 1
+                        elseif noteIndexInScale(val) == 11 then
+                            val = val + 1
+                        end
+                    end
+                end
+                --clamp value
+                val = clamp(val, min, max)
                 index = clamp(math.floor(#values / max * val), 1, #values)
                 values[index] = values[index] + 1
                 --apply values
@@ -5549,6 +5580,9 @@ local function refreshHistogramWindow(apply)
                         song.selected_track.delay_column_visible = true
                         note.delay_value = val
                         noteSelection[i].dly = val
+                    elseif vbwp["histogrammode"].value == 4 then
+                        note.note_value = val
+                        noteSelection[i].note = val
                     end
                 end
             end
@@ -5564,6 +5598,8 @@ local function refreshHistogramWindow(apply)
             note.color = colorPan
         elseif vbwp["histogrammode"].value == 3 then
             note.color = colorDelay
+        elseif vbwp["histogrammode"].value == 4 then
+            note.color = colorNote
         end
     end
 end
@@ -5611,10 +5647,26 @@ local function showHistogram()
                             "Vol",
                             "Pan",
                             "Dly",
+                            "Pitch",
                         },
                         notifier = function()
                             refreshHistogramWindow()
                         end
+                    },
+                    vb:horizontal_aligner {
+                        mode = "center",
+                        vbp:switch {
+                            width = "80%",
+                            id = "histogrampitchmode",
+                            items = {
+                                "All notes",
+                                "Current scale",
+                                "Pentatonic",
+                            },
+                            notifier = function()
+                                refreshHistogramWindow()
+                            end
+                        },
                     },
                     vbp:row {
                         id = "histogram",
