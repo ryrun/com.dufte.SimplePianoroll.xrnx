@@ -5887,7 +5887,7 @@ local function showHistogram()
     end
     initHistogram()
     if not histogramObj or not histogramObj.visible then
-        histogramObj = app:show_custom_dialog("Histogram",
+        histogramObj = app:show_custom_dialog("Histogram - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
                 histogramContent)
     else
         histogramObj:show()
@@ -6071,7 +6071,7 @@ local function showSetScaleDialog()
         }
     end
     if not setScaleObj or not setScaleObj.visible then
-        setScaleObj = app:show_custom_dialog("Scale highlighting",
+        setScaleObj = app:show_custom_dialog("Scale highlighting - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
                 setScaleContent)
     else
         setScaleObj:show()
