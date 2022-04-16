@@ -5614,8 +5614,8 @@ local function refreshHistogramWindow(apply)
                     end
                 end
             elseif apply ~= nil then
-                --set nil values, so these can be skipped
-                newnotevalue[i] = nil
+                --set old value for ignored ones
+                newnotevalue[i] = val
             end
         end
     end
