@@ -5787,7 +5787,7 @@ local function showHistogram()
                             vbp:valuebox {
                                 id = "histogramchaos",
                                 steps = { 0.02, 0.01 },
-                                min = 0,
+                                min = -1,
                                 max = 1,
                                 width = 80,
                                 tostring = function(v)
