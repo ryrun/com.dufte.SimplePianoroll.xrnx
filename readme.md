@@ -125,7 +125,7 @@ There is also a button to easily switch between the current and the ghost track.
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/ghosttrack.gif?raw=true" width="754" alt="Ghost track">
 
-### Step sequening with computer keyboard
+### Step sequencing with computer keyboard
 
 In Renoise, you can use your computer keyboard to play notes. The same is in the piano roll. So, when you play and hold
 notes and use the cursor keys left or right to move hte edit cursor, it will create or remove notes on the current
