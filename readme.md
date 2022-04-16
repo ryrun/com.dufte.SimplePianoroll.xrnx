@@ -93,7 +93,7 @@ More information about how you can install and update Renoise tools:
 ### General
 
 Everyone who is familiar with a piano roll, can use it right away. It's heavily inspired by FL, Bitwig and Reason. DAW's
-which i've used in the past. Most common keyboard shortcuts wokring, so it's not a problem to use <kbd>ctrl+b</kbd>
+which I've used in the past. Most common keyboard shortcuts wokring, so it's not a problem to use <kbd>ctrl+b</kbd>
 or <kbd>ctrl+d</kbd> for note duplication.
 
 ### Open the piano roll
@@ -103,11 +103,27 @@ pane and also via main menu.
 
 #### Pattern editor
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/openit.gif?raw=true" width="300">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/openit.gif?raw=true" width="300" alt="Open Piano Roll in Renoise">
 
 #### Matrix view
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/editviamatrix.gif?raw=true" width="300">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/editviamatrix.gif?raw=true" width="300" alt="Open Piano Roll in Renoise in the Matrix view">
+
+### Scale highlighting
+
+Scale highlighting can easily be changed with the button on the bottem left. 
+It opens a dialog, where you switch between major or minor or change the root key.
+
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/scalehighswitch.gif?raw=true" width="754" alt="Showing usage of scale highlighting dialog">
+
+### Ghost track
+
+With a ghost track, you can easily set note guidelines for composing. 
+Simply choose a track (pad track example) and you will see the notes in the piano roll.
+With mirroring, every note of this track will be spread across all octaves, so manually copy or transpose notes across octaves is not needed anymore.
+There is also a button to easily switch between the current and the ghost track.
+
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/ghosttrack.gif?raw=true" width="754" alt="Ghost track">
 
 ### Step sequening with computer keyboard
 
@@ -132,7 +148,7 @@ There are 4 controls to manipulate these values:
 
 With **Apply** the values will be written. With **Reset** the histogram controls will be set back to defaul values.
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/histogram.gif?raw=true" width="754">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/histogram.gif?raw=true" width="754" alt="Histogram feature">
 
 ## Mouse actions
 
