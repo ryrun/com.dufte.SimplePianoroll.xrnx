@@ -4855,7 +4855,11 @@ local function showHistogram()
                                     return string.format("%.1f %%", v * 100)
                                 end,
                                 tonumber = function(v)
-                                    return tonumber(v / 100)
+                                    v = string.gsub(v, "[^0-9.-]", "")
+                                    if tonumber(v) == nil then
+                                        v = 0
+                                    end
+                                    return tonumber(v) / 100
                                 end,
                                 notifier = function()
                                     refreshHistogramWindow()
@@ -4877,7 +4881,11 @@ local function showHistogram()
                                     return string.format("%.1f %%", v * 100)
                                 end,
                                 tonumber = function(v)
-                                    return tonumber(v / 100)
+                                    v = string.gsub(v, "[^0-9.-]", "")
+                                    if tonumber(v) == nil then
+                                        v = 100
+                                    end
+                                    return tonumber(v) / 100
                                 end,
                                 notifier = function()
                                     refreshHistogramWindow()
@@ -4893,12 +4901,17 @@ local function showHistogram()
                                 steps = { 0.02, 0.01 },
                                 min = -1,
                                 max = 1,
+                                value = 0,
                                 width = 80,
                                 tostring = function(v)
                                     return string.format("%.1f %%", v * 100)
                                 end,
                                 tonumber = function(v)
-                                    return tonumber(v / 100)
+                                    v = string.gsub(v, "[^0-9.-]", "")
+                                    if tonumber(v) == nil then
+                                        v = 0
+                                    end
+                                    return tonumber(v) / 100
                                 end,
                                 notifier = function()
                                     refreshHistogramWindow()
@@ -4919,12 +4932,17 @@ local function showHistogram()
                                 steps = { 0.02, 0.01 },
                                 min = -1,
                                 max = 1,
+                                value = 0,
                                 width = 80,
                                 tostring = function(v)
                                     return string.format("%.1f %%", v * 100)
                                 end,
                                 tonumber = function(v)
-                                    return tonumber(v / 100)
+                                    v = string.gsub(v, "[^0-9.-]", "")
+                                    if tonumber(v) == nil then
+                                        v = 0
+                                    end
+                                    return tonumber(v) / 100
                                 end,
                                 notifier = function()
                                     refreshHistogramWindow()
@@ -4967,7 +4985,6 @@ local function showHistogram()
                     height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
                     width = 100,
                     notifier = function()
-                        refreshPianoRollNeeded = true
                         histogramObj:close()
                         restoreFocus()
                     end
@@ -4993,7 +5010,13 @@ local function showHistogram()
     initHistogram()
     if not histogramObj or not histogramObj.visible then
         histogramObj = app:show_custom_dialog("Histogram - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
-                histogramContent)
+                histogramContent, function(_, key)
+                    if key.name == "esc" then
+                        histogramObj:close()
+                        restoreFocus()
+                    end
+                    return key
+                end)
     else
         histogramObj:show()
     end
@@ -6111,7 +6134,14 @@ local function showSetScaleDialog()
     end
     if not setScaleObj or not setScaleObj.visible then
         setScaleObj = app:show_custom_dialog("Scale highlighting - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
-                setScaleContent)
+                setScaleContent, function(_, key)
+                    if key.name == "esc" then
+                        refreshPianoRollNeeded = true
+                        setScaleObj:close()
+                        restoreFocus()
+                    end
+                    return key
+                end)
     else
         setScaleObj:show()
     end
