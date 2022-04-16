@@ -5540,8 +5540,11 @@ local function refreshHistogramWindow(apply)
                 max = 119
             end
             notevalue[i] = val
-            maxVal = math.max(maxVal, val)
-            minVal = math.min(minVal, val)
+            --only calculate min / max, when value is in range
+            if val >= min and val <= max then
+                maxVal = math.max(maxVal, val)
+                minVal = math.min(minVal, val)
+            end
         end
         midVal = (minVal + maxVal) / 2
         vbwp.histomin.text = tostring(min)
