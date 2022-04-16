@@ -37,15 +37,19 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 
 ## Important
 
-* To improve mouse handling, please disable mouse warping in Renoise preferences. This also fix the jumping mouse cursor. There is an option called "Mouse warping compatibility mode", if you still want to use mouse warping in Renoise. It will disable some internal functions, where disabled mouse warping is needed.
+* To improve mouse handling, please disable mouse warping in Renoise preferences. This also fix the jumping mouse
+  cursor. There is an option called "Mouse warping compatibility mode", if you still want to use mouse warping in
+  Renoise. It will disable some internal functions, where disabled mouse warping is needed.
 * The key combination <kbd>alt + shift</kbd> is a default shortcut to change the keyboard layout on Windows OS. It is
   recommended to switch this off or change the keyboard shortcut to avoid problems. <br>See following for more
   details: https://answers.microsoft.com/en-us/windows/forum/all/how-to-disable-the-windows-10-language-shortcut/030016c9-bfed-48d9-8e4f-7d1030ced338
-* Renoise have a 12 column limit per tack. So when more than 12 columns are needed, then some notes will stick in the current position. A hint should be displayed in Renoise toolbar.
+* Renoise have a 12 column limit per tack. So when more than 12 columns are needed, then some notes will stick in the
+  current position. A hint should be displayed in Renoise toolbar.
 
 ## Note rendering in piano roll
 
-It supports different note column effects, and it will also use different note colors, when more than one instrument was used in the pattern.
+It supports different note column effects, and it will also use different note colors, when more than one instrument was
+used in the pattern.
 
 #### Note overlapping
 
@@ -88,23 +92,28 @@ More information about how you can install and update Renoise tools:
 
 ### General
 
-Everyone who is familiar with a piano roll, can use it right away. It's heavily inspired by FL, Bitwig and Reason. DAW's which i've used in the past.
-Most common keyboard shortcuts wokring, so it's not a problem to use <kbd>ctrl+b</kbd> or <kbd>ctrl+d</kbd> for note duplication.
+Everyone who is familiar with a piano roll, can use it right away. It's heavily inspired by FL, Bitwig and Reason. DAW's
+which i've used in the past. Most common keyboard shortcuts wokring, so it's not a problem to use <kbd>ctrl+b</kbd>
+or <kbd>ctrl+d</kbd> for note duplication.
 
 ### Open the piano roll
 
-There are several ways to open the piano roll. It's possible in the pattern view, matrix view, mixer view, instruments pane and also via main menu.
+There are several ways to open the piano roll. It's possible in the pattern view, matrix view, mixer view, instruments
+pane and also via main menu.
 
 #### Pattern editor
+
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/openit.gif?raw=true" width="300">
 
 #### Matrix view
+
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/editviamatrix.gif?raw=true" width="300">
 
 ### Step sequening with computer keyboard
 
-In Renoise, you can use your computer keyboard to play notes. The same is in the piano roll. So, when you play and hold notes and use the 
-cursor keys left or right to move hte edit cursor, it will create or remove notes on the current cursor position.
+In Renoise, you can use your computer keyboard to play notes. The same is in the piano roll. So, when you play and hold
+notes and use the cursor keys left or right to move hte edit cursor, it will create or remove notes on the current
+cursor position.
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/stepseq.gif?raw=true" width="754" alt="Step sequecing in Simple Pianoroll Tool for Renoise">
 
@@ -113,9 +122,11 @@ cursor keys left or right to move hte edit cursor, it will create or remove note
 The histogram shows you note values (volume, panning, delay and pitch) of your current note selection in a simple graph.
 It can be used to add randomness to your notes. It's inspired by Bitwig's powerful histogram feature.
 
-There are 4 controls to manipulate these values: 
-* **Offset** is used to move the values up or down. 
-* **Scale** can be used to grow or shrink the spread across the x-axis. It can also be used to mirror the values via negative scale values.
+There are 4 controls to manipulate these values:
+
+* **Offset** is used to move the values up or down.
+* **Scale** can be used to grow or shrink the spread across the x-axis. It can also be used to mirror the values via
+  negative scale values.
 * **Chaos** can be used to add randomness to each value.
 * **Asc by Pos / Note** can be used to ascending or descending the values by note position or by note pitch.
 
@@ -178,6 +189,7 @@ So you don't need to hold <kbd>shift</kbd>.
 | <kbd>ctrl + 0</kbd>                                    | Double current note length                                                      |
 | <kbd>ctrl + shift + 0</kbd>                            | Halve current note length                                                       |
 | <kbd>alt + m</kbd>                                     | Mute all visible notes (set volume to 0)                                        |
+| <kbd>alt + h</kbd>                                     | All notes will be selected and histogram window will be opened                  |
 | <kbd>alt + shift + m</kbd>                             | Unmute all visible notes (remove volume value)                                  |
 | <kbd>ctrl + space</kbd> or<br><kbd>shift + space</kbd> | Play from edit cursor position                                                  |
 
@@ -196,6 +208,7 @@ So you don't need to hold <kbd>shift</kbd>.
 | <kbd>ctrl + v</kbd>                                                                                          | Paste notes to the last click grid position                                                  |
 | <kbd>alt + n</kbd>                                                                                           | Match note value to the first selected one                                                   |
 | <kbd>alt + m</kbd>                                                                                           | Mute selected notes (set volume to 0)                                                        |
+| <kbd>alt + h</kbd>                                                                                           | Histogram window will be opened                                                              |
 | <kbd>alt + shift + m</kbd>                                                                                   | Unmute selected notes (remove volume value)                                                  |
 | <kbd>alt + left</kbd> or<br><kbd>alt + right</kbd> or<br><kbd>alt + up</kbd> or<br><kbd>alt + down</kbd><br> | Move note selection. When <kbd>shift</kbd> is holded, it add notes to the current selection. |
 | <kbd>up</kbd>                                                                                                | Transpose note 1 semitone up                                                                 |
