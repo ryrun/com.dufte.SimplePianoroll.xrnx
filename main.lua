@@ -588,18 +588,6 @@ local function findNearestMicroStepValue(currentval, add, array)
     return v
 end
 
---change a value randomly
-local function randomizeValue(input, scale, min, max)
-    local r = math.random(-scale, scale)
-    input = input + r
-    if input > max then
-        input = max
-    elseif input < min then
-        input = min
-    end
-    return input
-end
-
 --for the line index calculate the correct bar index
 local function calculateBarBeat(line, returnbeat, lpb)
     if not lpb then
@@ -5472,7 +5460,7 @@ local function refreshHistogramWindow(apply)
     local min = 0
     local val = 0
     local maxVal = 0
-    local midVal = 0
+    local midVal
     local minVal = 99999
     local values = {}
     local notevalue = {}
@@ -5577,117 +5565,6 @@ local function refreshHistogramWindow(apply)
         elseif vbwp["histogrammode"].value == 3 then
             note.color = colorDelay
         end
-    end
-end
-
---app idle
-local function appIdleEvent()
-    --only process when window is created and visible
-    if windowObj and windowObj.visible then
-        --scroll via idle, more instant
-        if xypadpos.leftClick then
-            local val = vbw["xypad"].value
-            if val.y == 1 or val.y - 1 == gridHeight or val.x == 1 or val.x - 1 == gridWidth then
-                val.scroll = true
-                handleXypad(val)
-            end
-        end
-        --refresh modifier states, when keys are pressed outside focus
-        local keyState = app.key_modifier_states
-        if (keyState["alt"] == "pressed" and keyAlt == false) or (keyState["alt"] == "released" and keyAlt == true) then
-            keyAlt = not keyAlt
-            refreshControls = true
-        end
-        if (keyState["control"] == "pressed" and keyControl == false) or (keyState["control"] == "released" and keyControl == true) then
-            keyControl = not keyControl
-            refreshControls = true
-        end
-        if (keyState["shift"] == "pressed" and keyShift == false) or (keyState["shift"] == "released" and keyShift == true) then
-            keyShift = not keyShift
-            refreshControls = true
-        end
-        --process after edit features
-        if afterEditProcessTime ~= nil and afterEditProcessTime < os.clock() - 0.1 then
-            afterEditProcess()
-        end
-        --refresh control, when needed
-        if refreshControls then
-            refreshNoteControls()
-        end
-        --refresh pianoroll, when needed
-        if refreshPianoRollNeeded then
-            fillPianoRoll()
-        end
-        --refresh timeline, when needed
-        if refreshTimeline then
-            fillTimeline()
-        end
-        --refresh chord states
-        if refreshChordDetection and preferences.chordDetection.value then
-            refreshDetectedChord()
-        end
-        --if needed refresh histogram
-        if refreshHistogram then
-            refreshHistogram = false
-            if histogramObj and histogramObj.visible then
-                refreshHistogramWindow()
-            end
-        end
-        --key info state
-        if lastKeyInfoTime and lastKeyInfoTime + preferences.keyInfoTime.value < os.clock() then
-            vbw["key_state"].text = ""
-        end
-        --refresh playback pos indicator
-        refreshPlaybackPosIndicator()
-        --edit pos render
-        refreshEditPosIndicator()
-        --block loop, create an index for comparison, because obserable's are missing here
-        local currentblockloop = tostring(song.transport.loop_block_enabled)
-                .. tostring(song.transport.loop_block_start_pos)
-                .. tostring(song.transport.loop_block_range_coeff)
-        if blockloopidx ~= currentblockloop then
-            blockloopidx = currentblockloop
-            refreshTimeline = true
-        end
-        --
-        if #lastTriggerNote > 0 and oscClient then
-            local newLastTriggerNote = {}
-            for i = 1, #lastTriggerNote do
-                if lastTriggerNote[i].time < os.clock() - (preferences.triggerTime.value / 1000) then
-                    table.remove(lastTriggerNote[i].packet, 4) --remove velocity
-                    oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote[i].packet))
-                else
-                    table.insert(newLastTriggerNote, lastTriggerNote[i])
-                end
-            end
-            lastTriggerNote = newLastTriggerNote
-        end
-    else
-        --set follow player back
-        if wasFollowPlayer ~= nil then
-            song.transport.follow_player = wasFollowPlayer
-            wasFollowPlayer = nil
-        end
-        --close editing windows
-        if setScaleObj and setScaleObj.visible then
-            setScaleObj:close()
-        end
-        if histogramObj and histogramObj.visible then
-            histogramObj:close()
-        end
-    end
-end
-
---function to switch between relative major and minor
-local function switchToRelativeScale()
-    if preferences.scaleHighlightingType.value == 3 then
-        preferences.scaleHighlightingType.value = 2
-        preferences.keyForSelectedScale.value = ((preferences.keyForSelectedScale.value + 2) % 12) + 1
-        refreshPianoRollNeeded = true
-    elseif preferences.scaleHighlightingType.value == 2 then
-        preferences.scaleHighlightingType.value = 3
-        preferences.keyForSelectedScale.value = ((preferences.keyForSelectedScale.value - 4) % 12) + 1
-        refreshPianoRollNeeded = true
     end
 end
 
@@ -5920,6 +5797,117 @@ local function showHistogram()
                 histogramContent)
     else
         histogramObj:show()
+    end
+end
+
+--app idle
+local function appIdleEvent()
+    --only process when window is created and visible
+    if windowObj and windowObj.visible then
+        --scroll via idle, more instant
+        if xypadpos.leftClick then
+            local val = vbw["xypad"].value
+            if val.y == 1 or val.y - 1 == gridHeight or val.x == 1 or val.x - 1 == gridWidth then
+                val.scroll = true
+                handleXypad(val)
+            end
+        end
+        --refresh modifier states, when keys are pressed outside focus
+        local keyState = app.key_modifier_states
+        if (keyState["alt"] == "pressed" and keyAlt == false) or (keyState["alt"] == "released" and keyAlt == true) then
+            keyAlt = not keyAlt
+            refreshControls = true
+        end
+        if (keyState["control"] == "pressed" and keyControl == false) or (keyState["control"] == "released" and keyControl == true) then
+            keyControl = not keyControl
+            refreshControls = true
+        end
+        if (keyState["shift"] == "pressed" and keyShift == false) or (keyState["shift"] == "released" and keyShift == true) then
+            keyShift = not keyShift
+            refreshControls = true
+        end
+        --process after edit features
+        if afterEditProcessTime ~= nil and afterEditProcessTime < os.clock() - 0.1 then
+            afterEditProcess()
+        end
+        --refresh control, when needed
+        if refreshControls then
+            refreshNoteControls()
+        end
+        --refresh pianoroll, when needed
+        if refreshPianoRollNeeded then
+            fillPianoRoll()
+        end
+        --refresh timeline, when needed
+        if refreshTimeline then
+            fillTimeline()
+        end
+        --refresh chord states
+        if refreshChordDetection and preferences.chordDetection.value then
+            refreshDetectedChord()
+        end
+        --if needed refresh histogram
+        if refreshHistogram then
+            refreshHistogram = false
+            if histogramObj and histogramObj.visible then
+                refreshHistogramWindow()
+            end
+        end
+        --key info state
+        if lastKeyInfoTime and lastKeyInfoTime + preferences.keyInfoTime.value < os.clock() then
+            vbw["key_state"].text = ""
+        end
+        --refresh playback pos indicator
+        refreshPlaybackPosIndicator()
+        --edit pos render
+        refreshEditPosIndicator()
+        --block loop, create an index for comparison, because obserable's are missing here
+        local currentblockloop = tostring(song.transport.loop_block_enabled)
+                .. tostring(song.transport.loop_block_start_pos)
+                .. tostring(song.transport.loop_block_range_coeff)
+        if blockloopidx ~= currentblockloop then
+            blockloopidx = currentblockloop
+            refreshTimeline = true
+        end
+        --
+        if #lastTriggerNote > 0 and oscClient then
+            local newLastTriggerNote = {}
+            for i = 1, #lastTriggerNote do
+                if lastTriggerNote[i].time < os.clock() - (preferences.triggerTime.value / 1000) then
+                    table.remove(lastTriggerNote[i].packet, 4) --remove velocity
+                    oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote[i].packet))
+                else
+                    table.insert(newLastTriggerNote, lastTriggerNote[i])
+                end
+            end
+            lastTriggerNote = newLastTriggerNote
+        end
+    else
+        --set follow player back
+        if wasFollowPlayer ~= nil then
+            song.transport.follow_player = wasFollowPlayer
+            wasFollowPlayer = nil
+        end
+        --close editing windows
+        if setScaleObj and setScaleObj.visible then
+            setScaleObj:close()
+        end
+        if histogramObj and histogramObj.visible then
+            histogramObj:close()
+        end
+    end
+end
+
+--function to switch between relative major and minor
+local function switchToRelativeScale()
+    if preferences.scaleHighlightingType.value == 3 then
+        preferences.scaleHighlightingType.value = 2
+        preferences.keyForSelectedScale.value = ((preferences.keyForSelectedScale.value + 2) % 12) + 1
+        refreshPianoRollNeeded = true
+    elseif preferences.scaleHighlightingType.value == 2 then
+        preferences.scaleHighlightingType.value = 3
+        preferences.keyForSelectedScale.value = ((preferences.keyForSelectedScale.value - 4) % 12) + 1
+        refreshPianoRollNeeded = true
     end
 end
 
