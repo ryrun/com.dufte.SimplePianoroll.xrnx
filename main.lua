@@ -2272,8 +2272,9 @@ local function changeSizeSelectedNotes(len, add)
 end
 
 --change note properties
-local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, ins, special)
+local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, ins, pitch, special)
     local lineValues = song.selected_pattern_track.lines
+    local temp
     --randomize seed for humanizing
     math.randomseed(os.clock() * 100000000000)
     --describe for undo
@@ -2287,6 +2288,8 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
         setUndoDescription("Turn selected notes to ghost notes ...")
     elseif tostring(special) == "noghost" then
         setUndoDescription("Turn selected notes to normal notes ...")
+    elseif tostring(special) == "histogram" then
+        setUndoDescription("Change note properties via histogram ...")
     else
         setUndoDescription("Change note properties ...")
     end
@@ -2319,6 +2322,28 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
             end
             if selection.pan >= fromRenoiseHex("C0") and selection.pan <= fromRenoiseHex("CF") then
                 pan = 255
+            end
+        elseif tostring(special) == "histogram" then
+            if vel then
+                if not temp then
+                    temp = vel
+                end
+                vel = temp[key]
+            elseif pan then
+                if not temp then
+                    temp = pan
+                end
+                pan = temp[key]
+            elseif dly then
+                if not temp then
+                    temp = dly
+                end
+                dly = temp[key]
+            elseif pitch then
+                if not temp then
+                    temp = pitch
+                end
+                pitch = temp[key]
             end
         end
         if ins ~= nil then
@@ -2443,7 +2468,10 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
                 selection.end_dly = end_dly
             end
         end
-        if special == "matchingnotes" then
+        if pitch ~= nil then
+            note.note_value = pitch
+            noteSelection[key].note = note.note_value
+        elseif special == "matchingnotes" then
             note.note_value = noteSelection[1].note
             noteSelection[key].note = note.note_value
         end
@@ -4830,7 +4858,7 @@ local function handleKeyEvent(keyEvent)
     if key.name == "n" and key.modifiers == "alt" then
         if key.state == "pressed" then
             if #noteSelection > 0 then
-                changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, nil, "matchingnotes")
+                changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, nil, nil, "matchingnotes")
                 keyInfoText = "Match notes"
                 showStatus(#noteSelection .. " notes was matched.")
             end
@@ -4959,7 +4987,7 @@ local function handleKeyEvent(keyEvent)
                     else
                         keyInfoText = "Decrease velocity of selected notes"
                     end
-                    changePropertiesOfSelectedNotes(steps, nil, nil, nil, nil, nil, "add")
+                    changePropertiesOfSelectedNotes(steps, nil, nil, nil, nil, nil, nil, "add")
                     --play new velocity
                     triggerNoteOfCurrentInstrument(noteSelection[1].note, nil, noteSelection[1].vel, true, noteSelection[1].ins)
                 elseif #noteSelection > 0 and keyShift and not keyAlt and not keyControl then
@@ -5265,7 +5293,7 @@ local function handleXypad(val)
                     --when a new len will be drawn, then reset len to 1
                     changeSizeSelectedNotes(1)
                     --and remove delay
-                    changePropertiesOfSelectedNotes(nil, nil, 0, 0, nil, nil, "removecut")
+                    changePropertiesOfSelectedNotes(nil, nil, 0, 0, nil, nil, nil, "removecut")
                     --switch to scale mode, when note was resettet
                     xypadpos.scaling = true
                     xypadpos.resetscale = false
@@ -5468,6 +5496,7 @@ local function refreshHistogramWindow(apply)
     local minVal = 99999
     local values = {}
     local notevalue = {}
+    local newnotevalue = {}
     local index
     local note
     local lineValues = song.selected_pattern_track.lines
@@ -5569,26 +5598,37 @@ local function refreshHistogramWindow(apply)
                         if val == 0x80 then
                             val = 255
                         end
-                        note.volume_value = val
-                        noteSelection[i].vel = val
+                        newnotevalue[i] = val
                     elseif vbwp["histogrammode"].value == 2 then
                         song.selected_track.panning_column_visible = true
                         --no value = center, so set no value when center
                         if val == 0x40 then
                             val = 255
                         end
-                        note.panning_value = val
-                        noteSelection[i].pan = val
+                        newnotevalue[i] = val
                     elseif vbwp["histogrammode"].value == 3 then
                         song.selected_track.delay_column_visible = true
-                        note.delay_value = val
-                        noteSelection[i].dly = val
+                        newnotevalue[i] = val
                     elseif vbwp["histogrammode"].value == 4 then
-                        note.note_value = val
-                        noteSelection[i].note = val
+                        newnotevalue[i] = val
                     end
                 end
+            elseif apply ~= nil then
+                --set nil values, so these can be skipped
+                newnotevalue[i] = nil
             end
+        end
+    end
+    --new values to set?
+    if #newnotevalue > 0 then
+        if vbwp["histogrammode"].value == 1 then
+            changePropertiesOfSelectedNotes(newnotevalue, nil, nil, nil, nil, nil, nil, "histogram")
+        elseif vbwp["histogrammode"].value == 2 then
+            changePropertiesOfSelectedNotes(nil, nil, nil, nil, newnotevalue, nil, nil, "histogram")
+        elseif vbwp["histogrammode"].value == 3 then
+            changePropertiesOfSelectedNotes(nil, nil, newnotevalue, nil, nil, nil, nil, "histogram")
+        elseif vbwp["histogrammode"].value == 4 then
+            changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, nil, newnotevalue, "histogram")
         end
     end
     --set histogram
@@ -5793,7 +5833,6 @@ local function showHistogram()
                                 vbp:button {
                                     text = "Apply",
                                     notifier = function()
-                                        setUndoDescription("Change note properties via histogram ...")
                                         refreshHistogramWindow(true)
                                         refreshPianoRollNeeded = true
                                         initHistogram()
