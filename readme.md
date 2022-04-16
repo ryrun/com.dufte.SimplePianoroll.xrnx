@@ -1,6 +1,6 @@
 # Simple Pianoroll Tool for Renoise
 
-<img src="docs/images/pianorollanim3.gif?raw=true" width="754" alt="Simple Pianoroll Tool for Renoise">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pianorollanim3.gif?raw=true" width="754" alt="Simple Pianoroll Tool for Renoise" />
 
 ## Videos on Youtube
 
@@ -31,6 +31,8 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 * Many useful options to change the behavior for your own taste
 * Chord detection for playing and selected notes
 * Tool Updater support
+* Step sequencing via computer keyboard
+* Histogram for note property manipulations
 * And more...
 
 ## Important
@@ -47,27 +49,27 @@ It supports different note column effects, and it will also use different note c
 
 #### Note overlapping
 
-<img src="docs/images/noteoverlapping.png?raw=true" width="300" alt="Note overlapping">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/noteoverlapping.png?raw=true" width="300" alt="Note overlapping" />
 
 #### Note cut fx
 
-<img src="docs/images/notecutfx.png?raw=true" width="300" alt="Note cut fx">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/notecutfx.png?raw=true" width="300" alt="Note cut fx" />
 
 #### Note retrigger fx
 
-<img src="docs/images/noteretriggerfx.png?raw=true" width="300" alt="Note retrigger fx">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/noteretriggerfx.png?raw=true" width="300" alt="Note retrigger fx" />
 
 #### Note delay
 
-<img src="docs/images/notedelay.png?raw=true" width="300" alt="Note delay">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/notedelay.png?raw=true" width="300" alt="Note delay" />
 
 #### Note delay for note off
 
-<img src="docs/images/noteoffdelay.png?raw=true" width="300" alt="Note delay for note off">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/noteoffdelay.png?raw=true" width="300" alt="Note delay for note off" />
 
 #### Different instruments in one pattern
 
-<img src="docs/images/diffinsinpattern.png?raw=true" width="300" alt="Note delay for note off">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/diffinsinpattern.png?raw=true" width="300" alt="Note delay for note off" />
 
 ## Install and Update
 
@@ -84,23 +86,42 @@ More information about how you can install and update Renoise tools:
 
 ## How to use it
 
-### In Pattern Editor
+### General
 
-Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
-<img src="docs/images/openit.gif?raw=true" width="300">
+Everyone who is familiar with a piano roll, can use it right away. It's heavily inspired by FL, Bitwig and Reason. DAW's which i've used in the past.
+Most common keyboard shortcuts wokring, so it's not a problem to use <kbd>ctrl+b</kbd> or <kbd>ctrl+d</kbd> for note duplication.
 
-### In Pattern Matrix
+### Open the piano roll
 
-Right-click on a track and choose "Edit with Simple Pianoroll ...":<br>
-<img src="docs/images/editviamatrix.gif?raw=true" width="300">
+There are several ways to open the piano roll. It's possible in the pattern view, matrix view, mixer view, instruments pane and also via main menu.
 
-### In Mixer View
+#### Pattern editor
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/openit.gif?raw=true" width="300">
 
-Right-click on a track and choose "Edit with Simple Pianoroll ...".
+#### Matrix view
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/editviamatrix.gif?raw=true" width="300">
 
-### In the Instruments Box
+### Step sequening with computer keyboard
 
-Right-click on an instrument and choose "Edit Pattern with Simple Pianoroll ...". It will search for the right track, switch to it.
+In Renoise, you can use your computer keyboard to play notes. The same is in the piano roll. So, when you play and hold notes and use the 
+cursor keys left or right to move hte edit cursor, it will create or remove notes on the current cursor position.
+
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/stepseq.gif?raw=true" width="754" alt="Step sequecing in Simple Pianoroll Tool for Renoise">
+
+### Histogram
+
+The histogram shows you note values (volume, panning, delay and pitch) of your current note selection in a simple graph.
+It can be used to add randomness to your notes. It's inspired by Bitwig's powerful histogram feature.
+
+There are 4 controls to manipulate these values: 
+* **Offset** is used to move the values up or down. 
+* **Scale** can be used to grow or shrink the spread across the x-axis. It can also be used to mirror the values via negative scale values.
+* **Chaos** can be used to add randomness to each value.
+* **Asc by Pos / Note** can be used to ascending or descending the values by note position or by note pitch.
+
+With **Apply** the values will be written. With **Reset** the histogram controls will be set back to defaul values.
+
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/histogram.gif?raw=true" width="754">
 
 ## Mouse actions
 
