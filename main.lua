@@ -4235,7 +4235,8 @@ local function fillPianoRoll(quickRefresh)
                                              current_note_dly,
                                              current_note_end_dly,
                                              current_note_ins,
-                                             false })
+                                             false --note off
+                    })
                 end
                 current_note = note
                 current_note_string = note_string
@@ -4275,7 +4276,8 @@ local function fillPianoRoll(quickRefresh)
                                          current_note_dly,
                                          current_note_end_dly,
                                          current_note_ins,
-                                         false })
+                                         true --note off
+                })
                 current_note = nil
                 current_note_len = 0
                 current_note_rowIndex = nil
@@ -4308,7 +4310,8 @@ local function fillPianoRoll(quickRefresh)
                                      current_note_dly,
                                      current_note_end_dly,
                                      current_note_ins,
-                                     false })
+                                     false  --note off
+            })
         end
     end
     --search for the most used instrument in pattern
