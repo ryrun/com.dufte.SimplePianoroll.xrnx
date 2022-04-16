@@ -150,6 +150,10 @@ With **Apply** the values will be written. With **Reset** the histogram controls
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/histogram.gif?raw=true" width="754" alt="Histogram feature">
 
+Here a little video showing you, how you can use it:
+
+[<img src="https://img.youtube.com/vi/zkE5SCw0TyE/0.jpg" width="300">](https://www.youtube.com/watch?v=zkE5SCw0TyE)
+
 ## Mouse actions
 
 | Actions                                      |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
