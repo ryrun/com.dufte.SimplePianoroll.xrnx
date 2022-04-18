@@ -4369,6 +4369,10 @@ local function fillPianoRoll(quickRefresh)
             v2 = v2 + b[11] / 0x100
         end
         if v1 == v2 then
+            v2 = a[6]
+            v1 = b[6]
+        end
+        if v1 == v2 then
             v1 = a[1]
             v2 = b[1]
         end
