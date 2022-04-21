@@ -3717,6 +3717,10 @@ local function romanNumeralsAndScaleDegree(scale, note, chordname)
         elseif note == 2 then
             roman = "ii"
             name = "Supertonic"
+        elseif note == 3 then
+            roman = "III"
+            before = "b"
+            name = "Flattened Third"
         elseif note == 4 then
             roman = "iii"
             name = "Mediant"
