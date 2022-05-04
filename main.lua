@@ -6092,7 +6092,7 @@ local function showSetScaleDialog()
                     margin = 5,
                     uniform = true,
                     spacing = 4,
-                    width = 432,
+                    width = 462,
                     vbp:text {
                         text = "Scale highlighting:",
                     },
