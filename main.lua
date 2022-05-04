@@ -7487,6 +7487,8 @@ local function createPianoRollDialog()
                             end
                             if #noteSelection > 0 then
                                 changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, currentInstrument)
+                            else
+                                refreshPianoRollNeeded = true
                             end
                         end
                     end
