@@ -3621,8 +3621,12 @@ local function setScaleHighlighting(afterPianoRollRefresh)
         if not idx then
             idx = song.selected_instrument_index
         end
-        local scale_key = song.instruments[idx].trigger_options.scale_key
-        local scale_mode = song.instruments[idx].trigger_options.scale_mode
+        local scale_key
+        local scale_mode
+        if song.instruments[idx] then
+            scale_key = song.instruments[idx].trigger_options.scale_key
+            scale_mode = song.instruments[idx].trigger_options.scale_mode
+        end
 
         if scale_mode == "Natural Major" then
             if currentScale ~= 2 or currentScaleOffset ~= scale_key then
