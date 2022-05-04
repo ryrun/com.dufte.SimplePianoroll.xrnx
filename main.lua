@@ -323,6 +323,7 @@ local lastTriggerNote = {}
 
 --missing block loop observable? use a variable for check there was a change
 local blockloopidx
+local instrumentScaleMode
 
 --backup state values, to set it back when piano roll was closed
 local wasFollowPlayer
@@ -6015,6 +6016,15 @@ local function appIdleEvent()
         if blockloopidx ~= currentblockloop then
             blockloopidx = currentblockloop
             refreshTimeline = true
+        end
+        --instrument scale obs
+        if preferences.scaleHighlightingType.value == 4 and currentInstrument and song.instruments[currentInstrument + 1] then
+            local temp = tostring(song.instruments[currentInstrument + 1].trigger_options.scale_key) ..
+                    tostring(song.instruments[currentInstrument + 1].trigger_options.scale_mode)
+            if temp ~= instrumentScaleMode then
+                instrumentScaleMode = temp
+                refreshPianoRollNeeded = true
+            end
         end
         --
         if #lastTriggerNote > 0 and oscClient then
