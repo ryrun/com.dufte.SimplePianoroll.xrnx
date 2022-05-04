@@ -3620,6 +3620,8 @@ local function setScaleHighlighting(afterPianoRollRefresh)
         local idx = currentInstrument
         if not idx then
             idx = song.selected_instrument_index
+        else
+            idx = idx + 1
         end
         local scale_key
         local scale_mode
