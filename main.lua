@@ -6075,6 +6075,9 @@ local function appIdleEvent()
             midiDevice = renoise.Midi.create_input_device(preferences.midiDevice.value, midiInCallback)
             if not midiDevice then
                 showStatus("Error: Cant initialize midi in device: " .. preferences.midiDevice.value)
+                --disable midi in
+                preferences.midiIn.value = false
+                midiDevice = nil
             end
         elseif not preferences.midiIn.value and midiDevice then
             if midiDevice.is_open then
