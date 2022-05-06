@@ -167,6 +167,8 @@ local defaultPreferences = {
     moveNoteInPenMode = false,
     mirroringGhostTrack = false,
     noteColorShiftDegree = 45,
+    midiDevice = "",
+    midiIn = false,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -241,6 +243,8 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     moveNoteInPenMode = defaultPreferences.moveNoteInPenMode,
     mirroringGhostTrack = defaultPreferences.mirroringGhostTrack,
     noteColorShiftDegree = defaultPreferences.noteColorShiftDegree,
+    midiDevice = defaultPreferences.midiDevice,
+    midiIn = defaultPreferences.midiIn,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -383,11 +387,14 @@ local usedNoteIndices = {}
 local lastKeyInfoTime
 
 --key states
-local keyControl = false
-local keyRControl = false
-local keyShift = false
-local keyRShift = false
-local keyAlt = false
+local modifier = {
+    keyControl = false,
+    keyRControl = false,
+    keyShift = false,
+    keyRShift = false,
+    keyAlt = false
+}
+
 local lastKeyPress
 
 --mouse handling vars
@@ -423,6 +430,9 @@ local stepPreview = false
 
 --table to save last playing note for qwerty playing
 local lastKeyboardNote = {}
+
+--midi
+local midiDevice
 
 --default sort functions
 local function sortLeftOneFirst(a, b)
@@ -781,12 +791,12 @@ end
 --check mode
 local function checkMode(mode)
     if mode == "preview" then
-        if audioPreviewMode or (keyControl and keyShift and not keyAlt) then
+        if audioPreviewMode or (modifier.keyControl and modifier.keyShift and not modifier.keyAlt) then
             return true
         end
     end
     if mode == "pen" then
-        if (penMode and not keyAlt) or (not keyControl and not keyShift and keyAlt and not penMode) then
+        if (penMode and not modifier.keyAlt) or (not modifier.keyControl and not modifier.keyShift and modifier.keyAlt and not penMode) then
             return true
         end
     end
@@ -2634,7 +2644,7 @@ local function moveSelectionThroughNotes(dx, dy, addToSelection)
 
     if #noteSelection > 0 then
         --select one of the note when shift is not holded
-        if #noteSelection > 1 and not (keyShift or keyRShift) then
+        if #noteSelection > 1 and not (modifier.keyShift or modifier.keyRShift) then
             note_data = noteSelection[#noteSelection]
             updateNoteSelection(note_data, true)
             return true
@@ -2768,7 +2778,7 @@ function keyClick(y, pressed)
     --disable edit mode
     song.transport.edit_mode = false
     --select all note events which have the specific note
-    if keyControl then
+    if modifier.keyControl then
         if not pressed then
             local newNoteSelection = {}
             for key in pairs(noteData) do
@@ -2777,7 +2787,7 @@ function keyClick(y, pressed)
                     table.insert(newNoteSelection, note_data)
                 end
             end
-            updateNoteSelection(newNoteSelection, not keyShift)
+            updateNoteSelection(newNoteSelection, not modifier.keyShift)
         end
     else
         local row = noteValue2GridRowOffset(note)
@@ -2849,7 +2859,7 @@ function noteClick(x, y, c, released, forceScaling)
         xypadpos.resetscale = false
         xypadpos.notemode = true
         xypadpos.lastval = nil
-        xypadpos.duplicate = (keyShift or keyControl) and (not checkMode("pen") or preferences.moveNoteInPenMode.value) and not keyAlt
+        xypadpos.duplicate = (modifier.keyShift or modifier.keyControl) and (not checkMode("pen") or preferences.moveNoteInPenMode.value) and not modifier.keyAlt
         xypadpos.time = os.clock()
         triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true, note_data.ins)
         return
@@ -2869,7 +2879,7 @@ function noteClick(x, y, c, released, forceScaling)
         if (checkMode("pen") and not preferences.moveNoteInPenMode.value) or (dbclk and not checkMode("preview")) then
             --set clicked note as selected for remove function
             if note_data ~= nil then
-                if preferences.disableAltClickNoteRemove.value and keyAlt then
+                if preferences.disableAltClickNoteRemove.value and modifier.keyAlt then
                     --dont delete notes, when use altKey in non pen mode
                     updateNoteSelection(note_data, note_data)
                 else
@@ -2881,7 +2891,7 @@ function noteClick(x, y, c, released, forceScaling)
             if note_data ~= nil then
                 if not checkMode("preview") then
                     --clear selection, when ctrl is not holded
-                    if #noteSelection > 0 and keyControl and not forceScaling then
+                    if #noteSelection > 0 and modifier.keyControl and not forceScaling then
                         updateNoteSelection(note_data, note_data)
                     else
                         updateNoteSelection(note_data, "note")
@@ -2902,7 +2912,7 @@ function pianoGridClick(x, y, released)
         outside = true
     end
 
-    if not released and not checkMode("preview") and not keyControl and not (outside and checkMode("pen")) then
+    if not released and not checkMode("preview") and not modifier.keyControl and not (outside and checkMode("pen")) then
         xypadpos.disabled = {}
         --deselect current notes, when outside was clicked
         if outside and #noteSelection > 0 then
@@ -3087,12 +3097,12 @@ function pianoGridClick(x, y, released)
             refreshChordDetection = true
         else
             --fast play from cursor
-            if keyControl and not keyAlt and not keyShift then
+            if modifier.keyControl and not modifier.keyAlt and not modifier.keyShift then
                 playPatternFromLine(x + stepOffset)
             else
                 --deselect selected notes
                 if #noteSelection > 0 then
-                    if not keyShift then
+                    if not modifier.keyShift then
                         updateNoteSelection(nil, true)
                         jumpToNoteInPattern(x + stepOffset)
                     end
@@ -4468,7 +4478,7 @@ end
 --set playback pos via playback pos indicator
 function setPlaybackPos(pos)
     --select all note events which are on specific pos
-    if keyControl then
+    if modifier.keyControl then
         local newNotes = {}
         local line = pos + stepOffset
         for key in pairs(noteData) do
@@ -4477,7 +4487,7 @@ function setPlaybackPos(pos)
                 table.insert(newNotes, note_data)
             end
         end
-        updateNoteSelection(newNotes, not keyShift)
+        updateNoteSelection(newNotes, not modifier.keyShift)
     else
         playPatternFromLine(pos + stepOffset)
     end
@@ -4615,7 +4625,6 @@ local function refreshHistogramWindow(apply)
     local newnotevalue = {}
     local index
     local note
-    local lineValues = song.selected_pattern_track.lines
     --fill values with empty
     for i = 1, 100 do
         values[i] = 0
@@ -4709,8 +4718,6 @@ local function refreshHistogramWindow(apply)
                 val = clamp(val, min, max)
                 index = clamp(math.floor(#values / max * val), 1, #values)
                 values[index] = values[index] + 1
-                --apply values
-                note = lineValues[noteSelection[i].line]:note_column(noteSelection[i].column)
                 if apply ~= nil then
                     if vbwp["histogrammode"].value == 1 then
                         --no value = max vel, so set no value
@@ -5098,59 +5105,69 @@ local function handleKeyEvent(keyEvent)
     app.window.lock_keyboard_focus = true
 
     if key.name == "lcontrol" and key.state == "pressed" then
-        keyControl = true
+        modifier.keyControl = true
         handled = true
     elseif key.name == "lcontrol" and key.state == "released" then
-        keyControl = false
+        modifier.keyControl = false
         handled = true
     end
     if key.name == "rcontrol" and key.state == "pressed" then
-        keyRControl = true
+        modifier.keyRControl = true
         handled = true
     elseif key.name == "rcontrol" and key.state == "released" then
-        keyRControl = false
+        modifier.keyRControl = false
         handled = true
     end
     if key.name == "lalt" and key.state == "pressed" then
-        keyAlt = true
+        modifier.keyAlt = true
         handled = true
         refreshControls = true
     elseif key.name == "lalt" and key.state == "released" then
-        keyAlt = false
+        modifier.keyAlt = false
         handled = true
         refreshControls = true
     end
     if key.name == "lshift" and key.state == "pressed" then
-        keyShift = true
+        modifier.keyShift = true
         handled = true
         refreshControls = true
     elseif key.name == "lshift" and key.state == "released" then
-        keyShift = false
+        modifier.keyShift = false
         handled = true
         refreshControls = true
     end
     if key.name == "rshift" and key.state == "pressed" then
-        keyRShift = true
+        modifier.keyRShift = true
         handled = true
     elseif key.name == "rshift" and key.state == "released" then
-        keyRShift = false
+        modifier.keyRShift = false
         handled = true
+    end
+
+    --prepare midi in events
+    if key.name == "midi in" then
+        key.repeated = false
+        key.modifiers = ""
+        key.isMidi = true
+        handled = true
+        --extend key name
+        key.name = key.name .. " - Note " .. tostring(key.note)
     end
 
     --convert scrollwheel events
     if key.name == "scrollup" or key.name == "scrolldown" then
         key.state = "pressed"
         key.modifiers = ""
-        if keyShift or keyRShift then
+        if modifier.keyShift or modifier.keyRShift then
             key.modifiers = "shift"
         end
-        if keyAlt then
+        if modifier.keyAlt then
             if key.modifiers ~= "" then
                 key.modifiers = key.modifiers .. " + "
             end
             key.modifiers = key.modifiers .. "alt"
         end
-        if keyControl then
+        if modifier.keyControl then
             if key.modifiers ~= "" then
                 key.modifiers = key.modifiers .. " + "
             end
@@ -5443,8 +5460,8 @@ local function handleKeyEvent(keyEvent)
             if key.name == "scrolldown" then
                 steps = steps * -1
             end
-            if (keyAlt or keyShift or keyRShift) and not keyControl then
-                if #noteSelection > 0 and keyAlt and not keyShift and not keyControl then
+            if (modifier.keyAlt or modifier.keyShift or modifier.keyRShift) and not modifier.keyControl then
+                if #noteSelection > 0 and modifier.keyAlt and not modifier.keyShift and not modifier.keyControl then
                     if steps > 0 then
                         keyInfoText = "Increase velocity of selected notes"
                     else
@@ -5453,7 +5470,7 @@ local function handleKeyEvent(keyEvent)
                     changePropertiesOfSelectedNotes(steps, nil, nil, nil, nil, nil, nil, "add")
                     --play new velocity
                     triggerNoteOfCurrentInstrument(noteSelection[1].note, nil, noteSelection[1].vel, true, noteSelection[1].ins)
-                elseif #noteSelection > 0 and keyShift and not keyAlt and not keyControl then
+                elseif #noteSelection > 0 and modifier.keyShift and not modifier.keyAlt and not modifier.keyControl then
                     steps = -steps
                     keyInfoText = "Move notes by " .. steps .. " micro steps"
                     if isDelayColumnActive(true) then
@@ -5464,11 +5481,11 @@ local function handleKeyEvent(keyEvent)
                     steps = steps * -1
                     stepSlider.value = forceValueToRange(stepSlider.value + steps, stepSlider.min, stepSlider.max)
                 end
-            elseif not keyAlt and keyControl and not keyShift and not keyRShift then
+            elseif not modifier.keyAlt and modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
                 keyInfoText = "Move through the grid"
                 steps = steps * -1
                 stepSlider.value = forceValueToRange(stepSlider.value + steps, stepSlider.min, stepSlider.max)
-            elseif not keyAlt and not keyControl and not keyShift and not keyRShift then
+            elseif not modifier.keyAlt and not modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
                 keyInfoText = "Move through the grid"
                 noteSlider.value = forceValueToRange(noteSlider.value + steps, noteSlider.min, noteSlider.max)
             end
@@ -5489,25 +5506,25 @@ local function handleKeyEvent(keyEvent)
     if (key.name == "up" or key.name == "down") then
         if key.state == "pressed" then
             local transpose = 1
-            if keyShift or keyRShift then
+            if modifier.keyShift or modifier.keyRShift then
                 transpose = 12
             end
-            if (keyShift or keyRShift) and keyControl then
+            if (modifier.keyShift or modifier.keyRShift) and modifier.keyControl then
                 transpose = 7
             end
             if key.name == "down" then
                 transpose = transpose * -1
             end
-            if #noteSelection > 0 and not keyAlt then
-                transposeSelectedNotes(transpose, (keyControl or keyRControl) and not (keyShift or keyRShift))
+            if #noteSelection > 0 and not modifier.keyAlt then
+                transposeSelectedNotes(transpose, (modifier.keyControl or modifier.keyRControl) and not (modifier.keyShift or modifier.keyRShift))
                 keyInfoText = "Transpose selected notes by " .. getSingularPlural(transpose, "semitone", "semitones", true)
-                if (keyControl or keyRControl) and not (keyShift or keyRShift) then
+                if (modifier.keyControl or modifier.keyRControl) and not (modifier.keyShift or modifier.keyRShift) then
                     keyInfoText = keyInfoText .. ", keep in scale"
                 end
             else
-                if keyAlt then
-                    moveSelectionThroughNotes(0, transpose, keyShift)
-                    if keyShift then
+                if modifier.keyAlt then
+                    moveSelectionThroughNotes(0, transpose, modifier.keyShift)
+                    if modifier.keyShift then
                         keyInfoText = "Add a note from above/below to selection"
                     else
                         keyInfoText = "Move note selection " .. key.name
@@ -5523,14 +5540,14 @@ local function handleKeyEvent(keyEvent)
     if (key.name == "left" or key.name == "right") then
         if key.state == "pressed" then
             local steps = 1
-            if keyShift or keyRShift then
+            if modifier.keyShift or modifier.keyRShift then
                 steps = 4
             end
             if key.name == "left" then
                 steps = steps * -1
             end
-            if #noteSelection > 0 and not keyAlt then
-                if keyControl then
+            if #noteSelection > 0 and not modifier.keyAlt then
+                if modifier.keyControl then
                     steps = steps / math.abs(steps)
                     changeSizeSelectedNotes(steps, true)
                     keyInfoText = "Change note length of selected notes"
@@ -5539,15 +5556,15 @@ local function handleKeyEvent(keyEvent)
                     keyInfoText = "Move selected notes by " .. getSingularPlural(steps, "step", "steps", true)
                 end
             else
-                if keyAlt then
-                    if keyControl then
+                if modifier.keyAlt then
+                    if modifier.keyControl then
                         if isDelayColumnActive(true) then
                             moveSelectedNotesByMicroSteps(steps)
                         end
                         keyInfoText = "Move note selection by microsteps to the " .. key.name
                     else
-                        moveSelectionThroughNotes(steps, 0, keyShift)
-                        if keyShift then
+                        moveSelectionThroughNotes(steps, 0, modifier.keyShift)
+                        if modifier.keyShift then
                             keyInfoText = "Add a note from left/right to selection"
                         else
                             keyInfoText = "Move note selection to the " .. key.name
@@ -5611,10 +5628,13 @@ local function handleKeyEvent(keyEvent)
                 handled = true
             end
         elseif not key.repeated and key.state == "pressed" and key.modifiers == "" then
-            local note = key.note + (12 * song.transport.octave)
+            local note = key.note
+            if not key.isMidi then
+                note = note + (12 * song.transport.octave)
+            end
             lastKeyboardNote[key.name] = note
             row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
-            triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], true)
+            triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], true, key.velocity)
             if row ~= nil then
                 setKeyboardKeyColor(row, true, false)
                 highlightNoteRow(row, true)
@@ -5658,6 +5678,29 @@ local function handleKeyEvent(keyEvent)
         end
     end
     return handled
+end
+
+--process incoming midi data
+local function midiInCallback(message)
+    --only handle note events
+    if message[1] == 144 then
+        --pass them as key events
+        if message[3] > 0 then
+            handleKeyEvent({
+                name = "midi in",
+                note = message[2],
+                velocity = message[3],
+                state = "pressed",
+            })
+        else
+            handleKeyEvent({
+                name = "midi in",
+                note = message[2],
+                velocity = message[3],
+                state = "released",
+            })
+        end
+    end
 end
 
 --handle scroll wheel value boxes
@@ -5767,7 +5810,7 @@ local function handleXypad(val)
                     note_data = noteSelection[1]
                 end
                 if note_data then
-                    if keyAlt and isDelayColumnActive() then
+                    if modifier.keyAlt and isDelayColumnActive() then
                         v = math.floor((val.x - (xypadpos.nx + note_data.len + (note_data.end_dly / 0x100))) * 0x100)
                         --calculate snap
                         local delay = (note_data.end_dly + v) % 0x100
@@ -5823,12 +5866,12 @@ local function handleXypad(val)
                         forceFullRefresh = true
                     end
                 end
-                if keyAlt and isDelayColumnActive(true) then
+                if modifier.keyAlt and isDelayColumnActive(true) then
                     local v = math.floor((val.x - xypadpos.x) * 0x100)
                     if v ~= 0 then
                         blockLineModifier = true
                         quickRefresh = true
-                        v = moveSelectedNotesByMicroSteps(v, keyShift)
+                        v = moveSelectedNotesByMicroSteps(v, modifier.keyShift)
                         if v ~= false then
                             xypadpos.x = xypadpos.x + (v / 0x100)
                         end
@@ -5838,7 +5881,7 @@ local function handleXypad(val)
                     xypadpos.y = math.floor(xypadpos.y)
                     if xypadpos.x - math.floor(val.x) > 0 and math.floor(val.x) ~= xypadpos.lastx then
                         if xypadpos.duplicate then
-                            if keyControl and xypadpos.idx then
+                            if modifier.keyControl and xypadpos.idx then
                                 if noteInSelection(noteData[xypadpos.idx]) then
                                     noteSelection = {}
                                 end
@@ -5860,7 +5903,7 @@ local function handleXypad(val)
                         xypadpos.lastx = math.floor(val.x)
                     elseif xypadpos.x - math.floor(val.x) < 0 and math.floor(val.x) ~= xypadpos.lastx then
                         if xypadpos.duplicate then
-                            if keyControl and xypadpos.idx then
+                            if modifier.keyControl and xypadpos.idx then
                                 if noteInSelection(noteData[xypadpos.idx]) then
                                     noteSelection = {}
                                 end
@@ -5884,7 +5927,7 @@ local function handleXypad(val)
                 end
                 if math.floor(xypadpos.y) - math.floor(val.y + 0.1) > 0 then
                     if xypadpos.duplicate then
-                        if keyControl and xypadpos.idx then
+                        if modifier.keyControl and xypadpos.idx then
                             if noteInSelection(noteData[xypadpos.idx]) then
                                 noteSelection = {}
                             end
@@ -5905,7 +5948,7 @@ local function handleXypad(val)
                     end
                 elseif math.floor(xypadpos.y) - math.floor(val.y - 0.1) < 0 then
                     if xypadpos.duplicate then
-                        if keyControl and xypadpos.idx then
+                        if modifier.keyControl and xypadpos.idx then
                             if noteInSelection(noteData[xypadpos.idx]) then
                                 noteSelection = {}
                             end
@@ -5936,7 +5979,7 @@ local function handleXypad(val)
                 if not preferences.mouseWarpingCompatibilityMode.value then
                     drawRectangle(true, xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny)
                 end
-                selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, keyShift)
+                selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, modifier.keyShift)
             end
         end
     end
@@ -5962,16 +6005,16 @@ local function appIdleEvent()
         end
         --refresh modifier states, when keys are pressed outside focus
         local keyState = app.key_modifier_states
-        if (keyState["alt"] == "pressed" and keyAlt == false) or (keyState["alt"] == "released" and keyAlt == true) then
-            keyAlt = not keyAlt
+        if (keyState["alt"] == "pressed" and modifier.keyAlt == false) or (keyState["alt"] == "released" and modifier.keyAlt == true) then
+            modifier.keyAlt = not modifier.keyAlt
             refreshControls = true
         end
-        if (keyState["control"] == "pressed" and keyControl == false) or (keyState["control"] == "released" and keyControl == true) then
-            keyControl = not keyControl
+        if (keyState["control"] == "pressed" and modifier.keyControl == false) or (keyState["control"] == "released" and modifier.keyControl == true) then
+            modifier.keyControl = not modifier.keyControl
             refreshControls = true
         end
-        if (keyState["shift"] == "pressed" and keyShift == false) or (keyState["shift"] == "released" and keyShift == true) then
-            keyShift = not keyShift
+        if (keyState["shift"] == "pressed" and modifier.keyShift == false) or (keyState["shift"] == "released" and modifier.keyShift == true) then
+            modifier.keyShift = not modifier.keyShift
             refreshControls = true
         end
         --process after edit features
@@ -6025,6 +6068,19 @@ local function appIdleEvent()
                 instrumentScaleMode = temp
                 refreshPianoRollNeeded = true
             end
+        end
+        --midi in init handling
+        if preferences.midiIn.value and not midiDevice and preferences.midiDevice.value ~= "" then
+            --init device
+            midiDevice = renoise.Midi.create_input_device(preferences.midiDevice.value, midiInCallback)
+            if not midiDevice then
+                showStatus("Error: Cant initialize midi in device: " .. preferences.midiDevice.value)
+            end
+        elseif not preferences.midiIn.value and midiDevice then
+            if midiDevice.is_open then
+                midiDevice:close()
+            end
+            midiDevice = nil
         end
         --
         if #lastTriggerNote > 0 and oscClient then
@@ -7154,6 +7210,41 @@ local function showPreferences()
                                 text = "Mirror notes of the current ghost track",
                             },
                         },
+                        vbp:space {
+                            height = 8,
+                        },
+                        vbp:text {
+                            text = "Midi In",
+                            font = "big",
+                            style = "strong",
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.midiIn,
+                            },
+                            vbp:text {
+                                text = "Enable Midi In support",
+                            },
+                        },
+                        vbp:horizontal_aligner {
+                            mode = "justify",
+                            vbp:text {
+                                text = "Device:",
+                                width = "50%"
+                            },
+                            vbp:popup {
+                                id = "midi",
+                                width = "50%",
+                                notifier = function(i)
+                                    preferences.midiDevice.value = vbwp.midi.items[i]
+                                    --reset midi device, when initialized
+                                    if midiDevice and midiDevice.is_open then
+                                        midiDevice:close()
+                                        midiDevice = nil
+                                    end
+                                end
+                            },
+                        },
                     },
                 }
             },
@@ -7194,6 +7285,22 @@ local function showPreferences()
                 },
             },
         }
+    end
+    --refresh midi in list
+    vbwp.midi.items = renoise.Midi.available_input_devices()
+    --set first midi device as default one
+    if #vbwp.midi.items > 0 then
+        if preferences.midiDevice.value == "" then
+            preferences.midiDevice.value = vbwp.midi.items[1]
+        else
+            --search for midi device in list and preselect it
+            for i = 1, #vbwp.midi.items do
+                if vbwp.midi.items[i] == preferences.midiDevice.value then
+                    vbwp.midi.value = i
+                    break
+                end
+            end
+        end
     end
     if not preferencesObj or not preferencesObj.visible then
         preferencesObj = app:show_custom_dialog("Preferences - " .. "Simple Pianoroll v" .. manifest:property("Version").value, preferencesContent)
@@ -7612,7 +7719,7 @@ local function createPianoRollDialog()
                         currentNoteVelocity = 255
                         if #noteSelection > 0 then
                             changePropertiesOfSelectedNotes(currentNoteVelocity)
-                            if keyShift then
+                            if modifier.keyShift then
                                 currentNoteEndVelocity = 255
                                 changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity)
                             end
@@ -7770,7 +7877,7 @@ local function createPianoRollDialog()
                     notifier = function()
                         currentNoteDelay = 0
                         changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay)
-                        if keyShift then
+                        if modifier.keyShift then
                             currentNoteEndDelay = 0
                             changePropertiesOfSelectedNotes(nil, nil, nil, currentNoteEndDelay)
                         end
@@ -7953,7 +8060,7 @@ local function createPianoRollDialog()
                                         height = gridStepSizeH + 3,
                                         tooltip = "Scale highlighting\nIf you hold down the Ctrl key while clicking, you switch to relative minor or major.",
                                         notifier = function()
-                                            if keyControl then
+                                            if modifier.keyControl then
                                                 switchToRelativeScale()
                                             else
                                                 showSetScaleDialog()
