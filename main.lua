@@ -6071,8 +6071,15 @@ local function appIdleEvent()
         end
         --midi in init handling
         if preferences.midiIn.value and not midiDevice and preferences.midiDevice.value ~= "" then
-            --init device
-            midiDevice = renoise.Midi.create_input_device(preferences.midiDevice.value, midiInCallback)
+            --check if the device is present
+            local temp = renoise.Midi.available_input_devices()
+            for i = 1, #temp do
+                if temp[i] == preferences.midiDevice.value then
+                    --init device
+                    midiDevice = renoise.Midi.create_input_device(preferences.midiDevice.value, midiInCallback)
+                    break
+                end
+            end
             if not midiDevice then
                 showStatus("Error: Cant initialize midi in device: " .. preferences.midiDevice.value)
                 --disable midi in
@@ -7217,7 +7224,7 @@ local function showPreferences()
                             height = 8,
                         },
                         vbp:text {
-                            text = "Midi In",
+                            text = "MIDI In",
                             font = "big",
                             style = "strong",
                         },
@@ -7226,13 +7233,13 @@ local function showPreferences()
                                 bind = preferences.midiIn,
                             },
                             vbp:text {
-                                text = "Enable Midi In support",
+                                text = "Enable MIDI In support",
                             },
                         },
                         vbp:horizontal_aligner {
                             mode = "justify",
                             vbp:text {
-                                text = "Device:",
+                                text = "Input Device:",
                                 width = "50%"
                             },
                             vbp:popup {
@@ -7254,7 +7261,7 @@ local function showPreferences()
             vbp:horizontal_aligner {
                 mode = "center",
                 margin = vbc.DEFAULT_DIALOG_MARGIN,
-                spacing = vbc.DEFAULT_CONTROL_SPACING,
+                spacing = vbc.DEFAULT_CONTROL_SPACING * 10,
                 vbp:button {
                     text = "Close",
                     height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
@@ -7292,6 +7299,7 @@ local function showPreferences()
     --refresh midi in list
     vbwp.midi.items = renoise.Midi.available_input_devices()
     --set first midi device as default one
+    local found = false
     if #vbwp.midi.items > 0 then
         if preferences.midiDevice.value == "" then
             preferences.midiDevice.value = vbwp.midi.items[1]
@@ -7300,10 +7308,18 @@ local function showPreferences()
             for i = 1, #vbwp.midi.items do
                 if vbwp.midi.items[i] == preferences.midiDevice.value then
                     vbwp.midi.value = i
+                    found = true
                     break
                 end
             end
         end
+    end
+    --add device to the list, when it's still missing
+    if not found and preferences.midiDevice.value ~= "" then
+        local newList = vbwp.midi.items
+        newList[#newList + 1] = preferences.midiDevice.value
+        vbwp.midi.items = newList
+        vbwp.midi.value = #newList
     end
     if not preferencesObj or not preferencesObj.visible then
         preferencesObj = app:show_custom_dialog("Preferences - " .. "Simple Pianoroll v" .. manifest:property("Version").value, preferencesContent)
