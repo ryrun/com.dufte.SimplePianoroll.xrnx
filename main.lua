@@ -3725,15 +3725,28 @@ local function romanNumeralsAndScaleDegree(scale, note, chordname)
     local roman
     local before = ""
     local after = ""
+    local secDom = false
     local name
     note = (note - (currentScaleOffset - 1)) % 12
     if scale == 2 then
         if note == 0 then
             roman = "I"
             name = "Tonic"
+            if chordname and chordname == "7" then
+                roman = "V7/IV"
+                secDom = true
+            end
         elseif note == 2 then
             roman = "ii"
             name = "Supertonic"
+            if chordname and (string.match(chordname, '^Maj') or chordname == "7") then
+                if chordname == "7" then
+                    roman = "V7/V"
+                else
+                    roman = "V/V"
+                end
+                secDom = true
+            end
         elseif note == 3 then
             roman = "III"
             before = "b"
@@ -3741,6 +3754,14 @@ local function romanNumeralsAndScaleDegree(scale, note, chordname)
         elseif note == 4 then
             roman = "iii"
             name = "Mediant"
+            if chordname and (string.match(chordname, '^Maj') or chordname == "7") then
+                if chordname == "7" then
+                    roman = "V7/vi"
+                else
+                    roman = "V/vi"
+                end
+                secDom = true
+            end
         elseif note == 5 then
             roman = "IV"
             name = "Subdominant"
@@ -3754,6 +3775,14 @@ local function romanNumeralsAndScaleDegree(scale, note, chordname)
         elseif note == 9 then
             roman = "vi"
             name = "Submediant"
+            if chordname and (string.match(chordname, '^Maj') or chordname == "7") then
+                if chordname == "7" then
+                    roman = "V7/ii"
+                else
+                    roman = "V/ii"
+                end
+                secDom = true
+            end
         elseif note == 10 then
             roman = "VII"
             before = "b"
@@ -3761,6 +3790,14 @@ local function romanNumeralsAndScaleDegree(scale, note, chordname)
         elseif note == 11 then
             roman = "vii"
             name = "Leading tone"
+            if chordname and (string.match(chordname, '^Maj') or chordname == "7") then
+                if chordname == "7" then
+                    roman = "V7/iii"
+                else
+                    roman = "V/iii"
+                end
+                secDom = true
+            end
         else
             return "-"
         end
@@ -3768,18 +3805,54 @@ local function romanNumeralsAndScaleDegree(scale, note, chordname)
         if note == 0 then
             roman = "i"
             name = "Tonic"
+            if chordname and (string.match(chordname, '^Maj') or chordname == "7") then
+                if chordname == "7" then
+                    roman = "V7/iv"
+                else
+                    roman = "V/iv"
+                end
+                secDom = true
+            end
         elseif note == 2 then
             roman = "ii"
             name = "Supertonic"
+            if chordname and (string.match(chordname, '^Maj') or chordname == "7") then
+                if chordname == "7" then
+                    roman = "V7/v"
+                else
+                    roman = "V/v"
+                end
+                secDom = true
+            end
         elseif note == 3 then
             roman = "III"
             name = "Mediant"
+            if chordname and chordname == "7" then
+                roman = "V7/VI"
+                secDom = true
+            end
         elseif note == 5 then
             roman = "iv"
             name = "Subdominant"
+            if chordname and (string.match(chordname, '^Maj') or chordname == "7") then
+                if chordname == "7" then
+                    roman = "V7/VII"
+                else
+                    roman = "V/VII"
+                end
+                secDom = true
+            end
         elseif note == 7 then
             roman = "v"
             name = "Dominant"
+            if chordname and (string.match(chordname, '^Maj') or chordname == "7") then
+                if chordname == "7" then
+                    roman = "V7/i"
+                else
+                    roman = "V/i"
+                end
+                secDom = true
+            end
         elseif note == 8 then
             roman = "VI"
             name = "Submediant"
@@ -3792,11 +3865,13 @@ local function romanNumeralsAndScaleDegree(scale, note, chordname)
     else
         return "-"
     end
-    if name ~= "" then
+    if secDom then
+        name = " - Secondary Dominant"
+    elseif name ~= "" then
         name = " - " .. name
     end
     --change case of numeral, if needed
-    if chordname ~= nil then
+    if chordname ~= nil and not secDom then
         if string.match(chordname, '^Maj7') or chordname == '7' then
             roman = string.upper(roman)
             after = "7"
