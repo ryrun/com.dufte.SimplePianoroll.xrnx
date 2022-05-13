@@ -33,6 +33,7 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 * Tool Updater support
 * Step sequencing via computer keyboard
 * Histogram for note property manipulations
+* Basic MIDI Input support for playing (no recording yet)
 * And more...
 
 ## Important
