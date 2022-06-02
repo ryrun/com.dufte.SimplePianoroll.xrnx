@@ -4712,6 +4712,9 @@ local function refreshHistogramWindow(apply)
     local newnotevalue = {}
     local index
     local note
+    local groupsmember = {}
+    local groupindex
+    local groups = {}
     --fill values with empty
     for i = 1, 100 do
         values[i] = 0
@@ -4761,14 +4764,39 @@ local function refreshHistogramWindow(apply)
         midVal = (minVal + maxVal) / 2
         vbwp.histomin.text = tostring(min)
         vbwp.histomax.text = tostring(max)
+        for i = 1, #noteSelection do
+            if vbwp["histogramasctype"].value == 2 then
+                groupindex = noteSelection[i].line
+            else
+                groupindex = noteSelection[i].note
+            end
+            if groups[groupindex] == nil then
+                groups[groupindex] = 1
+                groupsmember[groupindex] = 0
+            else
+                groups[groupindex] = groups[groupindex] + 1
+            end
+        end
         --change values by scale
         for i = 1, #noteSelection do
             val = notevalue[i]
             if vbwp["histogrammode"].value >= 3 or (val >= min and val <= max) then
                 oldval = val
                 --apply ascending
-                if i > 1 then
-                    val = val + (max / (#noteSelection - 1) * (i - 1)) * vbwp["histogramasc"].value
+                if vbwp["histogramascgroup"].value then
+                    if vbwp["histogramasctype"].value == 2 then
+                        groupindex = noteSelection[i].line
+                    else
+                        groupindex = noteSelection[i].note
+                    end
+                    groupsmember[groupindex] = groupsmember[groupindex] + 1
+                    if groupsmember[groupindex] > 1 then
+                        val = val + (max / (groups[groupindex] - 1) * (groupsmember[groupindex] - 1)) * vbwp["histogramasc"].value
+                    end
+                else
+                    if i > 1 then
+                        val = val + (max / (#noteSelection - 1) * (i - 1)) * vbwp["histogramasc"].value
+                    end
                 end
                 --apply chaos
                 val = val + (
@@ -5057,9 +5085,19 @@ local function showHistogram()
                                     refreshHistogramWindow()
                                 end
                             },
+                            vbp:row {
+                                vbp:checkbox {
+                                    id = "histogramascgroup",
+                                    tooltip = "Group note or pos values and apply them the same value.",
+                                    value = false,
+                                },
+                                vbp:text {
+                                    text = "Group them",
+                                },
+                            },
                         },
                         vbp:vertical_aligner {
-                            mode = "bottom",
+                            mode = "center",
                             vbp:row {
                                 vbp:button {
                                     text = "Apply",
@@ -7282,7 +7320,7 @@ local function showPreferences()
                         },
                         vbp:text {
                             text = "IMPORTANT: To improve mouse control, please disable\nthe mouse warping option in the Renoise preferences\nin section GUI. This" ..
-                            " will also fix mouse jumping,\nwhen you use the piano roll.\nIf you need mouse warping, you can enable the\nmouse warping compatibility mode."
+                                    " will also fix mouse jumping,\nwhen you use the piano roll.\nIf you need mouse warping, you can enable the\nmouse warping compatibility mode."
                         },
                         vbp:space {
                             height = 8,
