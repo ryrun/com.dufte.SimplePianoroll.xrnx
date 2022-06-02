@@ -7281,7 +7281,8 @@ local function showPreferences()
                             },
                         },
                         vbp:text {
-                            text = "IMPORTANT: To improve mouse control, please disable\nthe mouse warping option in the Renoise preferences\nin section GUI."
+                            text = "IMPORTANT: To improve mouse control, please disable\nthe mouse warping option in the Renoise preferences\nin section GUI. This" ..
+                            " will also fix mouse jumping,\nwhen you use the piano roll.\nIf you need mouse warping, you can enable the\nmouse warping compatibility mode."
                         },
                         vbp:space {
                             height = 8,
