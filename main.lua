@@ -361,6 +361,7 @@ local clipboard = {}
 local randomHistogramValues = {}
 
 --edit vars
+local chordPainter = { 0 }
 local lastClickCache = {}
 local lastClickIndex
 local pasteCursor = {}
@@ -3010,87 +3011,99 @@ function pianoGridClick(x, y, released)
                 currentNoteEndDelay = 0
                 currentNoteDelay = 0
             end
-            --pre check if there is enough space
-            column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay, currentNoteEndDelay)
-            --no column found
-            if column == nil then
-                --no space for this note
-                return false
-            end
-            --
-            setUndoDescription("Draw a note ...")
-            --save all notes on current line and remove them
-            for key in pairs(noteData) do
-                note_data = noteData[key]
-                if note_data.line == x then
-                    table.insert(notesOnLine, key)
-                    removeNoteInPattern(note_data.column, note_data.line, note_data.len)
+            for cidx = 1, #chordPainter do
+                note_value = gridOffset2NoteValue(y + chordPainter[cidx])
+                if note_value >= 0 and note_value <= 120 then
+                    --pre check if there is enough space
+                    column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay, currentNoteEndDelay)
+                    --no column found
+                    if column == nil then
+                        --no space for this note
+                        return false
+                    end
+                    --
+                    setUndoDescription("Draw a note ...")
+                    --save all notes on current line and remove them
+                    for key in pairs(noteData) do
+                        note_data = noteData[key]
+                        if note_data.line == x then
+                            table.insert(notesOnLine, key)
+                            removeNoteInPattern(note_data.column, note_data.line, note_data.len)
+                        end
+                    end
+                    --sort notes by column
+                    table.sort(notesOnLine, function(a, b)
+                        return noteData[a].column < noteData[b].column
+                    end)
+                    --add new note, so its the first one on line, better for legato porta
+                    column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay, currentNoteEndDelay)
+                    noteoff = addNoteToPattern(
+                            column,
+                            x,
+                            currentNoteLength,
+                            note_value,
+                            currentNoteVelocity,
+                            currentNoteEndVelocity,
+                            currentNotePan,
+                            currentNoteDelay,
+                            currentNoteEndDelay,
+                            currentInstrument
+                    )
+                    --create note data table
+                    note_data = {
+                        idx = tostring(x - stepOffset) .. "_" .. tostring(y) .. "_" .. tostring(column),
+                        line = x,
+                        step = x - stepOffset,
+                        note = note_value,
+                        vel = currentNoteVelocity,
+                        end_vel = currentNoteEndVelocity,
+                        dly = currentNoteDelay,
+                        end_dly = currentNoteEndDelay,
+                        pan = currentNotePan,
+                        len = currentNoteLength,
+                        noteoff = noteoff,
+                        column = column,
+                        ins = currentInstrument
+                    }
+                    --clear selection and add new note as new selection
+                    if cidx > 1 then
+                        updateNoteSelection(note_data, false)
+                    else
+                        updateNoteSelection(note_data, true)
+                    end
+                    --add other notes on this line back
+                    for i = 1, #notesOnLine do
+                        note_data = noteData[notesOnLine[i]]
+                        column = returnColumnWhenEnoughSpaceForNote(
+                                note_data.line,
+                                note_data.len,
+                                note_data.dly,
+                                note_data.end_dly
+                        )
+                        if column then
+                            note_data.column = column
+                        end
+                        note_data.noteoff = addNoteToPattern(
+                                note_data.column,
+                                note_data.line,
+                                note_data.len,
+                                note_data.note,
+                                note_data.vel,
+                                note_data.end_vel,
+                                note_data.pan,
+                                note_data.dly,
+                                note_data.end_dly,
+                                note_data.ins
+                        )
+                        noteData[notesOnLine[i]] = note_data
+                    end
+                else
+                    showStatus("Some notes are outside the valid range and so ignored.")
                 end
             end
-            --sort notes by column
-            table.sort(notesOnLine, function(a, b)
-                return noteData[a].column < noteData[b].column
-            end)
-            --add new note, so its the first one on line, better for legato porta
-            column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay, currentNoteEndDelay)
-            note_value = gridOffset2NoteValue(y)
-            noteoff = addNoteToPattern(
-                    column,
-                    x,
-                    currentNoteLength,
-                    note_value,
-                    currentNoteVelocity,
-                    currentNoteEndVelocity,
-                    currentNotePan,
-                    currentNoteDelay,
-                    currentNoteEndDelay,
-                    currentInstrument
-            )
-            --create note data table
-            note_data = {
-                idx = tostring(x - stepOffset) .. "_" .. tostring(y) .. "_" .. tostring(column),
-                line = x,
-                step = x - stepOffset,
-                note = note_value,
-                vel = currentNoteVelocity,
-                end_vel = currentNoteEndVelocity,
-                dly = currentNoteDelay,
-                end_dly = currentNoteEndDelay,
-                pan = currentNotePan,
-                len = currentNoteLength,
-                noteoff = noteoff,
-                column = column,
-                ins = currentInstrument
-            }
-            --trigger preview notes
-            triggerNoteOfCurrentInstrument(note_data.note, nil, nil, true, note_data.ins)
-            --clear selection and add new note as new selection
-            updateNoteSelection(note_data, true)
-            --add other notes on this line back
-            for i = 1, #notesOnLine do
-                note_data = noteData[notesOnLine[i]]
-                column = returnColumnWhenEnoughSpaceForNote(
-                        note_data.line,
-                        note_data.len,
-                        note_data.dly,
-                        note_data.end_dly
-                )
-                if column then
-                    note_data.column = column
-                end
-                note_data.noteoff = addNoteToPattern(
-                        note_data.column,
-                        note_data.line,
-                        note_data.len,
-                        note_data.note,
-                        note_data.vel,
-                        note_data.end_vel,
-                        note_data.pan,
-                        note_data.dly,
-                        note_data.end_dly,
-                        note_data.ins
-                )
-                noteData[notesOnLine[i]] = note_data
+            --trigger new notes
+            for i = 1, #noteSelection do
+                triggerNoteOfCurrentInstrument(noteSelection[i].note, nil, nil, true, noteSelection[i].ins)
             end
             --
             refreshPianoRollNeeded = true
