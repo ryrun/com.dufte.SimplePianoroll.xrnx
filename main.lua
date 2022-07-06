@@ -6329,27 +6329,29 @@ local function setupChordPainter()
     local chord = {}
     local hash = {}
     --defaul chord presets
-    if idx == 1 or idx == 2 or idx == 6 or idx == 10 then
+    if idx == 1 or idx == 2 or idx == 7 or idx == 12 then
         chord = { 0 }
         vbwp.chordpreset.value = 1
     elseif idx == 3 then
         chord = { 0, 4, 7 }
     elseif idx == 4 then
-        chord = { 0, 4, 7, 11 }
+        chord = { 0, 4 }
     elseif idx == 5 then
+        chord = { 0, 4, 7, 11 }
+    elseif idx == 6 then
         chord = { 0, 4, 7, 11, 14 }
-    elseif idx == 7 then
-        chord = { 0, 3, 7 }
     elseif idx == 8 then
-        chord = { 0, 3, 7, 10 }
+        chord = { 0, 3, 7 }
     elseif idx == 9 then
-        chord = { 0, 3, 7, 10, 14 }
+        chord = { 0, 3 }
+    elseif idx == 10 then
+        chord = { 0, 3, 7, 10 }
     elseif idx == 11 then
-        chord = { 0, 2, 7 }
-    elseif idx == 12 then
-        chord = { 0, 5, 7 }
+        chord = { 0, 3, 7, 10, 14 }
     elseif idx == 13 then
-        chord = { 0, 7 }
+        chord = { 0, 2, 7 }
+    elseif idx == 14 then
+        chord = { 0, 5, 7 }
     end
     --double chord
     if vbwp.doublechordpreset.value == 2 then
@@ -6445,10 +6447,12 @@ local function showPenSettingsDialog()
                                 "None",
                                 "---",
                                 "Major",
+                                "Major 3rd",
                                 "Major7",
                                 "Major9",
                                 "---",
                                 "Minor",
+                                "Minor 3rd",
                                 "Minor7",
                                 "Minor9",
                                 "---",
@@ -6647,9 +6651,6 @@ local function showPenSettingsDialog()
                                 vbwp.doublechordpreset.value = 1
                             end
                         },
-                    },
-                    vbp:space {
-                        height = 8,
                     },
                     vbp:text {
                         text = "IMPORTANT: Please note that Renoise has a note column\n" ..
