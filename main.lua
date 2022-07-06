@@ -6470,7 +6470,7 @@ local function showPenSettingsDialog()
                     vbp:horizontal_aligner {
                         mode = "justify",
                         vbp:text {
-                            text = "Double chord:",
+                            text = "Duplicate chord:",
                         },
                         vbp:switch {
                             id = "doublechordpreset",
