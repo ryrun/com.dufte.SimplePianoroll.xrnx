@@ -267,13 +267,17 @@ tool.preferences = preferences
 --dialog vars
 local windowObj
 local windowContent
-local preferencesObj
-local preferencesContent
-local preferencesWasShown = false
-local setScaleObj
-local setScaleContent
-local histogramObj
-local histogramContent
+local dialogVars = {
+    setScaleObj = nil,
+    setScaleContent = nil,
+    histogramObj = nil,
+    histogramContent = nil,
+    penSettingsObj = nil,
+    penSettingsContent = nil,
+    preferencesObj = nil,
+    preferencesContent = nil,
+    preferencesWasShown = false
+}
 local stepSlider
 local noteSlider
 local snapBackVal = { x = 1.01234, y = 1.01234 }
@@ -4924,8 +4928,8 @@ end
 
 --histogram window
 local function showHistogram()
-    if histogramContent == nil then
-        histogramContent = vbp:column {
+    if dialogVars.histogramContent == nil then
+        dialogVars.histogramContent = vbp:column {
             spacing = -8,
             vbp:row {
                 uniform = true,
@@ -5145,7 +5149,7 @@ local function showHistogram()
                     height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
                     width = 100,
                     notifier = function()
-                        histogramObj:close()
+                        dialogVars.histogramObj:close()
                         restoreFocus()
                     end
                 },
@@ -5168,17 +5172,17 @@ local function showHistogram()
         end
     end
     initHistogram()
-    if not histogramObj or not histogramObj.visible then
-        histogramObj = app:show_custom_dialog("Histogram - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
-                histogramContent, function(_, key)
+    if not dialogVars.histogramObj or not dialogVars.histogramObj.visible then
+        dialogVars.histogramObj = app:show_custom_dialog("Histogram - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
+                dialogVars.histogramContent, function(_, key)
                     if key.name == "esc" then
-                        histogramObj:close()
+                        dialogVars.histogramObj:close()
                         restoreFocus()
                     end
                     return key
                 end)
     else
-        histogramObj:show()
+        dialogVars.histogramObj:show()
     end
 end
 
@@ -6178,7 +6182,7 @@ local function appIdleEvent()
         --if needed refresh histogram
         if refreshHistogram then
             refreshHistogram = false
-            if histogramObj and histogramObj.visible then
+            if dialogVars.histogramObj and dialogVars.histogramObj.visible then
                 refreshHistogramWindow()
             end
         end
@@ -6244,7 +6248,7 @@ local function appIdleEvent()
             lastTriggerNote = newLastTriggerNote
         end
         --refresh after prefernces changes
-        if preferencesWasShown and preferencesObj and not preferencesObj.visible then
+        if dialogVars.preferencesWasShown and dialogVars.preferencesObj and not dialogVars.preferencesObj.visible then
             restoreFocus()
             if oscClient then
                 oscClient:close()
@@ -6263,7 +6267,7 @@ local function appIdleEvent()
             --apply new highlighting colors
             initColors()
             refreshPianoRollNeeded = true
-            preferencesWasShown = false
+            dialogVars.preferencesWasShown = false
         end
     else
         --set follow player back
@@ -6272,11 +6276,11 @@ local function appIdleEvent()
             wasFollowPlayer = nil
         end
         --close editing windows
-        if setScaleObj and setScaleObj.visible then
-            setScaleObj:close()
+        if dialogVars.setScaleObj and dialogVars.setScaleObj.visible then
+            dialogVars.setScaleObj:close()
         end
-        if histogramObj and histogramObj.visible then
-            histogramObj:close()
+        if dialogVars.histogramObj and dialogVars.histogramObj.visible then
+            dialogVars.histogramObj:close()
         end
     end
 end
@@ -6294,10 +6298,62 @@ local function switchToRelativeScale()
     end
 end
 
+--pen settings window
+local function showPenSettingsDialog()
+    if dialogVars.penSettingsContent == nil then
+        dialogVars.penSettingsContent = vbp:column {
+            spacing = -8,
+            vbp:row {
+                uniform = true,
+                margin = 5,
+                spacing = 5,
+                vbp:column {
+                    style = "group",
+                    margin = 5,
+                    uniform = true,
+                    spacing = 4,
+                    width = 462,
+                    vbp:text {
+                        text = "Chord painting:",
+                    },
+                }
+            },
+            vbp:horizontal_aligner {
+                mode = "center",
+                margin = vbc.DEFAULT_DIALOG_MARGIN,
+                spacing = vbc.DEFAULT_CONTROL_SPACING,
+                vbp:button {
+                    text = "Ok",
+                    height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
+                    width = 100,
+                    notifier = function()
+                        refreshPianoRollNeeded = true
+                        dialogVars.penSettingsObj:close()
+                        restoreFocus()
+                    end
+                },
+            },
+        }
+    end
+    if not dialogVars.penSettingsObj or not dialogVars.penSettingsObj.visible then
+        dialogVars.penSettingsObj = app:show_custom_dialog("Pen settings - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
+                dialogVars.penSettingsContent, function(_, key)
+                    if key.name == "esc" then
+                        refreshPianoRollNeeded = true
+                        dialogVars.penSettingsObj:close()
+                        restoreFocus()
+                    end
+                    return key
+                end)
+    else
+        dialogVars.penSettingsObj:show()
+    end
+end
+
 --setscale window
 local function showSetScaleDialog()
-    if setScaleContent == nil then
-        setScaleContent = vbp:column {
+    if dialogVars.setScaleContent == nil then
+        dialogVars.setScaleContent = vbp:column {
             spacing = -8,
             vbp:row {
                 uniform = true,
@@ -6353,37 +6409,37 @@ local function showSetScaleDialog()
                     width = 100,
                     notifier = function()
                         refreshPianoRollNeeded = true
-                        setScaleObj:close()
+                        dialogVars.setScaleObj:close()
                         restoreFocus()
                     end
                 },
             },
         }
     end
-    if not setScaleObj or not setScaleObj.visible then
-        setScaleObj = app:show_custom_dialog("Scale highlighting - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
-                setScaleContent, function(_, key)
+    if not dialogVars.setScaleObj or not dialogVars.setScaleObj.visible then
+        dialogVars.setScaleObj = app:show_custom_dialog("Scale highlighting - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
+                dialogVars.setScaleContent, function(_, key)
                     if key.name == "esc" then
                         refreshPianoRollNeeded = true
-                        setScaleObj:close()
+                        dialogVars.setScaleObj:close()
                         restoreFocus()
                     end
                     return key
                 end)
     else
-        setScaleObj:show()
+        dialogVars.setScaleObj:show()
     end
 end
 
 --preferences window
 local function showPreferences()
-    preferencesWasShown = true
-    if preferencesContent == nil then
+    dialogVars.preferencesWasShown = true
+    if dialogVars.preferencesContent == nil then
         --preinit colors, when piano roll wasn't opened before
         if not vbw then
             initColors()
         end
-        preferencesContent = vbp:column {
+        dialogVars.preferencesContent = vbp:column {
             spacing = -8,
             vbp:row {
                 vbp:row {
@@ -7406,7 +7462,7 @@ local function showPreferences()
                     height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
                     width = 100,
                     notifier = function()
-                        preferencesObj:close()
+                        dialogVars.preferencesObj:close()
                         restoreFocus()
                     end
                 },
@@ -7429,7 +7485,7 @@ local function showPreferences()
                     width = 100,
                     notifier = function()
                         app:open_url("https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx/63034")
-                        preferencesObj:close()
+                        dialogVars.preferencesObj:close()
                     end
                 },
             },
@@ -7460,10 +7516,10 @@ local function showPreferences()
         vbwp.midi.items = newList
         vbwp.midi.value = #newList
     end
-    if not preferencesObj or not preferencesObj.visible then
-        preferencesObj = app:show_custom_dialog("Preferences - " .. "Simple Pianoroll v" .. manifest:property("Version").value, preferencesContent)
+    if not dialogVars.preferencesObj or not dialogVars.preferencesObj.visible then
+        dialogVars.preferencesObj = app:show_custom_dialog("Preferences - " .. "Simple Pianoroll v" .. manifest:property("Version").value, dialogVars.preferencesContent)
     else
-        preferencesObj:show()
+        dialogVars.preferencesObj:show()
     end
 end
 
@@ -7726,6 +7782,9 @@ local function createPianoRollDialog()
                     tooltip = "Pen mode (F2)",
                     id = "mode_pen",
                     notifier = function()
+                        if dbclkDetector("penmodeBtn") then
+                            showPenSettingsDialog()
+                        end
                         penMode = true
                         audioPreviewMode = false
                         refreshControls = true
