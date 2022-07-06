@@ -2985,7 +2985,7 @@ function pianoGridClick(x, y, released)
             local column
             local note_value
             local noteoff
-            local notesOnLine = {}
+            local notesOnLine
             local note_data
             --move x by stepoffset
             x = x + stepOffset
@@ -3016,6 +3016,7 @@ function pianoGridClick(x, y, released)
                 currentNoteDelay = 0
             end
             for cidx = 1, #chordPainter do
+                notesOnLine = {}
                 note_value = gridOffset2NoteValue(y + chordPainter[cidx])
                 if note_value >= 0 and note_value <= 120 then
                     --pre check if there is enough space
@@ -6327,30 +6328,34 @@ local function showPenSettingsDialog()
                             text = "Chord presets:",
                         },
                         vbp:popup {
+                            id = "chordpreset",
                             width = 180,
                             items = {
                                 "None",
+                                "---",
                                 "Major",
                                 "Major7",
                                 "Major9",
+                                "---",
                                 "Minor",
                                 "Minor7",
                                 "Minor9",
                             },
                             notifier = function(idx)
-                                if idx == 1 then
+                                if idx == 1 or idx == 2 or idx == 6 then
                                     chordPainter = { 0 }
-                                elseif idx == 2 then
-                                    chordPainter = { 0, 4, 7 }
+                                    vbwp.chordpreset.value = 1
                                 elseif idx == 3 then
-                                    chordPainter = { 0, 4, 7, 11 }
+                                    chordPainter = { 0, 4, 7 }
                                 elseif idx == 4 then
-                                    chordPainter = { 0, 4, 7, 11, 14 }
+                                    chordPainter = { 0, 4, 7, 11 }
                                 elseif idx == 5 then
-                                    chordPainter = { 0, 3, 7 }
-                                elseif idx == 6 then
-                                    chordPainter = { 0, 3, 7, 10 }
+                                    chordPainter = { 0, 4, 7, 11, 14 }
                                 elseif idx == 7 then
+                                    chordPainter = { 0, 3, 7 }
+                                elseif idx == 8 then
+                                    chordPainter = { 0, 3, 7, 10 }
+                                elseif idx == 9 then
                                     chordPainter = { 0, 3, 7, 10, 14 }
                                 end
                             end
