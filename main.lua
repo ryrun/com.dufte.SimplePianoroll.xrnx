@@ -8145,7 +8145,7 @@ local function createPianoRollDialog()
                 vb:button {
                     bitmap = "Icons/SampleEd_DrawTool.bmp",
                     width = 24,
-                    tooltip = "Pen mode (F2)",
+                    tooltip = "Pen mode (F2)\nDouble click or ALT click for pen settings.",
                     id = "mode_pen",
                     notifier = function()
                         if dbclkDetector("penmodeBtn") or modifier.keyAlt then
