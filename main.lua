@@ -6572,11 +6572,13 @@ local function showPenSettingsDialog()
                             text = "Set max upper note:",
                         },
                         vbp:valuebox {
+                            id = "chordupperlimit",
                             width = 60,
                             min = 11,
                             max = 120,
                             value = chordPainterUpperNoteLimit,
-                            tooltip = "Set the maximum allowable note value. Any note value above this threshold is transposed down.",
+                            tooltip = "Set the maximum allowable note value. Any note\n" ..
+                                    "value above this threshold is transposed down.",
                             notifier = function(v)
                                 chordPainterUpperNoteLimit = v
                             end,
@@ -6619,12 +6621,31 @@ local function showPenSettingsDialog()
                     },
                     vbp:row {
                         vbp:checkbox {
+                            id = "chordinscale",
                             notifier = function(b)
                                 chordPainterForceInScale = b
                             end
                         },
                         vbp:text {
                             text = "Keep notes in scale",
+                        },
+                    },
+                    vbp:horizontal_aligner {
+                        mode = "center",
+                        vbp:button {
+                            text = "Reset chord painting settings",
+                            height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
+                            width = 100,
+                            notifier = function()
+                                vbwp.chordinscale.value = false
+                                vbwp.chordupperlimit.value = 120
+                                vbwp.chordadd.value = 1
+                                vbwp.chordsub.value = 1
+                                vbwp.p5add.value = 1
+                                vbwp.p5sub.value = 1
+                                vbwp.chordpreset.value = 1
+                                vbwp.doublechordpreset.value = 1
+                            end
                         },
                     },
                     vbp:space {
