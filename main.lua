@@ -6429,7 +6429,7 @@ local function showPenSettingsDialog()
                     spacing = 4,
                     width = 250,
                     vbp:text {
-                        text = "Chord painting",
+                        text = "Chord stamping",
                         font = "big",
                         style = "strong",
                     },
@@ -6633,7 +6633,7 @@ local function showPenSettingsDialog()
                     vbp:horizontal_aligner {
                         mode = "center",
                         vbp:button {
-                            text = "Reset chord painting settings",
+                            text = "Reset chord stamping settings",
                             height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
                             width = 100,
                             notifier = function()
