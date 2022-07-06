@@ -366,6 +366,7 @@ local randomHistogramValues = {}
 
 --edit vars
 local chordPainter = { 0 }
+local chordPainterForceInScale = false
 local lastClickCache = {}
 local lastClickIndex
 local pasteCursor = {}
@@ -3018,6 +3019,19 @@ function pianoGridClick(x, y, released)
             for cidx = 1, #chordPainter do
                 notesOnLine = {}
                 note_value = gridOffset2NoteValue(y + chordPainter[cidx])
+                if chordPainterForceInScale and not noteInScale(note_value) then
+                    if cidx == 1 then
+                        --first note out of scale, move down
+                        note_value = note_value - 1
+                    elseif cidx == #chordPainter then
+                        --last note out of scale, move up
+                        note_value = note_value + 1
+                    elseif math.abs(chordPainter[cidx - 1] - chordPainter[cidx]) > math.abs(chordPainter[cidx + 1] - chordPainter[cidx]) then
+                        note_value = note_value - 1
+                    elseif math.abs(chordPainter[cidx - 1] - chordPainter[cidx]) < math.abs(chordPainter[cidx + 1] - chordPainter[cidx]) then
+                        note_value = note_value + 1
+                    end
+                end
                 if note_value >= 0 and note_value <= 120 then
                     --pre check if there is enough space
                     column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay, currentNoteEndDelay)
@@ -6302,6 +6316,70 @@ local function switchToRelativeScale()
     end
 end
 
+--init chord painter table
+local function setupChordPainter()
+    local idx = vbwp.chordpreset.value
+    local chord = {}
+    local hash = {}
+    --defaul chord presets
+    if idx == 1 or idx == 2 or idx == 6 or idx == 10 then
+        chord = { 0 }
+        vbwp.chordpreset.value = 1
+    elseif idx == 3 then
+        chord = { 0, 4, 7 }
+    elseif idx == 4 then
+        chord = { 0, 4, 7, 11 }
+    elseif idx == 5 then
+        chord = { 0, 4, 7, 11, 14 }
+    elseif idx == 7 then
+        chord = { 0, 3, 7 }
+    elseif idx == 8 then
+        chord = { 0, 3, 7, 10 }
+    elseif idx == 9 then
+        chord = { 0, 3, 7, 10, 14 }
+    elseif idx == 11 then
+        chord = { 0, 2, 7 }
+    elseif idx == 12 then
+        chord = { 0, 5, 7 }
+    elseif idx == 13 then
+        chord = { 0, 7 }
+    end
+    --add more root notes
+    if vbwp.chordadd.value == 2 then
+        table.insert(chord, 12)
+    elseif vbwp.chordadd.value == 3 then
+        table.insert(chord, 24)
+    elseif vbwp.chordadd.value == 4 then
+        table.insert(chord, 12)
+        table.insert(chord, 24)
+    end
+    if vbwp.chordsub.value == 2 then
+        table.insert(chord, -12)
+    elseif vbwp.chordsub.value == 3 then
+        table.insert(chord, -24)
+    elseif vbwp.chordsub.value == 4 then
+        table.insert(chord, -12)
+        table.insert(chord, -24)
+    end
+    --setup chord painter tabvle and prevent duplicate notes
+    chordPainter = {}
+    for i = 1, #chord do
+        if hash[chord[i]] == nil then
+            table.insert(chordPainter, chord[i])
+            hash[chord[i]] = true
+        end
+    end
+    --empty chord? add root note
+    if #chordPainter == 0 then
+        chordPainter = { 0 }
+    else
+        --resort chord table
+        table.sort(chordPainter, function(a, b)
+            return a < b
+        end)
+    end
+end
+
 --pen settings window
 local function showPenSettingsDialog()
     if dialogVars.penSettingsContent == nil then
@@ -6340,25 +6418,62 @@ local function showPenSettingsDialog()
                                 "Minor",
                                 "Minor7",
                                 "Minor9",
+                                "---",
+                                "Sus2",
+                                "Sus4",
+                                "Perfect 5th",
                             },
-                            notifier = function(idx)
-                                if idx == 1 or idx == 2 or idx == 6 then
-                                    chordPainter = { 0 }
-                                    vbwp.chordpreset.value = 1
-                                elseif idx == 3 then
-                                    chordPainter = { 0, 4, 7 }
-                                elseif idx == 4 then
-                                    chordPainter = { 0, 4, 7, 11 }
-                                elseif idx == 5 then
-                                    chordPainter = { 0, 4, 7, 11, 14 }
-                                elseif idx == 7 then
-                                    chordPainter = { 0, 3, 7 }
-                                elseif idx == 8 then
-                                    chordPainter = { 0, 3, 7, 10 }
-                                elseif idx == 9 then
-                                    chordPainter = { 0, 3, 7, 10, 14 }
-                                end
+                            notifier = function()
+                                setupChordPainter()
                             end
+                        },
+                    },
+                    vbp:horizontal_aligner {
+                        mode = "justify",
+                        vbp:text {
+                            text = "Add octave up:",
+                        },
+                        vbp:switch {
+                            id = "chordadd",
+                            width = 180,
+                            items = {
+                                "None",
+                                "+1",
+                                "+2",
+                                "Both",
+                            },
+                            notifier = function()
+                                setupChordPainter()
+                            end
+                        },
+                    },
+                    vbp:horizontal_aligner {
+                        mode = "justify",
+                        vbp:text {
+                            text = "Add octave down:",
+                        },
+                        vbp:switch {
+                            id = "chordsub",
+                            width = 180,
+                            items = {
+                                "None",
+                                "-1",
+                                "-2",
+                                "Both",
+                            },
+                            notifier = function()
+                                setupChordPainter()
+                            end
+                        },
+                    },
+                    vbp:row {
+                        vbp:checkbox {
+                            notifier = function(b)
+                                chordPainterForceInScale = b
+                            end
+                        },
+                        vbp:text {
+                            text = "Keep notes in scale",
                         },
                     },
                     vbp:space {
