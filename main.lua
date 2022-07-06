@@ -6591,7 +6591,26 @@ local function showPenSettingsDialog()
                                 return text
                             end,
                             tonumber = function(v)
-                                if v == "" or v == " " or v == "0" then
+                                local note, oct
+                                v = string.upper(v)
+                                note, oct = string.match(v, '^([CDEFGAB])([0-9])$')
+                                if not note then
+                                    note, oct = string.match(v, '^([CDEFGAB]#)([0-9])$')
+                                end
+                                if note and oct then
+                                    v = nil
+                                    for i = 1, #notesTable do
+                                        if notesTable[i] == note then
+                                            v = i - 1
+                                            break
+                                        end
+                                    end
+                                    if v then
+                                        v = v + (12 * tonumber(oct))
+                                    else
+                                        v = 120
+                                    end
+                                else
                                     v = 120
                                 end
                                 return tonumber(v)
