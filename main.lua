@@ -367,6 +367,7 @@ local randomHistogramValues = {}
 --edit vars
 local chordPainter = { 0 }
 local chordPainterForceInScale = false
+local chordPainterUpperNoteLimit = 120
 local lastClickCache = {}
 local lastClickIndex
 local pasteCursor = {}
@@ -2912,6 +2913,7 @@ end
 function pianoGridClick(x, y, released)
     local index = tostring(x) .. "_" .. tostring(y)
     local outside = false
+    local noteDrawn = {}
 
     --just allow selection, deselect notes, when pos is outside the grid
     if x + stepOffset > song.selected_pattern.number_of_lines then
@@ -3032,7 +3034,12 @@ function pianoGridClick(x, y, released)
                         note_value = note_value + 1
                     end
                 end
-                if note_value >= 0 and note_value <= 120 then
+                if chordPainterUpperNoteLimit < 120 and note_value > chordPainterUpperNoteLimit then
+                    note_value = note_value - (12 * (math.floor((note_value - chordPainterUpperNoteLimit) / 12) + 1))
+                end
+                if note_value >= 0 and note_value <= 120 and not noteDrawn[note_value] then
+                    --prevent duplicate notes
+                    noteDrawn[note_value] = true
                     --pre check if there is enough space
                     column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay, currentNoteEndDelay)
                     --no column found
@@ -3117,7 +3124,7 @@ function pianoGridClick(x, y, released)
                         noteData[notesOnLine[i]] = note_data
                     end
                 else
-                    showStatus("Some notes are outside the valid range and so ignored.")
+                    showStatus("Some notes are outside the valid range or have already been drawn. These notes were skipped.")
                 end
             end
             --trigger new notes
@@ -6344,6 +6351,16 @@ local function setupChordPainter()
     elseif idx == 13 then
         chord = { 0, 7 }
     end
+    --double chord
+    if vbwp.doublechordpreset.value == 2 then
+        for i = 1, #chord do
+            table.insert(chord, chord[i] + 12)
+        end
+    elseif vbwp.doublechordpreset.value == 3 then
+        for i = 1, #chord do
+            table.insert(chord, chord[i] - 12)
+        end
+    end
     --add more root notes
     if vbwp.chordadd.value == 2 then
         table.insert(chord, 12)
@@ -6353,6 +6370,14 @@ local function setupChordPainter()
         table.insert(chord, 12)
         table.insert(chord, 24)
     end
+    if vbwp.p5add.value == 2 then
+        table.insert(chord, 7)
+    elseif vbwp.p5add.value == 3 then
+        table.insert(chord, 19)
+    elseif vbwp.p5add.value == 4 then
+        table.insert(chord, 7)
+        table.insert(chord, 19)
+    end
     if vbwp.chordsub.value == 2 then
         table.insert(chord, -12)
     elseif vbwp.chordsub.value == 3 then
@@ -6360,6 +6385,14 @@ local function setupChordPainter()
     elseif vbwp.chordsub.value == 4 then
         table.insert(chord, -12)
         table.insert(chord, -24)
+    end
+    if vbwp.p5sub.value == 2 then
+        table.insert(chord, -5)
+    elseif vbwp.p5sub.value == 3 then
+        table.insert(chord, -17)
+    elseif vbwp.p5sub.value == 4 then
+        table.insert(chord, -5)
+        table.insert(chord, -17)
     end
     --setup chord painter tabvle and prevent duplicate notes
     chordPainter = {}
@@ -6403,7 +6436,7 @@ local function showPenSettingsDialog()
                     vbp:horizontal_aligner {
                         mode = "justify",
                         vbp:text {
-                            text = "Chord presets:",
+                            text = "Chord preset:",
                         },
                         vbp:popup {
                             id = "chordpreset",
@@ -6421,12 +6454,35 @@ local function showPenSettingsDialog()
                                 "---",
                                 "Sus2",
                                 "Sus4",
-                                "Perfect 5th",
                             },
                             notifier = function()
                                 setupChordPainter()
                             end
                         },
+                    },
+                    vbp:space {
+                        height = 8,
+                    },
+                    vbp:horizontal_aligner {
+                        mode = "justify",
+                        vbp:text {
+                            text = "Double chord:",
+                        },
+                        vbp:switch {
+                            id = "doublechordpreset",
+                            width = 180,
+                            items = {
+                                "None",
+                                "+1",
+                                "-1",
+                            },
+                            notifier = function()
+                                setupChordPainter()
+                            end
+                        },
+                    },
+                    vbp:space {
+                        height = 8,
                     },
                     vbp:horizontal_aligner {
                         mode = "justify",
@@ -6466,6 +6522,82 @@ local function showPenSettingsDialog()
                             end
                         },
                     },
+                    vbp:space {
+                        height = 8,
+                    },
+                    vbp:horizontal_aligner {
+                        mode = "justify",
+                        vbp:text {
+                            text = "Add perfect 5th up:",
+                        },
+                        vbp:switch {
+                            id = "p5add",
+                            width = 180,
+                            items = {
+                                "None",
+                                "+1",
+                                "+2",
+                                "Both",
+                            },
+                            notifier = function()
+                                setupChordPainter()
+                            end
+                        },
+                    },
+                    vbp:horizontal_aligner {
+                        mode = "justify",
+                        vbp:text {
+                            text = "Add perfect 5th down:",
+                        },
+                        vbp:switch {
+                            id = "p5sub",
+                            width = 180,
+                            items = {
+                                "None",
+                                "-1",
+                                "-2",
+                                "Both",
+                            },
+                            notifier = function()
+                                setupChordPainter()
+                            end
+                        },
+                    },
+                    vbp:space {
+                        height = 8,
+                    },
+                    vbp:horizontal_aligner {
+                        mode = "justify",
+                        vbp:text {
+                            text = "Set max upper note:",
+                        },
+                        vbp:valuebox {
+                            width = 60,
+                            min = 11,
+                            max = 120,
+                            value = chordPainterUpperNoteLimit,
+                            tooltip = "Set the maximum allowable note value. Any note value above this threshold is transposed down.",
+                            notifier = function(v)
+                                chordPainterUpperNoteLimit = v
+                            end,
+                            tostring = function(v)
+                                local text = ""
+                                if v == 120 then
+                                    text = "No"
+                                else
+                                    text = text .. notesTable[(v % 12) + 1]
+                                    text = text .. math.floor((v / 12))
+                                end
+                                return text
+                            end,
+                            tonumber = function(v)
+                                if v == "" or v == " " or v == "0" then
+                                    v = 120
+                                end
+                                return tonumber(v)
+                            end
+                        },
+                    },
                     vbp:row {
                         vbp:checkbox {
                             notifier = function(b)
@@ -6475,6 +6607,13 @@ local function showPenSettingsDialog()
                         vbp:text {
                             text = "Keep notes in scale",
                         },
+                    },
+                    vbp:space {
+                        height = 8,
+                    },
+                    vbp:text {
+                        text = "IMPORTANT: Please note that Renoise has a note column\n" ..
+                                "limit of 12. So there is only space for 12 notes per line."
                     },
                     vbp:space {
                         height = 8,
