@@ -6282,6 +6282,9 @@ local function appIdleEvent()
         if dialogVars.histogramObj and dialogVars.histogramObj.visible then
             dialogVars.histogramObj:close()
         end
+        if dialogVars.penSettingsObj and dialogVars.penSettingsObj.visible then
+            dialogVars.penSettingsObj:close()
+        end
     end
 end
 
@@ -6312,10 +6315,72 @@ local function showPenSettingsDialog()
                     margin = 5,
                     uniform = true,
                     spacing = 4,
-                    width = 462,
+                    width = 250,
                     vbp:text {
-                        text = "Chord painting:",
+                        text = "Chord painting",
+                        font = "big",
+                        style = "strong",
                     },
+                    vbp:horizontal_aligner {
+                        mode = "justify",
+                        vbp:text {
+                            text = "Chord presets:",
+                        },
+                        vbp:popup {
+                            width = 180,
+                            items = {
+                                "None",
+                                "Major",
+                                "Major7",
+                                "Major9",
+                                "Minor",
+                                "Minor7",
+                                "Minor9",
+                            },
+                            notifier = function(idx)
+                                if idx == 1 then
+                                    chordPainter = { 0 }
+                                elseif idx == 2 then
+                                    chordPainter = { 0, 4, 7 }
+                                elseif idx == 3 then
+                                    chordPainter = { 0, 4, 7, 11 }
+                                elseif idx == 4 then
+                                    chordPainter = { 0, 4, 7, 11, 14 }
+                                elseif idx == 5 then
+                                    chordPainter = { 0, 3, 7 }
+                                elseif idx == 6 then
+                                    chordPainter = { 0, 3, 7, 10 }
+                                elseif idx == 7 then
+                                    chordPainter = { 0, 3, 7, 10, 14 }
+                                end
+                            end
+                        },
+                    },
+                    vbp:space {
+                        height = 8,
+                    },
+                    vbp:text {
+                        text = "Other settings",
+                        font = "big",
+                        style = "strong",
+                    },
+                    vbp:row {
+                        vbp:checkbox {
+                            bind = preferences.forcePenMode,
+                        },
+                        vbp:text {
+                            text = "Enable pen mode by default",
+                        },
+                    },
+                    vbp:row {
+                        vbp:checkbox {
+                            bind = preferences.moveNoteInPenMode,
+                        },
+                        vbp:text {
+                            text = "Allow move, scale and duplication of notes in pen mode",
+                        },
+                    },
+
                 }
             },
             vbp:horizontal_aligner {
@@ -6345,6 +6410,7 @@ local function showPenSettingsDialog()
                     end
                     return key
                 end)
+
     else
         dialogVars.penSettingsObj:show()
     end
@@ -7782,12 +7848,13 @@ local function createPianoRollDialog()
                     tooltip = "Pen mode (F2)",
                     id = "mode_pen",
                     notifier = function()
-                        if dbclkDetector("penmodeBtn") then
+                        if dbclkDetector("penmodeBtn") or modifier.keyAlt then
                             showPenSettingsDialog()
+                        else
+                            penMode = true
+                            audioPreviewMode = false
+                            refreshControls = true
                         end
-                        penMode = true
-                        audioPreviewMode = false
-                        refreshControls = true
                     end,
                 },
                 vb:button {
