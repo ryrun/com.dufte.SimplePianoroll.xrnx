@@ -7989,18 +7989,18 @@ local function showPreferences()
                         },
                         vbp:row {
                             vbp:checkbox {
-                                bind = preferences.chordGunPreset,
-                            },
-                            vbp:text {
-                                text = "Load ChordGun presets for chord stamping",
-                            },
-                        },
-                        vbp:row {
-                            vbp:checkbox {
                                 bind = preferences.useChordStampingForNotePreview,
                             },
                             vbp:text {
                                 text = "Use chord stamping also for note preview",
+                            },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.chordGunPreset,
+                            },
+                            vbp:text {
+                                text = "Load ChordGun presets for chord stamping",
                             },
                         },
                         vbp:space {
