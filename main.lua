@@ -5168,7 +5168,7 @@ local function showHistogram()
                                     "Asc by note",
                                 },
                                 tooltip = "Apply ascending values by note position or by note pitch",
-                                notifier = function (i)
+                                notifier = function(i)
                                     if i == 1 then
                                         vbwp.groupthem.text = "Group by note"
                                     else
@@ -5855,31 +5855,54 @@ local function handleKeyEvent(keyEvent)
     if key.note then
         local row
         local chord = { 0 }
+        local othernote
+        local note
         --use chord stamping chord as preview, too
         if preferences.useChordStampingForNotePreview.value then
             chord = chordPainter
         end
         for i = 1, #chord do
+            othernote = false
             if not key.repeated and key.state == "released" and lastKeyboardNote[key.name .. i] ~= nil then
-                row = noteValue2GridRowOffset(lastKeyboardNote[key.name .. i])
-                triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name .. i], false)
-                if row ~= nil then
-                    setKeyboardKeyColor(row, false, false)
-                    highlightNoteRow(row, false)
-                end
+                note = lastKeyboardNote[key.name .. i]
                 lastKeyboardNote[key.name .. i] = nil
+                --check if other key playing this note
+                for key in pairs(lastKeyboardNote) do
+                    if lastKeyboardNote[key] == note then
+                        othernote = true
+                        break
+                    end
+                end
+                if not othernote then
+                    row = noteValue2GridRowOffset(note)
+                    triggerNoteOfCurrentInstrument(note, false)
+                    if row ~= nil then
+                        setKeyboardKeyColor(row, false, false)
+                        highlightNoteRow(row, false)
+                    end
+                end
                 if key.modifiers == "" then
                     handled = true
                 end
             elseif not key.repeated and key.state == "pressed" and key.modifiers == "" then
-                local note = key.note
+                note = key.note
                 if not key.isMidi then
                     note = note + (12 * song.transport.octave)
                 end
-                lastKeyboardNote[key.name .. i] = note + chord[i]
-                lastKeyboardNote[key.name .. i] = modifyNoteValueChord(lastKeyboardNote[key.name .. i], chord, i)
+                note = note + chord[i]
+                note = modifyNoteValueChord(note, chord, i)
+                --check if other key playing this note
+                for key in pairs(lastKeyboardNote) do
+                    if lastKeyboardNote[key] == note then
+                        othernote = true
+                        break
+                    end
+                end
+                lastKeyboardNote[key.name .. i] = note
                 row = noteValue2GridRowOffset(lastKeyboardNote[key.name .. i])
-                triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name .. i], true, key.velocity)
+                if not othernote then
+                    triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name .. i], true, key.velocity)
+                end
                 if row ~= nil then
                     setKeyboardKeyColor(row, true, false)
                     highlightNoteRow(row, true)
