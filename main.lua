@@ -390,6 +390,9 @@ local chordPainterPresets = {
             "---",
             "Sus2",
             "Sus4",
+            "7",
+            "Diminished",
+            "Augmented",
         },
         notes = {
             { 0 },
@@ -402,9 +405,13 @@ local chordPainterPresets = {
             { 0, 3, 7 },
             { 0, 3 },
             { 0, 3, 7, 10 },
-            { 0, 3, 7, 10, 14 }, nil,
+            { 0, 3, 7, 10, 14 },
+            nil,
             { 0, 2, 7 },
-            { 0, 5, 7 }
+            { 0, 5, 7 },
+            { 0, 4, 7, 10 },
+            { 0, 3, 6 },
+            { 0, 4, 8 },
         }
     },
     chordgun = {
@@ -6848,6 +6855,14 @@ local function showPenSettingsDialog()
                         },
                         vbp:text {
                             text = "Allow move, scale and duplication of notes in pen mode",
+                        },
+                    },
+                    vbp:row {
+                        vbp:checkbox {
+                            bind = preferences.useChordStampingForNotePreview,
+                        },
+                        vbp:text {
+                            text = "Use chord stamping also for note preview",
                         },
                     },
 
