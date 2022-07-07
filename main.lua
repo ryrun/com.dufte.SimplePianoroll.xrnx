@@ -6451,6 +6451,19 @@ local function setupChordPainter()
             table.insert(chord, presettable.notes[idx][i])
         end
     end
+    --do chord inversion
+    table.sort(chord, function(a, b)
+        return a < b
+    end)
+    if vbwp.chrdinvers.value > 0 then
+        for i = 1, vbwp.chrdinvers.value do
+            chord[((i - 1) % #chord) + 1] = chord[((i - 1) % #chord) + 1] + 12
+        end
+    elseif vbwp.chrdinvers.value < 0 then
+        for i = math.abs(vbwp.chrdinvers.value), 1, -1 do
+            chord[#chord - ((i - 1) % #chord)] = chord[#chord - ((i - 1) % #chord)] - 12
+        end
+    end
     --double chord
     if vbwp.dupchrdup.color[1] ~= 0 then
         for i = 1, #chord do
@@ -6487,7 +6500,7 @@ local function setupChordPainter()
     if vbwp.p5add2.color[1] ~= 0 then
         table.insert(chord, 19)
     end
-    --setup chord painter tabvle and prevent duplicate notes
+    --setup chord painter table and prevent duplicate notes
     chordPainter = {}
     for i = 1, #chord do
         if hash[chord[i]] == nil then
@@ -6553,6 +6566,25 @@ local function showPenSettingsDialog()
                             id = "chordpreset",
                             width = 180,
                             items = chordPainterPresets.inbuild.name,
+                            notifier = function()
+                                setupChordPainter()
+                            end
+                        },
+                    },
+                    vbp:space {
+                        height = 8,
+                    },
+                    vbp:horizontal_aligner {
+                        mode = "justify",
+                        vbp:text {
+                            text = "Chord inversion:",
+                        },
+                        vbp:valuebox {
+                            id = "chrdinvers",
+                            width = 60,
+                            min = -7,
+                            max = 7,
+                            value = 0,
                             notifier = function()
                                 setupChordPainter()
                             end
@@ -6849,6 +6881,7 @@ local function showPenSettingsDialog()
                                 vbwp.dupchrddown.color = { 0, 0, 0 }
                                 vbwp.dupchrdup.color = { 0, 0, 0 }
                                 vbwp.chordpreset.value = 1
+                                vbwp.chrdinvers.value = 0
                                 setupChordPainter()
                             end
                         },
