@@ -169,6 +169,7 @@ local defaultPreferences = {
     noteColorShiftDegree = 45,
     midiDevice = "",
     midiIn = false,
+    chordGunPreset = false,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -245,6 +246,8 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     noteColorShiftDegree = defaultPreferences.noteColorShiftDegree,
     midiDevice = defaultPreferences.midiDevice,
     midiIn = defaultPreferences.midiIn,
+    chordGunPreset = defaultPreferences.chordGunPreset,
+    chordPainterPresetTbl = 1, --default bank
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -368,6 +371,45 @@ local randomHistogramValues = {}
 local chordPainter = { 0 }
 local chordPainterForceInScale = false
 local chordPainterUpperNoteLimit = 120
+local chordPainterPresets = {
+    inbuild = {
+        name = {
+            "None",
+            "---",
+            "Major",
+            "Major 3rd",
+            "Major7",
+            "Major9",
+            "---",
+            "Minor",
+            "Minor 3rd",
+            "Minor7",
+            "Minor9",
+            "---",
+            "Sus2",
+            "Sus4",
+        },
+        notes = {
+            { 0 },
+            nil,
+            { 0, 4, 7 },
+            { 0, 4 },
+            { 0, 4, 7, 11 },
+            { 0, 4, 7, 11, 14 },
+            nil,
+            { 0, 3, 7 },
+            { 0, 3 },
+            { 0, 3, 7, 10 },
+            { 0, 3, 7, 10, 14 }, nil,
+            { 0, 2, 7 },
+            { 0, 5, 7 }
+        }
+    },
+    chordgun = {
+        name = {},
+        notes = {}
+    }
+}
 local lastClickCache = {}
 local lastClickIndex
 local pasteCursor = {}
@@ -3021,21 +3063,27 @@ function pianoGridClick(x, y, released)
             for cidx = 1, #chordPainter do
                 notesOnLine = {}
                 note_value = gridOffset2NoteValue(y + chordPainter[cidx])
-                if chordPainterForceInScale and not noteInScale(note_value) then
-                    if cidx == 1 then
-                        --first note out of scale, move down
-                        note_value = note_value - 1
-                    elseif cidx == #chordPainter then
-                        --last note out of scale, move up
-                        note_value = note_value + 1
-                    elseif math.abs(chordPainter[cidx - 1] - chordPainter[cidx]) > math.abs(chordPainter[cidx + 1] - chordPainter[cidx]) then
-                        note_value = note_value - 1
-                    elseif math.abs(chordPainter[cidx - 1] - chordPainter[cidx]) < math.abs(chordPainter[cidx + 1] - chordPainter[cidx]) then
-                        note_value = note_value + 1
+                if #chordPainter > 1 then
+                    for j = 1, 2 do
+                        if chordPainterForceInScale and not noteInScale(note_value) then
+                            if cidx == 1 then
+                                --first note out of scale, move down
+                                note_value = note_value - 1
+                            elseif cidx == #chordPainter then
+                                --last note out of scale, move up
+                                note_value = note_value + 1
+                            elseif math.abs(chordPainter[cidx - 1] - chordPainter[cidx]) > math.abs(chordPainter[cidx + 1] - chordPainter[cidx]) then
+                                note_value = note_value - 1
+                            elseif math.abs(chordPainter[cidx - 1] - chordPainter[cidx]) < math.abs(chordPainter[cidx + 1] - chordPainter[cidx]) then
+                                note_value = note_value + 1
+                            elseif math.abs(chordPainter[cidx - 1] - chordPainter[cidx]) == math.abs(chordPainter[cidx + 1] - chordPainter[cidx]) then
+                                note_value = note_value + 1
+                            end
+                        end
                     end
-                end
-                if chordPainterUpperNoteLimit < 120 and note_value > chordPainterUpperNoteLimit then
-                    note_value = note_value - (12 * (math.floor((note_value - chordPainterUpperNoteLimit) / 12) + 1))
+                    if chordPainterUpperNoteLimit < 120 and note_value > chordPainterUpperNoteLimit then
+                        note_value = note_value - (12 * (math.floor((note_value - chordPainterUpperNoteLimit) / 12) + 1))
+                    end
                 end
                 if note_value >= 0 and note_value <= 120 and not noteDrawn[note_value] then
                     --prevent duplicate notes
@@ -6326,32 +6374,19 @@ end
 --init chord painter table
 local function setupChordPainter()
     local idx = vbwp.chordpreset.value
+    local presettable = chordPainterPresets.inbuild
     local chord = {}
     local hash = {}
+    --switch table
+    if preferences.chordPainterPresetTbl.value == 2 then
+        presettable = chordPainterPresets.chordgun
+    end
     --defaul chord presets
-    if idx == 1 or idx == 2 or idx == 7 or idx == 12 then
+    if not presettable.notes[idx] then
         chord = { 0 }
         vbwp.chordpreset.value = 1
-    elseif idx == 3 then
-        chord = { 0, 4, 7 }
-    elseif idx == 4 then
-        chord = { 0, 4 }
-    elseif idx == 5 then
-        chord = { 0, 4, 7, 11 }
-    elseif idx == 6 then
-        chord = { 0, 4, 7, 11, 14 }
-    elseif idx == 8 then
-        chord = { 0, 3, 7 }
-    elseif idx == 9 then
-        chord = { 0, 3 }
-    elseif idx == 10 then
-        chord = { 0, 3, 7, 10 }
-    elseif idx == 11 then
-        chord = { 0, 3, 7, 10, 14 }
-    elseif idx == 13 then
-        chord = { 0, 2, 7 }
-    elseif idx == 14 then
-        chord = { 0, 5, 7 }
+    else
+        chord = presettable.notes[idx]
     end
     --double chord
     if vbwp.doublechordpreset.value == 2 then
@@ -6435,6 +6470,24 @@ local function showPenSettingsDialog()
                         font = "big",
                         style = "strong",
                     },
+                    vbp:switch {
+                        id = "chordpresettbl",
+                        width = 180,
+                        value = 1,
+                        items = {
+                            "Inbuild",
+                            "Chordgun",
+                        },
+                        notifier = function(i)
+                            vbwp.chordpreset.value = 1
+                            preferences.chordPainterPresetTbl.value = i
+                            if i == 2 then
+                                vbwp.chordpreset.items = chordPainterPresets.chordgun.name
+                            else
+                                vbwp.chordpreset.items = chordPainterPresets.inbuild.name
+                            end
+                        end
+                    },
                     vbp:horizontal_aligner {
                         mode = "justify",
                         vbp:text {
@@ -6443,22 +6496,7 @@ local function showPenSettingsDialog()
                         vbp:popup {
                             id = "chordpreset",
                             width = 180,
-                            items = {
-                                "None",
-                                "---",
-                                "Major",
-                                "Major 3rd",
-                                "Major7",
-                                "Major9",
-                                "---",
-                                "Minor",
-                                "Minor 3rd",
-                                "Minor7",
-                                "Minor9",
-                                "---",
-                                "Sus2",
-                                "Sus4",
-                            },
+                            items = chordPainterPresets.inbuild.name,
                             notifier = function()
                                 setupChordPainter()
                             end
@@ -6701,6 +6739,42 @@ local function showPenSettingsDialog()
         }
     end
     if not dialogVars.penSettingsObj or not dialogVars.penSettingsObj.visible then
+        --cleanup preset table
+        chordPainterPresets.chordgun.name = {}
+        chordPainterPresets.chordgun.notes = {}
+        --check for chordgun chords file
+        if preferences.chordGunPreset.value then
+            local f = io.open("../com.pandabot.ChordGun.xrnx/chords.lua", "r")
+            if f then
+                local chords
+                local luacontent = f:read("*all")
+                f:close()
+                luacontent = loadstring(luacontent .. ";return chords")
+                --load presets
+                chords = luacontent()
+                table.insert(chordPainterPresets.chordgun.name, "None")
+                table.insert(chordPainterPresets.chordgun.notes, { 0 })
+                for i = 1, #chords do
+                    local notes = {}
+                    table.insert(chordPainterPresets.chordgun.name, "[" .. chords[i].code .. "] " .. chords[i].name)
+                    for j = 1, #chords[i].pattern do
+                        if chords[i].pattern:sub(j, j) == "1" then
+                            table.insert(notes, j - 1)
+                        end
+                    end
+                    table.insert(chordPainterPresets.chordgun.notes, notes)
+                end
+            end
+        end
+        --no chordgun presets? hide
+        if #chordPainterPresets.chordgun.notes > 1 then
+            vbwp.chordpresettbl.visible = true
+            vbwp.chordpresettbl.value = preferences.chordPainterPresetTbl.value
+        else
+            vbwp.chordpresettbl.visible = false
+            vbwp.chordpresettbl.value = 1
+        end
+        --
         dialogVars.penSettingsObj = app:show_custom_dialog("Pen settings - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
                 dialogVars.penSettingsContent, function(_, key)
                     if key.name == "esc" then
@@ -7779,6 +7853,14 @@ local function showPreferences()
                             },
                             vbp:text {
                                 text = "Mirror notes of the current ghost track",
+                            },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.chordGunPreset,
+                            },
+                            vbp:text {
+                                text = "Load ChordGun presets for chord stamping",
                             },
                         },
                         vbp:space {
