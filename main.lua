@@ -6386,7 +6386,9 @@ local function setupChordPainter()
         chord = { 0 }
         vbwp.chordpreset.value = 1
     else
-        chord = presettable.notes[idx]
+        for i = 1, #presettable.notes[idx] do
+            table.insert(chord, presettable.notes[idx][i])
+        end
     end
     --double chord
     if vbwp.doublechordpreset.value == 2 then
