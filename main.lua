@@ -2567,6 +2567,36 @@ local function gridOffset2NoteValue(y)
     return y + noteOffset - 1
 end
 
+--change note_value when not in scale or above limit
+local function modifyNoteValueChord(note_value, chord, cidx)
+    if #chord > 1 then
+        for j = 1, 2 do
+            if chordPainterForceInScale and not noteInScale(note_value) then
+                if cidx == 1 then
+                    --first note out of scale, move down
+                    note_value = note_value - 1
+                elseif cidx == #chord then
+                    --last note out of scale, move up
+                    note_value = note_value + 1
+                elseif math.abs(chord[cidx - 1] - chord[cidx]) > math.abs(chord[cidx + 1] - chord[cidx]) then
+                    note_value = note_value - 1
+                elseif math.abs(chord[cidx - 1] - chord[cidx]) < math.abs(chord[cidx + 1] - chord[cidx]) then
+                    note_value = note_value + 1
+                elseif math.abs(chord[cidx - 1] - chord[cidx]) == math.abs(chord[cidx + 1] - chord[cidx]) then
+                    note_value = note_value + 1
+                end
+            elseif j == 1 then
+                --no second run needed, when note is in scale
+                break
+            end
+        end
+    end
+    if chordPainterUpperNoteLimit < 120 and note_value > chordPainterUpperNoteLimit then
+        note_value = note_value - (12 * (math.floor((note_value - chordPainterUpperNoteLimit) / 12) + 1))
+    end
+    return note_value
+end
+
 --color keyboard key
 local function setKeyboardKeyColor(row, pressed, highlighted)
     local idx = "k" .. row
@@ -3072,31 +3102,7 @@ function pianoGridClick(x, y, released)
             for cidx = 1, #chordPainter do
                 notesOnLine = {}
                 note_value = gridOffset2NoteValue(y + chordPainter[cidx])
-                if #chordPainter > 1 then
-                    for j = 1, 2 do
-                        if chordPainterForceInScale and not noteInScale(note_value) then
-                            if cidx == 1 then
-                                --first note out of scale, move down
-                                note_value = note_value - 1
-                            elseif cidx == #chordPainter then
-                                --last note out of scale, move up
-                                note_value = note_value + 1
-                            elseif math.abs(chordPainter[cidx - 1] - chordPainter[cidx]) > math.abs(chordPainter[cidx + 1] - chordPainter[cidx]) then
-                                note_value = note_value - 1
-                            elseif math.abs(chordPainter[cidx - 1] - chordPainter[cidx]) < math.abs(chordPainter[cidx + 1] - chordPainter[cidx]) then
-                                note_value = note_value + 1
-                            elseif math.abs(chordPainter[cidx - 1] - chordPainter[cidx]) == math.abs(chordPainter[cidx + 1] - chordPainter[cidx]) then
-                                note_value = note_value + 1
-                            end
-                        elseif j == 1 then
-                            --no second run needed, when note is in scale
-                            break
-                        end
-                    end
-                    if chordPainterUpperNoteLimit < 120 and note_value > chordPainterUpperNoteLimit then
-                        note_value = note_value - (12 * (math.floor((note_value - chordPainterUpperNoteLimit) / 12) + 1))
-                    end
-                end
+                note_value = modifyNoteValueChord(note_value, chordPainter, cidx)
                 if note_value >= 0 and note_value <= 120 and not noteDrawn[note_value] then
                     --prevent duplicate notes
                     noteDrawn[note_value] = true
@@ -5863,6 +5869,7 @@ local function handleKeyEvent(keyEvent)
                     note = note + (12 * song.transport.octave)
                 end
                 lastKeyboardNote[key.name .. i] = note + chord[i]
+                lastKeyboardNote[key.name .. i] = modifyNoteValueChord(lastKeyboardNote[key.name .. i], chord, i)
                 row = noteValue2GridRowOffset(lastKeyboardNote[key.name .. i])
                 triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name .. i], true, key.velocity)
                 if row ~= nil then
@@ -6788,7 +6795,7 @@ local function showPenSettingsDialog()
                             end
                         },
                         vbp:text {
-                            text = "Keep notes in scale on chord stamping",
+                            text = "Keep notes in scale",
                         },
                     },
                     vbp:horizontal_aligner {
