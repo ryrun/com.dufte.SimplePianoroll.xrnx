@@ -3081,6 +3081,9 @@ function pianoGridClick(x, y, released)
                             elseif math.abs(chordPainter[cidx - 1] - chordPainter[cidx]) == math.abs(chordPainter[cidx + 1] - chordPainter[cidx]) then
                                 note_value = note_value + 1
                             end
+                        elseif j == 1 then
+                            --no second run needed, when note is in scale
+                            break
                         end
                     end
                     if chordPainterUpperNoteLimit < 120 and note_value > chordPainterUpperNoteLimit then
