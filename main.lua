@@ -6790,6 +6790,20 @@ local function showPenSettingsDialog()
                                 vbwp.chordpreset.value = 1
                             end
                         },
+                        vbp:button {
+                            text = "Preview chord",
+                            height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
+                            pressed = function()
+                                for i = 1, #chordPainter do
+                                    triggerNoteOfCurrentInstrument(48 + chordPainter[i], true)
+                                end
+                            end,
+                            released = function()
+                                for i = 1, #chordPainter do
+                                    triggerNoteOfCurrentInstrument(48 + chordPainter[i], false)
+                                end
+                            end
+                        }
                     },
                     vbp:text {
                         text = "IMPORTANT: Please note that Renoise has a note column\n" ..
