@@ -5164,10 +5164,17 @@ local function showHistogram()
                             vbp:popup {
                                 id = "histogramasctype",
                                 items = {
-                                    "Asc by Pos",
-                                    "Asc by Note",
+                                    "Asc by pos",
+                                    "Asc by note",
                                 },
                                 tooltip = "Apply ascending values by note position or by note pitch",
+                                notifier = function (i)
+                                    if i == 1 then
+                                        vbwp.groupthem.text = "Group by note"
+                                    else
+                                        vbwp.groupthem.text = "Group by pos"
+                                    end
+                                end
                             },
                             vbp:valuebox {
                                 id = "histogramasc",
@@ -5197,7 +5204,8 @@ local function showHistogram()
                                     value = false,
                                 },
                                 vbp:text {
-                                    text = "Group them",
+                                    id = "groupthem",
+                                    text = "Group by note",
                                 },
                             },
                         },
