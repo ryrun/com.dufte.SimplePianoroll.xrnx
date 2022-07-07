@@ -170,6 +170,7 @@ local defaultPreferences = {
     midiDevice = "",
     midiIn = false,
     chordGunPreset = false,
+    useChordStampingForNotePreview = true,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -247,6 +248,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     midiDevice = defaultPreferences.midiDevice,
     midiIn = defaultPreferences.midiIn,
     chordGunPreset = defaultPreferences.chordGunPreset,
+    useChordStampingForNotePreview = defaultPreferences.useChordStampingForNotePreview,
     chordPainterPresetTbl = 1, --default bank
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
@@ -5828,31 +5830,42 @@ local function handleKeyEvent(keyEvent)
     --loving tracker computer keyboard note playing <3 (returning it back to host is buggy, so do your own)
     if key.note then
         local row
-        if not key.repeated and key.state == "released" and lastKeyboardNote[key.name] ~= nil then
-            row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
-            triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], false)
-            if row ~= nil then
-                setKeyboardKeyColor(row, false, false)
-                highlightNoteRow(row, false)
-            end
-            lastKeyboardNote[key.name] = nil
-            if key.modifiers == "" then
+        local chord = { 0 }
+        --use chord stamping chord as preview, too
+        if preferences.useChordStampingForNotePreview.value then
+            chord = chordPainter
+        end
+        for i = 1, #chord do
+            if not key.repeated and key.state == "released" and lastKeyboardNote[key.name .. i] ~= nil then
+                row = noteValue2GridRowOffset(lastKeyboardNote[key.name .. i])
+                triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name .. i], false)
+                if row ~= nil then
+                    setKeyboardKeyColor(row, false, false)
+                    highlightNoteRow(row, false)
+                end
+                lastKeyboardNote[key.name .. i] = nil
+                if key.modifiers == "" then
+                    handled = true
+                end
+            elseif not key.repeated and key.state == "pressed" and key.modifiers == "" then
+                local note = key.note
+                if not key.isMidi then
+                    note = note + (12 * song.transport.octave)
+                end
+                lastKeyboardNote[key.name .. i] = note + chord[i]
+                row = noteValue2GridRowOffset(lastKeyboardNote[key.name .. i])
+                triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name .. i], true, key.velocity)
+                if row ~= nil then
+                    setKeyboardKeyColor(row, true, false)
+                    highlightNoteRow(row, true)
+                end
+                if #chord > 1 then
+                    keyInfoText = "Play a chord"
+                else
+                    keyInfoText = "Play a note"
+                end
                 handled = true
             end
-        elseif not key.repeated and key.state == "pressed" and key.modifiers == "" then
-            local note = key.note
-            if not key.isMidi then
-                note = note + (12 * song.transport.octave)
-            end
-            lastKeyboardNote[key.name] = note
-            row = noteValue2GridRowOffset(lastKeyboardNote[key.name])
-            triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name], true, key.velocity)
-            if row ~= nil then
-                setKeyboardKeyColor(row, true, false)
-                highlightNoteRow(row, true)
-            end
-            keyInfoText = "Play a note"
-            handled = true
         end
     end
 
@@ -6765,7 +6778,7 @@ local function showPenSettingsDialog()
                             end
                         },
                         vbp:text {
-                            text = "Keep notes in scale",
+                            text = "Keep notes in scale on chord stamping",
                         },
                     },
                     vbp:horizontal_aligner {
@@ -6788,6 +6801,7 @@ local function showPenSettingsDialog()
                                 vbwp.dupchrddown.color = { 0, 0, 0 }
                                 vbwp.dupchrdup.color = { 0, 0, 0 }
                                 vbwp.chordpreset.value = 1
+                                setupChordPainter()
                             end
                         },
                         vbp:button {
@@ -7976,6 +7990,14 @@ local function showPreferences()
                             },
                             vbp:text {
                                 text = "Load ChordGun presets for chord stamping",
+                            },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.useChordStampingForNotePreview,
+                            },
+                            vbp:text {
+                                text = "Use chord stamping also for note preview",
                             },
                         },
                         vbp:space {
