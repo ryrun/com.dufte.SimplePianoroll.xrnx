@@ -6391,47 +6391,40 @@ local function setupChordPainter()
         end
     end
     --double chord
-    if vbwp.doublechordpreset.value == 2 then
+    if vbwp.dupchrdup.color[1] ~= 0 then
         for i = 1, #chord do
             table.insert(chord, chord[i] + 12)
         end
-    elseif vbwp.doublechordpreset.value == 3 then
+    end
+    if vbwp.dupchrddown.color[1] ~= 0 then
         for i = 1, #chord do
             table.insert(chord, chord[i] - 12)
         end
     end
-    --add more root notes
-    if vbwp.chordadd.value == 2 then
-        table.insert(chord, 12)
-    elseif vbwp.chordadd.value == 3 then
-        table.insert(chord, 24)
-    elseif vbwp.chordadd.value == 4 then
-        table.insert(chord, 12)
-        table.insert(chord, 24)
-    end
-    if vbwp.p5add.value == 2 then
-        table.insert(chord, 7)
-    elseif vbwp.p5add.value == 3 then
-        table.insert(chord, 19)
-    elseif vbwp.p5add.value == 4 then
-        table.insert(chord, 7)
-        table.insert(chord, 19)
-    end
-    if vbwp.chordsub.value == 2 then
+    --add more notes
+    if vbwp.octsub1.color[1] ~= 0 then
         table.insert(chord, -12)
-    elseif vbwp.chordsub.value == 3 then
-        table.insert(chord, -24)
-    elseif vbwp.chordsub.value == 4 then
-        table.insert(chord, -12)
+    end
+    if vbwp.octsub2.color[1] ~= 0 then
         table.insert(chord, -24)
     end
-    if vbwp.p5sub.value == 2 then
+    if vbwp.octadd1.color[1] ~= 0 then
+        table.insert(chord, 12)
+    end
+    if vbwp.octadd2.color[1] ~= 0 then
+        table.insert(chord, 24)
+    end
+    if vbwp.p5sub1.color[1] ~= 0 then
         table.insert(chord, -5)
-    elseif vbwp.p5sub.value == 3 then
+    end
+    if vbwp.p5sub2.color[1] ~= 0 then
         table.insert(chord, -17)
-    elseif vbwp.p5sub.value == 4 then
-        table.insert(chord, -5)
-        table.insert(chord, -17)
+    end
+    if vbwp.p5add1.color[1] ~= 0 then
+        table.insert(chord, 7)
+    end
+    if vbwp.p5add2.color[1] ~= 0 then
+        table.insert(chord, 19)
     end
     --setup chord painter tabvle and prevent duplicate notes
     chordPainter = {}
@@ -6512,17 +6505,45 @@ local function showPenSettingsDialog()
                         vbp:text {
                             text = "Duplicate chord:",
                         },
-                        vbp:switch {
-                            id = "doublechordpreset",
-                            width = 180,
-                            items = {
-                                "None",
-                                "+1",
-                                "-1",
+                        vbp:row {
+                            spacing = -3,
+                            vbp:button {
+                                id = "dupchrddown",
+                                text = "-1",
+                                width = 40,
+                                color = { 0, 0, 0 },
+                                notifier = function()
+                                    if vbwp.dupchrddown.color[1] == 0 then
+                                        vbwp.dupchrddown.color = colorStepOn
+                                    else
+                                        vbwp.dupchrddown.color = { 0, 0, 0 }
+                                    end
+                                    setupChordPainter()
+                                end
                             },
-                            notifier = function()
-                                setupChordPainter()
-                            end
+                            vbp:button {
+                                text = "None",
+                                width = 40,
+                                notifier = function()
+                                    vbwp.dupchrddown.color = { 0, 0, 0 }
+                                    vbwp.dupchrdup.color = { 0, 0, 0 }
+                                    setupChordPainter()
+                                end
+                            },
+                            vbp:button {
+                                id = "dupchrdup",
+                                text = "+1",
+                                width = 40,
+                                color = { 0, 0, 0 },
+                                notifier = function()
+                                    if vbwp.dupchrdup.color[1] == 0 then
+                                        vbwp.dupchrdup.color = colorStepOn
+                                    else
+                                        vbwp.dupchrdup.color = { 0, 0, 0 }
+                                    end
+                                    setupChordPainter()
+                                end
+                            },
                         },
                     },
                     vbp:space {
@@ -6531,80 +6552,153 @@ local function showPenSettingsDialog()
                     vbp:horizontal_aligner {
                         mode = "justify",
                         vbp:text {
-                            text = "Add octave up:",
+                            text = "Add octave:",
                         },
-                        vbp:switch {
-                            id = "chordadd",
-                            width = 180,
-                            items = {
-                                "None",
-                                "+1",
-                                "+2",
-                                "Both",
+                        vbp:row {
+                            spacing = -3,
+                            vbp:button {
+                                id = "octsub2",
+                                text = "-2",
+                                width = 40,
+                                color = { 0, 0, 0 },
+                                notifier = function()
+                                    if vbwp.octsub2.color[1] == 0 then
+                                        vbwp.octsub2.color = colorStepOn
+                                    else
+                                        vbwp.octsub2.color = { 0, 0, 0 }
+                                    end
+                                    setupChordPainter()
+                                end
                             },
-                            notifier = function()
-                                setupChordPainter()
-                            end
+                            vbp:button {
+                                id = "octsub1",
+                                text = "-1",
+                                width = 40,
+                                color = { 0, 0, 0 },
+                                notifier = function()
+                                    if vbwp.octsub1.color[1] == 0 then
+                                        vbwp.octsub1.color = colorStepOn
+                                    else
+                                        vbwp.octsub1.color = { 0, 0, 0 }
+                                    end
+                                    setupChordPainter()
+                                end
+                            },
+                            vbp:button {
+                                text = "None",
+                                width = 40,
+                                notifier = function()
+                                    vbwp.octsub1.color = { 0, 0, 0 }
+                                    vbwp.octadd1.color = { 0, 0, 0 }
+                                    vbwp.octsub2.color = { 0, 0, 0 }
+                                    vbwp.octadd2.color = { 0, 0, 0 }
+                                    setupChordPainter()
+                                end
+                            },
+                            vbp:button {
+                                id = "octadd1",
+                                text = "+1",
+                                width = 40,
+                                color = { 0, 0, 0 },
+                                notifier = function()
+                                    if vbwp.octadd1.color[1] == 0 then
+                                        vbwp.octadd1.color = colorStepOn
+                                    else
+                                        vbwp.octadd1.color = { 0, 0, 0 }
+                                    end
+                                    setupChordPainter()
+                                end
+                            },
+                            vbp:button {
+                                id = "octadd2",
+                                text = "+2",
+                                width = 40,
+                                color = { 0, 0, 0 },
+                                notifier = function()
+                                    if vbwp.octadd2.color[1] == 0 then
+                                        vbwp.octadd2.color = colorStepOn
+                                    else
+                                        vbwp.octadd2.color = { 0, 0, 0 }
+                                    end
+                                    setupChordPainter()
+                                end
+                            },
                         },
                     },
                     vbp:horizontal_aligner {
                         mode = "justify",
                         vbp:text {
-                            text = "Add octave down:",
+                            text = "Add perfect 5th:",
                         },
-                        vbp:switch {
-                            id = "chordsub",
-                            width = 180,
-                            items = {
-                                "None",
-                                "-1",
-                                "-2",
-                                "Both",
+                        vbp:row {
+                            spacing = -3,
+                            vbp:button {
+                                id = "p5sub2",
+                                text = "-2",
+                                width = 40,
+                                color = { 0, 0, 0 },
+                                notifier = function()
+                                    if vbwp.p5sub2.color[1] == 0 then
+                                        vbwp.p5sub2.color = colorStepOn
+                                    else
+                                        vbwp.p5sub2.color = { 0, 0, 0 }
+                                    end
+                                    setupChordPainter()
+                                end
                             },
-                            notifier = function()
-                                setupChordPainter()
-                            end
-                        },
-                    },
-                    vbp:space {
-                        height = 8,
-                    },
-                    vbp:horizontal_aligner {
-                        mode = "justify",
-                        vbp:text {
-                            text = "Add perfect 5th up:",
-                        },
-                        vbp:switch {
-                            id = "p5add",
-                            width = 180,
-                            items = {
-                                "None",
-                                "+1",
-                                "+2",
-                                "Both",
+                            vbp:button {
+                                id = "p5sub1",
+                                text = "-1",
+                                width = 40,
+                                color = { 0, 0, 0 },
+                                notifier = function()
+                                    if vbwp.p5sub1.color[1] == 0 then
+                                        vbwp.p5sub1.color = colorStepOn
+                                    else
+                                        vbwp.p5sub1.color = { 0, 0, 0 }
+                                    end
+                                    setupChordPainter()
+                                end
                             },
-                            notifier = function()
-                                setupChordPainter()
-                            end
-                        },
-                    },
-                    vbp:horizontal_aligner {
-                        mode = "justify",
-                        vbp:text {
-                            text = "Add perfect 5th down:",
-                        },
-                        vbp:switch {
-                            id = "p5sub",
-                            width = 180,
-                            items = {
-                                "None",
-                                "-1",
-                                "-2",
-                                "Both",
+                            vbp:button {
+                                text = "None",
+                                width = 40,
+                                notifier = function()
+                                    vbwp.p5sub1.color = { 0, 0, 0 }
+                                    vbwp.p5add1.color = { 0, 0, 0 }
+                                    vbwp.p5sub2.color = { 0, 0, 0 }
+                                    vbwp.p5add2.color = { 0, 0, 0 }
+                                    setupChordPainter()
+                                end
                             },
-                            notifier = function()
-                                setupChordPainter()
-                            end
+                            vbp:button {
+                                id = "p5add1",
+                                text = "+1",
+                                width = 40,
+                                color = { 0, 0, 0 },
+                                notifier = function()
+                                    if vbwp.p5add1.color[1] == 0 then
+                                        vbwp.p5add1.color = colorStepOn
+                                    else
+                                        vbwp.p5add1.color = { 0, 0, 0 }
+                                    end
+                                    setupChordPainter()
+                                end
+                            },
+                            vbp:button {
+                                id = "p5add2",
+                                text = "+2",
+                                width = 40,
+                                color = { 0, 0, 0 },
+                                notifier = function()
+                                    if vbwp.p5add2.color[1] == 0 then
+                                        vbwp.p5add2.color = colorStepOn
+                                    else
+                                        vbwp.p5add2.color = { 0, 0, 0 }
+                                    end
+                                    setupChordPainter()
+                                end
+                            },
                         },
                     },
                     vbp:space {
@@ -6683,12 +6777,17 @@ local function showPenSettingsDialog()
                             notifier = function()
                                 vbwp.chordinscale.value = false
                                 vbwp.chordupperlimit.value = 120
-                                vbwp.chordadd.value = 1
-                                vbwp.chordsub.value = 1
-                                vbwp.p5add.value = 1
-                                vbwp.p5sub.value = 1
+                                vbwp.octsub1.color = { 0, 0, 0 }
+                                vbwp.octadd1.color = { 0, 0, 0 }
+                                vbwp.octsub2.color = { 0, 0, 0 }
+                                vbwp.octadd2.color = { 0, 0, 0 }
+                                vbwp.p5sub1.color = { 0, 0, 0 }
+                                vbwp.p5add1.color = { 0, 0, 0 }
+                                vbwp.p5sub2.color = { 0, 0, 0 }
+                                vbwp.p5add2.color = { 0, 0, 0 }
+                                vbwp.dupchrddown.color = { 0, 0, 0 }
+                                vbwp.dupchrdup.color = { 0, 0, 0 }
                                 vbwp.chordpreset.value = 1
-                                vbwp.doublechordpreset.value = 1
                             end
                         },
                     },
