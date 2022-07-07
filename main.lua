@@ -2592,7 +2592,7 @@ local function modifyNoteValueChord(note_value, chord, cidx)
         end
     end
     if chordPainterUpperNoteLimit < 120 and note_value > chordPainterUpperNoteLimit then
-        note_value = note_value - (12 * (math.floor((note_value - chordPainterUpperNoteLimit) / 12) + 1))
+        note_value = note_value - (12 * (math.floor((note_value - chordPainterUpperNoteLimit - 1) / 12) + 1))
     end
     return note_value
 end
