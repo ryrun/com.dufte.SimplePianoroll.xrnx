@@ -2568,27 +2568,16 @@ local function gridOffset2NoteValue(y)
 end
 
 --change note_value when not in scale or above limit
-local function modifyNoteValueChord(note_value, chord, cidx)
-    if #chord > 1 then
-        for j = 1, 2 do
-            if chordPainterForceInScale and not noteInScale(note_value) then
-                if cidx == 1 then
-                    --first note out of scale, move down
-                    note_value = note_value - 1
-                elseif cidx == #chord then
-                    --last note out of scale, move up
-                    note_value = note_value + 1
-                elseif math.abs(chord[cidx - 1] - chord[cidx]) > math.abs(chord[cidx + 1] - chord[cidx]) then
-                    note_value = note_value - 1
-                elseif math.abs(chord[cidx - 1] - chord[cidx]) < math.abs(chord[cidx + 1] - chord[cidx]) then
-                    note_value = note_value + 1
-                elseif math.abs(chord[cidx - 1] - chord[cidx]) == math.abs(chord[cidx + 1] - chord[cidx]) then
-                    note_value = note_value + 1
-                end
-            elseif j == 1 then
-                --no second run needed, when note is in scale
-                break
+local function modifyNoteValueChord(note_value, last_note_value)
+    if chordPainterForceInScale and not noteInScale(note_value) then
+        if last_note_value ~= nil then
+            if note_value - last_note_value > 2 then
+                note_value = note_value - 1
+            else
+                note_value = note_value + 1
             end
+        else
+            note_value = note_value - 1
         end
     end
     if chordPainterUpperNoteLimit < 120 and note_value > chordPainterUpperNoteLimit then
@@ -3066,6 +3055,7 @@ function pianoGridClick(x, y, released)
 
         if dbclk or checkMode("pen") then
             local steps = song.selected_pattern.number_of_lines
+            local last_note_value
             local column
             local note_value
             local noteoff
@@ -3102,8 +3092,9 @@ function pianoGridClick(x, y, released)
             for cidx = 1, #chordPainter do
                 notesOnLine = {}
                 note_value = gridOffset2NoteValue(y + chordPainter[cidx])
-                note_value = modifyNoteValueChord(note_value, chordPainter, cidx)
+                note_value = modifyNoteValueChord(note_value, last_note_value)
                 if note_value >= 0 and note_value <= 120 and not noteDrawn[note_value] then
+                    last_note_value = note_value
                     --prevent duplicate notes
                     noteDrawn[note_value] = true
                     --pre check if there is enough space
@@ -5857,6 +5848,7 @@ local function handleKeyEvent(keyEvent)
         local chord = { 0 }
         local othernote
         local note
+        local last_note
         --use chord stamping chord as preview, too
         if preferences.useChordStampingForNotePreview.value then
             chord = chordPainter
@@ -5890,7 +5882,8 @@ local function handleKeyEvent(keyEvent)
                     note = note + (12 * song.transport.octave)
                 end
                 note = note + chord[i]
-                note = modifyNoteValueChord(note, chord, i)
+                note = modifyNoteValueChord(note, last_note)
+                last_note = note
                 --check if other key playing this note
                 for key in pairs(lastKeyboardNote) do
                     if lastKeyboardNote[key] == note then
