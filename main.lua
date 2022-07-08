@@ -5273,1158 +5273,6 @@ local function showHistogram()
     end
 end
 
---convert some keys to qwerty layout
-local function azertyMode(key)
-    key = table.copy(key)
-    if key.name == "&" then
-        key.name = "1"
-    elseif key.name == "é" then
-        key.name = "2"
-    elseif key.name == "\"" then
-        key.name = "3"
-    elseif key.name == "'" then
-        key.name = "4"
-    elseif key.name == "(" then
-        key.name = "5"
-    elseif key.name == "-" then
-        key.name = "6"
-    elseif key.name == "è" then
-        key.name = "7"
-    elseif key.name == "_" then
-        key.name = "8"
-    elseif key.name == "ç" then
-        key.name = "9"
-    elseif key.name == "à" then
-        key.name = "0"
-    end
-    return key
-end
-
---function for all keyboard shortcuts
-local function handleKeyEvent(keyEvent)
-    local handled = false
-    local keyInfoText
-    local isModifierKey = false
-    local key
-
-    if preferences.disableKeyHandler.value then
-        return false
-    end
-
-    --convert number keys from azerty to qwerty
-    if preferences.azertyMode.value then
-        key = azertyMode(keyEvent)
-    else
-        key = keyEvent
-    end
-
-    --check if current key is a modifier
-    if key.name == "lalt" or key.name == "lshift" or key.name == "lcontrol" or key.name == "ralt" or key.name == "rshift" or key.name == "rcontrol" then
-        isModifierKey = true
-    end
-
-    --ignore press events from last key event with modifiers
-    if lastKeyPress and lastKeyPress == key.name and key.state == "pressed" and key.modifiers == "" then
-        return false
-    end
-
-    --focus pattern editor - https://forum.renoise.com/t/set-focus-from-lua-code/42281/3
-    app.window.lock_keyboard_focus = false
-    app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_PATTERN_EDITOR
-    app.window.lock_keyboard_focus = true
-
-    if key.name == "lcontrol" and key.state == "pressed" then
-        modifier.keyControl = true
-        handled = true
-    elseif key.name == "lcontrol" and key.state == "released" then
-        modifier.keyControl = false
-        handled = true
-    end
-    if key.name == "rcontrol" and key.state == "pressed" then
-        modifier.keyRControl = true
-        handled = true
-    elseif key.name == "rcontrol" and key.state == "released" then
-        modifier.keyRControl = false
-        handled = true
-    end
-    if key.name == "lalt" and key.state == "pressed" then
-        modifier.keyAlt = true
-        handled = true
-        refreshControls = true
-    elseif key.name == "lalt" and key.state == "released" then
-        modifier.keyAlt = false
-        handled = true
-        refreshControls = true
-    end
-    if key.name == "lshift" and key.state == "pressed" then
-        modifier.keyShift = true
-        handled = true
-        refreshControls = true
-    elseif key.name == "lshift" and key.state == "released" then
-        modifier.keyShift = false
-        handled = true
-        refreshControls = true
-    end
-    if key.name == "rshift" and key.state == "pressed" then
-        modifier.keyRShift = true
-        handled = true
-    elseif key.name == "rshift" and key.state == "released" then
-        modifier.keyRShift = false
-        handled = true
-    end
-
-    --prepare midi in events
-    if key.name == "midi in" then
-        key.repeated = false
-        key.modifiers = ""
-        key.isMidi = true
-        handled = true
-        --extend key name
-        key.name = key.name .. " - Note " .. tostring(key.note)
-    end
-
-    --convert scrollwheel events
-    if key.name == "scrollup" or key.name == "scrolldown" then
-        key.state = "pressed"
-        key.modifiers = ""
-        if modifier.keyShift or modifier.keyRShift then
-            key.modifiers = "shift"
-        end
-        if modifier.keyAlt then
-            if key.modifiers ~= "" then
-                key.modifiers = key.modifiers .. " + "
-            end
-            key.modifiers = key.modifiers .. "alt"
-        end
-        if modifier.keyControl then
-            if key.modifiers ~= "" then
-                key.modifiers = key.modifiers .. " + "
-            end
-            key.modifiers = key.modifiers .. "control"
-        end
-        restoreFocus()
-    end
-
-    if key.name == "del" or key.name == "back" then
-        if key.state == "pressed" then
-            keyInfoText = "Delete selected notes"
-            if #noteSelection > 0 then
-                showStatus(#noteSelection .. " notes deleted.")
-                removeSelectedNotes()
-            end
-        end
-        handled = true
-    end
-    if key.name == "esc" then
-        if key.state == "pressed" then
-            keyInfoText = "Deselect current note selection"
-            if #noteSelection > 0 then
-                updateNoteSelection(nil, true)
-            end
-        end
-        handled = true
-    end
-    if key.name == "f1" then
-        if key.state == "pressed" then
-            keyInfoText = "Select mode"
-            penMode = false
-            audioPreviewMode = false
-            refreshControls = true
-        end
-        handled = true
-    end
-    if key.name == "f2" then
-        if key.state == "pressed" then
-            keyInfoText = "Pen mode"
-            penMode = true
-            audioPreviewMode = false
-            refreshControls = true
-        end
-        handled = true
-    end
-    if key.name == "f3" then
-        if key.state == "pressed" then
-            keyInfoText = "Audio preview mode"
-            penMode = false
-            audioPreviewMode = true
-            refreshControls = true
-        end
-        handled = true
-    end
-    if key.name == "i" and key.modifiers == "shift" then
-        if key.state == "pressed" then
-            if #noteSelection > 0 then
-                showStatus("Inverted note selection.")
-                keyInfoText = "Invert note selection"
-                local newSelection = {}
-                for k in pairs(noteData) do
-                    if not noteInSelection(noteData[k]) then
-                        table.insert(newSelection, noteData[k])
-                    end
-                end
-                updateNoteSelection(newSelection, true)
-            end
-        end
-        handled = true
-    end
-    if key.modifiers == "control" and (
-            key.name == "1" or
-                    key.name == "2" or
-                    key.name == "3" or
-                    key.name == "4" or
-                    key.name == "5" or
-                    key.name == "6" or
-                    key.name == "7" or
-                    key.name == "8" or
-                    key.name == "9"
-    ) then
-        if key.state == "pressed" and not key.repeated then
-            keyInfoText = "Change note length to " .. key.name
-            if #noteSelection > 0 then
-                currentNoteLength = tonumber(key.name)
-                changeSizeSelectedNotes(currentNoteLength)
-                refreshControls = true
-            else
-                vbw.note_len.value = tonumber(key.name)
-            end
-        end
-        handled = true
-    end
-
-    if key.name == "0" then
-        if key.state == "pressed" then
-            if key.modifiers == "control" then
-                if #noteSelection > 0 then
-                    scaleNoteSelection(2)
-                    keyInfoText = "Grow note selection"
-                end
-                currentNoteLength = math.min(math.floor(currentNoteLength * 2), 256)
-            elseif key.modifiers == "shift + control" then
-                if #noteSelection > 0 then
-                    scaleNoteSelection(0.5)
-                    keyInfoText = "Shrink note selection"
-                end
-                currentNoteLength = math.max(math.floor(currentNoteLength / 2), 1)
-            end
-            refreshControls = true
-        end
-        handled = true
-    end
-    if key.name == "u" and key.modifiers == "control" then
-        if key.state == "pressed" then
-            if #noteSelection == 0 then
-                for k in pairs(noteData) do
-                    local note_data = noteData[k]
-                    table.insert(noteSelection, note_data)
-                end
-            end
-            if #noteSelection > 0 then
-                local ret = chopSelectedNotes()
-                --was not possible then deselect
-                if not ret then
-                    updateNoteSelection(nil, true)
-                else
-                    showStatus((#noteSelection / 2) .. " notes chopped.")
-                    keyInfoText = "Chop selected notes"
-                end
-            end
-        end
-        handled = true
-    end
-    if key.name == "h" and key.modifiers == "alt" then
-        if key.state == "pressed" then
-            keyInfoText = "Open histogram ..."
-            if #noteSelection == 0 then
-                updateNoteSelection("all", true)
-            end
-            showHistogram()
-        end
-        handled = true
-    end
-    if key.name == "m" and key.modifiers == "alt" then
-        if key.state == "pressed" then
-            local selectall = false
-            if #noteSelection == 0 then
-                for k in pairs(noteData) do
-                    local note_data = noteData[k]
-                    table.insert(noteSelection, note_data)
-                end
-                selectall = true
-            end
-            if #noteSelection > 0 then
-                changePropertiesOfSelectedNotes("mute")
-                keyInfoText = "Mute selected notes"
-                showStatus(#noteSelection .. " notes was muted.")
-                --when all was automatically selected, deselect it
-                if selectall then
-                    noteSelection = {}
-                    keyInfoText = "Mute all notes"
-                end
-            end
-        end
-        handled = true
-    end
-    if key.name == "n" and key.modifiers == "alt" then
-        if key.state == "pressed" then
-            if #noteSelection > 0 then
-                changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, nil, nil, "matchingnotes")
-                keyInfoText = "Match notes"
-                showStatus(#noteSelection .. " notes was matched.")
-            end
-        end
-        handled = true
-    end
-    if key.name == "m" and key.modifiers == "shift + alt" then
-        if key.state == "pressed" then
-            local selectall = false
-            if #noteSelection == 0 then
-                for k in pairs(noteData) do
-                    local note_data = noteData[k]
-                    table.insert(noteSelection, note_data)
-                end
-                selectall = true
-            end
-            if #noteSelection > 0 then
-                changePropertiesOfSelectedNotes("unmute")
-                keyInfoText = "Unmute selected notes"
-                showStatus(#noteSelection .. " notes was unmuted.")
-                --when all was automatically selected, deselect it
-                if selectall then
-                    noteSelection = {}
-                    keyInfoText = "Unmute all notes"
-                end
-            end
-        end
-        handled = true
-    end
-    if (key.name == "b" or key.name == "d") and key.modifiers == "control" then
-        if key.state == "pressed" then
-            if #noteSelection == 0 then
-                --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
-                updateNoteSelection("all", true)
-            end
-            if #noteSelection > 0 then
-                local ret = duplicateSelectedNotes()
-                --was not possible then deselect
-                if not ret then
-                    noteSelection = {}
-                    refreshPianoRollNeeded = true
-                else
-                    keyInfoText = "Duplicate notes"
-                    jumpToNoteInPattern("sel")
-                    showStatus(#noteSelection .. " notes duplicated.")
-                end
-            end
-        end
-        handled = true
-    end
-    if key.name == "c" and key.modifiers == "control" then
-        keyInfoText = "Copy selected notes"
-        if key.state == "pressed" and not key.repeated then
-            if #noteSelection > 0 then
-                clipboard = {}
-                for k in pairs(noteSelection) do
-                    local note_data = noteSelection[k]
-                    table.insert(clipboard, note_data)
-                end
-                --set paste cursor
-                table.sort(clipboard, function(a, b)
-                    return a.line > b.line
-                end)
-                pasteCursor = { clipboard[1].line + clipboard[1].len, 0 }
-                table.sort(clipboard, function(a, b)
-                    if a.line == b.line then
-                        return a.note < b.note
-                    end
-                    return a.line < b.line
-                end)
-                pasteCursor = { pasteCursor[1], clipboard[1].note }
-                showStatus(#noteSelection .. " notes copied.", true)
-            end
-        end
-        handled = true
-    end
-    if key.name == "x" and key.modifiers == "control" then
-        keyInfoText = "Cut selected notes"
-        if key.state == "pressed" and not key.repeated then
-            if #noteSelection > 0 then
-                clipboard = {}
-                for k in pairs(noteSelection) do
-                    local note_data = noteSelection[k]
-                    table.insert(clipboard, note_data)
-                end
-                --set paste cursor, to the first note
-                table.sort(clipboard, sortLeftOneFirst)
-                pasteCursor = { clipboard[1].line, clipboard[1].note }
-                --set status
-                showStatus(#noteSelection .. " notes cut.", true)
-                --remove selected notes
-                removeSelectedNotes(true)
-            end
-        end
-        handled = true
-    end
-    if key.name == "v" and key.modifiers == "control" then
-        keyInfoText = "Paste notes"
-        if #clipboard > 0 then
-            if key.state == "pressed" then
-                showStatus(#clipboard .. " notes pasted.", true)
-                pasteNotesFromClipboard()
-                jumpToNoteInPattern("sel")
-            end
-        end
-        handled = true
-    end
-    if key.name == "a" and key.modifiers == "control" then
-        if key.state == "pressed" then
-            updateNoteSelection("all", true)
-            keyInfoText = "Select all notes"
-            showStatus(#noteSelection .. " notes selected.", true)
-        end
-        handled = true
-    end
-    if (key.name == "scrollup" or key.name == "scrolldown") then
-        if key.state == "pressed" then
-            local steps = preferences.scrollWheelSpeed.value
-            if key.name == "scrolldown" then
-                steps = steps * -1
-            end
-            if (modifier.keyAlt or modifier.keyShift or modifier.keyRShift) and not modifier.keyControl then
-                if #noteSelection > 0 and modifier.keyAlt and not modifier.keyShift and not modifier.keyControl then
-                    if steps > 0 then
-                        keyInfoText = "Increase velocity of selected notes"
-                    else
-                        keyInfoText = "Decrease velocity of selected notes"
-                    end
-                    changePropertiesOfSelectedNotes(steps, nil, nil, nil, nil, nil, nil, "add")
-                    --play new velocity
-                    triggerNoteOfCurrentInstrument(noteSelection[1].note, nil, noteSelection[1].vel, true, noteSelection[1].ins)
-                elseif #noteSelection > 0 and modifier.keyShift and not modifier.keyAlt and not modifier.keyControl then
-                    steps = -steps
-                    keyInfoText = "Move notes by " .. steps .. " micro steps"
-                    if isDelayColumnActive(true) then
-                        moveSelectedNotesByMicroSteps(steps)
-                    end
-                else
-                    keyInfoText = "Move through the grid"
-                    steps = steps * -1
-                    stepSlider.value = forceValueToRange(stepSlider.value + steps, stepSlider.min, stepSlider.max)
-                end
-            elseif not modifier.keyAlt and modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
-                keyInfoText = "Move through the grid"
-                steps = steps * -1
-                stepSlider.value = forceValueToRange(stepSlider.value + steps, stepSlider.min, stepSlider.max)
-            elseif not modifier.keyAlt and not modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
-                keyInfoText = "Move through the grid"
-                noteSlider.value = forceValueToRange(noteSlider.value + steps, noteSlider.min, noteSlider.max)
-            end
-        end
-        handled = true
-    end
-    if (key.name == "next" or key.name == "prior") then
-        if key.state == "pressed" and key.modifiers == "" then
-            local steps = 16
-            if key.name == "next" then
-                steps = steps * -1
-            end
-            keyInfoText = "Move through the grid"
-            noteSlider.value = forceValueToRange(noteSlider.value + steps, noteSlider.min, noteSlider.max)
-        end
-        handled = true
-    end
-    if (key.name == "up" or key.name == "down") then
-        if key.state == "pressed" then
-            local transpose = 1
-            if modifier.keyShift or modifier.keyRShift then
-                transpose = 12
-            end
-            if (modifier.keyShift or modifier.keyRShift) and modifier.keyControl then
-                transpose = 7
-            end
-            if key.name == "down" then
-                transpose = transpose * -1
-            end
-            if #noteSelection > 0 and not modifier.keyAlt then
-                transposeSelectedNotes(transpose, (modifier.keyControl or modifier.keyRControl) and not (modifier.keyShift or modifier.keyRShift))
-                keyInfoText = "Transpose selected notes by " .. getSingularPlural(transpose, "semitone", "semitones", true)
-                if (modifier.keyControl or modifier.keyRControl) and not (modifier.keyShift or modifier.keyRShift) then
-                    keyInfoText = keyInfoText .. ", keep in scale"
-                end
-            else
-                if modifier.keyAlt then
-                    moveSelectionThroughNotes(0, transpose, modifier.keyShift)
-                    if modifier.keyShift then
-                        keyInfoText = "Add a note from above/below to selection"
-                    else
-                        keyInfoText = "Move note selection " .. key.name
-                    end
-                else
-                    keyInfoText = "Move through the grid"
-                    noteSlider.value = forceValueToRange(noteSlider.value + transpose, noteSlider.min, noteSlider.max)
-                end
-            end
-        end
-        handled = true
-    end
-    if (key.name == "left" or key.name == "right") then
-        if key.state == "pressed" then
-            local steps = 1
-            if modifier.keyShift or modifier.keyRShift then
-                steps = 4
-            end
-            if key.name == "left" then
-                steps = steps * -1
-            end
-            if #noteSelection > 0 and not modifier.keyAlt then
-                if modifier.keyControl then
-                    steps = steps / math.abs(steps)
-                    changeSizeSelectedNotes(steps, true)
-                    keyInfoText = "Change note length of selected notes"
-                else
-                    moveSelectedNotes(steps)
-                    keyInfoText = "Move selected notes by " .. getSingularPlural(steps, "step", "steps", true)
-                end
-            else
-                if modifier.keyAlt then
-                    if modifier.keyControl then
-                        if isDelayColumnActive(true) then
-                            moveSelectedNotesByMicroSteps(steps)
-                        end
-                        keyInfoText = "Move note selection by microsteps to the " .. key.name
-                    else
-                        moveSelectionThroughNotes(steps, 0, modifier.keyShift)
-                        if modifier.keyShift then
-                            keyInfoText = "Add a note from left/right to selection"
-                        else
-                            keyInfoText = "Move note selection to the " .. key.name
-                        end
-                    end
-                else
-                    keyInfoText = "Move edit cursor position"
-                    --move cursor
-                    if currentEditPos + steps >= 1 and currentEditPos + steps <= song.selected_pattern.number_of_lines + 1 then
-                        --do step sequencing
-                        if not song.transport.playing and math.abs(steps) == 1 then
-                            if stepSequencing(currentEditPos, steps) then
-                                keyInfoText = keyInfoText .. ", do step sequencing ..."
-                            end
-                        end
-                        --move
-                        if currentEditPos + steps <= song.selected_pattern.number_of_lines then
-                            local npos = renoise.SongPos()
-                            npos.line = currentEditPos + steps
-                            npos.sequence = song.transport.edit_pos.sequence
-                            song.transport.edit_pos = npos
-                            if npos.line > gridWidth + stepOffset or npos.line <= stepOffset then
-                                if npos.line - gridWidth >= stepSlider.min then
-                                    stepSlider.value = npos.line - gridWidth
-                                elseif npos.line <= stepOffset then
-                                    stepSlider.value = npos.line - 1
-                                end
-                            end
-                        end
-                        currentEditPos = currentEditPos + steps
-                    end
-                end
-            end
-        end
-        handled = true
-    end
-    --play selection
-    if key.name == "space" and (key.modifiers == "control" or key.modifiers == "shift") and not key.repeated then
-        if key.state == "pressed" then
-            if lastEditPos then
-                playPatternFromLine(lastEditPos + stepOffset)
-            else
-                playPatternFromLine(1)
-            end
-            keyInfoText = "Start song from cursor position"
-        end
-        handled = true
-    end
-    --loving tracker computer keyboard note playing <3 (returning it back to host is buggy, so do your own)
-    if key.note then
-        local row
-        local chord = { 0 }
-        local othernote
-        local note
-        local last_note
-        --use chord stamping chord as preview, too
-        if preferences.useChordStampingForNotePreview.value then
-            chord = chordPainter
-        end
-        for i = 1, #chord do
-            othernote = false
-            if not key.repeated and key.state == "released" and lastKeyboardNote[key.name .. i] ~= nil then
-                note = lastKeyboardNote[key.name .. i]
-                lastKeyboardNote[key.name .. i] = nil
-                --check if other key playing this note
-                for key in pairs(lastKeyboardNote) do
-                    if lastKeyboardNote[key] == note then
-                        othernote = true
-                        break
-                    end
-                end
-                if not othernote then
-                    row = noteValue2GridRowOffset(note)
-                    triggerNoteOfCurrentInstrument(note, false)
-                    if row ~= nil then
-                        setKeyboardKeyColor(row, false, false)
-                        highlightNoteRow(row, false)
-                    end
-                end
-                if key.modifiers == "" then
-                    handled = true
-                end
-            elseif not key.repeated and key.state == "pressed" and key.modifiers == "" then
-                note = key.note
-                if not key.isMidi then
-                    note = note + (12 * song.transport.octave)
-                end
-                note = note + chord[i]
-                note = modifyNoteValueChord(note, last_note)
-                last_note = note
-                --check if other key playing this note
-                for key in pairs(lastKeyboardNote) do
-                    if lastKeyboardNote[key] == note then
-                        othernote = true
-                        break
-                    end
-                end
-                lastKeyboardNote[key.name .. i] = note
-                row = noteValue2GridRowOffset(lastKeyboardNote[key.name .. i])
-                if not othernote then
-                    triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name .. i], true, key.velocity)
-                end
-                if row ~= nil then
-                    setKeyboardKeyColor(row, true, false)
-                    highlightNoteRow(row, true)
-                end
-                if #chord > 1 then
-                    keyInfoText = "Play a chord"
-                else
-                    keyInfoText = "Play a note"
-                end
-                handled = true
-            end
-        end
-    end
-
-    if keyEvent.state == "pressed" then
-        lastKeyInfoTime = nil
-        local keystatetext = ""
-        if keyEvent.modifiers ~= "" then
-            keystatetext = keyEvent.modifiers
-        end
-        if not isModifierKey then
-            if keystatetext ~= "" then
-                keystatetext = keystatetext .. " + "
-            end
-            keystatetext = keystatetext .. keyEvent.name
-            lastKeyInfoTime = os.clock()
-            --save last key nmame, when modifier was used
-            if keyEvent.modifiers ~= "" then
-                lastKeyPress = keyEvent.name
-            end
-        end
-        vbw["key_state"].text = string.upper(keystatetext)
-        if keyInfoText then
-            vbw["key_state"].text = vbw["key_state"].text .. "   ⵈ   " .. keyInfoText
-        end
-        if preferences.azertyMode.value then
-            vbw["key_state"].text = vbw["key_state"].text .. " (AZERTY)"
-        end
-    elseif keyEvent.state == "released" then
-        if lastKeyPress and not isModifierKey then
-            --reset last key press, when release event was received
-            lastKeyPress = nil
-        end
-        if not lastKeyInfoTime then
-            vbw["key_state"].text = ""
-        end
-    end
-    return handled
-end
-
---process incoming midi data
-local function midiInCallback(message)
-    --only handle note events
-    if message[1] == 144 then
-        --pass them as key events
-        if message[3] > 0 then
-            handleKeyEvent({
-                name = "midi in",
-                note = message[2],
-                velocity = message[3],
-                state = "pressed",
-            })
-        else
-            handleKeyEvent({
-                name = "midi in",
-                note = message[2],
-                velocity = message[3],
-                state = "released",
-            })
-        end
-    end
-end
-
---handle scroll wheel value boxes
-local function handleSrollWheel(number, id)
-    if number > 0 then
-        handleKeyEvent({ name = "scrollup" })
-    elseif number < 0 then
-        handleKeyEvent({ name = "scrolldown" })
-    end
-    vbw[id].value = 0
-end
-
---just refresh selected notes, improves mouse actions
-local function refreshSelectedNotes()
-    local l_vbw = vbw
-    local lineValues = song.selected_pattern_track.lines
-    for key = 1, #noteSelection do
-        if l_vbw["b" .. noteSelection[key].idx] then
-            l_vbw["b" .. noteSelection[key].idx].visible = false
-            l_vbw["bs" .. noteSelection[key].idx].visible = false
-        end
-        for i = 1, 0xf do
-            if l_vbw["br" .. noteSelection[key].idx .. "_" .. i] then
-                l_vbw["br" .. noteSelection[key].idx .. "_" .. i].visible = false
-            else
-                break
-            end
-        end
-        local rowIndex = noteValue2GridRowOffset(noteSelection[key].note, true)
-        noteSelection[key].idx = tostring(noteSelection[key].step) .. "_" .. tostring(rowIndex) .. "_" .. tostring(noteSelection[key].column)
-        local noteString = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column).note_string
-        drawNoteToGrid(
-                noteSelection[key].column,
-                noteSelection[key].line,
-                noteSelection[key].step,
-                rowIndex,
-                noteSelection[key].note,
-                noteSelection[key].len,
-                noteString,
-                noteSelection[key].vel,
-                noteSelection[key].end_vel,
-                noteSelection[key].pan,
-                noteSelection[key].dly,
-                noteSelection[key].end_dly,
-                noteSelection[key].ins,
-                noteSelection[key].noteoff
-        )
-    end
-    refreshPianoRollNeeded = true
-end
-
---handle xy pad events
-local function handleXypad(val)
-    local quickRefresh
-    local forceFullRefresh
-    --reenabled disable elements
-    if #xypadpos.disabled > 0 then
-        for i = 1, #xypadpos.disabled do
-            local el = vbw[xypadpos.disabled[i]]
-            if el then
-                el.active = true
-            end
-        end
-        xypadpos.disabled = {}
-    end
-    --snap back
-    if (val.x == snapBackVal.x or val.y == snapBackVal.y) then
-        if val.x == snapBackVal.x and val.y == snapBackVal.y and xypadpos.leftClick then
-            xypadpos.leftClick = false
-            drawRectangle(false)
-        end
-        return
-    end
-    if xypadpos.notemode then
-        --mouse dragging and scaling
-        local max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
-        if xypadpos.time > os.clock() - xypadpos.pickuptiming then
-            xypadpos.x = val.x
-            xypadpos.y = val.y
-            if xypadpos.scalemode then
-                xypadpos.distanceblock = true
-            end
-        elseif xypadpos.distanceblock then
-            --some distance is needed
-            if math.max(math.abs(xypadpos.x - val.x), math.abs(xypadpos.y - val.y)) > 0.69 then
-                xypadpos.distanceblock = false
-            end
-        else
-            --prevent moving and scaling outside the grid
-            if val.x > max then
-                val.x = max
-            end
-            --when scale mode is active, scale notes
-            if xypadpos.scalemode then
-                if #noteSelection == 1 and xypadpos.resetscale then
-                    --when a new len will be drawn, then reset len to 1
-                    changeSizeSelectedNotes(1)
-                    --and remove delay
-                    changePropertiesOfSelectedNotes(nil, nil, 0, 0, nil, nil, nil, "removecut")
-                    --switch to scale mode, when note was resettet
-                    xypadpos.scaling = true
-                    xypadpos.resetscale = false
-                end
-                local v = 0
-                local note_data = noteSelection[xypadpos.selection_key]
-                if not note_data and noteSelection[1] then
-                    note_data = noteSelection[1]
-                end
-                if note_data then
-                    if modifier.keyAlt and isDelayColumnActive() then
-                        v = math.floor((val.x - (xypadpos.nx + note_data.len + (note_data.end_dly / 0x100))) * 0x100)
-                        --calculate snap
-                        local delay = (note_data.end_dly + v) % 0x100
-                        local len = math.floor((note_data.end_dly + v) / 0x100)
-                        local scalesnapsize = math.floor(0x100 / 100 * preferences.snapToGridSize.value)
-                        if delay > 0x100 - scalesnapsize then
-                            v = v - delay + 0x100
-                        elseif delay < scalesnapsize then
-                            v = v - delay
-                        end
-                        --no scaling when target len < 1, then no scaling
-                        if note_data.len + len < 1 then
-                            v = 0
-                        end
-                    else
-                        v = math.floor(math.floor((val.x - (xypadpos.nx + note_data.len)) * 0x100 - note_data.end_dly) / 0x100 + 0.5) * 0x100
-                        if note_data.len + math.floor((note_data.end_dly + v) / 0x100) < 1 then
-                            v = 0
-                        end
-                    end
-                end
-                if v ~= 0 then
-                    blockLineModifier = true
-                    quickRefresh = true
-                    if changeSizeSelectedNotesByMicroSteps(v) then
-                        xypadpos.scaling = true
-                        xypadpos.resetscale = false
-                    end
-                end
-            end
-            --when move note is active, move notes
-            if not xypadpos.scalemode then
-                --scroll through, when note hits border
-                if val.scroll then
-                    if val.y == 1 and noteSlider.value > 0 then
-                        noteSlider.value = forceValueToRange(noteSlider.value - 1, noteSlider.min, noteSlider.max)
-                        xypadpos.y = xypadpos.y + 1
-                        forceFullRefresh = true
-                    elseif val.y - 1 == gridHeight and noteSlider.value < noteSlider.max then
-                        noteSlider.value = forceValueToRange(noteSlider.value + 1, noteSlider.min, noteSlider.max)
-                        xypadpos.y = xypadpos.y - 1
-                        forceFullRefresh = true
-                    end
-                    if val.x == 1 and stepSlider.value > 0 then
-                        stepSlider.value = forceValueToRange(stepSlider.value - 1, stepSlider.min, stepSlider.max)
-                        xypadpos.x = xypadpos.x + 1
-                        xypadpos.lastx = xypadpos.lastx + 1
-                        forceFullRefresh = true
-                    elseif val.x - 1 == gridWidth and stepSlider.value < stepSlider.max then
-                        stepSlider.value = forceValueToRange(stepSlider.value + 1, stepSlider.min, stepSlider.max)
-                        xypadpos.x = xypadpos.x - 1
-                        xypadpos.lastx = xypadpos.lastx - 1
-                        forceFullRefresh = true
-                    end
-                end
-                if modifier.keyAlt and isDelayColumnActive(true) then
-                    local v = math.floor((val.x - xypadpos.x) * 0x100)
-                    if v ~= 0 then
-                        blockLineModifier = true
-                        quickRefresh = true
-                        v = moveSelectedNotesByMicroSteps(v, modifier.keyShift)
-                        if v ~= false then
-                            xypadpos.x = xypadpos.x + (v / 0x100)
-                        end
-                    end
-                else
-                    xypadpos.x = math.floor(xypadpos.x)
-                    xypadpos.y = math.floor(xypadpos.y)
-                    if xypadpos.x - math.floor(val.x) > 0 and math.floor(val.x) ~= xypadpos.lastx then
-                        if xypadpos.duplicate then
-                            if modifier.keyControl and xypadpos.idx then
-                                if noteInSelection(noteData[xypadpos.idx]) then
-                                    noteSelection = {}
-                                end
-                                table.insert(noteSelection, noteData[xypadpos.idx])
-                                xypadpos.idx = nil
-                            end
-                            duplicateSelectedNotes(0)
-                            forceFullRefresh = true
-                            xypadpos.duplicate = false
-                        end
-                        for d = math.abs(xypadpos.x - math.floor(val.x)), 1, -1 do
-                            blockLineModifier = true
-                            quickRefresh = true
-                            if moveSelectedNotes(-d) then
-                                xypadpos.x = xypadpos.x - d
-                                break
-                            end
-                        end
-                        xypadpos.lastx = math.floor(val.x)
-                    elseif xypadpos.x - math.floor(val.x) < 0 and math.floor(val.x) ~= xypadpos.lastx then
-                        if xypadpos.duplicate then
-                            if modifier.keyControl and xypadpos.idx then
-                                if noteInSelection(noteData[xypadpos.idx]) then
-                                    noteSelection = {}
-                                end
-                                table.insert(noteSelection, noteData[xypadpos.idx])
-                                xypadpos.idx = nil
-                            end
-                            duplicateSelectedNotes(0)
-                            forceFullRefresh = true
-                            xypadpos.duplicate = false
-                        end
-                        for d = math.abs(xypadpos.x - math.floor(val.x)), 1, -1 do
-                            blockLineModifier = true
-                            quickRefresh = true
-                            if moveSelectedNotes(d) then
-                                xypadpos.x = xypadpos.x + d
-                                break
-                            end
-                        end
-                        xypadpos.lastx = math.floor(val.x)
-                    end
-                end
-                if math.floor(xypadpos.y) - math.floor(val.y + 0.1) > 0 then
-                    if xypadpos.duplicate then
-                        if modifier.keyControl and xypadpos.idx then
-                            if noteInSelection(noteData[xypadpos.idx]) then
-                                noteSelection = {}
-                            end
-                            table.insert(noteSelection, noteData[xypadpos.idx])
-                            xypadpos.idx = nil
-                        end
-                        duplicateSelectedNotes(0)
-                        forceFullRefresh = true
-                        xypadpos.duplicate = false
-                    end
-                    for d = math.abs(math.floor(xypadpos.y) - math.floor(val.y + 0.1)), 1, -1 do
-                        blockLineModifier = true
-                        quickRefresh = true
-                        if transposeSelectedNotes(-d) then
-                            xypadpos.y = math.floor(xypadpos.y) - d
-                            break
-                        end
-                    end
-                elseif math.floor(xypadpos.y) - math.floor(val.y - 0.1) < 0 then
-                    if xypadpos.duplicate then
-                        if modifier.keyControl and xypadpos.idx then
-                            if noteInSelection(noteData[xypadpos.idx]) then
-                                noteSelection = {}
-                            end
-                            table.insert(noteSelection, noteData[xypadpos.idx])
-                            xypadpos.idx = nil
-                        end
-                        duplicateSelectedNotes(0)
-                        forceFullRefresh = true
-                        xypadpos.duplicate = false
-                    end
-                    for d = math.abs(math.floor(xypadpos.y) - math.floor(val.y - 0.1)), 1, -1 do
-                        blockLineModifier = true
-                        quickRefresh = true
-                        if transposeSelectedNotes(d) then
-                            xypadpos.y = math.floor(xypadpos.y) + d
-                            break
-                        end
-                    end
-                end
-            end
-        end
-    else
-        --only process rectangle selection, when left mouse button is holded
-        if xypadpos.leftClick then
-            if xypadpos.x ~= math.floor(val.x) or xypadpos.y ~= math.floor(val.y) then
-                xypadpos.x = math.floor(val.x)
-                xypadpos.y = math.floor(val.y)
-                if not preferences.mouseWarpingCompatibilityMode.value then
-                    drawRectangle(true, xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny)
-                end
-                selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, modifier.keyShift)
-            end
-        end
-    end
-    if forceFullRefresh then
-        blockLineModifier = false
-        fillPianoRoll()
-    elseif quickRefresh then
-        refreshSelectedNotes()
-    end
-end
-
---app idle
-local function appIdleEvent()
-    --only process when window is created and visible
-    if windowObj and windowObj.visible then
-        --scroll via idle, more instant
-        if xypadpos.leftClick then
-            local val = vbw["xypad"].value
-            if val.y == 1 or val.y - 1 == gridHeight or val.x == 1 or val.x - 1 == gridWidth then
-                val.scroll = true
-                handleXypad(val)
-            end
-        end
-        --refresh modifier states, when keys are pressed outside focus
-        local keyState = app.key_modifier_states
-        if (keyState["alt"] == "pressed" and modifier.keyAlt == false) or (keyState["alt"] == "released" and modifier.keyAlt == true) then
-            modifier.keyAlt = not modifier.keyAlt
-            refreshControls = true
-        end
-        if (keyState["control"] == "pressed" and modifier.keyControl == false) or (keyState["control"] == "released" and modifier.keyControl == true) then
-            modifier.keyControl = not modifier.keyControl
-            refreshControls = true
-        end
-        if (keyState["shift"] == "pressed" and modifier.keyShift == false) or (keyState["shift"] == "released" and modifier.keyShift == true) then
-            modifier.keyShift = not modifier.keyShift
-            refreshControls = true
-        end
-        --process after edit features
-        if afterEditProcessTime ~= nil and afterEditProcessTime < os.clock() - 0.1 then
-            afterEditProcess()
-        end
-        --refresh control, when needed
-        if refreshControls then
-            refreshNoteControls()
-        end
-        --refresh pianoroll, when needed
-        if refreshPianoRollNeeded then
-            fillPianoRoll()
-        end
-        --refresh timeline, when needed
-        if refreshTimeline then
-            fillTimeline()
-        end
-        --refresh chord states
-        if refreshChordDetection and preferences.chordDetection.value then
-            refreshDetectedChord()
-        end
-        --if needed refresh histogram
-        if refreshHistogram then
-            refreshHistogram = false
-            if dialogVars.histogramObj and dialogVars.histogramObj.visible then
-                refreshHistogramWindow()
-            end
-        end
-        --key info state
-        if lastKeyInfoTime and lastKeyInfoTime + preferences.keyInfoTime.value < os.clock() then
-            vbw["key_state"].text = ""
-        end
-        --refresh playback pos indicator
-        refreshPlaybackPosIndicator()
-        --edit pos render
-        refreshEditPosIndicator()
-        --block loop, create an index for comparison, because obserable's are missing here
-        local currentblockloop = tostring(song.transport.loop_block_enabled)
-                .. tostring(song.transport.loop_block_start_pos)
-                .. tostring(song.transport.loop_block_range_coeff)
-        if blockloopidx ~= currentblockloop then
-            blockloopidx = currentblockloop
-            refreshTimeline = true
-        end
-        --instrument scale obs
-        if preferences.scaleHighlightingType.value == 4 and currentInstrument and song.instruments[currentInstrument + 1] then
-            local temp = tostring(song.instruments[currentInstrument + 1].trigger_options.scale_key) ..
-                    tostring(song.instruments[currentInstrument + 1].trigger_options.scale_mode)
-            if temp ~= instrumentScaleMode then
-                instrumentScaleMode = temp
-                refreshPianoRollNeeded = true
-            end
-        end
-        --midi in init handling
-        if preferences.midiIn.value and not midiDevice and preferences.midiDevice.value ~= "" then
-            --check if the device is present
-            local temp = renoise.Midi.available_input_devices()
-            for i = 1, #temp do
-                if temp[i] == preferences.midiDevice.value then
-                    --init device
-                    midiDevice = renoise.Midi.create_input_device(preferences.midiDevice.value, midiInCallback)
-                    break
-                end
-            end
-            if not midiDevice then
-                showStatus("Error: Cant initialize midi in device: " .. preferences.midiDevice.value)
-                --disable midi in
-                preferences.midiIn.value = false
-                midiDevice = nil
-            end
-        elseif not preferences.midiIn.value and midiDevice then
-            if midiDevice.is_open then
-                midiDevice:close()
-            end
-            midiDevice = nil
-        end
-        --
-        if #lastTriggerNote > 0 and oscClient then
-            local newLastTriggerNote = {}
-            for i = 1, #lastTriggerNote do
-                if lastTriggerNote[i].time < os.clock() - (preferences.triggerTime.value / 1000) then
-                    table.remove(lastTriggerNote[i].packet, 4) --remove velocity
-                    oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote[i].packet))
-                else
-                    table.insert(newLastTriggerNote, lastTriggerNote[i])
-                end
-            end
-            lastTriggerNote = newLastTriggerNote
-        end
-        --refresh after prefernces changes
-        if dialogVars.preferencesWasShown and dialogVars.preferencesObj and not dialogVars.preferencesObj.visible then
-            restoreFocus()
-            if oscClient then
-                oscClient:close()
-                oscClient = nil
-            end
-            refreshControls = true
-            refreshPianoRollNeeded = true
-            --when invisible is enabled, no snapback needed
-            if vbw and vbw["xypad"] then
-                if not preferences.mouseWarpingCompatibilityMode.value then
-                    vbw["xypad"].snapback = snapBackVal
-                else
-                    vbw["xypad"].snapback = nil
-                end
-            end
-            --apply new highlighting colors
-            initColors()
-            refreshPianoRollNeeded = true
-            dialogVars.preferencesWasShown = false
-        end
-    else
-        --set follow player back
-        if wasFollowPlayer ~= nil then
-            song.transport.follow_player = wasFollowPlayer
-            wasFollowPlayer = nil
-        end
-        --close editing windows
-        if dialogVars.setScaleObj and dialogVars.setScaleObj.visible then
-            dialogVars.setScaleObj:close()
-        end
-        if dialogVars.histogramObj and dialogVars.histogramObj.visible then
-            dialogVars.histogramObj:close()
-        end
-        if dialogVars.penSettingsObj and dialogVars.penSettingsObj.visible then
-            dialogVars.penSettingsObj:close()
-        end
-    end
-end
-
---function to switch between relative major and minor
-local function switchToRelativeScale()
-    if preferences.scaleHighlightingType.value == 3 then
-        preferences.scaleHighlightingType.value = 2
-        preferences.keyForSelectedScale.value = ((preferences.keyForSelectedScale.value + 2) % 12) + 1
-        refreshPianoRollNeeded = true
-    elseif preferences.scaleHighlightingType.value == 2 then
-        preferences.scaleHighlightingType.value = 3
-        preferences.keyForSelectedScale.value = ((preferences.keyForSelectedScale.value - 4) % 12) + 1
-        refreshPianoRollNeeded = true
-    end
-end
-
 --init chord painter table
 local function setupChordPainter()
     local idx = vbwp.chordpreset.value
@@ -6998,6 +5846,1163 @@ local function showPenSettingsDialog()
 
     else
         dialogVars.penSettingsObj:show()
+    end
+end
+
+--convert some keys to qwerty layout
+local function azertyMode(key)
+    key = table.copy(key)
+    if key.name == "&" then
+        key.name = "1"
+    elseif key.name == "é" then
+        key.name = "2"
+    elseif key.name == "\"" then
+        key.name = "3"
+    elseif key.name == "'" then
+        key.name = "4"
+    elseif key.name == "(" then
+        key.name = "5"
+    elseif key.name == "-" then
+        key.name = "6"
+    elseif key.name == "è" then
+        key.name = "7"
+    elseif key.name == "_" then
+        key.name = "8"
+    elseif key.name == "ç" then
+        key.name = "9"
+    elseif key.name == "à" then
+        key.name = "0"
+    end
+    return key
+end
+
+--function for all keyboard shortcuts
+local function handleKeyEvent(keyEvent)
+    local handled = false
+    local keyInfoText
+    local isModifierKey = false
+    local key
+
+    if preferences.disableKeyHandler.value then
+        return false
+    end
+
+    --convert number keys from azerty to qwerty
+    if preferences.azertyMode.value then
+        key = azertyMode(keyEvent)
+    else
+        key = keyEvent
+    end
+
+    --check if current key is a modifier
+    if key.name == "lalt" or key.name == "lshift" or key.name == "lcontrol" or key.name == "ralt" or key.name == "rshift" or key.name == "rcontrol" then
+        isModifierKey = true
+    end
+
+    --ignore press events from last key event with modifiers
+    if lastKeyPress and lastKeyPress == key.name and key.state == "pressed" and key.modifiers == "" then
+        return false
+    end
+
+    --focus pattern editor - https://forum.renoise.com/t/set-focus-from-lua-code/42281/3
+    app.window.lock_keyboard_focus = false
+    app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_PATTERN_EDITOR
+    app.window.lock_keyboard_focus = true
+
+    if key.name == "lcontrol" and key.state == "pressed" then
+        modifier.keyControl = true
+        handled = true
+    elseif key.name == "lcontrol" and key.state == "released" then
+        modifier.keyControl = false
+        handled = true
+    end
+    if key.name == "rcontrol" and key.state == "pressed" then
+        modifier.keyRControl = true
+        handled = true
+    elseif key.name == "rcontrol" and key.state == "released" then
+        modifier.keyRControl = false
+        handled = true
+    end
+    if key.name == "lalt" and key.state == "pressed" then
+        modifier.keyAlt = true
+        handled = true
+        refreshControls = true
+    elseif key.name == "lalt" and key.state == "released" then
+        modifier.keyAlt = false
+        handled = true
+        refreshControls = true
+    end
+    if key.name == "lshift" and key.state == "pressed" then
+        modifier.keyShift = true
+        handled = true
+        refreshControls = true
+    elseif key.name == "lshift" and key.state == "released" then
+        modifier.keyShift = false
+        handled = true
+        refreshControls = true
+    end
+    if key.name == "rshift" and key.state == "pressed" then
+        modifier.keyRShift = true
+        handled = true
+    elseif key.name == "rshift" and key.state == "released" then
+        modifier.keyRShift = false
+        handled = true
+    end
+
+    --prepare midi in events
+    if key.name == "midi in" then
+        key.repeated = false
+        key.modifiers = ""
+        key.isMidi = true
+        handled = true
+        --extend key name
+        key.name = key.name .. " - Note " .. tostring(key.note)
+    end
+
+    --convert scrollwheel events
+    if key.name == "scrollup" or key.name == "scrolldown" then
+        key.state = "pressed"
+        key.modifiers = ""
+        if modifier.keyShift or modifier.keyRShift then
+            key.modifiers = "shift"
+        end
+        if modifier.keyAlt then
+            if key.modifiers ~= "" then
+                key.modifiers = key.modifiers .. " + "
+            end
+            key.modifiers = key.modifiers .. "alt"
+        end
+        if modifier.keyControl then
+            if key.modifiers ~= "" then
+                key.modifiers = key.modifiers .. " + "
+            end
+            key.modifiers = key.modifiers .. "control"
+        end
+        restoreFocus()
+    end
+
+    if key.name == "del" or key.name == "back" then
+        if key.state == "pressed" then
+            keyInfoText = "Delete selected notes"
+            if #noteSelection > 0 then
+                showStatus(#noteSelection .. " notes deleted.")
+                removeSelectedNotes()
+            end
+        end
+        handled = true
+    end
+    if key.name == "esc" then
+        if key.state == "pressed" then
+            keyInfoText = "Deselect current note selection"
+            if #noteSelection > 0 then
+                updateNoteSelection(nil, true)
+            end
+        end
+        handled = true
+    end
+    if key.name == "f1" then
+        if key.state == "pressed" then
+            keyInfoText = "Select mode"
+            penMode = false
+            audioPreviewMode = false
+            refreshControls = true
+        end
+        handled = true
+    end
+    if key.name == "f2" then
+        if key.state == "pressed" then
+            if modifier.keyControl then
+                keyInfoText = "Open Pen mode settings."
+                showPenSettingsDialog()
+            else
+                keyInfoText = "Pen mode"
+                penMode = true
+                audioPreviewMode = false
+                refreshControls = true
+            end
+        end
+        handled = true
+    end
+    if key.name == "f3" then
+        if key.state == "pressed" then
+            keyInfoText = "Audio preview mode"
+            penMode = false
+            audioPreviewMode = true
+            refreshControls = true
+        end
+        handled = true
+    end
+    if key.name == "i" and key.modifiers == "shift" then
+        if key.state == "pressed" then
+            if #noteSelection > 0 then
+                showStatus("Inverted note selection.")
+                keyInfoText = "Invert note selection"
+                local newSelection = {}
+                for k in pairs(noteData) do
+                    if not noteInSelection(noteData[k]) then
+                        table.insert(newSelection, noteData[k])
+                    end
+                end
+                updateNoteSelection(newSelection, true)
+            end
+        end
+        handled = true
+    end
+    if key.modifiers == "control" and (
+            key.name == "1" or
+                    key.name == "2" or
+                    key.name == "3" or
+                    key.name == "4" or
+                    key.name == "5" or
+                    key.name == "6" or
+                    key.name == "7" or
+                    key.name == "8" or
+                    key.name == "9"
+    ) then
+        if key.state == "pressed" and not key.repeated then
+            keyInfoText = "Change note length to " .. key.name
+            if #noteSelection > 0 then
+                currentNoteLength = tonumber(key.name)
+                changeSizeSelectedNotes(currentNoteLength)
+                refreshControls = true
+            else
+                vbw.note_len.value = tonumber(key.name)
+            end
+        end
+        handled = true
+    end
+
+    if key.name == "0" then
+        if key.state == "pressed" then
+            if key.modifiers == "control" then
+                if #noteSelection > 0 then
+                    scaleNoteSelection(2)
+                    keyInfoText = "Grow note selection"
+                end
+                currentNoteLength = math.min(math.floor(currentNoteLength * 2), 256)
+            elseif key.modifiers == "shift + control" then
+                if #noteSelection > 0 then
+                    scaleNoteSelection(0.5)
+                    keyInfoText = "Shrink note selection"
+                end
+                currentNoteLength = math.max(math.floor(currentNoteLength / 2), 1)
+            end
+            refreshControls = true
+        end
+        handled = true
+    end
+    if key.name == "u" and key.modifiers == "control" then
+        if key.state == "pressed" then
+            if #noteSelection == 0 then
+                for k in pairs(noteData) do
+                    local note_data = noteData[k]
+                    table.insert(noteSelection, note_data)
+                end
+            end
+            if #noteSelection > 0 then
+                local ret = chopSelectedNotes()
+                --was not possible then deselect
+                if not ret then
+                    updateNoteSelection(nil, true)
+                else
+                    showStatus((#noteSelection / 2) .. " notes chopped.")
+                    keyInfoText = "Chop selected notes"
+                end
+            end
+        end
+        handled = true
+    end
+    if key.name == "h" and key.modifiers == "alt" then
+        if key.state == "pressed" then
+            keyInfoText = "Open histogram ..."
+            if #noteSelection == 0 then
+                updateNoteSelection("all", true)
+            end
+            showHistogram()
+        end
+        handled = true
+    end
+    if key.name == "m" and key.modifiers == "alt" then
+        if key.state == "pressed" then
+            local selectall = false
+            if #noteSelection == 0 then
+                for k in pairs(noteData) do
+                    local note_data = noteData[k]
+                    table.insert(noteSelection, note_data)
+                end
+                selectall = true
+            end
+            if #noteSelection > 0 then
+                changePropertiesOfSelectedNotes("mute")
+                keyInfoText = "Mute selected notes"
+                showStatus(#noteSelection .. " notes was muted.")
+                --when all was automatically selected, deselect it
+                if selectall then
+                    noteSelection = {}
+                    keyInfoText = "Mute all notes"
+                end
+            end
+        end
+        handled = true
+    end
+    if key.name == "n" and key.modifiers == "alt" then
+        if key.state == "pressed" then
+            if #noteSelection > 0 then
+                changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, nil, nil, "matchingnotes")
+                keyInfoText = "Match notes"
+                showStatus(#noteSelection .. " notes was matched.")
+            end
+        end
+        handled = true
+    end
+    if key.name == "m" and key.modifiers == "shift + alt" then
+        if key.state == "pressed" then
+            local selectall = false
+            if #noteSelection == 0 then
+                for k in pairs(noteData) do
+                    local note_data = noteData[k]
+                    table.insert(noteSelection, note_data)
+                end
+                selectall = true
+            end
+            if #noteSelection > 0 then
+                changePropertiesOfSelectedNotes("unmute")
+                keyInfoText = "Unmute selected notes"
+                showStatus(#noteSelection .. " notes was unmuted.")
+                --when all was automatically selected, deselect it
+                if selectall then
+                    noteSelection = {}
+                    keyInfoText = "Unmute all notes"
+                end
+            end
+        end
+        handled = true
+    end
+    if (key.name == "b" or key.name == "d") and key.modifiers == "control" then
+        if key.state == "pressed" then
+            if #noteSelection == 0 then
+                --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
+                updateNoteSelection("all", true)
+            end
+            if #noteSelection > 0 then
+                local ret = duplicateSelectedNotes()
+                --was not possible then deselect
+                if not ret then
+                    noteSelection = {}
+                    refreshPianoRollNeeded = true
+                else
+                    keyInfoText = "Duplicate notes"
+                    jumpToNoteInPattern("sel")
+                    showStatus(#noteSelection .. " notes duplicated.")
+                end
+            end
+        end
+        handled = true
+    end
+    if key.name == "c" and key.modifiers == "control" then
+        keyInfoText = "Copy selected notes"
+        if key.state == "pressed" and not key.repeated then
+            if #noteSelection > 0 then
+                clipboard = {}
+                for k in pairs(noteSelection) do
+                    local note_data = noteSelection[k]
+                    table.insert(clipboard, note_data)
+                end
+                --set paste cursor
+                table.sort(clipboard, function(a, b)
+                    return a.line > b.line
+                end)
+                pasteCursor = { clipboard[1].line + clipboard[1].len, 0 }
+                table.sort(clipboard, function(a, b)
+                    if a.line == b.line then
+                        return a.note < b.note
+                    end
+                    return a.line < b.line
+                end)
+                pasteCursor = { pasteCursor[1], clipboard[1].note }
+                showStatus(#noteSelection .. " notes copied.", true)
+            end
+        end
+        handled = true
+    end
+    if key.name == "x" and key.modifiers == "control" then
+        keyInfoText = "Cut selected notes"
+        if key.state == "pressed" and not key.repeated then
+            if #noteSelection > 0 then
+                clipboard = {}
+                for k in pairs(noteSelection) do
+                    local note_data = noteSelection[k]
+                    table.insert(clipboard, note_data)
+                end
+                --set paste cursor, to the first note
+                table.sort(clipboard, sortLeftOneFirst)
+                pasteCursor = { clipboard[1].line, clipboard[1].note }
+                --set status
+                showStatus(#noteSelection .. " notes cut.", true)
+                --remove selected notes
+                removeSelectedNotes(true)
+            end
+        end
+        handled = true
+    end
+    if key.name == "v" and key.modifiers == "control" then
+        keyInfoText = "Paste notes"
+        if #clipboard > 0 then
+            if key.state == "pressed" then
+                showStatus(#clipboard .. " notes pasted.", true)
+                pasteNotesFromClipboard()
+                jumpToNoteInPattern("sel")
+            end
+        end
+        handled = true
+    end
+    if key.name == "a" and key.modifiers == "control" then
+        if key.state == "pressed" then
+            updateNoteSelection("all", true)
+            keyInfoText = "Select all notes"
+            showStatus(#noteSelection .. " notes selected.", true)
+        end
+        handled = true
+    end
+    if (key.name == "scrollup" or key.name == "scrolldown") then
+        if key.state == "pressed" then
+            local steps = preferences.scrollWheelSpeed.value
+            if key.name == "scrolldown" then
+                steps = steps * -1
+            end
+            if (modifier.keyAlt or modifier.keyShift or modifier.keyRShift) and not modifier.keyControl then
+                if #noteSelection > 0 and modifier.keyAlt and not modifier.keyShift and not modifier.keyControl then
+                    if steps > 0 then
+                        keyInfoText = "Increase velocity of selected notes"
+                    else
+                        keyInfoText = "Decrease velocity of selected notes"
+                    end
+                    changePropertiesOfSelectedNotes(steps, nil, nil, nil, nil, nil, nil, "add")
+                    --play new velocity
+                    triggerNoteOfCurrentInstrument(noteSelection[1].note, nil, noteSelection[1].vel, true, noteSelection[1].ins)
+                elseif #noteSelection > 0 and modifier.keyShift and not modifier.keyAlt and not modifier.keyControl then
+                    steps = -steps
+                    keyInfoText = "Move notes by " .. steps .. " micro steps"
+                    if isDelayColumnActive(true) then
+                        moveSelectedNotesByMicroSteps(steps)
+                    end
+                else
+                    keyInfoText = "Move through the grid"
+                    steps = steps * -1
+                    stepSlider.value = forceValueToRange(stepSlider.value + steps, stepSlider.min, stepSlider.max)
+                end
+            elseif not modifier.keyAlt and modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
+                keyInfoText = "Move through the grid"
+                steps = steps * -1
+                stepSlider.value = forceValueToRange(stepSlider.value + steps, stepSlider.min, stepSlider.max)
+            elseif not modifier.keyAlt and not modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
+                keyInfoText = "Move through the grid"
+                noteSlider.value = forceValueToRange(noteSlider.value + steps, noteSlider.min, noteSlider.max)
+            end
+        end
+        handled = true
+    end
+    if (key.name == "next" or key.name == "prior") then
+        if key.state == "pressed" and key.modifiers == "" then
+            local steps = 16
+            if key.name == "next" then
+                steps = steps * -1
+            end
+            keyInfoText = "Move through the grid"
+            noteSlider.value = forceValueToRange(noteSlider.value + steps, noteSlider.min, noteSlider.max)
+        end
+        handled = true
+    end
+    if (key.name == "up" or key.name == "down") then
+        if key.state == "pressed" then
+            local transpose = 1
+            if modifier.keyShift or modifier.keyRShift then
+                transpose = 12
+            end
+            if (modifier.keyShift or modifier.keyRShift) and modifier.keyControl then
+                transpose = 7
+            end
+            if key.name == "down" then
+                transpose = transpose * -1
+            end
+            if #noteSelection > 0 and not modifier.keyAlt then
+                transposeSelectedNotes(transpose, (modifier.keyControl or modifier.keyRControl) and not (modifier.keyShift or modifier.keyRShift))
+                keyInfoText = "Transpose selected notes by " .. getSingularPlural(transpose, "semitone", "semitones", true)
+                if (modifier.keyControl or modifier.keyRControl) and not (modifier.keyShift or modifier.keyRShift) then
+                    keyInfoText = keyInfoText .. ", keep in scale"
+                end
+            else
+                if modifier.keyAlt then
+                    moveSelectionThroughNotes(0, transpose, modifier.keyShift)
+                    if modifier.keyShift then
+                        keyInfoText = "Add a note from above/below to selection"
+                    else
+                        keyInfoText = "Move note selection " .. key.name
+                    end
+                else
+                    keyInfoText = "Move through the grid"
+                    noteSlider.value = forceValueToRange(noteSlider.value + transpose, noteSlider.min, noteSlider.max)
+                end
+            end
+        end
+        handled = true
+    end
+    if (key.name == "left" or key.name == "right") then
+        if key.state == "pressed" then
+            local steps = 1
+            if modifier.keyShift or modifier.keyRShift then
+                steps = 4
+            end
+            if key.name == "left" then
+                steps = steps * -1
+            end
+            if #noteSelection > 0 and not modifier.keyAlt then
+                if modifier.keyControl then
+                    steps = steps / math.abs(steps)
+                    changeSizeSelectedNotes(steps, true)
+                    keyInfoText = "Change note length of selected notes"
+                else
+                    moveSelectedNotes(steps)
+                    keyInfoText = "Move selected notes by " .. getSingularPlural(steps, "step", "steps", true)
+                end
+            else
+                if modifier.keyAlt then
+                    if modifier.keyControl then
+                        if isDelayColumnActive(true) then
+                            moveSelectedNotesByMicroSteps(steps)
+                        end
+                        keyInfoText = "Move note selection by microsteps to the " .. key.name
+                    else
+                        moveSelectionThroughNotes(steps, 0, modifier.keyShift)
+                        if modifier.keyShift then
+                            keyInfoText = "Add a note from left/right to selection"
+                        else
+                            keyInfoText = "Move note selection to the " .. key.name
+                        end
+                    end
+                else
+                    keyInfoText = "Move edit cursor position"
+                    --move cursor
+                    if currentEditPos + steps >= 1 and currentEditPos + steps <= song.selected_pattern.number_of_lines + 1 then
+                        --do step sequencing
+                        if not song.transport.playing and math.abs(steps) == 1 then
+                            if stepSequencing(currentEditPos, steps) then
+                                keyInfoText = keyInfoText .. ", do step sequencing ..."
+                            end
+                        end
+                        --move
+                        if currentEditPos + steps <= song.selected_pattern.number_of_lines then
+                            local npos = renoise.SongPos()
+                            npos.line = currentEditPos + steps
+                            npos.sequence = song.transport.edit_pos.sequence
+                            song.transport.edit_pos = npos
+                            if npos.line > gridWidth + stepOffset or npos.line <= stepOffset then
+                                if npos.line - gridWidth >= stepSlider.min then
+                                    stepSlider.value = npos.line - gridWidth
+                                elseif npos.line <= stepOffset then
+                                    stepSlider.value = npos.line - 1
+                                end
+                            end
+                        end
+                        currentEditPos = currentEditPos + steps
+                    end
+                end
+            end
+        end
+        handled = true
+    end
+    --play selection
+    if key.name == "space" and (key.modifiers == "control" or key.modifiers == "shift") and not key.repeated then
+        if key.state == "pressed" then
+            if lastEditPos then
+                playPatternFromLine(lastEditPos + stepOffset)
+            else
+                playPatternFromLine(1)
+            end
+            keyInfoText = "Start song from cursor position"
+        end
+        handled = true
+    end
+    --loving tracker computer keyboard note playing <3 (returning it back to host is buggy, so do your own)
+    if key.note then
+        local row
+        local chord = { 0 }
+        local othernote
+        local note
+        local last_note
+        --use chord stamping chord as preview, too
+        if preferences.useChordStampingForNotePreview.value then
+            chord = chordPainter
+        end
+        for i = 1, #chord do
+            othernote = false
+            if not key.repeated and key.state == "released" and lastKeyboardNote[key.name .. i] ~= nil then
+                note = lastKeyboardNote[key.name .. i]
+                lastKeyboardNote[key.name .. i] = nil
+                --check if other key playing this note
+                for k in pairs(lastKeyboardNote) do
+                    if lastKeyboardNote[k] == note then
+                        othernote = true
+                        break
+                    end
+                end
+                if not othernote then
+                    row = noteValue2GridRowOffset(note)
+                    triggerNoteOfCurrentInstrument(note, false)
+                    if row ~= nil then
+                        setKeyboardKeyColor(row, false, false)
+                        highlightNoteRow(row, false)
+                    end
+                end
+                if key.modifiers == "" then
+                    handled = true
+                end
+            elseif not key.repeated and key.state == "pressed" and key.modifiers == "" then
+                note = key.note
+                if not key.isMidi then
+                    note = note + (12 * song.transport.octave)
+                end
+                note = note + chord[i]
+                note = modifyNoteValueChord(note, last_note)
+                last_note = note
+                --check if other key playing this note
+                for k in pairs(lastKeyboardNote) do
+                    if lastKeyboardNote[k] == note then
+                        othernote = true
+                        break
+                    end
+                end
+                lastKeyboardNote[key.name .. i] = note
+                row = noteValue2GridRowOffset(lastKeyboardNote[key.name .. i])
+                if not othernote then
+                    triggerNoteOfCurrentInstrument(lastKeyboardNote[key.name .. i], true, key.velocity)
+                end
+                if row ~= nil then
+                    setKeyboardKeyColor(row, true, false)
+                    highlightNoteRow(row, true)
+                end
+                if #chord > 1 then
+                    keyInfoText = "Play a chord"
+                else
+                    keyInfoText = "Play a note"
+                end
+                handled = true
+            end
+        end
+    end
+
+    if keyEvent.state == "pressed" then
+        lastKeyInfoTime = nil
+        local keystatetext = ""
+        if keyEvent.modifiers ~= "" then
+            keystatetext = keyEvent.modifiers
+        end
+        if not isModifierKey then
+            if keystatetext ~= "" then
+                keystatetext = keystatetext .. " + "
+            end
+            keystatetext = keystatetext .. keyEvent.name
+            lastKeyInfoTime = os.clock()
+            --save last key nmame, when modifier was used
+            if keyEvent.modifiers ~= "" then
+                lastKeyPress = keyEvent.name
+            end
+        end
+        vbw["key_state"].text = string.upper(keystatetext)
+        if keyInfoText then
+            vbw["key_state"].text = vbw["key_state"].text .. "   ⵈ   " .. keyInfoText
+        end
+        if preferences.azertyMode.value then
+            vbw["key_state"].text = vbw["key_state"].text .. " (AZERTY)"
+        end
+    elseif keyEvent.state == "released" then
+        if lastKeyPress and not isModifierKey then
+            --reset last key press, when release event was received
+            lastKeyPress = nil
+        end
+        if not lastKeyInfoTime then
+            vbw["key_state"].text = ""
+        end
+    end
+    return handled
+end
+
+--process incoming midi data
+local function midiInCallback(message)
+    --only handle note events
+    if message[1] == 144 then
+        --pass them as key events
+        if message[3] > 0 then
+            handleKeyEvent({
+                name = "midi in",
+                note = message[2],
+                velocity = message[3],
+                state = "pressed",
+            })
+        else
+            handleKeyEvent({
+                name = "midi in",
+                note = message[2],
+                velocity = message[3],
+                state = "released",
+            })
+        end
+    end
+end
+
+--handle scroll wheel value boxes
+local function handleSrollWheel(number, id)
+    if number > 0 then
+        handleKeyEvent({ name = "scrollup" })
+    elseif number < 0 then
+        handleKeyEvent({ name = "scrolldown" })
+    end
+    vbw[id].value = 0
+end
+
+--just refresh selected notes, improves mouse actions
+local function refreshSelectedNotes()
+    local l_vbw = vbw
+    local lineValues = song.selected_pattern_track.lines
+    for key = 1, #noteSelection do
+        if l_vbw["b" .. noteSelection[key].idx] then
+            l_vbw["b" .. noteSelection[key].idx].visible = false
+            l_vbw["bs" .. noteSelection[key].idx].visible = false
+        end
+        for i = 1, 0xf do
+            if l_vbw["br" .. noteSelection[key].idx .. "_" .. i] then
+                l_vbw["br" .. noteSelection[key].idx .. "_" .. i].visible = false
+            else
+                break
+            end
+        end
+        local rowIndex = noteValue2GridRowOffset(noteSelection[key].note, true)
+        noteSelection[key].idx = tostring(noteSelection[key].step) .. "_" .. tostring(rowIndex) .. "_" .. tostring(noteSelection[key].column)
+        local noteString = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column).note_string
+        drawNoteToGrid(
+                noteSelection[key].column,
+                noteSelection[key].line,
+                noteSelection[key].step,
+                rowIndex,
+                noteSelection[key].note,
+                noteSelection[key].len,
+                noteString,
+                noteSelection[key].vel,
+                noteSelection[key].end_vel,
+                noteSelection[key].pan,
+                noteSelection[key].dly,
+                noteSelection[key].end_dly,
+                noteSelection[key].ins,
+                noteSelection[key].noteoff
+        )
+    end
+    refreshPianoRollNeeded = true
+end
+
+--handle xy pad events
+local function handleXypad(val)
+    local quickRefresh
+    local forceFullRefresh
+    --reenabled disable elements
+    if #xypadpos.disabled > 0 then
+        for i = 1, #xypadpos.disabled do
+            local el = vbw[xypadpos.disabled[i]]
+            if el then
+                el.active = true
+            end
+        end
+        xypadpos.disabled = {}
+    end
+    --snap back
+    if (val.x == snapBackVal.x or val.y == snapBackVal.y) then
+        if val.x == snapBackVal.x and val.y == snapBackVal.y and xypadpos.leftClick then
+            xypadpos.leftClick = false
+            drawRectangle(false)
+        end
+        return
+    end
+    if xypadpos.notemode then
+        --mouse dragging and scaling
+        local max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
+        if xypadpos.time > os.clock() - xypadpos.pickuptiming then
+            xypadpos.x = val.x
+            xypadpos.y = val.y
+            if xypadpos.scalemode then
+                xypadpos.distanceblock = true
+            end
+        elseif xypadpos.distanceblock then
+            --some distance is needed
+            if math.max(math.abs(xypadpos.x - val.x), math.abs(xypadpos.y - val.y)) > 0.69 then
+                xypadpos.distanceblock = false
+            end
+        else
+            --prevent moving and scaling outside the grid
+            if val.x > max then
+                val.x = max
+            end
+            --when scale mode is active, scale notes
+            if xypadpos.scalemode then
+                if #noteSelection == 1 and xypadpos.resetscale then
+                    --when a new len will be drawn, then reset len to 1
+                    changeSizeSelectedNotes(1)
+                    --and remove delay
+                    changePropertiesOfSelectedNotes(nil, nil, 0, 0, nil, nil, nil, "removecut")
+                    --switch to scale mode, when note was resettet
+                    xypadpos.scaling = true
+                    xypadpos.resetscale = false
+                end
+                local v = 0
+                local note_data = noteSelection[xypadpos.selection_key]
+                if not note_data and noteSelection[1] then
+                    note_data = noteSelection[1]
+                end
+                if note_data then
+                    if modifier.keyAlt and isDelayColumnActive() then
+                        v = math.floor((val.x - (xypadpos.nx + note_data.len + (note_data.end_dly / 0x100))) * 0x100)
+                        --calculate snap
+                        local delay = (note_data.end_dly + v) % 0x100
+                        local len = math.floor((note_data.end_dly + v) / 0x100)
+                        local scalesnapsize = math.floor(0x100 / 100 * preferences.snapToGridSize.value)
+                        if delay > 0x100 - scalesnapsize then
+                            v = v - delay + 0x100
+                        elseif delay < scalesnapsize then
+                            v = v - delay
+                        end
+                        --no scaling when target len < 1, then no scaling
+                        if note_data.len + len < 1 then
+                            v = 0
+                        end
+                    else
+                        v = math.floor(math.floor((val.x - (xypadpos.nx + note_data.len)) * 0x100 - note_data.end_dly) / 0x100 + 0.5) * 0x100
+                        if note_data.len + math.floor((note_data.end_dly + v) / 0x100) < 1 then
+                            v = 0
+                        end
+                    end
+                end
+                if v ~= 0 then
+                    blockLineModifier = true
+                    quickRefresh = true
+                    if changeSizeSelectedNotesByMicroSteps(v) then
+                        xypadpos.scaling = true
+                        xypadpos.resetscale = false
+                    end
+                end
+            end
+            --when move note is active, move notes
+            if not xypadpos.scalemode then
+                --scroll through, when note hits border
+                if val.scroll then
+                    if val.y == 1 and noteSlider.value > 0 then
+                        noteSlider.value = forceValueToRange(noteSlider.value - 1, noteSlider.min, noteSlider.max)
+                        xypadpos.y = xypadpos.y + 1
+                        forceFullRefresh = true
+                    elseif val.y - 1 == gridHeight and noteSlider.value < noteSlider.max then
+                        noteSlider.value = forceValueToRange(noteSlider.value + 1, noteSlider.min, noteSlider.max)
+                        xypadpos.y = xypadpos.y - 1
+                        forceFullRefresh = true
+                    end
+                    if val.x == 1 and stepSlider.value > 0 then
+                        stepSlider.value = forceValueToRange(stepSlider.value - 1, stepSlider.min, stepSlider.max)
+                        xypadpos.x = xypadpos.x + 1
+                        xypadpos.lastx = xypadpos.lastx + 1
+                        forceFullRefresh = true
+                    elseif val.x - 1 == gridWidth and stepSlider.value < stepSlider.max then
+                        stepSlider.value = forceValueToRange(stepSlider.value + 1, stepSlider.min, stepSlider.max)
+                        xypadpos.x = xypadpos.x - 1
+                        xypadpos.lastx = xypadpos.lastx - 1
+                        forceFullRefresh = true
+                    end
+                end
+                if modifier.keyAlt and isDelayColumnActive(true) then
+                    local v = math.floor((val.x - xypadpos.x) * 0x100)
+                    if v ~= 0 then
+                        blockLineModifier = true
+                        quickRefresh = true
+                        v = moveSelectedNotesByMicroSteps(v, modifier.keyShift)
+                        if v ~= false then
+                            xypadpos.x = xypadpos.x + (v / 0x100)
+                        end
+                    end
+                else
+                    xypadpos.x = math.floor(xypadpos.x)
+                    xypadpos.y = math.floor(xypadpos.y)
+                    if xypadpos.x - math.floor(val.x) > 0 and math.floor(val.x) ~= xypadpos.lastx then
+                        if xypadpos.duplicate then
+                            if modifier.keyControl and xypadpos.idx then
+                                if noteInSelection(noteData[xypadpos.idx]) then
+                                    noteSelection = {}
+                                end
+                                table.insert(noteSelection, noteData[xypadpos.idx])
+                                xypadpos.idx = nil
+                            end
+                            duplicateSelectedNotes(0)
+                            forceFullRefresh = true
+                            xypadpos.duplicate = false
+                        end
+                        for d = math.abs(xypadpos.x - math.floor(val.x)), 1, -1 do
+                            blockLineModifier = true
+                            quickRefresh = true
+                            if moveSelectedNotes(-d) then
+                                xypadpos.x = xypadpos.x - d
+                                break
+                            end
+                        end
+                        xypadpos.lastx = math.floor(val.x)
+                    elseif xypadpos.x - math.floor(val.x) < 0 and math.floor(val.x) ~= xypadpos.lastx then
+                        if xypadpos.duplicate then
+                            if modifier.keyControl and xypadpos.idx then
+                                if noteInSelection(noteData[xypadpos.idx]) then
+                                    noteSelection = {}
+                                end
+                                table.insert(noteSelection, noteData[xypadpos.idx])
+                                xypadpos.idx = nil
+                            end
+                            duplicateSelectedNotes(0)
+                            forceFullRefresh = true
+                            xypadpos.duplicate = false
+                        end
+                        for d = math.abs(xypadpos.x - math.floor(val.x)), 1, -1 do
+                            blockLineModifier = true
+                            quickRefresh = true
+                            if moveSelectedNotes(d) then
+                                xypadpos.x = xypadpos.x + d
+                                break
+                            end
+                        end
+                        xypadpos.lastx = math.floor(val.x)
+                    end
+                end
+                if math.floor(xypadpos.y) - math.floor(val.y + 0.1) > 0 then
+                    if xypadpos.duplicate then
+                        if modifier.keyControl and xypadpos.idx then
+                            if noteInSelection(noteData[xypadpos.idx]) then
+                                noteSelection = {}
+                            end
+                            table.insert(noteSelection, noteData[xypadpos.idx])
+                            xypadpos.idx = nil
+                        end
+                        duplicateSelectedNotes(0)
+                        forceFullRefresh = true
+                        xypadpos.duplicate = false
+                    end
+                    for d = math.abs(math.floor(xypadpos.y) - math.floor(val.y + 0.1)), 1, -1 do
+                        blockLineModifier = true
+                        quickRefresh = true
+                        if transposeSelectedNotes(-d) then
+                            xypadpos.y = math.floor(xypadpos.y) - d
+                            break
+                        end
+                    end
+                elseif math.floor(xypadpos.y) - math.floor(val.y - 0.1) < 0 then
+                    if xypadpos.duplicate then
+                        if modifier.keyControl and xypadpos.idx then
+                            if noteInSelection(noteData[xypadpos.idx]) then
+                                noteSelection = {}
+                            end
+                            table.insert(noteSelection, noteData[xypadpos.idx])
+                            xypadpos.idx = nil
+                        end
+                        duplicateSelectedNotes(0)
+                        forceFullRefresh = true
+                        xypadpos.duplicate = false
+                    end
+                    for d = math.abs(math.floor(xypadpos.y) - math.floor(val.y - 0.1)), 1, -1 do
+                        blockLineModifier = true
+                        quickRefresh = true
+                        if transposeSelectedNotes(d) then
+                            xypadpos.y = math.floor(xypadpos.y) + d
+                            break
+                        end
+                    end
+                end
+            end
+        end
+    else
+        --only process rectangle selection, when left mouse button is holded
+        if xypadpos.leftClick then
+            if xypadpos.x ~= math.floor(val.x) or xypadpos.y ~= math.floor(val.y) then
+                xypadpos.x = math.floor(val.x)
+                xypadpos.y = math.floor(val.y)
+                if not preferences.mouseWarpingCompatibilityMode.value then
+                    drawRectangle(true, xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny)
+                end
+                selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, modifier.keyShift)
+            end
+        end
+    end
+    if forceFullRefresh then
+        blockLineModifier = false
+        fillPianoRoll()
+    elseif quickRefresh then
+        refreshSelectedNotes()
+    end
+end
+
+--app idle
+local function appIdleEvent()
+    --only process when window is created and visible
+    if windowObj and windowObj.visible then
+        --scroll via idle, more instant
+        if xypadpos.leftClick then
+            local val = vbw["xypad"].value
+            if val.y == 1 or val.y - 1 == gridHeight or val.x == 1 or val.x - 1 == gridWidth then
+                val.scroll = true
+                handleXypad(val)
+            end
+        end
+        --refresh modifier states, when keys are pressed outside focus
+        local keyState = app.key_modifier_states
+        if (keyState["alt"] == "pressed" and modifier.keyAlt == false) or (keyState["alt"] == "released" and modifier.keyAlt == true) then
+            modifier.keyAlt = not modifier.keyAlt
+            refreshControls = true
+        end
+        if (keyState["control"] == "pressed" and modifier.keyControl == false) or (keyState["control"] == "released" and modifier.keyControl == true) then
+            modifier.keyControl = not modifier.keyControl
+            refreshControls = true
+        end
+        if (keyState["shift"] == "pressed" and modifier.keyShift == false) or (keyState["shift"] == "released" and modifier.keyShift == true) then
+            modifier.keyShift = not modifier.keyShift
+            refreshControls = true
+        end
+        --process after edit features
+        if afterEditProcessTime ~= nil and afterEditProcessTime < os.clock() - 0.1 then
+            afterEditProcess()
+        end
+        --refresh control, when needed
+        if refreshControls then
+            refreshNoteControls()
+        end
+        --refresh pianoroll, when needed
+        if refreshPianoRollNeeded then
+            fillPianoRoll()
+        end
+        --refresh timeline, when needed
+        if refreshTimeline then
+            fillTimeline()
+        end
+        --refresh chord states
+        if refreshChordDetection and preferences.chordDetection.value then
+            refreshDetectedChord()
+        end
+        --if needed refresh histogram
+        if refreshHistogram then
+            refreshHistogram = false
+            if dialogVars.histogramObj and dialogVars.histogramObj.visible then
+                refreshHistogramWindow()
+            end
+        end
+        --key info state
+        if lastKeyInfoTime and lastKeyInfoTime + preferences.keyInfoTime.value < os.clock() then
+            vbw["key_state"].text = ""
+        end
+        --refresh playback pos indicator
+        refreshPlaybackPosIndicator()
+        --edit pos render
+        refreshEditPosIndicator()
+        --block loop, create an index for comparison, because obserable's are missing here
+        local currentblockloop = tostring(song.transport.loop_block_enabled)
+                .. tostring(song.transport.loop_block_start_pos)
+                .. tostring(song.transport.loop_block_range_coeff)
+        if blockloopidx ~= currentblockloop then
+            blockloopidx = currentblockloop
+            refreshTimeline = true
+        end
+        --instrument scale obs
+        if preferences.scaleHighlightingType.value == 4 and currentInstrument and song.instruments[currentInstrument + 1] then
+            local temp = tostring(song.instruments[currentInstrument + 1].trigger_options.scale_key) ..
+                    tostring(song.instruments[currentInstrument + 1].trigger_options.scale_mode)
+            if temp ~= instrumentScaleMode then
+                instrumentScaleMode = temp
+                refreshPianoRollNeeded = true
+            end
+        end
+        --midi in init handling
+        if preferences.midiIn.value and not midiDevice and preferences.midiDevice.value ~= "" then
+            --check if the device is present
+            local temp = renoise.Midi.available_input_devices()
+            for i = 1, #temp do
+                if temp[i] == preferences.midiDevice.value then
+                    --init device
+                    midiDevice = renoise.Midi.create_input_device(preferences.midiDevice.value, midiInCallback)
+                    break
+                end
+            end
+            if not midiDevice then
+                showStatus("Error: Cant initialize midi in device: " .. preferences.midiDevice.value)
+                --disable midi in
+                preferences.midiIn.value = false
+                midiDevice = nil
+            end
+        elseif not preferences.midiIn.value and midiDevice then
+            if midiDevice.is_open then
+                midiDevice:close()
+            end
+            midiDevice = nil
+        end
+        --
+        if #lastTriggerNote > 0 and oscClient then
+            local newLastTriggerNote = {}
+            for i = 1, #lastTriggerNote do
+                if lastTriggerNote[i].time < os.clock() - (preferences.triggerTime.value / 1000) then
+                    table.remove(lastTriggerNote[i].packet, 4) --remove velocity
+                    oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote[i].packet))
+                else
+                    table.insert(newLastTriggerNote, lastTriggerNote[i])
+                end
+            end
+            lastTriggerNote = newLastTriggerNote
+        end
+        --refresh after prefernces changes
+        if dialogVars.preferencesWasShown and dialogVars.preferencesObj and not dialogVars.preferencesObj.visible then
+            restoreFocus()
+            if oscClient then
+                oscClient:close()
+                oscClient = nil
+            end
+            refreshControls = true
+            refreshPianoRollNeeded = true
+            --when invisible is enabled, no snapback needed
+            if vbw and vbw["xypad"] then
+                if not preferences.mouseWarpingCompatibilityMode.value then
+                    vbw["xypad"].snapback = snapBackVal
+                else
+                    vbw["xypad"].snapback = nil
+                end
+            end
+            --apply new highlighting colors
+            initColors()
+            refreshPianoRollNeeded = true
+            dialogVars.preferencesWasShown = false
+        end
+    else
+        --set follow player back
+        if wasFollowPlayer ~= nil then
+            song.transport.follow_player = wasFollowPlayer
+            wasFollowPlayer = nil
+        end
+        --close editing windows
+        if dialogVars.setScaleObj and dialogVars.setScaleObj.visible then
+            dialogVars.setScaleObj:close()
+        end
+        if dialogVars.histogramObj and dialogVars.histogramObj.visible then
+            dialogVars.histogramObj:close()
+        end
+        if dialogVars.penSettingsObj and dialogVars.penSettingsObj.visible then
+            dialogVars.penSettingsObj:close()
+        end
+    end
+end
+
+--function to switch between relative major and minor
+local function switchToRelativeScale()
+    if preferences.scaleHighlightingType.value == 3 then
+        preferences.scaleHighlightingType.value = 2
+        preferences.keyForSelectedScale.value = ((preferences.keyForSelectedScale.value + 2) % 12) + 1
+        refreshPianoRollNeeded = true
+    elseif preferences.scaleHighlightingType.value == 2 then
+        preferences.scaleHighlightingType.value = 3
+        preferences.keyForSelectedScale.value = ((preferences.keyForSelectedScale.value - 4) % 12) + 1
+        refreshPianoRollNeeded = true
     end
 end
 
