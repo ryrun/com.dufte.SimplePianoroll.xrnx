@@ -167,10 +167,10 @@ information about the current playing notes.
 
 ### Chord stamping
 
-With the chord stamp you can easily draw chords into the piano roll. The selected chord can be extended by further notes
+With the chord stamping you can easily draw chords into the piano roll. The selected chord can be extended by further notes
 or chord inversion can be performed. If the note preview has been activated, the drawing in of chords can also be
-carried out via step sequencing. In addition, it is possible that the drawn chords are always aligned to the currently
-active scale. Finally, ChordGun chord templates can be read and used.
+done via step sequencing. In addition, it is possible that the drawn chords are always aligned to the currently
+active scale. Finally, ChordGun chord templates can be read and used, too.
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pensettings.png?raw=true" alt="Pen settings chord stamping">
 
