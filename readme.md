@@ -116,7 +116,7 @@ pane and also via main menu.
 Scale highlighting can be easily changed with the button on the bottem left. It opens a dialog, where you can switch
 between major or minor or change the root key.
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/scalehighswitch.gif?raw=true" alt="Showing usage of scale highlighting dialog">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/scalehighswitch.gif?raw=true" alt="Showing usage of scale highlighting dialog" width="600">
 
 ### Ghost track
 
@@ -125,7 +125,7 @@ in the piano roll background. With enabled mirroring, every note of your selecte
 octaves. So manually copy or transpose notes across octaves is not needed anymore. There is also a button to easily
 switch between the current and the ghost track.
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/ghosttrack.gif?raw=true" alt="Ghost track">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/ghosttrack.gif?raw=true" alt="Ghost track" width="600">
 
 ### Step sequencing with computer keyboard
 
@@ -134,7 +134,7 @@ and hold notes and use the cursor keys left or right to move the edit cursor, it
 current cursor position. You can also use your midi kleyboard to play a chords and use the cursor keys to draw them,
 when you have seleted the midi in device in the preferences.
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/stepseq.gif?raw=true" alt="Step sequecing in Simple Pianoroll Tool for Renoise">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/stepseq.gif?raw=true" alt="Step sequecing in Simple Pianoroll Tool for Renoise" width="600">
 
 ### Histogram
 
@@ -151,7 +151,7 @@ There are 4 controls to manipulate these values:
 
 With **Apply** the values will be written. With **Reset** the histogram controls will be set back to defaul values.
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/histogram.gif?raw=true" alt="Histogram feature">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/histogram.gif?raw=true" alt="Histogram feature"  width="600">
 
 Here a little video showing you, how you can use it:
 
@@ -163,7 +163,7 @@ The piano roll will always try to detect chords of the current selected or playe
 correct scale degree depending on the current scale. It can be used to unterstand music theory better and gives you more
 information about the current playing notes.
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/chorddetect.gif?raw=true" alt="Chord detection and scale degree detection">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/chorddetect.gif?raw=true" alt="Chord detection and scale degree detection" width="600">
 
 ### Chord stamping
 
