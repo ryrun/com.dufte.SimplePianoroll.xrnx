@@ -158,9 +158,9 @@ Here a little video showing you, how you can use it:
 
 ### Chord detection and scale degree detection
 
-The piano roll will always try to detect chords of the current selected or played notes.
-It also tries to determine the correct scale degree depending on the current scale.
-It can be used to unterstand music theory better and gives you more information about the current playing notes.
+The piano roll will always try to detect chords of the current selected or played notes. It also tries to determine the
+correct scale degree depending on the current scale. It can be used to unterstand music theory better and gives you more
+information about the current playing notes.
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/chorddetect.gif?raw=true" width="754" alt="Chord detection and scale degree detection">
 
@@ -201,6 +201,7 @@ So you don't need to hold <kbd>shift</kbd>.
 |--------------------------------------------------------|---------------------------------------------------------------------------------|
 | <kbd>F1</kbd>                                          | Switch to select tool                                                           |
 | <kbd>F2</kbd>                                          | Switch to pen tool                                                              |
+| <kbd>ctrl + F2</kbd>                                   | Open pen tool seetings dialog                                                   |
 | <kbd>F3</kbd>                                          | Switch to audio preview tool                                                    |
 | <kbd>up</kbd>                                          | Move in the grid upwards                                                        |
 | <kbd>down</kbd>                                        | Move in the grid downwards                                                      |
