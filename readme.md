@@ -1,6 +1,6 @@
 # Simple Pianoroll Tool for Renoise
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pianorollanim3.gif?raw=true" width="754" alt="Simple Pianoroll Tool for Renoise" />
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pianorollanim3.gif?raw=true" alt="Simple Pianoroll Tool for Renoise" />
 
 ## Videos on Youtube
 
@@ -30,6 +30,7 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 * Scale highlighting support (None, Minor scale, Major scale, Instrument scale, Automatic scale)
 * Many useful options to change the behavior for your own taste
 * Chord detection for playing and selected notes
+* Chord stamping
 * Tool Updater support
 * Step sequencing via computer keyboard
 * Histogram for note property manipulations
@@ -115,7 +116,7 @@ pane and also via main menu.
 Scale highlighting can be easily changed with the button on the bottem left. It opens a dialog, where you can switch
 between major or minor or change the root key.
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/scalehighswitch.gif?raw=true" width="754" alt="Showing usage of scale highlighting dialog">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/scalehighswitch.gif?raw=true" alt="Showing usage of scale highlighting dialog">
 
 ### Ghost track
 
@@ -124,7 +125,7 @@ in the piano roll background. With enabled mirroring, every note of your selecte
 octaves. So manually copy or transpose notes across octaves is not needed anymore. There is also a button to easily
 switch between the current and the ghost track.
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/ghosttrack.gif?raw=true" width="754" alt="Ghost track">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/ghosttrack.gif?raw=true" alt="Ghost track">
 
 ### Step sequencing with computer keyboard
 
@@ -133,7 +134,7 @@ and hold notes and use the cursor keys left or right to move the edit cursor, it
 current cursor position. You can also use your midi kleyboard to play a chords and use the cursor keys to draw them,
 when you have seleted the midi in device in the preferences.
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/stepseq.gif?raw=true" width="754" alt="Step sequecing in Simple Pianoroll Tool for Renoise">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/stepseq.gif?raw=true" alt="Step sequecing in Simple Pianoroll Tool for Renoise">
 
 ### Histogram
 
@@ -150,7 +151,7 @@ There are 4 controls to manipulate these values:
 
 With **Apply** the values will be written. With **Reset** the histogram controls will be set back to defaul values.
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/histogram.gif?raw=true" width="754" alt="Histogram feature">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/histogram.gif?raw=true" alt="Histogram feature">
 
 Here a little video showing you, how you can use it:
 
@@ -162,7 +163,16 @@ The piano roll will always try to detect chords of the current selected or playe
 correct scale degree depending on the current scale. It can be used to unterstand music theory better and gives you more
 information about the current playing notes.
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/chorddetect.gif?raw=true" width="754" alt="Chord detection and scale degree detection">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/chorddetect.gif?raw=true" alt="Chord detection and scale degree detection">
+
+### Chord stamping
+
+With the chord stamp you can easily draw chords into the piano roll. The selected chord can be extended by further notes
+or chord inversion can be performed. If the note preview has been activated, the drawing in of chords can also be
+carried out via step sequencing. In addition, it is possible that the drawn chords are always aligned to the currently
+active scale. Finally, ChordGun chord templates can be read and used.
+
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pensettings.png?raw=true" alt="Pen settings chord stamping">
 
 ## Mouse actions
 
