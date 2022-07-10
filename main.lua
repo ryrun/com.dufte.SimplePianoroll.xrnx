@@ -6530,7 +6530,7 @@ end
 --process incoming midi data
 local function midiInCallback(message)
     --only handle note events
-    if message[1] == 144 then
+    if message[1] >= 0x90 and message[1] <= 0x9f then
         --pass them as key events
         if message[3] > 0 then
             handleKeyEvent({
@@ -6547,6 +6547,13 @@ local function midiInCallback(message)
                 state = "released",
             })
         end
+    elseif message[1] >= 0x80 and message[1] <= 0x8f then
+        handleKeyEvent({
+            name = "midi in",
+            note = message[2],
+            velocity = message[3],
+            state = "released",
+        })
     end
 end
 
