@@ -5158,12 +5158,13 @@ local function showHistogram()
                                     "Asc by pos",
                                     "Asc by note",
                                 },
+                                width = 82,
                                 tooltip = "Apply ascending values by note position or by note pitch",
                                 notifier = function(i)
                                     if i == 1 then
-                                        vbwp.groupthem.text = "Group by note"
+                                        vbwp.groupthem.text = "Group: note"
                                     else
-                                        vbwp.groupthem.text = "Group by pos"
+                                        vbwp.groupthem.text = "Group: pos"
                                     end
                                 end
                             },
@@ -5196,7 +5197,7 @@ local function showHistogram()
                                 },
                                 vbp:text {
                                     id = "groupthem",
-                                    text = "Group by note",
+                                    text = "Group: note",
                                 },
                             },
                         },
