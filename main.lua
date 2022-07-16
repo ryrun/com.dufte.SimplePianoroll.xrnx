@@ -1061,8 +1061,13 @@ local function updateNoteSelection(note_data, clear)
                 refreshControls = true
             end
 
-            local vel, end_vel, pan, dly, end_dly, ins
+            local vel, end_vel, pan, dly, end_dly, ins, len
             for i = 1, #noteSelection do
+                if len == nil then
+                    len = noteSelection[i].len
+                elseif len ~= noteSelection[i].len then
+                    len = "mixed"
+                end
                 if ins == nil then
                     ins = noteSelection[i].ins
                 elseif ins ~= noteSelection[i].ins then
@@ -1117,6 +1122,11 @@ local function updateNoteSelection(note_data, clear)
 
             if type(ins) == "number" and ins ~= currentInstrument then
                 currentInstrument = ins
+                refreshControls = true
+            end
+
+            if type(len) == "number" and len ~= currentNoteLength then
+                currentNoteLength = len
                 refreshControls = true
             end
 
