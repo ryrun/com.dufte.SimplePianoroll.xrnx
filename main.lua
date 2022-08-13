@@ -2954,6 +2954,7 @@ function noteClick(x, y, c, released, forceScaling)
         xypadpos.nx = x
         xypadpos.ny = y
         xypadpos.nlen = note_data.len
+        xypadpos.previewmode = false
         if forceScaling then
             xypadpos.scalemode = true
             xypadpos.scaling = true
