@@ -466,6 +466,7 @@ local xypadpos = {
     lastx = 0,
     lastval = nil,
     notemode = false, --when note mode is active
+    previewmode = false, --is scale mode active?
     scalemode = false, --is scale mode active?
     scaling = false, --are we scaling currently?
     duplicate = false, --for duplicate shortcut state var
@@ -477,6 +478,7 @@ local xypadpos = {
     idx = nil,
     leftClick = false,
     disabled = {},
+    preview = {},
 }
 
 --pen mode
@@ -2791,7 +2793,7 @@ end
 local function drawRectangle(show, x, y, x2, y2)
     if not show then
         vbw["sel"].visible = false
-    else
+    elseif x ~= nil and y ~= nil and x2 ~= nil and y2 ~= nil then
         local rx = math.min(x, x2)
         local rx2 = math.min(math.max(x, x2), gridWidth)
         local ry = math.min(y, y2)
@@ -2819,8 +2821,10 @@ local function drawRectangle(show, x, y, x2, y2)
             end
             vbw["seltop"].width = gridStepSizeW + ((rx2 - rx) * (gridStepSizeW - 4)) - 5 + addW
             vbw["seltop"].color = colorStepOn
+            vbw["seltop"].visible = true
             vbw["selbottom"].width = vbw["seltop"].width
             vbw["selbottom"].color = colorStepOn
+            vbw["selbottom"].visible = true
             vbw["selheightspace"].height = math.max(1, (ry2 - ry) * (gridStepSizeH - 3)) + 9
             vbw["selleft"].height = vbw["selheightspace"].height + 10
             vbw["selleft"].color = colorStepOn
@@ -2830,6 +2834,20 @@ local function drawRectangle(show, x, y, x2, y2)
         else
             vbw["sel"].visible = false
         end
+    elseif x ~= nil then
+        vbw["seltopspace"].height = 1
+        vbw["seltopspace1"].height = vbw["seltopspace"].height
+        vbw["seltopspace2"].height = vbw["seltopspace"].height
+        vbw["seltop"].visible = false
+        vbw["selbottom"].visible = false
+        vbw["selleft"].height = gridHeight * (gridStepSizeH - 3)
+        vbw["selleft"].color = colorStepOn
+        if x > 1 then
+            vbw["selleftspace"].width = (x - 1) * (gridStepSizeW - 4)
+        else
+            vbw["selleftspace"].width = 2
+        end
+        vbw["sel"].visible = true
     end
 end
 
@@ -3000,7 +3018,12 @@ function pianoGridClick(x, y, released)
         outside = true
     end
 
-    if not released and not checkMode("preview") and not modifier.keyControl and not (outside and checkMode("pen")) then
+    if not released and
+            (
+                    (not checkMode("preview") and not modifier.keyControl and not (outside and checkMode("pen")))
+                            or (checkMode("preview") and not preferences.mouseWarpingCompatibilityMode.value)
+            )
+    then
         xypadpos.disabled = {}
         --deselect current notes, when outside was clicked
         if outside and #noteSelection > 0 then
@@ -3021,16 +3044,23 @@ function pianoGridClick(x, y, released)
         end
         vbw["ppp" .. index]:remove_child(vbw["p" .. index])
         vbw["ppp" .. index]:add_child(vbw["p" .. index])
-        if checkMode("pen") then
-            xypadpos.nx = x
-            xypadpos.ny = y
+        xypadpos.nx = x
+        xypadpos.ny = y
+        xypadpos.preview = {}
+        xypadpos.previewmode = false
+        xypadpos.scalemode = false
+        xypadpos.resetscale = false
+        xypadpos.notemode = false
+        xypadpos.time = os.clock()
+        if checkMode("preview") and not preferences.mouseWarpingCompatibilityMode.value then
+            xypadpos.previewmode = true
+            xypadpos.leftClick = true
+        elseif checkMode("pen") then
             xypadpos.scalemode = true
             xypadpos.resetscale = true
             xypadpos.notemode = true
-            xypadpos.time = os.clock()
+            xypadpos.previewmode = false
         else
-            xypadpos.nx = x
-            xypadpos.ny = y
             xypadpos.notemode = false
             xypadpos.leftClick = true
         end
@@ -3048,7 +3078,7 @@ function pianoGridClick(x, y, released)
         for key in pairs(noteData) do
             local note_data = noteData[key]
             if line >= note_data.line and line < note_data.line + note_data.len then
-                triggerNoteOfCurrentInstrument(note_data.note, not released, note_data.vel, note_data.ins)
+                triggerNoteOfCurrentInstrument(note_data.note, not released, note_data.vel, false, note_data.ins)
                 local row = noteValue2GridRowOffset(note_data.note)
                 if row ~= nil then
                     setKeyboardKeyColor(row, not released, false)
@@ -6636,10 +6666,60 @@ local function handleXypad(val)
         if val.x == snapBackVal.x and val.y == snapBackVal.y and xypadpos.leftClick then
             xypadpos.leftClick = false
             drawRectangle(false)
+            --stop old notes
+            if xypadpos.previewmode then
+                for key in pairs(xypadpos.preview) do
+                    local note_data = xypadpos.preview[key]
+                    xypadpos.preview[note_data.note .. "_" .. note_data.ins] = nil
+                    triggerNoteOfCurrentInstrument(note_data.note, false, false, note_data.vel, note_data.ins)
+                    local row = noteValue2GridRowOffset(note_data.note)
+                    if row ~= nil then
+                        setKeyboardKeyColor(row, false, false)
+                        highlightNoteRow(row, false)
+                    end
+                end
+            end
         end
         return
     end
-    if xypadpos.notemode then
+    if xypadpos.previewmode then
+        local line = math.floor(val.x) + stepOffset
+        local playNotes = {}
+        --stop old notes
+        for key in pairs(xypadpos.preview) do
+            local note_data = xypadpos.preview[key]
+            if not (line >= note_data.line and line < note_data.line + note_data.len) then
+                xypadpos.preview[note_data.note .. "_" .. note_data.ins] = nil
+                triggerNoteOfCurrentInstrument(note_data.note, false, note_data.vel, false, note_data.ins)
+                local row = noteValue2GridRowOffset(note_data.note)
+                if row ~= nil then
+                    setKeyboardKeyColor(row, false, false)
+                    highlightNoteRow(row, false)
+                end
+            end
+        end
+        --play new notes
+        for key in pairs(noteData) do
+            local note_data = noteData[key]
+            if line >= note_data.line and line < note_data.line + note_data.len and xypadpos.preview[note_data.note .. "_" .. note_data.ins] == nil then
+                xypadpos.preview[note_data.note .. "_" .. note_data.ins] = note_data
+                table.insert(playNotes, note_data)
+            end
+        end
+        --resort notes
+        table.sort(playNotes, sortLeftOneFirst)
+        --play notes, but first column first
+        for i = 1, #playNotes do
+            triggerNoteOfCurrentInstrument(playNotes[i].note, true, playNotes[i].vel, false, playNotes[i].ins)
+            local row = noteValue2GridRowOffset(playNotes[i].note)
+            if row ~= nil then
+                setKeyboardKeyColor(row, true, false)
+                highlightNoteRow(row, true)
+            end
+        end
+        --draw cursor
+        drawRectangle(true, val.x)
+    elseif xypadpos.notemode then
         --mouse dragging and scaling
         local max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
         if xypadpos.time > os.clock() - xypadpos.pickuptiming then
