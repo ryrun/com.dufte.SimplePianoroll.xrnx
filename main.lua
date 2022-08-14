@@ -858,13 +858,13 @@ local function posInNoteRange(pos, note_data)
 
     if song.selected_track.delay_column_visible then
         posx1 = posx1 + note_data.dly
-        if endcut > 0 then
+        if endcut and endcut > 0 then
             endcut = 0x100 / song.transport.tpl * math.min(endcut, song.transport.tpl)
             posx2 = posx2 - endcut
         else
             posx2 = posx2 + note_data.end_dly
         end
-    elseif endcut > 0 then
+    elseif endcut and endcut > 0 then
         endcut = 0x100 - 0x100 / song.transport.tpl * math.min(endcut, song.transport.tpl)
         posx2 = posx2 - endcut
     end
