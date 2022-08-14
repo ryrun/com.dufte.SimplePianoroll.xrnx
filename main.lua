@@ -822,6 +822,52 @@ local function convertColorValueToString(val)
     return ret
 end
 
+--check if x is in range of note
+local function posInNoteRange(pos, note_data)
+    local posn = math.floor(pos * 0x100)
+    local posx1 = note_data.line * 0x100
+    local posx2 = (note_data.line + note_data.len) * 0x100
+    local cut
+    local dly
+
+    if song.selected_track.volume_column_visible then
+        if note_data.vel >= fromRenoiseHex("C0") and note_data.vel <= fromRenoiseHex("CF") then
+            cut = note_data.vel - fromRenoiseHex("C0")
+        end
+        if note_data.vel >= fromRenoiseHex("Q0") and note_data.vel <= fromRenoiseHex("QF") then
+            dly = note_data.vel - fromRenoiseHex("Q0")
+        end
+    end
+    if song.selected_track.panning_column_visible then
+        if note_data.vel >= fromRenoiseHex("C0") and note_data.vel <= fromRenoiseHex("CF") and cut == nil then
+            cut = note_data.pan - 0xc0
+        end
+        if note_data.pan >= fromRenoiseHex("Q0") and note_data.pan <= fromRenoiseHex("QF") and dly == nil then
+            dly = note_data.vel - fromRenoiseHex("Q0")
+        end
+    end
+
+    if cut and cut > 0 then
+        cut = 0x100 / song.transport.tpl * math.min(cut, song.transport.tpl)
+        posx2 = posx1 + cut
+    end
+
+    if song.selected_track.delay_column_visible then
+        posx1 = posx1 + note_data.dly
+        posx2 = posx2 + note_data.end_dly
+    end
+
+    if dly and dly > 0 then
+        dly = 0x100 / song.transport.tpl * math.min(dly, song.transport.tpl)
+        posx1 = note_data.line * 0x100 + dly
+    end
+
+    if posn >= posx1 and posn < posx2 then
+        return true
+    end
+    return false
+end
+
 --init dynamic calculated colors
 local function initColors()
     --load colors from preferences
@@ -6684,12 +6730,11 @@ local function handleXypad(val)
         return
     end
     if xypadpos.previewmode then
-        local line = math.floor(val.x) + stepOffset
         local playNotes = {}
         --stop old notes
         for key in pairs(xypadpos.preview) do
             local note_data = xypadpos.preview[key]
-            if not (line >= note_data.line and line < note_data.line + note_data.len) then
+            if not posInNoteRange(val.x + stepOffset, note_data) then
                 xypadpos.preview[note_data.note .. "_" .. note_data.ins] = nil
                 triggerNoteOfCurrentInstrument(note_data.note, false, note_data.vel, false, note_data.ins)
                 local row = noteValue2GridRowOffset(note_data.note)
@@ -6702,7 +6747,7 @@ local function handleXypad(val)
         --play new notes
         for key in pairs(noteData) do
             local note_data = noteData[key]
-            if line >= note_data.line and line < note_data.line + note_data.len and xypadpos.preview[note_data.note .. "_" .. note_data.ins] == nil then
+            if posInNoteRange(val.x + stepOffset, note_data) and xypadpos.preview[note_data.note .. "_" .. note_data.ins] == nil then
                 xypadpos.preview[note_data.note .. "_" .. note_data.ins] = note_data
                 table.insert(playNotes, note_data)
             end
