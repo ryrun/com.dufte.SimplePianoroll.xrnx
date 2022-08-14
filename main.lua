@@ -862,7 +862,7 @@ local function posInNoteRange(pos, note_data)
         posx2 = posx1 + cut
     end
 
-    if posn >= posx1 and posn < posx2 then
+    if posn >= posx1 and posn <= posx2 then
         return true
     end
     return false
