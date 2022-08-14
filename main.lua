@@ -828,6 +828,7 @@ local function posInNoteRange(pos, note_data)
     local posx1 = note_data.line * 0x100
     local posx2 = (note_data.line + note_data.len) * 0x100
     local cut
+    local endcut
     local dly
 
     --when on the right side, sub -1 so the last note is still plaing
@@ -839,12 +840,15 @@ local function posInNoteRange(pos, note_data)
         if note_data.vel >= fromRenoiseHex("C0") and note_data.vel <= fromRenoiseHex("CF") then
             cut = note_data.vel - fromRenoiseHex("C0")
         end
+        if note_data.end_vel >= fromRenoiseHex("C0") and note_data.end_vel <= fromRenoiseHex("CF") then
+            endcut = note_data.end_vel - fromRenoiseHex("C0")
+        end
         if note_data.vel >= fromRenoiseHex("Q0") and note_data.vel <= fromRenoiseHex("QF") then
             dly = note_data.vel - fromRenoiseHex("Q0")
         end
     end
     if song.selected_track.panning_column_visible then
-        if note_data.vel >= fromRenoiseHex("C0") and note_data.vel <= fromRenoiseHex("CF") and cut == nil then
+        if note_data.pan >= fromRenoiseHex("C0") and note_data.pan <= fromRenoiseHex("CF") and cut == nil then
             cut = note_data.pan - 0xc0
         end
         if note_data.pan >= fromRenoiseHex("Q0") and note_data.pan <= fromRenoiseHex("QF") and dly == nil then
@@ -854,7 +858,15 @@ local function posInNoteRange(pos, note_data)
 
     if song.selected_track.delay_column_visible then
         posx1 = posx1 + note_data.dly
-        posx2 = posx2 + note_data.end_dly
+        if endcut > 0 then
+            endcut = 0x100 / song.transport.tpl * math.min(endcut, song.transport.tpl)
+            posx2 = posx2 - endcut
+        else
+            posx2 = posx2 + note_data.end_dly
+        end
+    elseif endcut > 0 then
+        endcut = 0x100 - 0x100 / song.transport.tpl * math.min(endcut, song.transport.tpl)
+        posx2 = posx2 - endcut
     end
 
     if dly and dly > 0 then
@@ -3438,9 +3450,7 @@ local function drawNoteToGrid(column,
                 local cutValue = 0
 
                 if l_song_st.volume_column_visible and current_note_end_vel >= 192 and current_note_end_vel <= 207 then
-                    if cutValue > 0 and current_note_end_vel < cutValue then
-                        cutValue = current_note_end_vel
-                    end
+                    cutValue = current_note_end_vel
                 end
 
                 if l_song_st.volume_column_visible then
