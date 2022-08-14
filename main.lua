@@ -6726,7 +6726,7 @@ local function handleXypad(val)
             if xypadpos.previewmode then
                 for key in pairs(xypadpos.preview) do
                     local note_data = xypadpos.preview[key]
-                    xypadpos.preview[note_data.note .. "_" .. note_data.ins] = nil
+                    xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] = nil
                     triggerNoteOfCurrentInstrument(note_data.note, false, false, note_data.vel, note_data.ins)
                     local row = noteValue2GridRowOffset(note_data.note)
                     if row ~= nil then
@@ -6744,7 +6744,7 @@ local function handleXypad(val)
         for key in pairs(xypadpos.preview) do
             local note_data = xypadpos.preview[key]
             if not posInNoteRange(val.x + stepOffset, note_data) then
-                xypadpos.preview[note_data.note .. "_" .. note_data.ins] = nil
+                xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] = nil
                 triggerNoteOfCurrentInstrument(note_data.note, false, note_data.vel, false, note_data.ins)
                 local row = noteValue2GridRowOffset(note_data.note)
                 if row ~= nil then
@@ -6756,8 +6756,8 @@ local function handleXypad(val)
         --play new notes
         for key in pairs(noteData) do
             local note_data = noteData[key]
-            if posInNoteRange(val.x + stepOffset, note_data) and xypadpos.preview[note_data.note .. "_" .. note_data.ins] == nil then
-                xypadpos.preview[note_data.note .. "_" .. note_data.ins] = note_data
+            if posInNoteRange(val.x + stepOffset, note_data) and xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] == nil then
+                xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] = note_data
                 table.insert(playNotes, note_data)
             end
         end
