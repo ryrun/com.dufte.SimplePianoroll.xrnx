@@ -3438,7 +3438,9 @@ local function drawNoteToGrid(column,
                 local cutValue = 0
 
                 if l_song_st.volume_column_visible and current_note_end_vel >= 192 and current_note_end_vel <= 207 then
-                    cutValue = current_note_end_vel
+                    if cutValue > 0 and current_note_end_vel < cutValue then
+                        cutValue = current_note_end_vel
+                    end
                 end
 
                 if l_song_st.volume_column_visible then
@@ -3459,7 +3461,9 @@ local function drawNoteToGrid(column,
                 if l_song_st.panning_column_visible then
                     if current_note_pan >= 192 and current_note_pan <= 207 then
                         current_note_len = 1
-                        cutValue = current_note_pan
+                        if cutValue > 0 and current_note_pan < cutValue then
+                            cutValue = current_note_pan
+                        end
                     elseif current_note_pan >= 416 and current_note_pan <= 431 then
                         delayWidth = current_note_pan
                     elseif current_note_pan >= 432 and current_note_pan <= 447 then
