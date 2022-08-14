@@ -830,6 +830,11 @@ local function posInNoteRange(pos, note_data)
     local cut
     local dly
 
+    --when on the right side, sub -1 so the last note is still plaing
+    if posn == (math.min(song.selected_pattern.number_of_lines, gridWidth) + 1) * 0x100 then
+        posn = posn - 1
+    end
+
     if song.selected_track.volume_column_visible then
         if note_data.vel >= fromRenoiseHex("C0") and note_data.vel <= fromRenoiseHex("CF") then
             cut = note_data.vel - fromRenoiseHex("C0")
@@ -862,7 +867,7 @@ local function posInNoteRange(pos, note_data)
         posx2 = posx1 + cut
     end
 
-    if posn >= posx1 and posn <= posx2 then
+    if posn >= posx1 and posn < posx2 then
         return true
     end
     return false
