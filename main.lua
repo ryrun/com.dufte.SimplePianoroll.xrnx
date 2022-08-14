@@ -843,13 +843,8 @@ local function posInNoteRange(pos, note_data)
             cut = note_data.pan - 0xc0
         end
         if note_data.pan >= fromRenoiseHex("Q0") and note_data.pan <= fromRenoiseHex("QF") and dly == nil then
-            dly = note_data.vel - fromRenoiseHex("Q0")
+            dly = note_data.pan - fromRenoiseHex("Q0")
         end
-    end
-
-    if cut and cut > 0 then
-        cut = 0x100 / song.transport.tpl * math.min(cut, song.transport.tpl)
-        posx2 = posx1 + cut
     end
 
     if song.selected_track.delay_column_visible then
@@ -860,6 +855,11 @@ local function posInNoteRange(pos, note_data)
     if dly and dly > 0 then
         dly = 0x100 / song.transport.tpl * math.min(dly, song.transport.tpl)
         posx1 = note_data.line * 0x100 + dly
+    end
+
+    if cut and cut > 0 then
+        cut = 0x100 / song.transport.tpl * math.min(cut, song.transport.tpl)
+        posx2 = posx1 + cut
     end
 
     if posn >= posx1 and posn < posx2 then
