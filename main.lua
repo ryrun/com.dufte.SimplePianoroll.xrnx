@@ -3447,7 +3447,7 @@ local function drawNoteToGrid(column,
                 local retriggerWidth = 0
                 local delayWidth = 0
                 local addWidth = 0
-                local cutValue = 0
+                local cutValue
 
                 if l_song_st.volume_column_visible and current_note_end_vel >= 192 and current_note_end_vel <= 207 then
                     cutValue = current_note_end_vel
@@ -3471,7 +3471,7 @@ local function drawNoteToGrid(column,
                 if l_song_st.panning_column_visible then
                     if current_note_pan >= 192 and current_note_pan <= 207 then
                         current_note_len = 1
-                        if cutValue > 0 and current_note_pan < cutValue then
+                        if not cutValue or (cutValue > 0 and current_note_pan < cutValue) then
                             cutValue = current_note_pan
                         end
                     elseif current_note_pan >= 416 and current_note_pan <= 431 then
@@ -3493,7 +3493,7 @@ local function drawNoteToGrid(column,
                     end
                 end
 
-                if cutValue > 0 then
+                if cutValue and cutValue > 0 then
                     cutValue = cutValue - 192
                     if cutValue < l_song_transport.tpl then
                         buttonWidth = buttonWidth - ((gridStepSizeW - gridSpacing) / 100 * (100 / l_song_transport.tpl * (l_song_transport.tpl - cutValue)))
@@ -3622,7 +3622,7 @@ local function drawNoteToGrid(column,
                 if retriggerWidth > 0 then
                     spaceWidth = math.max(spaceWidth, 4)
                     local rTpl = l_song_transport.tpl - 1
-                    if cutValue > 0 and cutValue < l_song_transport.tpl and current_note_len == 1 then
+                    if cutValue and cutValue > 0 and cutValue < l_song_transport.tpl and current_note_len == 1 then
                         rTpl = rTpl + (cutValue - 0xf)
                     end
                     local i = 1
