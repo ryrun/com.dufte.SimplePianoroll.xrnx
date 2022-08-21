@@ -7271,8 +7271,10 @@ local function showPreferences()
                         spacing = 4,
                         vbp:text {
                             text = "Piano roll grid",
-                            font = "big",
+                            width = "100%",
+                            font = "bold",
                             style = "strong",
+                            align = "center",
                         },
                         vbp:horizontal_aligner {
                             mode = "justify",
@@ -7517,8 +7519,10 @@ local function showPreferences()
                         },
                         vbp:text {
                             text = "Scale and virtual piano keyboard",
-                            font = "big",
+                            width = "100%",
+                            font = "bold",
                             style = "strong",
+                            align = "center",
                         },
                         vbp:horizontal_aligner {
                             mode = "justify",
@@ -7578,9 +7582,11 @@ local function showPreferences()
                         margin = 5,
                         spacing = 4,
                         vbp:text {
-                            text = "Color settings",
-                            font = "big",
+                            text = "Color Settings",
+                            width = "100%",
+                            font = "bold",
                             style = "strong",
+                            align = "center",
                         },
                         vbp:row {
                             vbp:checkbox {
@@ -7910,8 +7916,10 @@ local function showPreferences()
                         spacing = 4,
                         vbp:text {
                             text = "Note playback and preview",
-                            font = "big",
+                            width = "100%",
+                            font = "bold",
                             style = "strong",
+                            align = "center",
                         },
                         vbp:row {
                             vbp:checkbox {
@@ -7987,8 +7995,10 @@ local function showPreferences()
                         },
                         vbp:text {
                             text = "Workflow",
-                            font = "big",
+                            width = "100%",
+                            font = "bold",
                             style = "strong",
+                            align = "center",
                         },
                         vbp:row {
                             vbp:checkbox {
@@ -8085,8 +8095,10 @@ local function showPreferences()
                         spacing = 4,
                         vbp:text {
                             text = "Keyboard",
-                            font = "big",
+                            width = "100%",
+                            font = "bold",
                             style = "strong",
+                            align = "center",
                         },
                         vbp:row {
                             vbp:checkbox {
@@ -8143,8 +8155,10 @@ local function showPreferences()
                         },
                         vbp:text {
                             text = "Mouse",
-                            font = "big",
+                            width = "100%",
+                            font = "bold",
                             style = "strong",
+                            align = "center",
                         },
                         vbp:horizontal_aligner {
                             mode = "justify",
@@ -8215,8 +8229,10 @@ local function showPreferences()
                         },
                         vbp:text {
                             text = "Additional features",
-                            font = "big",
+                            width = "100%",
+                            font = "bold",
                             style = "strong",
+                            align = "center",
                         },
                         vbp:row {
                             vbp:checkbox {
@@ -8255,8 +8271,10 @@ local function showPreferences()
                         },
                         vbp:text {
                             text = "MIDI In",
-                            font = "big",
+                            width = "100%",
+                            font = "bold",
                             style = "strong",
+                            align = "center",
                         },
                         vbp:row {
                             vbp:checkbox {
