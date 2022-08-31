@@ -6466,8 +6466,15 @@ local function handleKeyEvent(keyEvent)
             if #noteSelection > 0 and not modifier.keyAlt then
                 if modifier.keyControl then
                     steps = steps / math.abs(steps)
-                    changeSizeSelectedNotes(steps, true)
-                    keyInfoText = "Change note length of selected notes"
+                    if modifier.keyShift or modifier.keyRShift then
+                        if isDelayColumnActive(true) then
+                            changeSizeSelectedNotesByMicroSteps(steps)
+                        end
+                        keyInfoText = "Change note length of selected notes by microsteps"
+                    else
+                        changeSizeSelectedNotes(steps, true)
+                        keyInfoText = "Change note length of selected notes"
+                    end
                 else
                     moveSelectedNotes(steps)
                     keyInfoText = "Move selected notes by " .. getSingularPlural(steps, "step", "steps", true)
