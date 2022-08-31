@@ -270,6 +270,8 @@ So you don't need to hold <kbd>shift</kbd>.
 | <kbd>ctrl + alt + right</kbd>                                                                                | Move note 1 micro steps right (using note delay)                                             |
 | <kbd>ctrl + left</kbd>                                                                                       | Increase note length by 1                                                                    |
 | <kbd>ctrl + right</kbd>                                                                                      | Decrease note length by 1                                                                    |
+| <kbd>ctrl + shift + left</kbd>                                                                               | Increase note length by 1 micro step                                                         |
+| <kbd>ctrl + shift + right</kbd>                                                                              | Decrease note length by 1 micro step                                                         |
 | <kbd>shift + i</kbd>                                                                                         | Invert note selection                                                                        |
 | <kbd>del</kbd> or <kbd>backspace</kbd>                                                                       | Remove selected notes                                                                        |
 | <kbd>esc</kbd>                                                                                               | Deselect all notes                                                                           |
