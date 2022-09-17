@@ -233,6 +233,8 @@ So you don't need to hold <kbd>shift</kbd>.
 | <kbd>alt + h</kbd>                                     | All notes will be selected and histogram window will be opened                  |
 | <kbd>alt + shift + m</kbd>                             | Unmute all visible notes (remove volume value)                                  |
 | <kbd>ctrl + space</kbd> or<br><kbd>shift + space</kbd> | Play from edit cursor position                                                  |
+| <kbd>ctrl + p</kbd>                                    | Show preferences                                                                |****
+
 
 ### One or more notes selected
 

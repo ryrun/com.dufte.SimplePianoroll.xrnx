@@ -3,6 +3,9 @@ local app = renoise.app()
 local tool = renoise.tool()
 local song
 
+--predefine functions
+local showPreferences = nil
+
 --viewbuilder for pianoroll dialog
 local vb
 local vbw
@@ -6352,6 +6355,12 @@ local function handleKeyEvent(keyEvent)
         end
         handled = true
     end
+    if key.name == "p" and key.modifiers == "control" then
+        if key.state == "pressed" then
+            keyInfoText = "Show preferences ..."
+            showPreferences()
+        end
+    end
     if key.name == "v" and key.modifiers == "control" then
         keyInfoText = "Paste notes"
         if #clipboard > 0 then
@@ -7258,7 +7267,7 @@ local function showSetScaleDialog()
 end
 
 --preferences window
-local function showPreferences()
+showPreferences = function()
     dialogVars.preferencesWasShown = true
     if dialogVars.preferencesContent == nil then
         --preinit colors, when piano roll wasn't opened before
