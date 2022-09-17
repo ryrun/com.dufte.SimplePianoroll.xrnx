@@ -4,7 +4,7 @@ local tool = renoise.tool()
 local song
 
 --predefine functions
-local showPreferences = nil
+local showPreferences
 
 --viewbuilder for pianoroll dialog
 local vb
