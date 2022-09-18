@@ -158,8 +158,6 @@ local defaultPreferences = {
     resetVolPanDlyControlOnClick = true,
     minSizeOfNoteButton = 5,
     setLastEditedTrackAsGhost = true,
-    useTrackColorForNoteHighlighting = false,
-    useTrackColorForNoteColor = false,
     autoEnableDelayWhenNeeded = true,
     setVelPanDlyLenFromLastNote = true,
     centerViewOnOpen = true,
@@ -174,6 +172,7 @@ local defaultPreferences = {
     midiIn = false,
     chordGunPreset = false,
     useChordStampingForNotePreview = true,
+    useTrackColorFor = 1,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -232,8 +231,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     disableKeyHandler = defaultPreferences.disableKeyHandler,
     disableAltClickNoteRemove = defaultPreferences.disableAltClickNoteRemove,
     setLastEditedTrackAsGhost = defaultPreferences.setLastEditedTrackAsGhost,
-    useTrackColorForNoteHighlighting = defaultPreferences.useTrackColorForNoteHighlighting,
-    useTrackColorForNoteColor = defaultPreferences.useTrackColorForNoteColor,
+    useTrackColorFor =  defaultPreferences.useTrackColorFor,
     autoEnableDelayWhenNeeded = defaultPreferences.autoEnableDelayWhenNeeded,
     snapToGridSize = defaultPreferences.snapToGridSize,
     setVelPanDlyLenFromLastNote = defaultPreferences.setVelPanDlyLenFromLastNote,
@@ -729,7 +727,7 @@ end
 local function colorNoteVelocity(vel, isOnStep, isInSelection, ins)
     local color
     local noteColor = colorNote
-    if preferences.useTrackColorForNoteColor.value then
+    if preferences.useTrackColorFor.value == 3 then
         noteColor = vbw["trackcolor"].color
     end
     if ins ~= nil and patternInstrument ~= nil and patternInstrument ~= ins then
@@ -738,7 +736,7 @@ local function colorNoteVelocity(vel, isOnStep, isInSelection, ins)
     if isInSelection then
         noteColor = colorNoteSelected
     elseif isOnStep == true then
-        if preferences.useTrackColorForNoteHighlighting.value then
+        if preferences.useTrackColorFor.value == 2 then
             return vbw["trackcolor"].color
         else
             return colorNoteHighlight
@@ -2670,7 +2668,7 @@ local function setKeyboardKeyColor(row, pressed, highlighted)
     if notesPlaying[gridOffset2NoteValue(row)] then
         vbw[idx].color = colorStepOn
     elseif highlighted then
-        if preferences.useTrackColorForNoteHighlighting.value then
+        if preferences.useTrackColorFor.value == 2 then
             vbw[idx].color = vbw["trackcolor"].color
         else
             vbw[idx].color = colorNoteHighlight
@@ -4240,7 +4238,7 @@ local function highlightNotesOnStep(step, highlight)
                     rows[note.row] = note.note
                     if highlight then
                         if not noteData[note.index] or not noteInSelection(noteData[note.index]) then
-                            if preferences.useTrackColorForNoteHighlighting.value then
+                            if preferences.useTrackColorFor.value == 2 then
                                 vbw[idx].color = vbw["trackcolor"].color
                             else
                                 vbw[idx].color = colorNoteHighlight
@@ -7604,20 +7602,20 @@ showPreferences = function()
                             style = "strong",
                             align = "center",
                         },
-                        vbp:row {
-                            vbp:checkbox {
-                                bind = preferences.useTrackColorForNoteHighlighting
-                            },
+                        vbp:horizontal_aligner {
+                            mode = "justify",
                             vbp:text {
-                                text = "Use track color for note highlighting",
+                                text = "Use track color for:",
+                                width = "50%"
                             },
-                        },
-                        vbp:row {
-                            vbp:checkbox {
-                                bind = preferences.useTrackColorForNoteColor
-                            },
-                            vbp:text {
-                                text = "Use track color for note color",
+                            vbp:popup {
+                                width = "50%",
+                                items = {
+                                    "Nothing",
+                                    "Note highlighting",
+                                    "Note color",
+                                },
+                                bind = preferences.useTrackColorFor,
                             },
                         },
                         vbp:horizontal_aligner {
