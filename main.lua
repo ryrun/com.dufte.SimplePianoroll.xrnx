@@ -143,6 +143,7 @@ local defaultPreferences = {
     highlightEntireLineOfPlayingNote = false,
     rowHighlightingAmount = 0.15,
     oddBarsShadingAmount = 0.10,
+    oddBeatShadingAmount = 0.0,
     scaleBtnShadingAmount = 0.25,
     rootKeyShadingAmount = 0.15,
     outOfNoteScaleShadingAmount = 0.15,
@@ -223,6 +224,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     scaleHighlightingType = defaultPreferences.scaleHighlightingType,
     keyForSelectedScale = defaultPreferences.keyForSelectedScale,
     oddBarsShadingAmount = defaultPreferences.oddBarsShadingAmount,
+    oddBeatShadingAmount = defaultPreferences.oddBeatShadingAmount,
     rootKeyShadingAmount = defaultPreferences.rootKeyShadingAmount,
     outOfNoteScaleShadingAmount = defaultPreferences.outOfNoteScaleShadingAmount,
     azertyMode = defaultPreferences.azertyMode,
@@ -231,7 +233,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     disableKeyHandler = defaultPreferences.disableKeyHandler,
     disableAltClickNoteRemove = defaultPreferences.disableAltClickNoteRemove,
     setLastEditedTrackAsGhost = defaultPreferences.setLastEditedTrackAsGhost,
-    useTrackColorFor =  defaultPreferences.useTrackColorFor,
+    useTrackColorFor = defaultPreferences.useTrackColorFor,
     autoEnableDelayWhenNeeded = defaultPreferences.autoEnableDelayWhenNeeded,
     snapToGridSize = defaultPreferences.snapToGridSize,
     setVelPanDlyLenFromLastNote = defaultPreferences.setVelPanDlyLenFromLastNote,
@@ -905,10 +907,25 @@ local function initColors()
     colorPan = convertStringToColorValue(preferences.colorPan.value, defaultPreferences.colorPan)
     colorDelay = convertStringToColorValue(preferences.colorDelay.value, defaultPreferences.colorDelay)
     --prepare shading colors
-    colorWhiteKey = { shadeColor(colorBaseGridColor, preferences.oddBarsShadingAmount.value), colorBaseGridColor }
+    colorWhiteKey = {
+        colorBaseGridColor,
+        shadeColor(colorBaseGridColor, preferences.oddBeatShadingAmount.value),
+        colorBaseGridColor,
+        shadeColor(colorBaseGridColor, preferences.oddBeatShadingAmount.value),
+        shadeColor(colorBaseGridColor, preferences.oddBarsShadingAmount.value),
+        shadeColor(shadeColor(colorBaseGridColor, preferences.oddBarsShadingAmount.value), preferences.oddBeatShadingAmount.value),
+        shadeColor(colorBaseGridColor, preferences.oddBarsShadingAmount.value),
+        shadeColor(shadeColor(colorBaseGridColor, preferences.oddBarsShadingAmount.value), preferences.oddBeatShadingAmount.value),
+    }
     colorBlackKey = {
         shadeColor(colorWhiteKey[1], preferences.outOfNoteScaleShadingAmount.value),
-        shadeColor(colorWhiteKey[2], preferences.outOfNoteScaleShadingAmount.value)
+        shadeColor(shadeColor(colorWhiteKey[1], preferences.outOfNoteScaleShadingAmount.value), preferences.oddBeatShadingAmount.value),
+        shadeColor(colorWhiteKey[1], preferences.outOfNoteScaleShadingAmount.value),
+        shadeColor(shadeColor(colorWhiteKey[1], preferences.outOfNoteScaleShadingAmount.value), preferences.oddBeatShadingAmount.value),
+        shadeColor(colorWhiteKey[5], preferences.outOfNoteScaleShadingAmount.value),
+        shadeColor(shadeColor(colorWhiteKey[5], preferences.outOfNoteScaleShadingAmount.value), preferences.oddBeatShadingAmount.value),
+        shadeColor(colorWhiteKey[5], preferences.outOfNoteScaleShadingAmount.value),
+        shadeColor(shadeColor(colorWhiteKey[5], preferences.outOfNoteScaleShadingAmount.value), preferences.oddBeatShadingAmount.value),
     }
 end
 
@@ -4453,17 +4470,19 @@ local function fillPianoRoll(quickRefresh)
             --only reset buttons on first column
             if not quickRefresh and c == 1 and stepString then
                 local bar = calculateBarBeat(s + stepOffset, false, lpb)
+                local beat = calculateBarBeat(s + stepOffset, true, lpb)
+                local bb = (bar - 1) * 4 + (beat - 1)
 
                 for y = 1, gridHeight do
                     local ystring = tostring(y)
                     local index = stepString .. "_" .. ystring
                     local p = l_vbw["p" .. index]
-                    local color = colorWhiteKey[bar % 2 + 1]
+                    local color = colorWhiteKey[bb % 8 + 1]
                     p.active = true
                     blackKey = not noteInScale((y + noffset) % 12)
                     --color black notes
                     if blackKey then
-                        color = colorBlackKey[bar % 2 + 1]
+                        color = colorBlackKey[bb % 8 + 1]
                     end
                     if s <= stepsCount then
                         defaultColor["p" .. index] = color
@@ -7383,6 +7402,24 @@ showPreferences = function()
                                 min = 0,
                                 max = 1,
                                 bind = preferences.oddBarsShadingAmount,
+                                tostring = function(v)
+                                    return string.format("%.2f", v)
+                                end,
+                                tonumber = function(v)
+                                    return tonumber(v)
+                                end
+                            },
+                        },
+                        vbp:horizontal_aligner {
+                            mode = "justify",
+                            vbp:text {
+                                text = "Shading amount of odd beats:",
+                            },
+                            vbp:valuebox {
+                                steps = { 0.01, 0.1 },
+                                min = 0,
+                                max = 1,
+                                bind = preferences.oddBeatShadingAmount,
                                 tostring = function(v)
                                     return string.format("%.2f", v)
                                 end,
