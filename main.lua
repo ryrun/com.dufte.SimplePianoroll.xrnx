@@ -122,6 +122,7 @@ local defaultPreferences = {
     gridMargin = 1,
     gridWidth = 64,
     gridHeight = 42,
+    gridHLines = 1,
     triggerTime = 250,
     keyInfoTime = 3,
     enableKeyInfo = true,
@@ -200,6 +201,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     gridMargin = defaultPreferences.gridMargin,
     gridWidth = defaultPreferences.gridWidth,
     gridHeight = defaultPreferences.gridHeight,
+    gridHLines = defaultPreferences.gridHLines,
     minSizeOfNoteButton = defaultPreferences.minSizeOfNoteButton,
     triggerTime = defaultPreferences.triggerTime,
     enableOSCClient = defaultPreferences.enableOSCClient,
@@ -3125,7 +3127,9 @@ function pianoGridClick(x, y, released)
             end
         end
         vbw["ppp" .. index]:remove_child(vbw["p" .. index])
+        vbw["ppp" .. index]:remove_child(vbw["ps" .. index])
         vbw["ppp" .. index]:add_child(vbw["p" .. index])
+        vbw["ppp" .. index]:add_child(vbw["ps" .. index])
         xypadpos.nx = x
         xypadpos.ny = y
         xypadpos.preview = {}
@@ -4477,8 +4481,21 @@ local function fillPianoRoll(quickRefresh)
                     local ystring = tostring(y)
                     local index = stepString .. "_" .. ystring
                     local p = l_vbw["p" .. index]
+                    local ps = l_vbw["ps" .. index]
                     local color = colorWhiteKey[bb % 8 + 1]
                     p.active = true
+
+                    if line < steps and (
+                            (preferences.gridHLines.value == 2 and (s + stepOffset) % (lpb * 4) == 0) or
+                                    (preferences.gridHLines.value == 3 and (s + stepOffset) % lpb == 0))
+                    then
+                        p.width = gridStepSizeW - ps.width
+                        ps.visible = true
+                    else
+                        p.width = gridStepSizeW
+                        ps.visible = false
+                    end
+
                     blackKey = not noteInScale((y + noffset) % 12)
                     --color black notes
                     if blackKey then
@@ -7377,6 +7394,22 @@ showPreferences = function()
                         vbp:horizontal_aligner {
                             mode = "justify",
                             vbp:text {
+                                text = "Horizontal grid lines:",
+                                width = "50%"
+                            },
+                            vbp:popup {
+                                width = "50%",
+                                items = {
+                                    "None",
+                                    "Per bar",
+                                    "Per beat",
+                                },
+                                bind = preferences.gridHLines,
+                            },
+                        },
+                        vbp:horizontal_aligner {
+                            mode = "justify",
+                            vbp:text {
                                 text = "Shading amount of out of scale notes:",
                             },
                             vbp:valuebox {
@@ -8492,13 +8525,18 @@ local function createPianoRollDialog()
             local temp2 = "pianoGridClick(" .. tostring(x) .. "," .. tostring(y) .. ",false)"
             vb_temp = vb:row {
                 id = "ppp" .. tostring(x) .. "_" .. tostring(y),
+                width = gridStepSizeW,
                 vb:button {
                     id = "p" .. tostring(x) .. "_" .. tostring(y),
                     height = gridStepSizeH,
-                    width = gridStepSizeW,
+                    width = gridStepSizeW - 2,
                     color = colorWhiteKey[1],
                     notifier = loadstring(temp),
                     pressed = loadstring(temp2)
+                },
+                vb:space {
+                    id = "ps" .. tostring(x) .. "_" .. tostring(y),
+                    width = 2,
                 }
             }
             row:add_child(vb_temp)
