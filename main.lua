@@ -4768,9 +4768,10 @@ local function fillPianoRoll(quickRefresh)
     end
 
     --quirk? i need to visible and hide a note button to get fast vertical scroll
-    if not l_vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible then
-        l_vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible = true
-        l_vbw["dummy" .. tostring(4) .. "_" .. tostring(4)].visible = false
+    local dummy = l_vbw["dummy" .. tostring(4) .. "_" .. tostring(4)]
+    if not dummy.visible then
+        dummy.visible = true
+        dummy.visible = false
     end
 
     --set current instrument, when no instrument is used
