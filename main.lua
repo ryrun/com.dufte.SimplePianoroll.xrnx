@@ -4485,7 +4485,7 @@ local function fillPianoRoll(quickRefresh)
                     local color = colorWhiteKey[bb % 8 + 1]
                     p.active = true
 
-                    if line < steps and (
+                    if s < stepsCount and (
                             (preferences.gridHLines.value == 2 and (s + stepOffset) % (lpb * 4) == 0) or
                                     (preferences.gridHLines.value == 3 and (s + stepOffset) % lpb == 0))
                     then
@@ -4753,13 +4753,17 @@ local function fillPianoRoll(quickRefresh)
     for y = 1, gridHeight do
         temp = shadeColor(defaultColor["p1_" .. y], 0.4)
         for i = steps + 1, gridWidth do
+            local p = l_vbw["p" .. i .. "_" .. y]
             if y == 1 then
-                l_vbw["s" .. i].active = false
+                local s = l_vbw["s" .. i]
+                s.active = false
+                s.color = colorDefault
                 l_vbw["se" .. i].visible = false
-                l_vbw["s" .. i].color = colorDefault
             end
-            l_vbw["p" .. i .. "_" .. y].color = temp
-            l_vbw["p" .. i .. "_" .. y].active = true
+            p.color = temp
+            p.active = true
+            p.width = gridStepSizeW
+            l_vbw["ps" .. i .. "_" .. y].visible = false
         end
     end
 
