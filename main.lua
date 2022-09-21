@@ -8529,7 +8529,7 @@ local function createPianoRollDialog()
                 vb:button {
                     id = "p" .. tostring(x) .. "_" .. tostring(y),
                     height = gridStepSizeH,
-                    width = gridStepSizeW - 2,
+                    width = gridStepSizeW,
                     color = colorWhiteKey[1],
                     notifier = loadstring(temp),
                     pressed = loadstring(temp2)
@@ -8537,6 +8537,7 @@ local function createPianoRollDialog()
                 vb:space {
                     id = "ps" .. tostring(x) .. "_" .. tostring(y),
                     width = 2,
+                    visible = false,
                 }
             }
             row:add_child(vb_temp)
