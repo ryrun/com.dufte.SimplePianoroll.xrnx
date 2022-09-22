@@ -607,6 +607,9 @@ end
 
 --converts special "hex" value like ZF to a number
 local function fromRenoiseHex(val)
+    if val == ".." then
+        return nil
+    end
     val = string.upper(val)
     if string.len(val) > 2 then
         return -1
@@ -4396,6 +4399,7 @@ local function fillPianoRoll(quickRefresh)
     local temp
     local newNotes = {}
     local usedInstruments = {}
+    local noteIndexCache = {}
 
     --set auto ghost track
     if preferences.setLastEditedTrackAsGhost.value and lastTrackIndex and lastTrackIndex ~= l_song.selected_track_index and lastTrackIndex <= song.sequencer_track_count then
@@ -4485,6 +4489,7 @@ local function fillPianoRoll(quickRefresh)
                     local p = l_vbw["p" .. index]
                     local ps = l_vbw["ps" .. index]
                     local color = colorWhiteKey[bb % 8 + 1]
+                    local yPLusOffMod12 = (y + noffset) % 12
                     p.active = true
 
                     if s < stepsCount and (
@@ -4507,7 +4512,10 @@ local function fillPianoRoll(quickRefresh)
                         p.height = gridStepSizeH
                     end
 
-                    blackKey = not noteInScale((y + noffset) % 12)
+                    if noteIndexCache[yPLusOffMod12] == nil then
+                        noteIndexCache[yPLusOffMod12] = noteInScale(yPLusOffMod12)
+                    end
+                    blackKey = not noteIndexCache[yPLusOffMod12]
                     --color black notes
                     if blackKey then
                         color = colorBlackKey[bb % 8 + 1]
@@ -4529,7 +4537,7 @@ local function fillPianoRoll(quickRefresh)
                             local outOfPentatnicScale = false
                             local nIdx
                             if preferences.scaleHighlightingType.value ~= 5 then
-                                nIdx = noteIndexInScale((y + noffset) % 12)
+                                nIdx = noteIndexInScale(yPLusOffMod12)
                                 if nIdx == 5 or nIdx == 11 then
                                     outOfPentatnicScale = true
                                 end
@@ -4542,12 +4550,12 @@ local function fillPianoRoll(quickRefresh)
                                         isRootKey = true
                                     end
                                 end
-                            elseif preferences.scaleHighlightingType.value == 5 and currentScale == 2 and noteIndexInScale((y + noffset) % 12) == 0 then
+                            elseif preferences.scaleHighlightingType.value == 5 and currentScale == 2 and noteIndexInScale(yPLusOffMod12) == 0 then
                                 isRootKey = true
                             end
                             if preferences.keyboardStyle.value == 2 then
                                 defaultColor[idx] = colorList
-                            elseif noteInScale((y + noffset) % 12, true) then
+                            elseif noteInScale(yPLusOffMod12, true) then
                                 defaultColor[idx] = colorKeyWhite
                             else
                                 defaultColor[idx] = colorKeyBlack
@@ -4565,13 +4573,13 @@ local function fillPianoRoll(quickRefresh)
                             --set root label
                             if preferences.keyLabels.value == 4 or
                                     (preferences.keyLabels.value == 2 and (
-                                            ((currentScale == 1 or (preferences.scaleHighlightingType.value == 5 and currentScale == 1)) and noteIndexInScale((y + noffset) % 12, true) == 0) or
+                                            ((currentScale == 1 or (preferences.scaleHighlightingType.value == 5 and currentScale == 1)) and noteIndexInScale(yPLusOffMod12, true) == 0) or
                                                     isRootKey))
                                     or
                                     (preferences.keyLabels.value == 3 and
-                                            noteInScale((y + noffset) % 12))
+                                            noteInScale(yPLusOffMod12))
                             then
-                                local note = notesTable[(y + noffset) % 12 + 1]
+                                local note = notesTable[yPLusOffMod12 + 1]
                                 if string.len(note) == 1 then
                                     note = note .. "-"
                                 end
