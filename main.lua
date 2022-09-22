@@ -123,6 +123,7 @@ local defaultPreferences = {
     gridWidth = 64,
     gridHeight = 42,
     gridHLines = 1,
+    gridVLines = 1,
     triggerTime = 250,
     keyInfoTime = 3,
     enableKeyInfo = true,
@@ -202,6 +203,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     gridWidth = defaultPreferences.gridWidth,
     gridHeight = defaultPreferences.gridHeight,
     gridHLines = defaultPreferences.gridHLines,
+    gridVLines = defaultPreferences.gridVLines,
     minSizeOfNoteButton = defaultPreferences.minSizeOfNoteButton,
     triggerTime = defaultPreferences.triggerTime,
     enableOSCClient = defaultPreferences.enableOSCClient,
@@ -4489,11 +4491,20 @@ local function fillPianoRoll(quickRefresh)
                             (preferences.gridHLines.value == 2 and (s + stepOffset) % (lpb * 4) == 0) or
                                     (preferences.gridHLines.value == 3 and (s + stepOffset) % lpb == 0))
                     then
-                        p.width = gridStepSizeW - ps.width
-                        ps.visible = true
+                        p.width = gridStepSizeW - 2
+                        ps.width = 2
                     else
-                        p.width = gridStepSizeW
-                        ps.visible = false
+                        p.width = gridStepSizeW - 1
+                        ps.width = 1
+                    end
+
+                    if
+                    (preferences.gridVLines.value == 2 and (y + noteOffset) % 12 == 1) or
+                            (preferences.gridVLines.value == 3 and (y + noteOffset - currentScaleOffset) % 12 == 0)
+                    then
+                        p.height = gridStepSizeH - 1
+                    else
+                        p.height = gridStepSizeH
                     end
 
                     blackKey = not noteInScale((y + noffset) % 12)
@@ -4762,8 +4773,9 @@ local function fillPianoRoll(quickRefresh)
             end
             p.color = temp
             p.active = true
-            p.width = gridStepSizeW
-            l_vbw["ps" .. i .. "_" .. y].visible = false
+            p.width = gridStepSizeW - 1
+            p.height = gridStepSizeH
+            l_vbw["ps" .. i .. "_" .. y].width = 1
         end
     end
 
@@ -7415,6 +7427,22 @@ showPreferences = function()
                         vbp:horizontal_aligner {
                             mode = "justify",
                             vbp:text {
+                                text = "Vertical grid lines:",
+                                width = "50%"
+                            },
+                            vbp:popup {
+                                width = "50%",
+                                items = {
+                                    "None",
+                                    "Per octave",
+                                    "Per root note",
+                                },
+                                bind = preferences.gridVLines,
+                            },
+                        },
+                        vbp:horizontal_aligner {
+                            mode = "justify",
+                            vbp:text {
                                 text = "Shading amount of out of scale notes:",
                             },
                             vbp:valuebox {
@@ -8534,15 +8562,16 @@ local function createPianoRollDialog()
                 vb:button {
                     id = "p" .. tostring(x) .. "_" .. tostring(y),
                     height = gridStepSizeH,
-                    width = gridStepSizeW,
+                    width = gridStepSizeW - 1,
                     color = colorWhiteKey[1],
                     notifier = loadstring(temp),
                     pressed = loadstring(temp2)
                 },
                 vb:space {
                     id = "ps" .. tostring(x) .. "_" .. tostring(y),
-                    width = 2,
-                    visible = false,
+                    width = 1,
+                    height = gridStepSizeH,
+                    visible = true,
                 }
             }
             row:add_child(vb_temp)
