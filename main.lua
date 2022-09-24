@@ -3352,333 +3352,364 @@ function pianoGridClick(x, y, released)
 end
 
 --enable a note button, when its visible, set correct length of the button
-local function drawNoteToGrid(column,
-                              current_note_line,
-                              current_note_step,
-                              current_note_rowIndex,
-                              current_note,
-                              current_note_len,
-                              current_note_string,
-                              current_note_vel,
-                              current_note_end_vel,
-                              current_note_pan,
-                              current_note_dly,
-                              current_note_end_dly,
-                              current_note_ins,
-                              noteoff)
+local function drawNoteToGrid(allNotes)
     local l_song = song
     local l_song_transport = l_song.transport
     local l_song_st = l_song.selected_track
     local l_vbw = vbw
-    local isInSelection = false
-    local isScaleBtnHidden = false
-    --save highest and lowest note
-    if lowestNote == nil then
-        lowestNote = current_note
-    end
-    if highestNote == nil then
-        highestNote = current_note
-    end
-    lowestNote = math.min(lowestNote, current_note)
-    highestNote = math.max(highestNote, current_note)
-    if current_note_rowIndex ~= nil then
-        local noteOnStepIndex = current_note_step
-        local current_note_index = tostring(current_note_step) .. "_" .. tostring(current_note_rowIndex) .. "_" .. tostring(column)
-        local current_note_param = "noteClick(" .. string.gsub(current_note_index, "_", ",")
-        if current_note_vel == nil then
-            current_note_vel = 255
+    local l_math_min = math.min
+    local l_math_max = math.max
+    local l_math_floor = math.floor
+    local l_table_insert = table.insert
+    local l_string_gsub = string.gsub
+    local l_string_find = string.find
+    local isInSelection
+    local isScaleBtnHidden
+    local column
+    local current_note_line
+    local current_note_step
+    local current_note_rowIndex
+    local current_note
+    local current_note_len
+    local current_note_string
+    local current_note_vel
+    local current_note_end_vel
+    local current_note_pan
+    local current_note_dly
+    local current_note_end_dly
+    local current_note_ins
+    local noteoff
+
+    for j = 1, #allNotes do
+
+        isInSelection = false
+        isScaleBtnHidden = false
+
+        column = allNotes[j][1]
+        current_note_line = allNotes[j][2]
+        current_note_step = allNotes[j][3]
+        current_note_rowIndex = allNotes[j][4]
+        current_note = allNotes[j][5]
+        current_note_len = allNotes[j][6]
+        current_note_string = allNotes[j][7]
+        current_note_vel = allNotes[j][8]
+        current_note_end_vel = allNotes[j][9]
+        current_note_pan = allNotes[j][10]
+        current_note_dly = allNotes[j][11]
+        current_note_end_dly = allNotes[j][12]
+        current_note_ins = allNotes[j][13]
+        noteoff = allNotes[j][14]
+
+        --save highest and lowest note
+        if lowestNote == nil then
+            lowestNote = current_note
         end
-        if current_note_end_vel == nil then
-            current_note_end_vel = 255
-        end
-        if current_note_pan == nil then
-            current_note_pan = 255
-        end
-        if current_note_dly == nil then
-            current_note_dly = 0
-        end
-        if current_note_end_dly == nil then
-            current_note_end_dly = 0
-        end
-        noteData[current_note_index] = {
-            ins = current_note_ins,
-            idx = current_note_index,
-            line = current_note_line,
-            step = current_note_step,
-            note = current_note,
-            vel = current_note_vel,
-            end_vel = current_note_end_vel,
-            dly = current_note_dly,
-            end_dly = current_note_end_dly,
-            pan = current_note_pan,
-            len = current_note_len,
-            noteoff = noteoff,
-            column = column
-        }
-        --check if note is in selection and refresh noteData
-        if #noteSelection then
-            local key = noteInSelection(noteData[current_note_index])
-            if key then
-                noteSelection[key] = noteData[current_note_index]
-                isInSelection = true
-            end
+        if highestNote == nil then
+            highestNote = current_note
         end
 
-        --fill noteOnStep not just note start, also the full length
-        if noteOnStepIndex then
-            local len = current_note_len - 1
-            --when cut value is set, then change note length to 1
-            if (l_song_st.volume_column_visible and current_note_vel >= 192 and current_note_vel <= 207) or
-                    (l_song_st.panning_column_visible and current_note_pan >= 192 and current_note_pan <= 207)
-            then
-                len = 0
+        lowestNote = l_math_min(lowestNote, current_note)
+        highestNote = l_math_max(highestNote, current_note)
+
+        if current_note_rowIndex ~= nil then
+            local noteOnStepIndex = current_note_step
+            local current_note_index = tostring(current_note_step) .. "_" .. tostring(current_note_rowIndex) .. "_" .. tostring(column)
+            local current_note_param = "noteClick(" .. l_string_gsub(current_note_index, "_", ",")
+            if current_note_vel == nil then
+                current_note_vel = 255
             end
-            for i = 0, len do
-                --only when velocity is not 0 (muted)
-                if current_note_vel > 0 then
-                    if noteOnStep[noteOnStepIndex + i] == nil then
-                        noteOnStep[noteOnStepIndex + i] = {}
-                    end
-                    table.insert(noteOnStep[noteOnStepIndex + i], {
-                        index = current_note_index,
-                        step = current_note_step,
-                        row = current_note_rowIndex,
-                        note = current_note,
-                        len = current_note_len - i,
-                        vel = current_note_vel,
-                        ins = current_note_ins
-                    })
+            if current_note_end_vel == nil then
+                current_note_end_vel = 255
+            end
+            if current_note_pan == nil then
+                current_note_pan = 255
+            end
+            if current_note_dly == nil then
+                current_note_dly = 0
+            end
+            if current_note_end_dly == nil then
+                current_note_end_dly = 0
+            end
+            noteData[current_note_index] = {
+                ins = current_note_ins,
+                idx = current_note_index,
+                line = current_note_line,
+                step = current_note_step,
+                note = current_note,
+                vel = current_note_vel,
+                end_vel = current_note_end_vel,
+                dly = current_note_dly,
+                end_dly = current_note_end_dly,
+                pan = current_note_pan,
+                len = current_note_len,
+                noteoff = noteoff,
+                column = column
+            }
+            --check if note is in selection and refresh noteData
+            if #noteSelection then
+                local key = noteInSelection(noteData[current_note_index])
+                if key then
+                    noteSelection[key] = noteData[current_note_index]
+                    isInSelection = true
                 end
             end
-        end
 
-        --only process notes on steps and visibility, when there is a valid row
-        if l_vbw["row" .. current_note_rowIndex] then
-            --change note display len
-            if current_note_step < 1 then
-                current_note_len = current_note_len + (current_note_step - 1)
-            end
-            if current_note_step > gridWidth then
-                current_note_len = 0
-            elseif current_note_step + current_note_len > gridWidth + 1 and current_note_step <= gridWidth then
-                current_note_len = current_note_len - (current_note_step + current_note_len - gridWidth - 1)
-                isScaleBtnHidden = true
-            end
-            if current_note_len > gridWidth then
-                current_note_len = gridWidth
-            end
-
-            --display note button, note len is greater 0 and when the row is visible
-            if current_note_len > 0 then
-                local spaceWidth = 0
-                local retriggerWidth = 0
-                local delayWidth = 0
-                local addWidth = 0
-                local cutValue
-
-                if l_song_st.volume_column_visible and current_note_end_vel >= 192 and current_note_end_vel <= 207 then
-                    cutValue = current_note_end_vel
+            --fill noteOnStep not just note start, also the full length
+            if noteOnStepIndex then
+                local len = current_note_len - 1
+                --when cut value is set, then change note length to 1
+                if (l_song_st.volume_column_visible and current_note_vel >= 192 and current_note_vel <= 207) or
+                        (l_song_st.panning_column_visible and current_note_pan >= 192 and current_note_pan <= 207)
+                then
+                    len = 0
                 end
-
-                if l_song_st.volume_column_visible then
-                    if current_note_vel >= 192 and current_note_vel <= 207 then
-                        current_note_len = 1
-                        cutValue = current_note_vel
-                        --wenn note is cut and outside, dont render it
-                        if stepOffset >= current_note_line then
-                            return
+                for i = 0, len do
+                    --only when velocity is not 0 (muted)
+                    if current_note_vel > 0 then
+                        if noteOnStep[noteOnStepIndex + i] == nil then
+                            noteOnStep[noteOnStepIndex + i] = {}
                         end
-                    elseif current_note_vel >= 416 and current_note_vel <= 431 then
-                        delayWidth = current_note_vel
-                    elseif current_note_vel >= 432 and current_note_vel <= 447 then
-                        retriggerWidth = current_note_vel
+                        l_table_insert(noteOnStep[noteOnStepIndex + i], {
+                            index = current_note_index,
+                            step = current_note_step,
+                            row = current_note_rowIndex,
+                            note = current_note,
+                            len = current_note_len - i,
+                            vel = current_note_vel,
+                            ins = current_note_ins
+                        })
                     end
                 end
+            end
 
-                if l_song_st.panning_column_visible then
-                    if current_note_pan >= 192 and current_note_pan <= 207 then
-                        current_note_len = 1
-                        if not cutValue or (cutValue > 0 and current_note_pan < cutValue) then
-                            cutValue = current_note_pan
+            --only process notes on steps and visibility, when there is a valid row
+            if l_vbw["row" .. current_note_rowIndex] then
+                --change note display len
+                if current_note_step < 1 then
+                    current_note_len = current_note_len + (current_note_step - 1)
+                end
+                if current_note_step > gridWidth then
+                    current_note_len = 0
+                elseif current_note_step + current_note_len > gridWidth + 1 and current_note_step <= gridWidth then
+                    current_note_len = current_note_len - (current_note_step + current_note_len - gridWidth - 1)
+                    isScaleBtnHidden = true
+                end
+                if current_note_len > gridWidth then
+                    current_note_len = gridWidth
+                end
+
+                --display note button, note len is greater 0 and when the row is visible
+                if current_note_len > 0 then
+                    local spaceWidth = 0
+                    local retriggerWidth = 0
+                    local delayWidth = 0
+                    local addWidth = 0
+                    local cutValue
+
+                    if l_song_st.volume_column_visible and current_note_end_vel >= 192 and current_note_end_vel <= 207 then
+                        cutValue = current_note_end_vel
+                    end
+
+                    if l_song_st.volume_column_visible then
+                        if current_note_vel >= 192 and current_note_vel <= 207 then
+                            current_note_len = 1
+                            cutValue = current_note_vel
+                            --wenn note is cut and outside, dont render it
+                            if stepOffset >= current_note_line then
+                                return
+                            end
+                        elseif current_note_vel >= 416 and current_note_vel <= 431 then
+                            delayWidth = current_note_vel
+                        elseif current_note_vel >= 432 and current_note_vel <= 447 then
+                            retriggerWidth = current_note_vel
                         end
-                    elseif current_note_pan >= 416 and current_note_pan <= 431 then
-                        delayWidth = current_note_pan
-                    elseif current_note_pan >= 432 and current_note_pan <= 447 then
-                        retriggerWidth = current_note_pan
                     end
-                end
 
-                local buttonWidth = (gridStepSizeW) * current_note_len
-                local buttonSpace = gridSpacing * (current_note_len - 1)
-
-                if delayWidth > 0 then
-                    delayWidth = delayWidth - 416
-                    if delayWidth < l_song_transport.tpl then
-                        delayWidth = math.floor(0x100 / l_song_transport.tpl * delayWidth)
-                    else
-                        delayWidth = 0
+                    if l_song_st.panning_column_visible then
+                        if current_note_pan >= 192 and current_note_pan <= 207 then
+                            current_note_len = 1
+                            if not cutValue or (cutValue > 0 and current_note_pan < cutValue) then
+                                cutValue = current_note_pan
+                            end
+                        elseif current_note_pan >= 416 and current_note_pan <= 431 then
+                            delayWidth = current_note_pan
+                        elseif current_note_pan >= 432 and current_note_pan <= 447 then
+                            retriggerWidth = current_note_pan
+                        end
                     end
-                end
 
-                if cutValue and cutValue > 0 then
-                    cutValue = cutValue - 192
-                    if cutValue < l_song_transport.tpl then
-                        buttonWidth = buttonWidth - ((gridStepSizeW - gridSpacing) / 100 * (100 / l_song_transport.tpl * (l_song_transport.tpl - cutValue)))
+                    local buttonWidth = (gridStepSizeW) * current_note_len
+                    local buttonSpace = gridSpacing * (current_note_len - 1)
+
+                    if delayWidth > 0 then
+                        delayWidth = delayWidth - 416
+                        if delayWidth < l_song_transport.tpl then
+                            delayWidth = l_math_floor(0x100 / l_song_transport.tpl * delayWidth)
+                        else
+                            delayWidth = 0
+                        end
                     end
-                end
 
-                local btn = vb:row {
-                    margin = -gridMargin,
-                    spacing = -gridSpacing,
-                }
-
-                if current_note_step > 1 then
-                    spaceWidth = (gridStepSizeW * (current_note_step - 1)) - (gridSpacing * (current_note_step - 2))
-                end
-
-                if l_song_st.delay_column_visible then
-                    if current_note_dly > 0 then
-                        delayWidth = math.max(current_note_dly, delayWidth)
+                    if cutValue and cutValue > 0 then
+                        cutValue = cutValue - 192
+                        if cutValue < l_song_transport.tpl then
+                            buttonWidth = buttonWidth - ((gridStepSizeW - gridSpacing) / 100 * (100 / l_song_transport.tpl * (l_song_transport.tpl - cutValue)))
+                        end
                     end
-                    if current_note_end_dly > 0 then
-                        addWidth = math.max(current_note_end_dly, addWidth)
-                    end
-                end
 
-                if delayWidth > 0 and stepOffset < current_note_line then
-                    delayWidth = math.max(math.floor((gridStepSizeW - gridSpacing) / 0x100 * delayWidth), 1)
-                    spaceWidth = spaceWidth + delayWidth
-                    buttonWidth = buttonWidth - delayWidth
-                    if current_note_step < 2 then
-                        spaceWidth = spaceWidth + gridSpacing
-                    end
-                end
-
-                if addWidth > 0 and (current_note_step + current_note_len) - 1 < gridWidth then
-                    addWidth = math.max(math.floor((gridStepSizeW - gridSpacing) / 0x100 * addWidth), 1)
-                    buttonWidth = buttonWidth + addWidth
-                end
-
-                if spaceWidth > 0 then
-                    btn:add_child(vb:space {
-                        width = spaceWidth,
-                    });
-                end
-
-                --recalc retrigger value, reset it to 0, when greater than tpl
-                if retriggerWidth > 0 then
-                    retriggerWidth = retriggerWidth - 432
-                    if retriggerWidth >= l_song_transport.tpl then
-                        retriggerWidth = 0
-                    end
-                end
-
-                --no note labels when to short
-                if buttonWidth - buttonSpace - 1 < 32 or (retriggerWidth > 0 and buttonWidth - buttonSpace - 1 < 52) then
-                    if not string.find(current_note_string, '#') and buttonWidth - buttonSpace - 1 > 25 and retriggerWidth == 0 then
-                        current_note_string = string.gsub(current_note_string, '-', '')
-                    else
-                        current_note_string = nil
-                    end
-                end
-
-                l_vbw["b" .. current_note_index] = nil
-                l_vbw["bbb" .. current_note_index] = nil
-                btn:add_child(
-                        vb:row {
-                            id = "bbb" .. current_note_index,
-                            vb:button {
-                                id = "b" .. current_note_index,
-                                height = gridStepSizeH,
-                                width = math.max(buttonWidth - buttonSpace - 1, math.max(1, preferences.minSizeOfNoteButton.value + preferences.clickAreaSizeForScalingPx.value)),
-                                text = current_note_string,
-                                notifier = loadstring(current_note_param .. ",true)"),
-                                pressed = loadstring(current_note_param .. ",false)")
-                            },
-                        }
-                );
-
-                if not noteButtons[current_note_rowIndex] then
-                    noteButtons[current_note_rowIndex] = {}
-                end
-
-                table.insert(noteButtons[current_note_rowIndex], btn);
-                l_vbw["row" .. current_note_rowIndex]:add_child(btn)
-
-                --size button
-                local sizebutton = vb:row {
-                    margin = -gridMargin,
-                    spacing = -gridSpacing,
-                }
-                if spaceWidth > 0 then
-                    sizebutton:add_child(vb:space {
-                        width = spaceWidth,
-                    })
-                end
-                l_vbw["bs" .. current_note_index] = nil
-                l_vbw["bbbs" .. current_note_index] = nil
-                sizebutton:add_child(vb:row {
-                    spacing = -2,
-                    vb:space {
-                        width = l_vbw["b" .. current_note_index].width - (preferences.clickAreaSizeForScalingPx.value - 4),
-                    },
-                    vb:row {
-                        id = "bbbs" .. current_note_index,
-                        spacing = -3,
-                        vb:space {
-                            width = 1,
-                        },
-                        vb:button {
-                            id = "bs" .. current_note_index,
-                            height = gridStepSizeH,
-                            width = preferences.clickAreaSizeForScalingPx.value,
-                            notifier = loadstring(current_note_param .. ",true,true)"),
-                            pressed = loadstring(current_note_param .. ",false,true)")
-                        }
+                    local btn = vb:row {
+                        margin = -gridMargin,
+                        spacing = -gridSpacing,
                     }
-                });
-                if not isScaleBtnHidden then
-                    l_vbw["row" .. current_note_rowIndex]:add_child(sizebutton)
-                    table.insert(noteButtons[current_note_rowIndex], sizebutton);
-                end
 
-                --set color
-                setNoteColor(noteData[current_note_index], false, isInSelection, current_note_ins)
-
-                --display retrigger effect
-                if retriggerWidth > 0 then
-                    spaceWidth = math.max(spaceWidth, 4)
-                    local rTpl = l_song_transport.tpl - 1
-                    if cutValue and cutValue > 0 and cutValue < l_song_transport.tpl and current_note_len == 1 then
-                        rTpl = rTpl + (cutValue - 0xf)
+                    if current_note_step > 1 then
+                        spaceWidth = (gridStepSizeW * (current_note_step - 1)) - (gridSpacing * (current_note_step - 2))
                     end
-                    local i = 1
-                    for spc = retriggerWidth, rTpl, retriggerWidth do
-                        l_vbw["br" .. current_note_index .. "_" .. i] = nil
-                        local retrigger = vb:row {
-                            id = "br" .. current_note_index .. "_" .. i,
-                            margin = -gridMargin,
-                            spacing = -gridSpacing,
-                        }
-                        retrigger:add_child(vb:space {
-                            width = spaceWidth + (((gridStepSizeW - 3) / l_song_transport.tpl) * (spc + 1)),
+
+                    if l_song_st.delay_column_visible then
+                        if current_note_dly > 0 then
+                            delayWidth = l_math_max(current_note_dly, delayWidth)
+                        end
+                        if current_note_end_dly > 0 then
+                            addWidth = l_math_max(current_note_end_dly, addWidth)
+                        end
+                    end
+
+                    if delayWidth > 0 and stepOffset < current_note_line then
+                        delayWidth = l_math_max(l_math_floor((gridStepSizeW - gridSpacing) / 0x100 * delayWidth), 1)
+                        spaceWidth = spaceWidth + delayWidth
+                        buttonWidth = buttonWidth - delayWidth
+                        if current_note_step < 2 then
+                            spaceWidth = spaceWidth + gridSpacing
+                        end
+                    end
+
+                    if addWidth > 0 and (current_note_step + current_note_len) - 1 < gridWidth then
+                        addWidth = l_math_max(l_math_floor((gridStepSizeW - gridSpacing) / 0x100 * addWidth), 1)
+                        buttonWidth = buttonWidth + addWidth
+                    end
+
+                    if spaceWidth > 0 then
+                        btn:add_child(vb:space {
+                            width = spaceWidth,
                         });
-                        retrigger:add_child(
-                                vb:row {
-                                    spacing = -2,
-                                    vb:space {
-                                        width = 1
-                                    },
-                                    vb:button {
-                                        height = gridStepSizeH,
-                                        width = 2,
-                                        active = false,
+                    end
+
+                    --recalc retrigger value, reset it to 0, when greater than tpl
+                    if retriggerWidth > 0 then
+                        retriggerWidth = retriggerWidth - 432
+                        if retriggerWidth >= l_song_transport.tpl then
+                            retriggerWidth = 0
+                        end
+                    end
+
+                    --no note labels when to short
+                    if buttonWidth - buttonSpace - 1 < 32 or (retriggerWidth > 0 and buttonWidth - buttonSpace - 1 < 52) then
+                        if not l_string_find(current_note_string, '#') and buttonWidth - buttonSpace - 1 > 25 and retriggerWidth == 0 then
+                            current_note_string = l_string_gsub(current_note_string, '-', '')
+                        else
+                            current_note_string = nil
+                        end
+                    end
+
+                    l_vbw["b" .. current_note_index] = nil
+                    l_vbw["bbb" .. current_note_index] = nil
+                    btn:add_child(
+                            vb:row {
+                                id = "bbb" .. current_note_index,
+                                vb:button {
+                                    id = "b" .. current_note_index,
+                                    height = gridStepSizeH,
+                                    width = l_math_max(buttonWidth - buttonSpace - 1, l_math_max(1, preferences.minSizeOfNoteButton.value + preferences.clickAreaSizeForScalingPx.value)),
+                                    text = current_note_string,
+                                    notifier = loadstring(current_note_param .. ",true)"),
+                                    pressed = loadstring(current_note_param .. ",false)")
+                                },
+                            }
+                    );
+
+                    if not noteButtons[current_note_rowIndex] then
+                        noteButtons[current_note_rowIndex] = {}
+                    end
+
+                    l_table_insert(noteButtons[current_note_rowIndex], btn);
+                    l_vbw["row" .. current_note_rowIndex]:add_child(btn)
+
+                    --size button
+                    local sizebutton = vb:row {
+                        margin = -gridMargin,
+                        spacing = -gridSpacing,
+                    }
+                    if spaceWidth > 0 then
+                        sizebutton:add_child(vb:space {
+                            width = spaceWidth,
+                        })
+                    end
+                    l_vbw["bs" .. current_note_index] = nil
+                    l_vbw["bbbs" .. current_note_index] = nil
+                    sizebutton:add_child(vb:row {
+                        spacing = -2,
+                        vb:space {
+                            width = l_vbw["b" .. current_note_index].width - (preferences.clickAreaSizeForScalingPx.value - 4),
+                        },
+                        vb:row {
+                            id = "bbbs" .. current_note_index,
+                            spacing = -3,
+                            vb:space {
+                                width = 1,
+                            },
+                            vb:button {
+                                id = "bs" .. current_note_index,
+                                height = gridStepSizeH,
+                                width = preferences.clickAreaSizeForScalingPx.value,
+                                notifier = loadstring(current_note_param .. ",true,true)"),
+                                pressed = loadstring(current_note_param .. ",false,true)")
+                            }
+                        }
+                    });
+                    if not isScaleBtnHidden then
+                        l_vbw["row" .. current_note_rowIndex]:add_child(sizebutton)
+                        l_table_insert(noteButtons[current_note_rowIndex], sizebutton);
+                    end
+
+                    --set color
+                    setNoteColor(noteData[current_note_index], false, isInSelection, current_note_ins)
+
+                    --display retrigger effect
+                    if retriggerWidth > 0 then
+                        spaceWidth = l_math_max(spaceWidth, 4)
+                        local rTpl = l_song_transport.tpl - 1
+                        if cutValue and cutValue > 0 and cutValue < l_song_transport.tpl and current_note_len == 1 then
+                            rTpl = rTpl + (cutValue - 0xf)
+                        end
+                        local i = 1
+                        for spc = retriggerWidth, rTpl, retriggerWidth do
+                            l_vbw["br" .. current_note_index .. "_" .. i] = nil
+                            local retrigger = vb:row {
+                                id = "br" .. current_note_index .. "_" .. i,
+                                margin = -gridMargin,
+                                spacing = -gridSpacing,
+                            }
+                            retrigger:add_child(vb:space {
+                                width = spaceWidth + (((gridStepSizeW - 3) / l_song_transport.tpl) * (spc + 1)),
+                            });
+                            retrigger:add_child(
+                                    vb:row {
+                                        spacing = -2,
+                                        vb:space {
+                                            width = 1
+                                        },
+                                        vb:button {
+                                            height = gridStepSizeH,
+                                            width = 2,
+                                            active = false,
+                                        }
                                     }
-                                }
-                        );
-                        table.insert(noteButtons[current_note_rowIndex], retrigger);
-                        l_vbw["row" .. current_note_rowIndex]:add_child(retrigger)
-                        i = i + 1
+                            );
+                            l_table_insert(noteButtons[current_note_rowIndex], retrigger);
+                            l_vbw["row" .. current_note_rowIndex]:add_child(retrigger)
+                            i = i + 1
+                        end
                     end
                 end
             end
@@ -4388,6 +4419,8 @@ end
 local function fillPianoRoll(quickRefresh)
     local l_vbw = vbw
     local l_song = song
+    local l_table_sort = table.sort
+    local l_math_floor = math.floor
     local track = l_song.selected_track
     local steps = l_song.selected_pattern.number_of_lines
     local lpb = l_song.transport.lpb
@@ -4398,6 +4431,7 @@ local function fillPianoRoll(quickRefresh)
     local blackKey
     local temp
     local newNotes = {}
+    local newNotes_length = 0
     local usedInstruments = {}
     local noteIndexCache = {}
 
@@ -4584,9 +4618,9 @@ local function fillPianoRoll(quickRefresh)
                                     note = note .. "-"
                                 end
                                 if preferences.keyboardStyle.value == 2 then
-                                    key.text = note .. tostring(math.floor((y + noffset) / 12)) .. "         "
+                                    key.text = note .. tostring(l_math_floor((y + noffset) / 12)) .. "         "
                                 else
-                                    key.text = "         " .. note .. tostring(math.floor((y + noffset) / 12))
+                                    key.text = "         " .. note .. tostring(l_math_floor((y + noffset) / 12))
                                 end
                             else
                                 key.text = ""
@@ -4618,21 +4652,22 @@ local function fillPianoRoll(quickRefresh)
                     else
                         usedInstruments[current_note_ins] = 1
                     end
-                    table.insert(newNotes, { c,
-                                             current_note_line,
-                                             current_note_step,
-                                             current_note_rowIndex,
-                                             current_note,
-                                             current_note_len,
-                                             current_note_string,
-                                             current_note_vel,
-                                             current_note_end_vel,
-                                             current_note_pan,
-                                             current_note_dly,
-                                             current_note_end_dly,
-                                             current_note_ins,
-                                             false --note off
-                    })
+                    newNotes_length = newNotes_length + 1
+                    newNotes[newNotes_length] = { c,
+                                                  current_note_line,
+                                                  current_note_step,
+                                                  current_note_rowIndex,
+                                                  current_note,
+                                                  current_note_len,
+                                                  current_note_string,
+                                                  current_note_vel,
+                                                  current_note_end_vel,
+                                                  current_note_pan,
+                                                  current_note_dly,
+                                                  current_note_end_dly,
+                                                  current_note_ins,
+                                                  false --note off
+                    }
                 end
                 current_note = note
                 current_note_string = note_string
@@ -4659,21 +4694,22 @@ local function fillPianoRoll(quickRefresh)
                 else
                     usedInstruments[current_note_ins] = 1
                 end
-                table.insert(newNotes, { c,
-                                         current_note_line,
-                                         current_note_step,
-                                         current_note_rowIndex,
-                                         current_note,
-                                         current_note_len,
-                                         current_note_string,
-                                         current_note_vel,
-                                         current_note_end_vel,
-                                         current_note_pan,
-                                         current_note_dly,
-                                         current_note_end_dly,
-                                         current_note_ins,
-                                         true --note off
-                })
+                newNotes_length = newNotes_length + 1
+                newNotes[newNotes_length] = { c,
+                                              current_note_line,
+                                              current_note_step,
+                                              current_note_rowIndex,
+                                              current_note,
+                                              current_note_len,
+                                              current_note_string,
+                                              current_note_vel,
+                                              current_note_end_vel,
+                                              current_note_pan,
+                                              current_note_dly,
+                                              current_note_end_dly,
+                                              current_note_ins,
+                                              true --note off
+                }
                 current_note = nil
                 current_note_len = 0
                 current_note_rowIndex = nil
@@ -4693,21 +4729,22 @@ local function fillPianoRoll(quickRefresh)
             else
                 usedInstruments[current_note_ins] = 1
             end
-            table.insert(newNotes, { c,
-                                     current_note_line,
-                                     current_note_step,
-                                     current_note_rowIndex,
-                                     current_note,
-                                     current_note_len,
-                                     current_note_string,
-                                     current_note_vel,
-                                     current_note_end_vel,
-                                     current_note_pan,
-                                     current_note_dly,
-                                     current_note_end_dly,
-                                     current_note_ins,
-                                     false  --note off
-            })
+            newNotes_length = newNotes_length + 1
+            newNotes[newNotes_length] = { c,
+                                          current_note_line,
+                                          current_note_step,
+                                          current_note_rowIndex,
+                                          current_note,
+                                          current_note_len,
+                                          current_note_string,
+                                          current_note_vel,
+                                          current_note_end_vel,
+                                          current_note_pan,
+                                          current_note_dly,
+                                          current_note_end_dly,
+                                          current_note_ins,
+                                          false  --note off
+            }
         end
     end
     --search for the most used instrument in pattern
@@ -4725,7 +4762,7 @@ local function fillPianoRoll(quickRefresh)
         end
     end
     --resort, left ones first, higest column
-    table.sort(newNotes, function(a, b)
+    l_table_sort(newNotes, function(a, b)
         local v1 = a[2]
         local v2 = b[2]
         if a[11] then
@@ -4745,22 +4782,8 @@ local function fillPianoRoll(quickRefresh)
         return v1 < v2
     end)
     --add note buttons
-    for i = 1, #newNotes do
-        drawNoteToGrid(newNotes[i][1],
-                newNotes[i][2],
-                newNotes[i][3],
-                newNotes[i][4],
-                newNotes[i][5],
-                newNotes[i][6],
-                newNotes[i][7],
-                newNotes[i][8],
-                newNotes[i][9],
-                newNotes[i][10],
-                newNotes[i][11],
-                newNotes[i][12],
-                newNotes[i][13],
-                newNotes[i][14]
-        )
+    if newNotes_length > 0 then
+        drawNoteToGrid(newNotes)
     end
 
     --nothing else to do in quick refresh
@@ -6753,6 +6776,11 @@ end
 local function refreshSelectedNotes()
     local l_vbw = vbw
     local lineValues = song.selected_pattern_track.lines
+    local newNotes = {}
+    local newNotes_length = 0
+    local noteString
+    local rowIndex
+
     for key = 1, #noteSelection do
         if l_vbw["b" .. noteSelection[key].idx] then
             l_vbw["b" .. noteSelection[key].idx].visible = false
@@ -6765,25 +6793,29 @@ local function refreshSelectedNotes()
                 break
             end
         end
-        local rowIndex = noteValue2GridRowOffset(noteSelection[key].note, true)
+        rowIndex = noteValue2GridRowOffset(noteSelection[key].note, true)
         noteSelection[key].idx = tostring(noteSelection[key].step) .. "_" .. tostring(rowIndex) .. "_" .. tostring(noteSelection[key].column)
-        local noteString = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column).note_string
-        drawNoteToGrid(
-                noteSelection[key].column,
-                noteSelection[key].line,
-                noteSelection[key].step,
-                rowIndex,
-                noteSelection[key].note,
-                noteSelection[key].len,
-                noteString,
-                noteSelection[key].vel,
-                noteSelection[key].end_vel,
-                noteSelection[key].pan,
-                noteSelection[key].dly,
-                noteSelection[key].end_dly,
-                noteSelection[key].ins,
-                noteSelection[key].noteoff
-        )
+        noteString = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column).note_string
+        newNotes_length = newNotes_length + 1
+        newNotes[newNotes_length] = {
+            noteSelection[key].column,
+            noteSelection[key].line,
+            noteSelection[key].step,
+            rowIndex,
+            noteSelection[key].note,
+            noteSelection[key].len,
+            noteString,
+            noteSelection[key].vel,
+            noteSelection[key].end_vel,
+            noteSelection[key].pan,
+            noteSelection[key].dly,
+            noteSelection[key].end_dly,
+            noteSelection[key].ins,
+            noteSelection[key].noteoff
+        }
+    end
+    if newNotes_length > 0 then
+        drawNoteToGrid(newNotes)
     end
     refreshPianoRollNeeded = true
 end
