@@ -1062,7 +1062,8 @@ local function noteInSelection(notedata, otherTable)
     if otherTable == nil then
         otherTable = noteSelection
     end
-    for i = 1, #otherTable do
+    local n = #otherTable
+    for i = 1, n do
         --just search for line in pattern and column
         if otherTable[i].line == notedata.line and otherTable[i].column == notedata.column then
             return i
@@ -2952,6 +2953,7 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
     local nmax = gridOffset2NoteValue(math.max(y, y2))
     local note_data
     local newNoteSelection = {}
+    local n = 0
     --loop through all notes
     for key in pairs(noteData) do
         note_data = noteData[key]
@@ -2964,7 +2966,8 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
                 )
         then
             --add to selection table
-            table.insert(newNoteSelection, note_data)
+            n = n + 1
+            newNoteSelection[n] = note_data
         end
     end
     updateNoteSelection(newNoteSelection, not addToSelection)
@@ -3357,7 +3360,7 @@ function pianoGridClick(x, y, released)
 end
 
 --enable a note button, when its visible, set correct length of the button
-local function drawNoteToGrid(allNotes)
+local function drawNotesToGrid(allNotes)
     local l_song = song
     local l_song_transport = l_song.transport
     local l_song_st = l_song.selected_track
@@ -4804,7 +4807,7 @@ local function fillPianoRoll(quickRefresh)
 
     --add note buttons
     if newNotes_length > 0 then
-        drawNoteToGrid(newNotes)
+        drawNotesToGrid(newNotes)
     end
 
     --nothing else to do in quick refresh
@@ -6836,7 +6839,7 @@ local function refreshSelectedNotes()
         }
     end
     if newNotes_length > 0 then
-        drawNoteToGrid(newNotes)
+        drawNotesToGrid(newNotes)
     end
     refreshPianoRollNeeded = true
 end
