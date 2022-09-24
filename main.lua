@@ -3367,7 +3367,7 @@ local function drawNoteToGrid(allNotes)
     local l_math_floor = math.floor
     local l_table_insert = table.insert
     local l_string_gsub = string.gsub
-    local l_string_find = string.find
+    local allNotes_length = #allNotes
     local isInSelection
     local isScaleBtnHidden
     local column
@@ -3384,8 +3384,41 @@ local function drawNoteToGrid(allNotes)
     local current_note_end_dly
     local current_note_ins
     local noteoff
+    local noteWidth
+    local buttonWidth
+    local buttonSpace
+    local spaceWidth
+    local retriggerWidth
+    local delayWidth
+    local addWidth
+    local cutValue
+    local rTpl
+    local n
 
-    for j = 1, #allNotes do
+    --resort, left ones first, higest column
+    if allNotes_length > 1 then
+        table.sort(allNotes, function(a, b)
+            local v1 = a[2]
+            local v2 = b[2]
+            if a[11] then
+                v1 = v1 + a[11] / 0x100
+            end
+            if b[11] then
+                v2 = v2 + b[11] / 0x100
+            end
+            if v1 == v2 then
+                v2 = a[6]
+                v1 = b[6]
+            end
+            if v1 == v2 then
+                v1 = a[1]
+                v2 = b[1]
+            end
+            return v1 < v2
+        end)
+    end
+
+    for j = 1, allNotes_length do
 
         isInSelection = false
         isScaleBtnHidden = false
@@ -3461,14 +3494,14 @@ local function drawNoteToGrid(allNotes)
 
             --fill noteOnStep not just note start, also the full length
             if noteOnStepIndex then
-                local len = current_note_len - 1
+                n = current_note_len - 1
                 --when cut value is set, then change note length to 1
                 if (l_song_st.volume_column_visible and current_note_vel >= 192 and current_note_vel <= 207) or
                         (l_song_st.panning_column_visible and current_note_pan >= 192 and current_note_pan <= 207)
                 then
-                    len = 0
+                    n = 0
                 end
-                for i = 0, len do
+                for i = 0, n do
                     --only when velocity is not 0 (muted)
                     if current_note_vel > 0 then
                         if noteOnStep[noteOnStepIndex + i] == nil then
@@ -3505,11 +3538,11 @@ local function drawNoteToGrid(allNotes)
 
                 --display note button, note len is greater 0 and when the row is visible
                 if current_note_len > 0 then
-                    local spaceWidth = 0
-                    local retriggerWidth = 0
-                    local delayWidth = 0
-                    local addWidth = 0
-                    local cutValue
+                    spaceWidth = 0
+                    retriggerWidth = 0
+                    delayWidth = 0
+                    addWidth = 0
+                    cutValue = nil
 
                     if l_song_st.volume_column_visible and current_note_end_vel >= 192 and current_note_end_vel <= 207 then
                         cutValue = current_note_end_vel
@@ -3543,8 +3576,8 @@ local function drawNoteToGrid(allNotes)
                         end
                     end
 
-                    local buttonWidth = (gridStepSizeW) * current_note_len
-                    local buttonSpace = gridSpacing * (current_note_len - 1)
+                    buttonWidth = (gridStepSizeW) * current_note_len
+                    buttonSpace = gridSpacing * (current_note_len - 1)
 
                     if delayWidth > 0 then
                         delayWidth = delayWidth - 416
@@ -3608,15 +3641,7 @@ local function drawNoteToGrid(allNotes)
                         end
                     end
 
-                    --no note labels when to short
-                    if buttonWidth - buttonSpace - 1 < 32 or (retriggerWidth > 0 and buttonWidth - buttonSpace - 1 < 52) then
-                        if not l_string_find(current_note_string, '#') and buttonWidth - buttonSpace - 1 > 25 and retriggerWidth == 0 then
-                            current_note_string = l_string_gsub(current_note_string, '-', '')
-                        else
-                            current_note_string = nil
-                        end
-                    end
-
+                    noteWidth = l_math_max(buttonWidth - buttonSpace - 1, l_math_max(1, preferences.minSizeOfNoteButton.value + preferences.clickAreaSizeForScalingPx.value))
                     l_vbw["b" .. current_note_index] = nil
                     l_vbw["bbb" .. current_note_index] = nil
                     btn:add_child(
@@ -3625,13 +3650,24 @@ local function drawNoteToGrid(allNotes)
                                 vb:button {
                                     id = "b" .. current_note_index,
                                     height = gridStepSizeH,
-                                    width = l_math_max(buttonWidth - buttonSpace - 1, l_math_max(1, preferences.minSizeOfNoteButton.value + preferences.clickAreaSizeForScalingPx.value)),
+                                    width = noteWidth,
                                     text = current_note_string,
                                     notifier = loadstring(current_note_param .. ",true)"),
                                     pressed = loadstring(current_note_param .. ",false)")
                                 },
                             }
                     );
+
+                    --shorten note button text, when its too large
+                    if l_vbw["b" .. current_note_index].width > noteWidth then
+                        current_note_string = l_string_gsub(current_note_string, '-', '')
+                        l_vbw["b" .. current_note_index].width = noteWidth
+                        l_vbw["b" .. current_note_index].text = current_note_string
+                        if l_vbw["b" .. current_note_index].width > noteWidth then
+                            l_vbw["b" .. current_note_index].text = ""
+                            l_vbw["b" .. current_note_index].width = noteWidth
+                        end
+                    end
 
                     if not noteButtons[current_note_rowIndex] then
                         noteButtons[current_note_rowIndex] = {}
@@ -3683,15 +3719,15 @@ local function drawNoteToGrid(allNotes)
                     --display retrigger effect
                     if retriggerWidth > 0 then
                         spaceWidth = l_math_max(spaceWidth, 4)
-                        local rTpl = l_song_transport.tpl - 1
+                        rTpl = l_song_transport.tpl - 1
                         if cutValue and cutValue > 0 and cutValue < l_song_transport.tpl and current_note_len == 1 then
                             rTpl = rTpl + (cutValue - 0xf)
                         end
-                        local i = 1
+                        n = 1
                         for spc = retriggerWidth, rTpl, retriggerWidth do
-                            l_vbw["br" .. current_note_index .. "_" .. i] = nil
+                            l_vbw["br" .. current_note_index .. "_" .. n] = nil
                             local retrigger = vb:row {
-                                id = "br" .. current_note_index .. "_" .. i,
+                                id = "br" .. current_note_index .. "_" .. n,
                                 margin = -gridMargin,
                                 spacing = -gridSpacing,
                             }
@@ -3713,7 +3749,7 @@ local function drawNoteToGrid(allNotes)
                             );
                             l_table_insert(noteButtons[current_note_rowIndex], retrigger);
                             l_vbw["row" .. current_note_rowIndex]:add_child(retrigger)
-                            i = i + 1
+                            n = n + 1
                         end
                     end
                 end
@@ -4424,7 +4460,6 @@ end
 local function fillPianoRoll(quickRefresh)
     local l_vbw = vbw
     local l_song = song
-    local l_table_sort = table.sort
     local l_math_floor = math.floor
     local track = l_song.selected_track
     local steps = l_song.selected_pattern.number_of_lines
@@ -4766,26 +4801,7 @@ local function fillPianoRoll(quickRefresh)
             patternInstrument = currentInstrument
         end
     end
-    --resort, left ones first, higest column
-    l_table_sort(newNotes, function(a, b)
-        local v1 = a[2]
-        local v2 = b[2]
-        if a[11] then
-            v1 = v1 + a[11] / 0x100
-        end
-        if b[11] then
-            v2 = v2 + b[11] / 0x100
-        end
-        if v1 == v2 then
-            v2 = a[6]
-            v1 = b[6]
-        end
-        if v1 == v2 then
-            v1 = a[1]
-            v2 = b[1]
-        end
-        return v1 < v2
-    end)
+
     --add note buttons
     if newNotes_length > 0 then
         drawNoteToGrid(newNotes)
