@@ -7437,6 +7437,38 @@ showPreferences = function()
                         vbp:horizontal_aligner {
                             mode = "justify",
                             vbp:text {
+                                text = "Horizontal grid lines:",
+                                width = "50%"
+                            },
+                            vbp:popup {
+                                width = "50%",
+                                items = {
+                                    "None",
+                                    "Per bar",
+                                    "Per beat",
+                                },
+                                bind = preferences.gridHLines,
+                            },
+                        },
+                        vbp:horizontal_aligner {
+                            mode = "justify",
+                            vbp:text {
+                                text = "Vertical grid lines:",
+                                width = "50%"
+                            },
+                            vbp:popup {
+                                width = "50%",
+                                items = {
+                                    "None",
+                                    "Per octave",
+                                    "Per root note",
+                                },
+                                bind = preferences.gridVLines,
+                            },
+                        },
+                        vbp:horizontal_aligner {
+                            mode = "justify",
+                            vbp:text {
                                 text = "Min size of a note button (px):",
                             },
                             vbp:valuebox {
@@ -7467,38 +7499,6 @@ showPreferences = function()
                                 tonumber = function(v)
                                     return tonumber(v)
                                 end
-                            },
-                        },
-                        vbp:horizontal_aligner {
-                            mode = "justify",
-                            vbp:text {
-                                text = "Horizontal grid lines:",
-                                width = "50%"
-                            },
-                            vbp:popup {
-                                width = "50%",
-                                items = {
-                                    "None",
-                                    "Per bar",
-                                    "Per beat",
-                                },
-                                bind = preferences.gridHLines,
-                            },
-                        },
-                        vbp:horizontal_aligner {
-                            mode = "justify",
-                            vbp:text {
-                                text = "Vertical grid lines:",
-                                width = "50%"
-                            },
-                            vbp:popup {
-                                width = "50%",
-                                items = {
-                                    "None",
-                                    "Per octave",
-                                    "Per root note",
-                                },
-                                bind = preferences.gridVLines,
                             },
                         },
                         vbp:horizontal_aligner {
