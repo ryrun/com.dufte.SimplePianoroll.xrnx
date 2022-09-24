@@ -8627,7 +8627,6 @@ local function createPianoRollDialog()
             local temp2 = "pianoGridClick(" .. tostring(x) .. "," .. tostring(y) .. ",false)"
             vb_temp = vb:row {
                 id = "ppp" .. tostring(x) .. "_" .. tostring(y),
-                width = gridStepSizeW,
                 vb:button {
                     id = "p" .. tostring(x) .. "_" .. tostring(y),
                     height = gridStepSizeH,
