@@ -4585,8 +4585,9 @@ local function fillPianoRoll(quickRefresh)
                     end
 
                     if
-                    (preferences.gridVLines.value == 2 and (y + noteOffset) % 12 == 1) or
-                            (preferences.gridVLines.value == 3 and (y + noteOffset - currentScaleOffset) % 12 == 0)
+                    currentScaleOffset and (
+                            (preferences.gridVLines.value == 2 and (y + noteOffset) % 12 == 1) or
+                                    (preferences.gridVLines.value == 3 and (y + noteOffset - currentScaleOffset) % 12 == 0))
                     then
                         p.height = gridStepSizeH - 1
                     else
@@ -7678,7 +7679,7 @@ showPreferences = function()
                                 bind = preferences.highlightEntireLineOfPlayingNote
                             },
                             vbp:text {
-                                text = "Highlight the entire row of a playing note (slow)",
+                                text = "Highlight the entire row of a playing note",
                             },
                         },
                         vbp:horizontal_aligner {
