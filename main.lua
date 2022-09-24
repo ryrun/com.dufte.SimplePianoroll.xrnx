@@ -1065,7 +1065,7 @@ local function noteInSelection(notedata, otherTable)
     local n = #otherTable
     for i = 1, n do
         --just search for line in pattern and column
-        if otherTable[i].line == notedata.line and otherTable[i].column == notedata.column then
+        if otherTable[i].column == notedata.column and otherTable[i].line == notedata.line then
             return i
         end
     end
@@ -2713,7 +2713,8 @@ end
 --highlight entire row
 local function highlightNoteRow(row, highlighted)
     if preferences.highlightEntireLineOfPlayingNote.value then
-        for l = 1, math.min(song.selected_pattern.number_of_lines, gridWidth) do
+        local n = math.min(song.selected_pattern.number_of_lines, gridWidth)
+        for l = 1, n do
             local idx = "p" .. l .. "_" .. row
             if highlighted then
                 vbw[idx].color = shadeColor(defaultColor[idx], -preferences.rowHighlightingAmount.value)
@@ -3766,6 +3767,7 @@ local function fillTimeline()
     local lpb = song.transport.lpb
     local steps = song.selected_pattern.number_of_lines
     local stepsCount = math.min(steps, gridWidth)
+    local math_ceil = math.ceil
     --setup timeline
     local timestep = 0
     local lastbeat
@@ -3773,7 +3775,7 @@ local function fillTimeline()
     local timeslotsize = 1
     for i = 1, stepsCount do
         local line = i + stepOffset
-        local beat = math.ceil((line - lpb) / lpb) % 4 + 1
+        local beat = math_ceil((line - lpb) / lpb) % 4 + 1
         local bar = calculateBarBeat(line, false, lpb)
 
         if lastbeat ~= beat then
@@ -4326,6 +4328,7 @@ end
 --highlight each note on the current playback pos
 local function highlightNotesOnStep(step, highlight)
     local rows = {}
+    local n = 0
     notesOnStep = {}
     if noteOnStep[step] ~= nil and #noteOnStep[step] > 0 then
         for i = 1, #noteOnStep[step] do
@@ -4334,7 +4337,8 @@ local function highlightNotesOnStep(step, highlight)
                 local note = noteOnStep[step][i]
                 local idx = "b" .. note.index
                 local sidx = "bs" .. note.index
-                table.insert(notesOnStep, note.note)
+                n = n + 1
+                notesOnStep[n] = note.note
                 if vbw[idx] then
                     rows[note.row] = note.note
                     if highlight then
