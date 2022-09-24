@@ -673,13 +673,14 @@ end
 
 --for the line index calculate the correct bar index
 local function calculateBarBeat(line, returnbeat, lpb)
+    local math_ceil = math.ceil
     if not lpb then
         lpb = song.transport.lpb
     end
     if returnbeat == true then
-        return math.ceil((line - lpb) / lpb) % 4 + 1
+        return math_ceil((line - lpb) / lpb) % 4 + 1
     end
-    return math.ceil((line - (lpb * 4)) / (lpb * 4)) + 1
+    return math_ceil((line - (lpb * 4)) / (lpb * 4)) + 1
 end
 
 --shade color
@@ -687,10 +688,12 @@ local function shadeColor(color, shade)
     if shade == 0 then
         return color
     end
+    local math_ceil = math.ceil
+    local math_max = math.max
     return {
-        math.ceil(math.max(color[1] * (1 - shade), 1)),
-        math.ceil(math.max(color[2] * (1 - shade), 1)),
-        math.ceil(math.max(color[3] * (1 - shade), 1))
+        math_ceil(math_max(color[1] * (1 - shade), 1)),
+        math_ceil(math_max(color[2] * (1 - shade), 1)),
+        math_ceil(math_max(color[3] * (1 - shade), 1))
     }
 end
 
@@ -699,10 +702,12 @@ local function alphablendColors(color1, color2, alphablend)
     if alphablend == 0 then
         return color1
     end
+    local math_ceil = math.ceil
+    local math_max = math.max
     return {
-        math.ceil(math.max(color1[1] * (1 - alphablend) + color2[1] * alphablend, 1)),
-        math.ceil(math.max(color1[2] * (1 - alphablend) + color2[2] * alphablend, 1)),
-        math.ceil(math.max(color1[3] * (1 - alphablend) + color2[3] * alphablend, 1))
+        math_ceil(math_max(color1[1] * (1 - alphablend) + color2[1] * alphablend, 1)),
+        math_ceil(math_max(color1[2] * (1 - alphablend) + color2[2] * alphablend, 1)),
+        math_ceil(math_max(color1[3] * (1 - alphablend) + color2[3] * alphablend, 1))
     }
 end
 
