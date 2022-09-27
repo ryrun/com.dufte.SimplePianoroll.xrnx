@@ -4574,8 +4574,8 @@ local function fillPianoRoll(quickRefresh)
                     p.active = true
 
                     if s < stepsCount and (
-                            (preferences.gridHLines.value == 2 and (s + stepOffset) % (lpb * 4) == 0) or
-                                    (preferences.gridHLines.value == 3 and (s + stepOffset) % lpb == 0))
+                            (preferences.gridVLines.value == 2 and (s + stepOffset) % (lpb * 4) == 0) or
+                                    (preferences.gridVLines.value == 3 and (s + stepOffset) % lpb == 0))
                     then
                         p.width = gridStepSizeW - 2
                         ps.width = 2
@@ -4586,8 +4586,8 @@ local function fillPianoRoll(quickRefresh)
 
                     if
                     currentScaleOffset and (
-                            (preferences.gridVLines.value == 2 and (y + noteOffset) % 12 == 1) or
-                                    (preferences.gridVLines.value == 3 and (y + noteOffset - currentScaleOffset) % 12 == 0))
+                            (preferences.gridHLines.value == 2 and (y + noteOffset) % 12 == 1) or
+                                    (preferences.gridHLines.value == 3 and (y + noteOffset - currentScaleOffset) % 12 == 0))
                     then
                         p.height = gridStepSizeH - 1
                     else
@@ -7452,8 +7452,8 @@ showPreferences = function()
                                 width = "50%",
                                 items = {
                                     "None",
-                                    "Per bar",
-                                    "Per beat",
+                                    "Per octave",
+                                    "Per root note",
                                 },
                                 bind = preferences.gridHLines,
                             },
@@ -7466,12 +7466,12 @@ showPreferences = function()
                             },
                             vbp:popup {
                                 width = "50%",
+                                bind = preferences.gridVLines,
                                 items = {
                                     "None",
-                                    "Per octave",
-                                    "Per root note",
+                                    "Per bar",
+                                    "Per beat",
                                 },
-                                bind = preferences.gridVLines,
                             },
                         },
                         vbp:horizontal_aligner {
