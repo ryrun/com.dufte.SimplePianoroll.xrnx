@@ -7445,22 +7445,6 @@ showPreferences = function()
                         vbp:horizontal_aligner {
                             mode = "justify",
                             vbp:text {
-                                text = "Horizontal grid lines:",
-                                width = "50%"
-                            },
-                            vbp:popup {
-                                width = "50%",
-                                items = {
-                                    "None",
-                                    "Per octave",
-                                    "Per root note",
-                                },
-                                bind = preferences.gridHLines,
-                            },
-                        },
-                        vbp:horizontal_aligner {
-                            mode = "justify",
-                            vbp:text {
                                 text = "Vertical grid lines:",
                                 width = "50%"
                             },
@@ -7472,6 +7456,22 @@ showPreferences = function()
                                     "Per bar",
                                     "Per beat",
                                 },
+                            },
+                        },
+                        vbp:horizontal_aligner {
+                            mode = "justify",
+                            vbp:text {
+                                text = "Horizontal grid lines:",
+                                width = "50%"
+                            },
+                            vbp:popup {
+                                width = "50%",
+                                items = {
+                                    "None",
+                                    "Per octave",
+                                    "Per root note",
+                                },
+                                bind = preferences.gridHLines,
                             },
                         },
                         vbp:horizontal_aligner {
