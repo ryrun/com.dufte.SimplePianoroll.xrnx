@@ -1077,7 +1077,9 @@ local function setNoteColor(note_data, isOnStep, isInSelection)
     local nB = vbw["b" .. note_data.idx]
     if nB then
         nB.color = colorNoteVelocity(note_data.vel, isOnStep, isInSelection, note_data.ins)
-        vbw["bs" .. note_data.idx].color = shadeColor(nB.color, preferences.scaleBtnShadingAmount.value)
+        if vbw["bs" .. note_data.idx] then
+            vbw["bs" .. note_data.idx].color = shadeColor(nB.color, preferences.scaleBtnShadingAmount.value)
+        end
     end
 end
 
@@ -3035,14 +3037,11 @@ function noteClick(x, y, c, released, forceScaling)
         --remove and add the clicked button, disable underlaying buttons, so the xypad in the background
         --can receive the click event, remove/add trick from joule:
         --https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
+        local rowidx = noteValue2GridRowOffset(note_data.note, true)
+        vbw["row" .. rowidx]:remove_child(vbw["bc" .. index])
+        vbw["row" .. rowidx]:add_child(vbw["bc" .. index])
         if forceScaling then
-            vbw["bbbs" .. index]:remove_child(vbw["bs" .. index])
-            vbw["bbbs" .. index]:add_child(vbw["bs" .. index])
-            vbw["b" .. index].active = false
             table.insert(xypadpos.disabled, "b" .. index)
-        else
-            vbw["bbb" .. index]:remove_child(vbw["b" .. index])
-            vbw["bbb" .. index]:add_child(vbw["b" .. index])
         end
         xypadpos.leftClick = true
         xypadpos.selection_key = noteInSelection(note_data)
@@ -3077,7 +3076,10 @@ function noteClick(x, y, c, released, forceScaling)
     end
 
     if released then
-        local dbclk = dbclkDetector("b" .. index)
+        local dbclk
+        if not forceScaling then
+            dbclk = dbclkDetector("b" .. index)
+        end
         --remove on dblclk or when in penmode or previewmode
         if (checkMode("pen") and not preferences.moveNoteInPenMode.value) or (dbclk and not checkMode("preview")) then
             --set clicked note as selected for remove function
@@ -3599,9 +3601,11 @@ local function drawNotesToGrid(allNotes)
                         end
                     end
 
+                    l_vbw["bc" .. current_note_index] = nil
                     local btn = vb:row {
                         margin = -gridMargin,
                         spacing = -gridSpacing,
+                        id = "bc" .. current_note_index,
                     }
 
                     if current_note_step > 1 then
@@ -3646,21 +3650,46 @@ local function drawNotesToGrid(allNotes)
                     end
 
                     noteWidth = l_math_max(buttonWidth - buttonSpace - 1, l_math_max(1, preferences.minSizeOfNoteButton.value + preferences.clickAreaSizeForScalingPx.value))
+
+                    if not isScaleBtnHidden then
+                        noteWidth = noteWidth - preferences.clickAreaSizeForScalingPx.value + 4
+                    end
+
                     l_vbw["b" .. current_note_index] = nil
-                    l_vbw["bbb" .. current_note_index] = nil
-                    btn:add_child(
-                            vb:row {
-                                id = "bbb" .. current_note_index,
-                                vb:button {
-                                    id = "b" .. current_note_index,
-                                    height = gridStepSizeH,
-                                    width = noteWidth,
-                                    text = current_note_string,
-                                    notifier = loadstring(current_note_param .. ",true)"),
-                                    pressed = loadstring(current_note_param .. ",false)")
-                                },
-                            }
-                    );
+                    local btn_body = vb:row {
+                        spacing = -2,
+                        vb:button {
+                            id = "b" .. current_note_index,
+                            height = gridStepSizeH,
+                            width = noteWidth,
+                            text = current_note_string,
+                            notifier = loadstring(current_note_param .. ",true)"),
+                            pressed = loadstring(current_note_param .. ",false)")
+                        },
+                    }
+
+                    if not noteButtons[current_note_rowIndex] then
+                        noteButtons[current_note_rowIndex] = {}
+                    end
+
+                    if not isScaleBtnHidden then
+                        l_vbw["bs" .. current_note_index] = nil
+                        btn_body:add_child(
+                                vb:row {
+                                    spacing = -3,
+                                    vb:space {
+                                        width = 1,
+                                    },
+                                    vb:button {
+                                        id = "bs" .. current_note_index,
+                                        height = gridStepSizeH,
+                                        width = preferences.clickAreaSizeForScalingPx.value,
+                                        notifier = loadstring(current_note_param .. ",true,true)"),
+                                        pressed = loadstring(current_note_param .. ",false,true)")
+                                    }
+                                }
+                        )
+                    end
 
                     --shorten note button text, when its too large
                     if l_vbw["b" .. current_note_index].width > noteWidth then
@@ -3673,49 +3702,11 @@ local function drawNotesToGrid(allNotes)
                         end
                     end
 
-                    if not noteButtons[current_note_rowIndex] then
-                        noteButtons[current_note_rowIndex] = {}
-                    end
+                    --add button body
+                    btn:add_child(btn_body);
 
                     l_table_insert(noteButtons[current_note_rowIndex], btn);
                     l_vbw["row" .. current_note_rowIndex]:add_child(btn)
-
-                    --size button
-                    local sizebutton = vb:row {
-                        margin = -gridMargin,
-                        spacing = -gridSpacing,
-                    }
-                    if spaceWidth > 0 then
-                        sizebutton:add_child(vb:space {
-                            width = spaceWidth,
-                        })
-                    end
-                    l_vbw["bs" .. current_note_index] = nil
-                    l_vbw["bbbs" .. current_note_index] = nil
-                    sizebutton:add_child(vb:row {
-                        spacing = -2,
-                        vb:space {
-                            width = l_vbw["b" .. current_note_index].width - (preferences.clickAreaSizeForScalingPx.value - 4),
-                        },
-                        vb:row {
-                            id = "bbbs" .. current_note_index,
-                            spacing = -3,
-                            vb:space {
-                                width = 1,
-                            },
-                            vb:button {
-                                id = "bs" .. current_note_index,
-                                height = gridStepSizeH,
-                                width = preferences.clickAreaSizeForScalingPx.value,
-                                notifier = loadstring(current_note_param .. ",true,true)"),
-                                pressed = loadstring(current_note_param .. ",false,true)")
-                            }
-                        }
-                    });
-                    if not isScaleBtnHidden then
-                        l_vbw["row" .. current_note_rowIndex]:add_child(sizebutton)
-                        l_table_insert(noteButtons[current_note_rowIndex], sizebutton);
-                    end
 
                     --set color
                     setNoteColor(noteData[current_note_index], false, isInSelection, current_note_ins)
@@ -4354,7 +4345,9 @@ local function highlightNotesOnStep(step, highlight)
                             vbw[idx].color = colorNoteVelocity(note.vel, nil, nil, note.ins)
                         end
                     end
-                    vbw[sidx].color = shadeColor(vbw[idx].color, preferences.scaleBtnShadingAmount.value)
+                    if vbw[sidx] then
+                        vbw[sidx].color = shadeColor(vbw[idx].color, preferences.scaleBtnShadingAmount.value)
+                    end
                 end
             end
         end
@@ -6811,9 +6804,8 @@ local function refreshSelectedNotes()
     local rowIndex
 
     for key = 1, #noteSelection do
-        if l_vbw["b" .. noteSelection[key].idx] then
-            l_vbw["b" .. noteSelection[key].idx].visible = false
-            l_vbw["bs" .. noteSelection[key].idx].visible = false
+        if l_vbw["bc" .. noteSelection[key].idx] then
+            l_vbw["bc" .. noteSelection[key].idx].visible = false
         end
         for i = 1, 0xf do
             if l_vbw["br" .. noteSelection[key].idx .. "_" .. i] then
