@@ -3053,6 +3053,7 @@ function noteClick(x, y, c, released, forceScaling)
         vbw["row" .. rowidx]:remove_child(vbw["bc" .. index])
         vbw["row" .. rowidx]:add_child(vbw["bc" .. index])
         if forceScaling then
+            vbw["b" .. index].active = false
             table.insert(xypadpos.disabled, "b" .. index)
         end
         xypadpos.leftClick = true
