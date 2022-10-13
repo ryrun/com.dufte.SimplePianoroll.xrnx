@@ -8877,7 +8877,7 @@ local function createPianoRollDialog()
                                     plugin.plugin_device.external_editor_visible = false
                                     plugin.plugin_device.external_editor_visible = true
                                 elseif plugin and not plugin.plugin_device then
-                                    --switch to sintrument settings
+                                    --switch to instrument settings
                                     app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_INSTRUMENT_SAMPLE_EDITOR
                                     --close piano roll
                                     if windowObj and windowObj.visible then
