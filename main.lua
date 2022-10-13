@@ -2164,6 +2164,10 @@ local function scaleNoteSelection(times)
                     noteSelection[key].end_vel = noteSelection[key].vel
                     noteSelection[key].vel = 255
                 end
+            elseif noteSelection[key].len > 1 and len == 1 then
+                if toRenoiseHex(noteSelection[key].vel):sub(1, 1) == "Q" then
+                    noteSelection[key].end_vel = noteSelection[key].vel
+                end
             end
             noteSelection[key].column = column
             noteSelection[key].line = line
@@ -2360,6 +2364,10 @@ local function changeSizeSelectedNotesByMicroSteps(microsteps)
                     noteSelection[key].end_vel = noteSelection[key].vel
                     noteSelection[key].vel = 255
                 end
+            elseif noteSelection[key].len > 1 and len == 1 then
+                if toRenoiseHex(noteSelection[key].vel):sub(1, 1) == "Q" then
+                    noteSelection[key].end_vel = noteSelection[key].vel
+                end
             end
             noteSelection[key].step = noteSelection[key].step
             noteSelection[key].line = noteSelection[key].line
@@ -2422,6 +2430,10 @@ local function changeSizeSelectedNotes(len, add)
                 if toRenoiseHex(noteSelection[key].vel):sub(1, 1) == "C" then
                     noteSelection[key].end_vel = noteSelection[key].vel
                     noteSelection[key].vel = 255
+                end
+            elseif noteSelection[key].len > 1 and len == 1 then
+                if toRenoiseHex(noteSelection[key].vel):sub(1, 1) == "Q" then
+                    noteSelection[key].end_vel = noteSelection[key].vel
                 end
             end
             noteSelection[key].len = newLen
