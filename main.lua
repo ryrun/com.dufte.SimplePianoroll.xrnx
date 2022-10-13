@@ -8844,26 +8844,49 @@ local function createPianoRollDialog()
                 margin = 3,
                 spacing = 1,
                 style = "panel",
-                vb:popup {
-                    id = "ins",
-                    width = 154,
-                    notifier = function(idx)
-                        local val = string.match(
-                                vbw.ins.items[idx],
-                                '%[([0-9A-Z-]+)%]$'
-                        )
-                        if val and vbw["ins"].active then
-                            currentInstrument = fromRenoiseHex(val)
-                            if currentInstrument >= 0 and currentInstrument <= #song.instruments then
-                                song.selected_instrument_index = currentInstrument + 1
-                            end
-                            if #noteSelection > 0 then
-                                changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, currentInstrument)
-                            else
-                                refreshPianoRollNeeded = true
+                vb:row {
+                    spacing = -3,
+                    vb:popup {
+                        id = "ins",
+                        width = 146,
+                        notifier = function(idx)
+                            local val = string.match(
+                                    vbw.ins.items[idx],
+                                    '%[([0-9A-Z-]+)%]$'
+                            )
+                            if val and vbw["ins"].active then
+                                currentInstrument = fromRenoiseHex(val)
+                                if currentInstrument >= 0 and currentInstrument <= #song.instruments then
+                                    song.selected_instrument_index = currentInstrument + 1
+                                end
+                                if #noteSelection > 0 then
+                                    changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, currentInstrument)
+                                else
+                                    refreshPianoRollNeeded = true
+                                end
                             end
                         end
-                    end
+                    },
+                    vb:button {
+                        tooltip = "Edit instrument / Open plugin editor ...",
+                        bitmap = "Icons/Options.bmp",
+                        notifier = function()
+                            if currentInstrument ~= 255 then
+                                local plugin = song.instruments[currentInstrument + 1].plugin_properties
+                                if plugin and plugin.plugin_device and plugin.plugin_device.external_editor_available then
+                                    plugin.plugin_device.external_editor_visible = false
+                                    plugin.plugin_device.external_editor_visible = true
+                                elseif plugin and not plugin.plugin_device then
+                                    --switch to sintrument settings
+                                    app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_INSTRUMENT_SAMPLE_EDITOR
+                                    --close piano roll
+                                    if windowObj and windowObj.visible then
+                                        windowObj:close()
+                                    end
+                                end
+                            end
+                        end,
+                    },
                 },
                 vb:text {
                     text = "Len",
