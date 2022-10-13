@@ -8868,11 +8868,16 @@ local function createPianoRollDialog()
                         end
                     },
                     vb:button {
-                        tooltip = "Edit instrument / Open plugin editor ...",
+                        tooltip = "Edit instrument / Open plugin editor ...\n(While holding ctrl, midi out target will be opened)",
                         bitmap = "Icons/Options.bmp",
                         notifier = function()
                             if currentInstrument ~= 255 then
                                 local plugin = song.instruments[currentInstrument + 1].plugin_properties
+                                --check if the current instrument have a midi target
+                                if modifier.keyControl and plugin.midi_output_routing_index > 0 then
+                                    plugin = song.instruments[plugin.midi_output_routing_index].plugin_properties
+                                end
+                                --open vst external editor
                                 if plugin and plugin.plugin_device and plugin.plugin_device.external_editor_available then
                                     plugin.plugin_device.external_editor_visible = false
                                     plugin.plugin_device.external_editor_visible = true
