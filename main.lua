@@ -3385,6 +3385,8 @@ local function drawNotesToGrid(allNotes)
     local l_math_floor = math.floor
     local l_table_insert = table.insert
     local l_string_gsub = string.gsub
+    local l_string_sub = string.sub
+    local l_string_len = string.len
     local allNotes_length = #allNotes
     local isInSelection
     local isScaleBtnHidden
@@ -3709,8 +3711,12 @@ local function drawNotesToGrid(allNotes)
                         l_vbw["b" .. current_note_index].width = noteWidth
                         l_vbw["b" .. current_note_index].text = current_note_string
                         if l_vbw["b" .. current_note_index].width > noteWidth then
-                            l_vbw["b" .. current_note_index].text = ""
                             l_vbw["b" .. current_note_index].width = noteWidth
+                            l_vbw["b" .. current_note_index].text = l_string_sub(current_note_string, 1, l_string_len(current_note_string) - 1)
+                            if l_vbw["b" .. current_note_index].width > noteWidth then
+                                l_vbw["b" .. current_note_index].text = ""
+                                l_vbw["b" .. current_note_index].width = noteWidth
+                            end
                         end
                     end
 
