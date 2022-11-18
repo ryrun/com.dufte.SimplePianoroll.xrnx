@@ -42,6 +42,7 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 * To improve mouse handling, please disable mouse warping in Renoise preferences. This also fix the jumping mouse
   cursor. There is an option called "Mouse warping compatibility mode", if you still want to use mouse warping in
   Renoise. It will disable some internal functions, where disabled mouse warping is needed.
+* For note preview, you need to enable the OSC server in the Renoise preferences. Be sure, that protocol and port are correctly set for both the OSC server and the piano roll. 
 * The key combination <kbd>alt + shift</kbd> is a default shortcut to change the keyboard layout on Windows OS. It is
   recommended to switch this off or change the keyboard shortcut to avoid problems. <br>See following for more
   details: https://answers.microsoft.com/en-us/windows/forum/all/how-to-disable-the-windows-10-language-shortcut/030016c9-bfed-48d9-8e4f-7d1030ced338
@@ -110,6 +111,13 @@ pane and also via main menu.
 #### Matrix view
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/editviamatrix.gif?raw=true" width="300" alt="Open Piano Roll in Renoise in the Matrix view">
+
+### Note preview
+
+With the help of Renoise's OSC server it is possible to play the drawn as well as selected notes. You can also use your computer keyboard to play notes. The keys are the same as on the Renoise Tracker. With the preview tool you can scroll through the pattern and play all notes at the respective position.
+By default, the OSC server is turned off, so you have to activate it first. Furthermore, the protocol and the port number must match the settings of the Pianoroll tool. After that it should work immediately.
+
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/oscserver.png?raw=true" alt="OSC Server settings in Renoise" width="600">
 
 ### Scale highlighting
 
