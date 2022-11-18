@@ -117,7 +117,7 @@ pane and also via main menu.
 With the help of Renoise's OSC server it is possible to play the drawn as well as selected notes. You can also use your computer keyboard to play notes. The keys are the same as on the Renoise Tracker. With the preview tool you can scroll through the pattern and play all notes at the respective position.
 By default, the OSC server is turned off, so you have to activate it first. Furthermore, the protocol and the port number must match the settings of the Pianoroll tool. After that it should work immediately.
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/oscserver.png?raw=true" alt="OSC Server settings in Renoise" width="600">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/oscserver.png?raw=true" alt="OSC Server settings in Renoise" width="300">
 
 ### Scale highlighting
 
