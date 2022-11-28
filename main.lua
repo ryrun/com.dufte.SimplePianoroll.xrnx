@@ -1785,7 +1785,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
             polyLimit = math.min(#noteSelection, polyLimit)
         end
         --check if previewPolyphony limit was hit
-        if #lastTriggerNote >= polyLimit then
+        if #lastTriggerNote > (polyLimit - 1) then
             local newLastTriggerNote = {}
             --stop playing older notes
             table.sort(lastTriggerNote, function(a, b)
