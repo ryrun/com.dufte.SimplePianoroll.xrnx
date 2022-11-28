@@ -8809,7 +8809,11 @@ local function createPianoRollDialog()
                     width = 24,
                     tooltip = "Stop playing",
                     notifier = function()
-                        song.transport:stop()
+                        if song.transport.playing then
+                            song.transport:stop()
+                        else
+                            song.transport:panic()
+                        end
                         notesPlaying = {}
                         notesPlayingLine = {}
                         refreshChordDetection = true
