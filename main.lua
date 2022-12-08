@@ -8786,7 +8786,7 @@ local function createPianoRollDialog()
             max = gridWidth,
             value = 1,
             default = 1.1234567,
-            tooltip = "Hold ctrl key to set a loop range with your mouse.",
+            tooltip = "Hold ctrl key to set a loop range with your mouse.\nDouble click to remove the loop range.",
             notifier = function(n)
                 --reset loop on double click
                 if n == 1.1234567 then
