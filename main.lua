@@ -8781,6 +8781,7 @@ local function createPianoRollDialog()
         spacing = -(gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6),
         vb:minislider {
             width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
+            height = gridStepSizeH,
             min = 1,
             max = gridWidth,
             value = 1,
@@ -8792,10 +8793,10 @@ local function createPianoRollDialog()
                     song.transport.loop_block_enabled = false
                 else
                     if modifier.keyControl then
-                        local looppos = math.floor(n + 1) + stepOffset
+                        local looppos = math.floor(n + 1.3) + stepOffset
                         --first start, set new loop range
                         if xypadpos.loopslider == nil then
-                            xypadpos.loopslider = math.floor(n + 0.25) + stepOffset
+                            xypadpos.loopslider = math.floor(n + 0.4) + stepOffset
                         elseif xypadpos.loopslider < looppos and looppos <= song.selected_pattern.number_of_lines + 1 then
                             if looppos == song.selected_pattern.number_of_lines + 1 then
                                 --end point outside pattern length, set endpoint to first line of next pattern
