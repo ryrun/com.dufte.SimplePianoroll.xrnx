@@ -344,7 +344,7 @@ local oscClient
 local lastTriggerNote = {}
 
 --missing block loop observable? use a variable for check there was a change
-local blockloopidx
+local loopingrange
 local instrumentScaleMode
 
 --backup state values, to set it back when piano roll was closed
@@ -488,6 +488,7 @@ local xypadpos = {
     leftClick = false,
     disabled = {},
     preview = {},
+    loopslider = nil
 }
 
 --pen mode
@@ -1843,16 +1844,14 @@ end
 
 --start playing from specific line in pattern
 local function playPatternFromLine(line)
-    song.transport:stop()
-    --check for truncated notes, TODO currently not working OFF doesn't send note off, when no note on was before
-    --[[
-    for key in pairs(noteData) do
-        local note_data = noteData[key]
-        if line > note_data.line and line < note_data.line + note_data.len then
-            triggerNoteOfCurrentInstrument(note_data.note, true, note_data.vel)
+    if line == nil then
+        if song.transport.edit_pos.sequence == song.transport.loop_start.sequence
+                and song.transport.loop_start.line < song.selected_pattern.number_of_lines + 1 then
+            line = song.transport.loop_start
+        else
+            line = 1
         end
     end
-    ]]--
     song.transport:start_at(line)
 end
 
@@ -3838,12 +3837,15 @@ local function fillTimeline()
     end
     --set blockloop indicator, when enabled
     local hideblockloop = false
-    if not song.transport.loop_block_enabled then
+    if loopingrange == nil then
         hideblockloop = true
     else
         --calculate width and start pos for block loop line indicator
-        local len = math.max(math.floor(song.selected_pattern.number_of_lines / song.transport.loop_block_range_coeff), 1)
-        local pos = song.transport.loop_block_start_pos.line
+        local len = song.transport.loop_range[2].line - song.transport.loop_range[1].line
+        if song.transport.edit_pos.sequence == song.transport.loop_end.sequence - 1 and song.transport.loop_end.line == 1 then
+            len = song.selected_pattern.number_of_lines + 1 - song.transport.loop_range[1].line
+        end
+        local pos = song.transport.loop_range[1].line
         pos = pos - stepOffset
         if pos < 1 then
             len = len + (pos - 1)
@@ -6159,6 +6161,8 @@ local function handleKeyEvent(keyEvent)
         handled = true
     elseif key.name == "lcontrol" and key.state == "released" then
         modifier.keyControl = false
+        --reset loop mini slider state
+        xypadpos.loopslider = nil
         handled = true
     end
     if key.name == "rcontrol" and key.state == "pressed" then
@@ -6670,14 +6674,18 @@ local function handleKeyEvent(keyEvent)
         handled = true
     end
     --play selection
-    if key.name == "space" and (key.modifiers == "control" or key.modifiers == "shift") and not key.repeated then
+    if key.name == "space" and not key.repeated then
         if key.state == "pressed" then
-            if lastEditPos then
+            if lastEditPos and (key.modifiers == "control" or key.modifiers == "shift") then
                 playPatternFromLine(lastEditPos + stepOffset)
+                keyInfoText = "Start song from cursor position"
             else
-                playPatternFromLine(1)
+                if song.transport.playing and not (key.modifiers == "control" or key.modifiers == "shift") then
+                    song.transport:stop()
+                else
+                    playPatternFromLine()
+                end
             end
-            keyInfoText = "Start song from cursor position"
         end
         handled = true
     end
@@ -7180,6 +7188,10 @@ local function appIdleEvent()
         end
         if (keyState["control"] == "pressed" and modifier.keyControl == false) or (keyState["control"] == "released" and modifier.keyControl == true) then
             modifier.keyControl = not modifier.keyControl
+            --reset loop mini slider state
+            if modifier.keyControl == false then
+                xypadpos.loopslider = nil
+            end
             refreshControls = true
         end
         if (keyState["shift"] == "pressed" and modifier.keyShift == false) or (keyState["shift"] == "released" and modifier.keyShift == true) then
@@ -7222,11 +7234,16 @@ local function appIdleEvent()
         --edit pos render
         refreshEditPosIndicator()
         --block loop, create an index for comparison, because obserable's are missing here
-        local currentblockloop = tostring(song.transport.loop_block_enabled)
-                .. tostring(song.transport.loop_block_start_pos)
-                .. tostring(song.transport.loop_block_range_coeff)
-        if blockloopidx ~= currentblockloop then
-            blockloopidx = currentblockloop
+        local currentloopingrange
+        if song.transport.edit_pos.sequence == song.transport.loop_start.sequence
+                and (song.transport.edit_pos.sequence == song.transport.loop_end.sequence
+                or (song.transport.edit_pos.sequence == song.transport.loop_end.sequence - 1 and song.transport.loop_end.line == 1))
+                and not (song.transport.loop_start.line == 1 and song.transport.loop_end.line == song.selected_pattern.number_of_lines + 1)
+        then
+            currentloopingrange = tostring(song.transport.loop_start.line) .. "," .. tostring(song.transport.loop_end.line)
+        end
+        if loopingrange ~= currentloopingrange then
+            loopingrange = currentloopingrange
             refreshTimeline = true
         end
         --instrument scale obs
@@ -8760,9 +8777,53 @@ local function createPianoRollDialog()
     end
 
     local timeline = vb:row {
-        style = "plain",
         width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
         spacing = -(gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6),
+        vb:minislider {
+            width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
+            min = 1,
+            max = gridWidth,
+            value = 1,
+            default = 1.1234567,
+            notifier = function(n)
+                --reset loop on double click
+                if n == 1.1234567 then
+                    xypadpos.loopslider = nil
+                    song.transport.loop_block_enabled = false
+                else
+                    if modifier.keyControl then
+                        local looppos = math.floor(n + 1) + stepOffset
+                        --first start, set new loop range
+                        if xypadpos.loopslider == nil then
+                            xypadpos.loopslider = math.floor(n + 0.25) + stepOffset
+                        elseif xypadpos.loopslider < looppos and looppos <= song.selected_pattern.number_of_lines + 1 then
+                            if looppos == song.selected_pattern.number_of_lines + 1 then
+                                --end point outside pattern length, set endpoint to first line of next pattern
+                                song.transport.loop_range = {
+                                    renoise.SongPos(song.transport.edit_pos.sequence, xypadpos.loopslider),
+                                    renoise.SongPos(song.transport.edit_pos.sequence + 1, 1)
+                                }
+                            else
+                                --set loop range
+                                song.transport.loop_range = {
+                                    renoise.SongPos(song.transport.edit_pos.sequence, xypadpos.loopslider),
+                                    renoise.SongPos(song.transport.edit_pos.sequence, looppos)
+                                }
+                            end
+                        end
+                    else
+                        --no control key is holded, so reset loop slider state
+                        xypadpos.loopslider = nil
+                    end
+                end
+            end
+        },
+        vb:button {
+            width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
+            height = gridStepSizeH,
+            active = false,
+            color = colorKeyBlack,
+        },
     }
     timeline:add_child(vb:space {
         width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
@@ -8813,7 +8874,7 @@ local function createPianoRollDialog()
                     width = 24,
                     tooltip = "Start playing song or pattern",
                     notifier = function()
-                        song.transport:start(renoise.Transport.PLAYMODE_RESTART_PATTERN)
+                        song.transport:start_at(song.transport.loop_start)
                     end
                 },
                 vb:button {
