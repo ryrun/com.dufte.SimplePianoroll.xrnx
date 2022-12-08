@@ -996,7 +996,7 @@ local function jumpToNoteInPattern(notedata)
             --no selection, dont do anything
             return false
         end
-    elseif type(notedata) == "number" and #noteSelection == 0 then
+    elseif type(notedata) == "number" then
         notedata = {
             line = notedata,
             column = 1
@@ -1007,7 +1007,7 @@ local function jumpToNoteInPattern(notedata)
         --only when the edit cursor is in the correct pattern
         if song.selected_pattern_index == song.sequencer:pattern(song.transport.edit_pos.sequence) then
             local npos = renoise.SongPos()
-            currentEditPos = notedata.line
+            currentEditPos = clamp(notedata.line, 1, song.selected_pattern.number_of_lines)
             npos.line = currentEditPos
             npos.sequence = song.transport.edit_pos.sequence
             song.transport.edit_pos = npos
@@ -6677,6 +6677,10 @@ local function handleKeyEvent(keyEvent)
     if key.name == "space" and not key.repeated then
         if key.state == "pressed" then
             if lastEditPos and (key.modifiers == "control" or key.modifiers == "shift") then
+                if song.transport.follow_player then
+                    wasFollowPlayer = song.transport.follow_player
+                    song.transport.follow_player = false
+                end
                 playPatternFromLine(lastEditPos + stepOffset)
                 keyInfoText = "Start song from cursor position"
             else
@@ -8816,6 +8820,8 @@ local function createPianoRollDialog()
                     else
                         --no control key is holded, so reset loop slider state
                         xypadpos.loopslider = nil
+                        --
+                        jumpToNoteInPattern(math.floor(n + 0.5) + stepOffset)
                     end
                 end
             end
