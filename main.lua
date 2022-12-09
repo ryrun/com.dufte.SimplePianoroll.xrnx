@@ -8619,7 +8619,7 @@ showPreferences = function()
 end
 
 --create main piano roll dialog
-local function createPianoRollDialog()
+local function createPianoRollDialog(gridWidth, gridHeight)
     local vb_temp
     local playCursor = vb:row {
         margin = -gridMargin,
@@ -8885,7 +8885,7 @@ local function createPianoRollDialog()
                     width = 24,
                     tooltip = "Start playing song or pattern",
                     notifier = function()
-                        song.transport:start_at(song.transport.loop_start)
+                        playPatternFromLine()
                     end
                 },
                 vb:button {
@@ -9814,7 +9814,7 @@ local function main_function()
             noteButtons = {}
             vb = renoise.ViewBuilder()
             vbw = vb.views
-            createPianoRollDialog()
+            createPianoRollDialog(gridWidth, gridHeight)
         end
         --when invisible is enabled, no snapback needed
         if not preferences.mouseWarpingCompatibilityMode.value then
