@@ -1663,7 +1663,7 @@ local function refreshNoteControls()
         vbw.mode_audiopreview.color = colorDefault
     end
 
-    if song.transport.loop_pattern then
+    if song.transport.loop_pattern or loopingrange then
         vbw.loopbutton.color = colorStepOn
     else
         vbw.loopbutton.color = colorDefault
@@ -5032,7 +5032,6 @@ local function appNewDoc()
     song.selected_track.mute_state_observable:add_notifier(obsColumnRefresh)
     song.selected_track.solo_state_observable:add_notifier(obsColumnRefresh)
     --transport observable
-    song.transport.loop_pattern_observable:add_notifier(obsColumnRefresh)
     song.transport.playing_observable:add_notifier(obsColumnRefresh)
     --clear selection and refresh piano roll
     obsPianoRefresh()
@@ -7237,18 +7236,22 @@ local function appIdleEvent()
         refreshPlaybackPosIndicator()
         --edit pos render
         refreshEditPosIndicator()
-        --block loop, create an index for comparison, because obserable's are missing here
+        --check loop stats
         local currentloopingrange
-        if song.transport.edit_pos.sequence == song.transport.loop_start.sequence
-                and (song.transport.edit_pos.sequence == song.transport.loop_end.sequence
-                or (song.transport.edit_pos.sequence == song.transport.loop_end.sequence - 1 and song.transport.loop_end.line == 1))
-                and not (song.transport.loop_start.line == 1 and song.transport.loop_end.line == song.selected_pattern.number_of_lines + 1)
+        local transport = song.transport
+        if (transport.edit_pos.sequence == transport.loop_start.sequence and
+                (
+                        transport.edit_pos.sequence == transport.loop_end.sequence
+                                and not (transport.loop_end.line == song.selected_pattern.number_of_lines + 1 and transport.loop_sequence_start == 0)
+                                or (transport.edit_pos.sequence == transport.loop_end.sequence - 1 and transport.loop_end.line == 1)
+                )) or song.transport.loop_pattern
         then
-            currentloopingrange = tostring(song.transport.loop_start.line) .. "," .. tostring(song.transport.loop_end.line)
+            currentloopingrange = tostring(transport.loop_start) .. tostring(transport.loop_end) .. tostring(transport.loop_pattern) .. tostring(transport.loop_block_enabled) .. tostring(transport.loop_sequence_start)
         end
         if loopingrange ~= currentloopingrange then
             loopingrange = currentloopingrange
             refreshTimeline = true
+            refreshControls = true
         end
         --instrument scale obs
         if preferences.scaleHighlightingType.value == 4 and currentInstrument and song.instruments[currentInstrument + 1] then
@@ -8891,7 +8894,14 @@ local function createPianoRollDialog()
                     width = 24,
                     tooltip = "Loop current pattern",
                     notifier = function()
-                        song.transport.loop_pattern = not song.transport.loop_pattern
+                        if song.transport.loop_pattern == true then
+                            song.transport.loop_pattern = false
+                        elseif loopingrange then
+                            xypadpos.loopslider = nil
+                            song.transport.loop_block_enabled = false
+                        else
+                            song.transport.loop_pattern = true
+                        end
                     end
                 },
                 vb:button {
