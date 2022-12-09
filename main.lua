@@ -8797,8 +8797,12 @@ local function createPianoRollDialog(gridWidth, gridHeight)
             notifier = function(n)
                 --reset loop on double click
                 if n == 1.1234567 then
-                    xypadpos.loopslider = nil
-                    song.transport.loop_block_enabled = false
+                    if song.transport.loop_pattern == true then
+                        song.transport.loop_pattern = false
+                    else
+                        xypadpos.loopslider = nil
+                        song.transport.loop_block_enabled = false
+                    end
                 else
                     if modifier.keyControl then
                         local looppos = math.floor(n + 1.3) + stepOffset
