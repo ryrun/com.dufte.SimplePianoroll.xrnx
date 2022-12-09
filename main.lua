@@ -8802,6 +8802,9 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     else
                         xypadpos.loopslider = nil
                         song.transport.loop_block_enabled = false
+                        if song.transport.loop_sequence_start>0 then
+                            song.transport.loop_sequence_range = {}
+                        end
                     end
                 else
                     if modifier.keyControl then
@@ -8903,6 +8906,9 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         elseif loopingrange then
                             xypadpos.loopslider = nil
                             song.transport.loop_block_enabled = false
+                            if song.transport.loop_sequence_start>0 then
+                                song.transport.loop_sequence_range = {}
+                            end
                         else
                             song.transport.loop_pattern = true
                         end
