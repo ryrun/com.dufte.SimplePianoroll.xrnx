@@ -6133,6 +6133,9 @@ local function handleKeyEvent(keyEvent)
         return false
     end
 
+    --renoise bug? using value boxes sometimes set wrong focus so key events will be fired doubled?
+    restoreFocus()
+
     --convert number keys from azerty to qwerty
     if preferences.azertyMode.value then
         key = azertyMode(keyEvent)
@@ -6674,20 +6677,24 @@ local function handleKeyEvent(keyEvent)
     end
     --play selection
     if key.name == "space" and not key.repeated then
-        if key.state == "pressed" then
-            if lastEditPos and (key.modifiers == "control" or key.modifiers == "shift") then
-                if song.transport.follow_player then
-                    wasFollowPlayer = song.transport.follow_player
-                    song.transport.follow_player = false
-                end
-                playPatternFromLine(lastEditPos + stepOffset)
-                keyInfoText = "Start song from cursor position"
-            else
-                if song.transport.playing and not (key.modifiers == "control" or key.modifiers == "shift") then
-                    song.transport:stop()
+        if (key.modifiers == "control" or key.modifiers == "shift") then
+            if key.state == "pressed" then
+                if lastEditPos then
+                    if song.transport.follow_player then
+                        wasFollowPlayer = song.transport.follow_player
+                        song.transport.follow_player = false
+                    end
+                    playPatternFromLine(lastEditPos + stepOffset)
+                    keyInfoText = "Start song from cursor position"
                 else
                     playPatternFromLine()
                 end
+            end
+        elseif key.state == "pressed" then
+            if song.transport.playing then
+                song.transport:stop()
+            else
+                playPatternFromLine()
             end
         end
         handled = true
@@ -8802,7 +8809,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     else
                         xypadpos.loopslider = nil
                         song.transport.loop_block_enabled = false
-                        if song.transport.loop_sequence_start>0 then
+                        if song.transport.loop_sequence_start > 0 then
                             song.transport.loop_sequence_range = {}
                         end
                     end
@@ -8906,7 +8913,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         elseif loopingrange then
                             xypadpos.loopslider = nil
                             song.transport.loop_block_enabled = false
-                            if song.transport.loop_sequence_start>0 then
+                            if song.transport.loop_sequence_start > 0 then
                                 song.transport.loop_sequence_range = {}
                             end
                         else
