@@ -3857,8 +3857,9 @@ local function fillTimeline()
         if len < 1 or pos > gridWidth then
             hideblockloop = true
         else
-            vbw.blockloop.width = gridStepSizeW * len - (gridSpacing * (len - 1)) - 2
-            vbw.blockloopspc.width = math.max(gridStepSizeW * (pos - 1) - (gridSpacing * (pos - 1)), 1)
+            vbw.blockloop.width = gridStepSizeW * len - (gridSpacing * (len - 1)) - 1
+            vbw.blockloopspc.width = math.max(gridStepSizeW * (pos - 1) - (gridSpacing * (pos - 1)) + 4, 4)
+            vbw.blockloop.color = colorNoteSelected
             vbw.blockloop.visible = true
         end
     end
@@ -7246,12 +7247,13 @@ local function appIdleEvent()
         --check loop stats
         local currentloopingrange
         local transport = song.transport
-        if (transport.edit_pos.sequence == transport.loop_start.sequence and
-                (
-                        transport.edit_pos.sequence == transport.loop_end.sequence
-                                and not (transport.loop_end.line == song.selected_pattern.number_of_lines + 1 and transport.loop_sequence_start == 0)
-                                or (transport.edit_pos.sequence == transport.loop_end.sequence - 1 and transport.loop_end.line == 1)
-                )) or song.transport.loop_pattern
+        if ((transport.edit_pos.sequence == transport.loop_start.sequence and transport.edit_pos.sequence == transport.loop_end.sequence - 1 and transport.loop_end.line == 1) or
+                (transport.edit_pos.sequence == transport.loop_start.sequence and transport.edit_pos.sequence == transport.loop_end.sequence) or
+                transport.loop_sequence_start>0 or
+                song.transport.loop_pattern
+        ) and not (
+                transport.edit_pos.sequence == transport.loop_start.sequence and transport.edit_pos.sequence == transport.loop_end.sequence and transport.loop_start.line == 1 and transport.loop_end.line == song.selected_pattern.number_of_lines + 1 and transport.loop_sequence_start == 0
+        )
         then
             currentloopingrange = tostring(transport.loop_start) .. tostring(transport.loop_end) .. tostring(transport.loop_pattern) .. tostring(transport.loop_block_enabled) .. tostring(transport.loop_sequence_start)
         end
@@ -8795,7 +8797,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         spacing = -(gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6),
         vb:minislider {
             width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
-            height = gridStepSizeH,
+            height = gridStepSizeH + 2,
             min = 1,
             max = gridWidth,
             value = 1,
@@ -8845,9 +8847,29 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         },
         vb:button {
             width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
-            height = gridStepSizeH,
+            height = gridStepSizeH + 4,
             active = false,
             color = colorKeyBlack,
+        },
+        vb:column {
+            vb:space {
+                width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
+            },
+            vb:row {
+                margin = -1,
+                vb:space {
+                    id = "blockloopspc",
+                    width = gridStepSizeW * 1 - (gridSpacing * 1),
+                    height = 5,
+                },
+                vb:button {
+                    id = "blockloop",
+                    height = gridStepSizeH + 4,
+                    width = gridStepSizeW * 3 - (gridSpacing * 2),
+                    active = false,
+                    visible = false,
+                },
+            },
         },
     }
     timeline:add_child(vb:space {
@@ -8858,6 +8880,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         local temp = vb:text {
             id = "timeline" .. i,
             visible = false,
+            height = gridStepSizeH + 4,
         }
         timeline_row:add_child(temp)
     end
@@ -9507,22 +9530,6 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     },
                 },
                 vb:column {
-                    vb:row {
-                        margin = -1,
-                        vb:space {
-                            id = "blockloopspc",
-                            width = gridStepSizeW * 1 - (gridSpacing * 1),
-                            height = 5,
-                        },
-                        vb:button {
-                            id = "blockloop",
-                            color = colorNoteHighlight,
-                            height = 5,
-                            width = gridStepSizeW * 3 - (gridSpacing * 2),
-                            active = false,
-                            visible = false,
-                        },
-                    },
                     vb:row {
                         spacing = -5,
                         vb:space {
