@@ -1663,7 +1663,7 @@ local function refreshNoteControls()
         vbw.mode_audiopreview.color = colorDefault
     end
 
-    if song.transport.loop_pattern or loopingrange then
+    if loopingrange then
         vbw.loopbutton.color = colorStepOn
     else
         vbw.loopbutton.color = colorDefault
@@ -7252,7 +7252,7 @@ local function appIdleEvent()
                 transport.loop_sequence_start > 0 or
                 song.transport.loop_pattern
         ) and not (
-                transport.edit_pos.sequence == transport.loop_start.sequence and transport.edit_pos.sequence == transport.loop_end.sequence and transport.loop_start.line == 1 and transport.loop_end.line == song.selected_pattern.number_of_lines + 1 and transport.loop_sequence_start == 0
+                transport.edit_pos.sequence == transport.loop_start.sequence and transport.edit_pos.sequence == transport.loop_end.sequence and transport.loop_start.line == 1 and transport.loop_end.line == song.selected_pattern.number_of_lines + 1 and transport.loop_sequence_start == 0 and not transport.loop_pattern
         )
         then
             currentloopingrange = tostring(transport.loop_start) .. tostring(transport.loop_end) .. tostring(transport.loop_pattern) .. tostring(transport.loop_block_enabled) .. tostring(transport.loop_sequence_start)
