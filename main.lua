@@ -7249,7 +7249,7 @@ local function appIdleEvent()
         local transport = song.transport
         if ((transport.edit_pos.sequence == transport.loop_start.sequence and transport.edit_pos.sequence == transport.loop_end.sequence - 1 and transport.loop_end.line == 1) or
                 (transport.edit_pos.sequence == transport.loop_start.sequence and transport.edit_pos.sequence == transport.loop_end.sequence) or
-                transport.loop_sequence_start>0 or
+                transport.loop_sequence_start > 0 or
                 song.transport.loop_pattern
         ) and not (
                 transport.edit_pos.sequence == transport.loop_start.sequence and transport.edit_pos.sequence == transport.loop_end.sequence and transport.loop_start.line == 1 and transport.loop_end.line == song.selected_pattern.number_of_lines + 1 and transport.loop_sequence_start == 0
@@ -8817,29 +8817,27 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     end
                 else
                     if modifier.keyControl then
-                        local looppos = math.floor(n + 1.3) + stepOffset
+                        local looppos
+                        looppos = math.floor(n + 0.4) + stepOffset
                         --first start, set new loop range
                         if xypadpos.loopslider == nil then
-                            xypadpos.loopslider = math.floor(n + 0.4) + stepOffset
-                        elseif xypadpos.loopslider < looppos and looppos <= song.selected_pattern.number_of_lines + 1 then
-                            if looppos == song.selected_pattern.number_of_lines + 1 then
-                                --end point outside pattern length, set endpoint to first line of next pattern
-                                song.transport.loop_range = {
-                                    renoise.SongPos(song.transport.edit_pos.sequence, xypadpos.loopslider),
-                                    renoise.SongPos(song.transport.edit_pos.sequence + 1, 1)
-                                }
-                            else
-                                --set loop range
-                                song.transport.loop_range = {
-                                    renoise.SongPos(song.transport.edit_pos.sequence, xypadpos.loopslider),
-                                    renoise.SongPos(song.transport.edit_pos.sequence, looppos)
-                                }
-                            end
+                            xypadpos.loopslider = looppos
+                        elseif looppos >= xypadpos.loopslider and looppos <= song.selected_pattern.number_of_lines then
+                            --set loop range
+                            song.transport.loop_range = {
+                                renoise.SongPos(song.transport.edit_pos.sequence, xypadpos.loopslider),
+                                renoise.SongPos(song.transport.edit_pos.sequence, looppos + 1)
+                            }
+                        elseif looppos < xypadpos.loopslider then
+                            --set loop range
+                            song.transport.loop_range = {
+                                renoise.SongPos(song.transport.edit_pos.sequence, looppos),
+                                renoise.SongPos(song.transport.edit_pos.sequence, xypadpos.loopslider + 1)
+                            }
                         end
                     else
                         --no control key is holded, so reset loop slider state
                         xypadpos.loopslider = nil
-                        --
                         jumpToNoteInPattern(math.floor(n + 0.5) + stepOffset)
                     end
                 end
