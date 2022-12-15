@@ -6191,6 +6191,8 @@ local function handleKeyEvent(keyEvent)
     elseif key.name == "lshift" and key.state == "released" then
         modifier.keyShift = false
         handled = true
+        --reset loop mini slider state
+        xypadpos.loopslider = nil
         refreshControls = true
     end
     if key.name == "rshift" and key.state == "pressed" then
@@ -7207,6 +7209,10 @@ local function appIdleEvent()
         end
         if (keyState["shift"] == "pressed" and modifier.keyShift == false) or (keyState["shift"] == "released" and modifier.keyShift == true) then
             modifier.keyShift = not modifier.keyShift
+            --reset loop mini slider state
+            if modifier.keyShift == false then
+                xypadpos.loopslider = nil
+            end
             refreshControls = true
         end
         --process after edit features
@@ -8804,36 +8810,61 @@ local function createPianoRollDialog(gridWidth, gridHeight)
             default = 1.1234567,
             tooltip = "Hold ctrl key to set a loop range with your mouse.\nDouble click to remove the loop range.",
             notifier = function(n)
+                local transport = song.transport
                 --reset loop on double click
                 if n == 1.1234567 then
-                    if song.transport.loop_pattern == true then
-                        song.transport.loop_pattern = false
+                    if transport.loop_pattern == true then
+                        transport.loop_pattern = false
                     else
                         xypadpos.loopslider = nil
-                        song.transport.loop_block_enabled = false
-                        if song.transport.loop_sequence_start > 0 then
-                            song.transport.loop_sequence_range = {}
+                        transport.loop_block_enabled = false
+                        if transport.loop_sequence_start > 0 then
+                            transport.loop_sequence_range = {}
                         end
                     end
                 else
-                    if modifier.keyControl then
-                        local looppos
-                        looppos = math.floor(n + 0.4) + stepOffset
+                    local looppos = math.floor(n + 0.4) + stepOffset
+                    if modifier.keyControl and not modifier.keyShift then
                         --first start, set new loop range
                         if xypadpos.loopslider == nil then
                             xypadpos.loopslider = looppos
                         elseif looppos >= xypadpos.loopslider and looppos <= song.selected_pattern.number_of_lines then
                             --set loop range
                             song.transport.loop_range = {
-                                renoise.SongPos(song.transport.edit_pos.sequence, xypadpos.loopslider),
-                                renoise.SongPos(song.transport.edit_pos.sequence, looppos + 1)
+                                renoise.SongPos(transport.edit_pos.sequence, xypadpos.loopslider),
+                                renoise.SongPos(transport.edit_pos.sequence, looppos + 1)
                             }
                         elseif looppos < xypadpos.loopslider then
                             --set loop range
                             song.transport.loop_range = {
-                                renoise.SongPos(song.transport.edit_pos.sequence, looppos),
-                                renoise.SongPos(song.transport.edit_pos.sequence, xypadpos.loopslider + 1)
+                                renoise.SongPos(transport.edit_pos.sequence, looppos),
+                                renoise.SongPos(transport.edit_pos.sequence, xypadpos.loopslider + 1)
                             }
+                        end
+                    elseif modifier.keyShift and not modifier.keyControl then
+                        --only when a looprange is set
+                        if loopingrange then
+                            local x = transport.loop_start.line
+                            local len = transport.loop_end.line - transport.loop_start.line
+                            if transport.loop_start.sequence ~= transport.loop_end.sequence then
+                                len = song.selected_pattern.number_of_lines + 1 - transport.loop_start.line
+                            end
+
+                            --move loop selection
+                            if (xypadpos.loopslider == nil and looppos >= x and looppos < x + len) or xypadpos.loopslider then
+                                if xypadpos.loopslider == nil then
+                                    xypadpos.loopslider = looppos - x
+                                end
+                                local newlooppos = math.min(song.selected_pattern.number_of_lines - len + 1, math.max(looppos - xypadpos.loopslider, 1))
+                                song.transport.loop_range = {
+                                    renoise.SongPos(transport.edit_pos.sequence, newlooppos),
+                                    renoise.SongPos(transport.edit_pos.sequence, newlooppos + len)
+                                }
+                                --if new end loop is before current playback pos, restart from loop start
+                                if song.transport.playback_pos.sequence == song.transport.loop_start.sequence and song.transport.playback_pos.line > newlooppos + len then
+                                    playPatternFromLine()
+                                end
+                            end
                         end
                     else
                         --no control key is holded, so reset loop slider state
