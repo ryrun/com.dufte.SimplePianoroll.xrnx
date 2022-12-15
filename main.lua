@@ -8808,7 +8808,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
             max = gridWidth,
             value = 1,
             default = 1.1234567,
-            tooltip = "Hold ctrl key to set a loop range with your mouse.\nDouble click to remove the loop range.",
+            tooltip = "Hold ctrl key to set a loop range with your mouse.\nDouble click to remove the loop range.\nUse shift key to move the loop range.",
             notifier = function(n)
                 local transport = song.transport
                 --reset loop on double click
