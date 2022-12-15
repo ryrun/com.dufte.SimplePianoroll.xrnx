@@ -8824,6 +8824,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     end
                 else
                     local looppos = math.floor(n + 0.4) + stepOffset
+                    local newloopset = false
                     if modifier.keyControl and not modifier.keyShift then
                         --first start, set new loop range
                         if xypadpos.loopslider == nil then
@@ -8834,12 +8835,14 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                 renoise.SongPos(transport.edit_pos.sequence, xypadpos.loopslider),
                                 renoise.SongPos(transport.edit_pos.sequence, looppos + 1)
                             }
+                            newloopset = true
                         elseif looppos < xypadpos.loopslider then
                             --set loop range
                             song.transport.loop_range = {
                                 renoise.SongPos(transport.edit_pos.sequence, looppos),
                                 renoise.SongPos(transport.edit_pos.sequence, xypadpos.loopslider + 1)
                             }
+                            newloopset = true
                         end
                     elseif modifier.keyShift and not modifier.keyControl then
                         --only when a looprange is set
@@ -8860,16 +8863,23 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                     renoise.SongPos(transport.edit_pos.sequence, newlooppos),
                                     renoise.SongPos(transport.edit_pos.sequence, newlooppos + len)
                                 }
-                                --if new end loop is before current playback pos, restart from loop start
-                                if song.transport.playback_pos.sequence == song.transport.loop_start.sequence and song.transport.playback_pos.line > newlooppos + len then
-                                    playPatternFromLine()
-                                end
+                                newloopset = true
                             end
                         end
                     else
                         --no control key is holded, so reset loop slider state
                         xypadpos.loopslider = nil
                         jumpToNoteInPattern(math.floor(n + 0.5) + stepOffset)
+                    end
+                    if newloopset then
+                        --when new end loop is before current playback pos, restart from loop start
+                        if song.transport.playing
+                                and song.transport.playback_pos.sequence == song.transport.loop_start.sequence
+                                and song.transport.playback_pos.sequence == song.transport.loop_end.sequence
+                                and song.transport.playback_pos.line >= song.transport.loop_end.line
+                        then
+                            playPatternFromLine()
+                        end
                     end
                 end
             end
