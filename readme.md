@@ -42,7 +42,8 @@ https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx
 * To improve mouse handling, please disable mouse warping in Renoise preferences. This also fix the jumping mouse
   cursor. There is an option called "Mouse warping compatibility mode", if you still want to use mouse warping in
   Renoise. It will disable some internal functions, where disabled mouse warping is needed.
-* For note preview, you need to enable the OSC server in the Renoise preferences. Be sure, that protocol and port are correctly set for both the OSC server and the piano roll. 
+* For note preview, you need to enable the OSC server in the Renoise preferences. Be sure, that protocol and port are
+  correctly set for both the OSC server and the piano roll.
 * The key combination <kbd>alt + shift</kbd> is a default shortcut to change the keyboard layout on Windows OS. It is
   recommended to switch this off or change the keyboard shortcut to avoid problems. <br>See following for more
   details: https://answers.microsoft.com/en-us/windows/forum/all/how-to-disable-the-windows-10-language-shortcut/030016c9-bfed-48d9-8e4f-7d1030ced338
@@ -114,10 +115,22 @@ pane and also via main menu.
 
 ### Note preview
 
-With the help of Renoise's OSC server it is possible to play the drawn as well as selected notes. You can also use your computer keyboard to play notes. The keys are the same as on the Renoise Tracker. With the preview tool you can scroll through the pattern and play all notes at the respective position.
-By default, the OSC server is turned off, so you have to activate it first. Furthermore, the protocol and the port number must match the settings of the Pianoroll tool. After that it should work immediately.
+With the help of Renoise's OSC server it is possible to play the drawn as well as selected notes. You can also use your
+computer keyboard to play notes. The keys are the same as on the Renoise Tracker. With the preview tool you can scroll
+through the pattern and play all notes at the respective position.
+By default, the OSC server is turned off, so you have to activate it first. Furthermore, the protocol and the port
+number must match the settings of the Pianoroll tool. After that it should work immediately.
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/oscserver.png?raw=true" alt="OSC Server settings in Renoise" width="300">
+
+### Timeline bar
+
+With the timeline bar it is possible to set, move or remove loop areas. To draw in a loop, simply hold down the <kbd>
+ctrl</kbd> key and mark the desired area with the left mouse button pressed. If the <kbd>shift</kbd> key is pressed, the
+loop area can be moved. While the song is playing and the play point is outside the loop on the right, it will be moved
+back into the loop automatically. Double click removes the current loop. Single click sets the editor cursor positions.
+
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/timelineloop.gif?raw=true" alt="Showing usage of timeline" width="600">
 
 ### Scale highlighting
 
@@ -175,7 +188,8 @@ information about the current playing notes.
 
 ### Chord stamping
 
-With the chord stamping you can easily draw chords into the piano roll. The selected chord can be extended by further notes
+With the chord stamping you can easily draw chords into the piano roll. The selected chord can be extended by further
+notes
 or chord inversion can be performed. If the note preview has been activated, the drawing in of chords can also be
 done via step sequencing. In addition, it is possible that the drawn chords are always aligned to the currently
 active scale. Finally, ChordGun chord templates can be read and used, too.
@@ -205,6 +219,9 @@ active scale. Finally, ChordGun chord templates can be read and used, too.
 | Scroll vertically                            | Use your mouse wheel above the piano roll grid or the piano roll keys on the left.                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Scroll horizontally                          | Use your mouse wheel and hold <kbd>alt</kbd> or <kbd>shift</kbd> or <kbd>control</kbd> above the piano roll grid or the piano roll keys on the left. Please note, some of these combinations only work, when no note is selected.                                                                                                                                                                                                                                                               |
 | Quick clear of vol, pan and dly controls     | Left mouse click on the grid, when no note is selected. (can be disabled)                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Set a loop range                             | Hold <kbd>ctrl</kbd> and use the mouse on the timeline bar with left mouse button to draw in a loop range                                                                                                                                                                                                                                                                                                                                                                                       |
+| Move the current loop range                  | Hold <kbd>shift</kbd>, click and hold left mouse button on the current loop range and move your mouse                                                                                                                                                                                                                                                                                                                                                                                           |
+| Remove the current loop range                | Double click on the timeline bar or use the loop button                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 ## Keyboard actions
 
@@ -242,7 +259,6 @@ So you don't need to hold <kbd>shift</kbd>.
 | <kbd>alt + shift + m</kbd>                             | Unmute all visible notes (remove volume value)                                  |
 | <kbd>ctrl + space</kbd> or<br><kbd>shift + space</kbd> | Play from edit cursor position                                                  |
 | <kbd>ctrl + p</kbd>                                    | Show preferences                                                                |****
-
 
 ### One or more notes selected
 
