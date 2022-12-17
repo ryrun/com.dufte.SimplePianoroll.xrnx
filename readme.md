@@ -132,7 +132,8 @@ back into the loop automatically. Double click removes the current loop. Single 
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/timelineloop.gif?raw=true" alt="Showing usage of timeline" width="600">
 
-Made a youtube short about this, so you can see it in action:
+Made a Youtube short about this, so you can see it in action:
+
 [<img src="https://img.youtube.com/vi/Ay_wcQsvPrE/0.jpg" width="300">](https://www.youtube.com/shorts/Ay_wcQsvPrE)
 
 ### Scale highlighting
