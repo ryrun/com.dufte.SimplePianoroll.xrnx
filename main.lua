@@ -151,6 +151,7 @@ local defaultPreferences = {
     outOfNoteScaleShadingAmount = 0.15,
     outOfPentatonicScaleHighlightingAmount = 0.00,
     azertyMode = false,
+    swapCtrlAlt = false,
     scrollWheelSpeed = 2,
     clickAreaSizeForScalingPx = 7,
     disableKeyHandler = false,
@@ -233,6 +234,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     rootKeyShadingAmount = defaultPreferences.rootKeyShadingAmount,
     outOfNoteScaleShadingAmount = defaultPreferences.outOfNoteScaleShadingAmount,
     azertyMode = defaultPreferences.azertyMode,
+    swapCtrlAlt = defaultPreferences.swapCtrlAlt,
     scrollWheelSpeed = defaultPreferences.scrollWheelSpeed,
     clickAreaSizeForScalingPx = defaultPreferences.clickAreaSizeForScalingPx,
     disableKeyHandler = defaultPreferences.disableKeyHandler,
@@ -6144,6 +6146,20 @@ local function handleKeyEvent(keyEvent)
         key = keyEvent
     end
 
+    --swap left ctrl and alt key
+    if preferences.swapCtrlAlt.value then
+        if key.name == "lalt" then
+            key.name = "lcontrol"
+        elseif key.name == "lcontrol" then
+            key.name = "lalt"
+        end
+        if key.modifier == "alt" then
+            key.modifier = "control"
+        elseif key.modifier == "control" then
+            key.modifier = "alt"
+        end
+    end
+
     --check if current key is a modifier
     if key.name == "lalt" or key.name == "lshift" or key.name == "lcontrol" or key.name == "ralt" or key.name == "rshift" or key.name == "rcontrol" then
         isModifierKey = true
@@ -7195,18 +7211,35 @@ local function appIdleEvent()
         end
         --refresh modifier states, when keys are pressed outside focus
         local keyState = app.key_modifier_states
-        if (keyState["alt"] == "pressed" and modifier.keyAlt == false) or (keyState["alt"] == "released" and modifier.keyAlt == true) then
-            modifier.keyAlt = not modifier.keyAlt
-            refreshControls = true
-        end
-        if (keyState["control"] == "pressed" and modifier.keyControl == false) or (keyState["control"] == "released" and modifier.keyControl == true) then
-            modifier.keyControl = not modifier.keyControl
-            --reset loop mini slider state
-            if modifier.keyControl == false then
-                xypadpos.loopslider = nil
+        --swap alt and control?
+        if preferences.swapCtrlAlt.value then
+            if (keyState["alt"] == "pressed" and modifier.keyControl == false) or (keyState["alt"] == "released" and modifier.keyControl == true) then
+                modifier.keyControl = not modifier.keyControl
+                refreshControls = true
             end
-            refreshControls = true
+            if (keyState["control"] == "pressed" and modifier.keyAlt == false) or (keyState["control"] == "released" and modifier.keyAlt == true) then
+                modifier.keyAlt = not modifier.keyAlt
+                --reset loop mini slider state
+                if modifier.keyAlt == false then
+                    xypadpos.loopslider = nil
+                end
+                refreshControls = true
+            end
+        else
+            if (keyState["alt"] == "pressed" and modifier.keyAlt == false) or (keyState["alt"] == "released" and modifier.keyAlt == true) then
+                modifier.keyAlt = not modifier.keyAlt
+                refreshControls = true
+            end
+            if (keyState["control"] == "pressed" and modifier.keyControl == false) or (keyState["control"] == "released" and modifier.keyControl == true) then
+                modifier.keyControl = not modifier.keyControl
+                --reset loop mini slider state
+                if modifier.keyControl == false then
+                    xypadpos.loopslider = nil
+                end
+                refreshControls = true
+            end
         end
+
         if (keyState["shift"] == "pressed" and modifier.keyShift == false) or (keyState["shift"] == "released" and modifier.keyShift == true) then
             modifier.keyShift = not modifier.keyShift
             --reset loop mini slider state
@@ -8363,6 +8396,14 @@ showPreferences = function()
                             },
                             vbp:text {
                                 text = "Enable AZERTY keyboard mode",
+                            },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.swapCtrlAlt,
+                            },
+                            vbp:text {
+                                text = "Swap left ctrl and alt key",
                             },
                         },
                         vbp:row {
