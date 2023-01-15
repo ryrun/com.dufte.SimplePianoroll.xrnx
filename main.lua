@@ -6153,10 +6153,10 @@ local function handleKeyEvent(keyEvent)
         elseif key.name == "lcontrol" then
             key.name = "lalt"
         end
-        if key.modifier == "alt" then
-            key.modifier = "control"
-        elseif key.modifier == "control" then
-            key.modifier = "alt"
+        if key.modifiers == "alt" then
+            key.modifiers = "control"
+        elseif key.modifiers == "control" then
+            key.modifiers = "alt"
         end
     end
 
@@ -6299,6 +6299,23 @@ local function handleKeyEvent(keyEvent)
             penMode = false
             audioPreviewMode = true
             refreshControls = true
+        end
+        handled = true
+    end
+    if key.name == "r" and key.modifiers == "shift" then
+        if key.state == "pressed" then
+            if #noteSelection > 0 then
+                showStatus("Randomly deselect halve of the selected notes.")
+                keyInfoText = "Randomly deselect halve of the selected notes"
+                for i = #noteSelection, 2, -1 do
+                    local j = math.random(i)
+                    noteSelection[i], noteSelection[j] = noteSelection[j], noteSelection[i]
+                end
+                for i=1,#noteSelection/2 do
+                    table.remove(noteSelection, 1)
+                end
+                refreshPianoRollNeeded = true
+            end
         end
         handled = true
     end
