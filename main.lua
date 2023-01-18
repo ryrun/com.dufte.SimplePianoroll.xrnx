@@ -6307,11 +6307,14 @@ local function handleKeyEvent(keyEvent)
             if #noteSelection > 0 then
                 showStatus("Randomly deselect halve of the selected notes.")
                 keyInfoText = "Randomly deselect halve of the selected notes"
-                for i = #noteSelection, 2, -1 do
-                    local j = math.random(i)
-                    noteSelection[i], noteSelection[j] = noteSelection[j], noteSelection[i]
+                math.randomseed(os.clock() * 100000000000)
+                for j = 1, 4 do
+                    for i = #noteSelection, 2, -1 do
+                        local j = math.random(i)
+                        noteSelection[i], noteSelection[j] = noteSelection[j], noteSelection[i]
+                    end
                 end
-                for i=1,#noteSelection/2 do
+                for i = 1, #noteSelection / 2 do
                     table.remove(noteSelection, 1)
                 end
                 refreshPianoRollNeeded = true
