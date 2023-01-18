@@ -6308,7 +6308,7 @@ local function handleKeyEvent(keyEvent)
                 showStatus("Randomly deselect halve of the selected notes.")
                 keyInfoText = "Randomly deselect halve of the selected notes"
                 math.randomseed(os.clock() * 100000000000)
-                for j = 1, 4 do
+                for t = 1, 4 do
                     for i = #noteSelection, 2, -1 do
                         local j = math.random(i)
                         noteSelection[i], noteSelection[j] = noteSelection[j], noteSelection[i]
@@ -10225,8 +10225,6 @@ if preferences.enableAdditonalSampleTools.value then
                                             renoise.song().tracks[it].devices[id].parameters[ip]:record_value(1)
                                         end
                                     end
-                                else
-                                    -- maybe
                                 end
                             end
                         end
@@ -10282,7 +10280,7 @@ if preferences.enableAdditonalSampleTools.value then
     tool:add_menu_entry {
         name = "Sample Editor:Process:Simple Pianoroll Tools:Fit sample to beat sync ...",
         invoke = function()
-            local song = renoise.song()
+            song = renoise.song()
             local sample = song.selected_sample
             local sample_buffer = sample.sample_buffer
 
@@ -10357,7 +10355,7 @@ if preferences.enableAdditonalSampleTools.value then
     tool:add_menu_entry {
         name = "Sample Editor:Process:Simple Pianoroll Tools:Align sample selection to beat ...",
         invoke = function()
-            local song = renoise.song()
+            song = renoise.song()
             local sample = song.selected_sample
             local sample_buffer = sample.sample_buffer
 
