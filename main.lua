@@ -10170,7 +10170,10 @@ tool:add_menu_entry {
 if preferences.enableAdditonalSampleTools.value then
 
     --search for typical vstfx on master chain to switch reference
-    local lastRefValue = 0.04
+    local lastValTools = {
+        lastRefValue = 0.04,
+        lastBPM = 120
+    }
     local function switchVSTFxReference(type)
         --search for master track
         for it, track in ipairs(renoise.song().tracks) do
@@ -10198,10 +10201,10 @@ if preferences.enableAdditonalSampleTools.value then
                                 if type == 0 then
                                     if parameter.name == "Selected" then
                                         if parameter.value > 0 then
-                                            lastRefValue = parameter.value --save latest active reference
+                                            lastValTools.lastRefValue = parameter.value --save latest active reference
                                             renoise.song().tracks[it].devices[id].parameters[ip]:record_value(0)
                                         else
-                                            renoise.song().tracks[it].devices[id].parameters[ip]:record_value(lastRefValue)
+                                            renoise.song().tracks[it].devices[id].parameters[ip]:record_value(lastValTools.lastRefValue)
                                         end
                                     end
                                 else
@@ -10286,20 +10289,21 @@ if preferences.enableAdditonalSampleTools.value then
 
             if (sample_buffer.has_sample_data) then
                 local vb = renoise.ViewBuilder()
-                local bpm_selector = vb:valuebox { min = 30, max = 250, value = 120 }
+                local bpm_selector = vb:valuebox { min = 30, max = 250, value = lastValTools.lastBPM }
                 local view = vb:vertical_aligner {
                     margin = 10,
                     vb:horizontal_aligner {
                         spacing = 10,
                         vb:vertical_aligner {
-                            vb:text { text = 'BPM:' },
+                            vb:text { text = 'Calculate and set a fixed Beatsync value for the current sample.' },
+                            vb:text { text = 'BPM of your sample:' },
                             bpm_selector,
                         },
                     },
                 }
 
                 local res = app:show_custom_prompt(
-                        "Set sourc BPM - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
+                        "Set sample BPM - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
                         view,
                         { 'Ok', 'Cancel' }
                 );
@@ -10315,6 +10319,7 @@ if preferences.enableAdditonalSampleTools.value then
                     local samples_per_beat = 60.0 / bpm * sample_rate
                     local samples_per_line = samples_per_beat / lpb
                     local add_samples = 0
+                    lastValTools.lastBPM = bpm
 
                     local lines_in_sample = num_frames / samples_per_line
                     local lines_in_sample_mod = num_frames % samples_per_line
