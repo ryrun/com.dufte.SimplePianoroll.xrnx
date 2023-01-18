@@ -178,6 +178,7 @@ local defaultPreferences = {
     chordGunPreset = false,
     useChordStampingForNotePreview = true,
     useTrackColorFor = 1,
+    enableAdditonalSampleTools = false,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -259,6 +260,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     midiDevice = defaultPreferences.midiDevice,
     midiIn = defaultPreferences.midiIn,
     chordGunPreset = defaultPreferences.chordGunPreset,
+    enableAdditonalSampleTools = defaultPreferences.enableAdditonalSampleTools,
     useChordStampingForNotePreview = defaultPreferences.useChordStampingForNotePreview,
     chordPainterPresetTbl = 1, --default bank
     --colors
@@ -507,53 +509,51 @@ local lastKeyboardNote = {}
 local midiDevice
 
 --default sort functions
-local function sortLeftOneFirst(a, b)
-    local x, y
-    x = a.line + a.dly / 0x100
-    y = b.line + b.dly / 0x100
-    if x == y then
-        x = a.column
-        y = b.column
-    end
-    return x < y
-end
-
-local function sortLeftOneFirstFromLowToTop(a, b)
-    local x, y
-    x = a.line + a.dly / 0x100
-    y = b.line + b.dly / 0x100
-    if x == y then
+local sortFunc = {
+    sortLeftOneFirst = function(a, b)
+        local x, y
+        x = a.line + a.dly / 0x100
+        y = b.line + b.dly / 0x100
+        if x == y then
+            x = a.column
+            y = b.column
+        end
+        return x < y
+    end,
+    sortLeftOneFirstFromLowToTop = function(a, b)
+        local x, y
+        x = a.line + a.dly / 0x100
+        y = b.line + b.dly / 0x100
+        if x == y then
+            x = a.note
+            y = b.note
+        end
+        return x < y
+    end,
+    sortRightOneFirst = function(a, b)
+        local x, y
+        x = a.line + a.len + a.end_dly / 0x100
+        y = b.line + b.len + a.end_dly / 0x100
+        if x == y then
+            --flip x and y, because column order shouldn't changed
+            y = a.column
+            x = b.column
+        end
+        return x > y
+    end,
+    sortFromLowToTop = function(a, b)
+        local x, y
         x = a.note
         y = b.note
+        return x < y
+    end,
+    sortFirstColumnFirst = function(a, b)
+        local x, y
+        x = a.column
+        y = b.column
+        return x < y
     end
-    return x < y
-end
-
-local function sortRightOneFirst(a, b)
-    local x, y
-    x = a.line + a.len + a.end_dly / 0x100
-    y = b.line + b.len + a.end_dly / 0x100
-    if x == y then
-        --flip x and y, because column order shouldn't changed
-        y = a.column
-        x = b.column
-    end
-    return x > y
-end
-
-local function sortFromLowToTop(a, b)
-    local x, y
-    x = a.note
-    y = b.note
-    return x < y
-end
-
-local function sortFirstColumnFirst(a, b)
-    local x, y
-    x = a.column
-    y = b.column
-    return x < y
-end
+}
 
 --force value between and inclusive min/max values
 local function clamp(val, min, max)
@@ -992,7 +992,7 @@ local function jumpToNoteInPattern(notedata)
     --jump to the first note in selection, when needed
     if type(notedata) == "string" and notedata == "sel" then
         if #noteSelection > 0 then
-            table.sort(noteSelection, sortLeftOneFirst)
+            table.sort(noteSelection, sortFunc.sortLeftOneFirst)
             notedata = noteSelection[1]
         else
             --no selection, dont do anything
@@ -1869,10 +1869,10 @@ local function moveSelectedNotes(steps)
     if #noteSelection > 1 then
         if steps < 0 then
             --left one notes first
-            table.sort(noteSelection, sortLeftOneFirst)
+            table.sort(noteSelection, sortFunc.sortLeftOneFirst)
         else
             --right one notes first
-            table.sort(noteSelection, sortRightOneFirst)
+            table.sort(noteSelection, sortFunc.sortRightOneFirst)
         end
     end
     --disable edit mode and following to prevent side effects
@@ -1934,10 +1934,10 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
     if #noteSelection > 1 then
         if microsteps < 0 or snapSpecialGrid then
             --left one notes first
-            table.sort(noteSelection, sortLeftOneFirst)
+            table.sort(noteSelection, sortFunc.sortLeftOneFirst)
         else
             --right one notes first
-            table.sort(noteSelection, sortRightOneFirst)
+            table.sort(noteSelection, sortFunc.sortRightOneFirst)
         end
     end
 
@@ -2110,7 +2110,7 @@ local function pasteNotesFromClipboard()
     --clear current note selection
     updateNoteSelection(nil, true)
     --resort so column order stays
-    table.sort(clipboard, sortFirstColumnFirst)
+    table.sort(clipboard, sortFunc.sortFirstColumnFirst)
     --go through clipboard
     for key in pairs(clipboard) do
         --search for valid column
@@ -2158,11 +2158,11 @@ end
 local function scaleNoteSelection(times)
     setUndoDescription("Scale note selection ...")
     --get offset
-    table.sort(noteSelection, sortLeftOneFirst)
+    table.sort(noteSelection, sortFunc.sortLeftOneFirst)
     local first_line = noteSelection[1].line
     --change note order depends of scaling or shrinking
     if times > 1 then
-        table.sort(noteSelection, sortRightOneFirst)
+        table.sort(noteSelection, sortFunc.sortRightOneFirst)
     end
     --go through selection
     for key = 1, #noteSelection do
@@ -2212,7 +2212,7 @@ local function chopSelectedNotes()
     local newSelection = {}
     setUndoDescription("Chop notes ...")
     --first notes first
-    table.sort(noteSelection, sortLeftOneFirst)
+    table.sort(noteSelection, sortFunc.sortLeftOneFirst)
     --go through selection
     for key = 1, #noteSelection do
         if noteSelection[key].len > 1 then
@@ -2276,10 +2276,10 @@ local function duplicateSelectedNotes(noOffset)
     local offset
     local column
     --first notes first
-    table.sort(noteSelection, sortLeftOneFirst)
+    table.sort(noteSelection, sortFunc.sortLeftOneFirst)
     offset = noteSelection[1].line
     --last notes first
-    table.sort(noteSelection, sortRightOneFirst)
+    table.sort(noteSelection, sortFunc.sortRightOneFirst)
     --get offset
     offset = (noteSelection[1].line + noteSelection[1].len) - offset
     --disable edit mode and following to prevent side effects
@@ -2297,7 +2297,7 @@ local function duplicateSelectedNotes(noOffset)
         setUndoDescription("Duplicate notes to right ...")
     end
     --resort so column order stays
-    table.sort(noteSelection, sortFirstColumnFirst)
+    table.sort(noteSelection, sortFunc.sortFirstColumnFirst)
     --go through selection
     for key = 1, #noteSelection do
         --search for valid column
@@ -2419,7 +2419,7 @@ local function changeSizeSelectedNotes(len, add)
     local column
     local newLen = len
     --first notes first
-    table.sort(noteSelection, sortLeftOneFirst)
+    table.sort(noteSelection, sortFunc.sortLeftOneFirst)
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     if song.transport.follow_player then
@@ -5072,9 +5072,9 @@ local function refreshHistogramWindow(apply)
     if #noteSelection > 0 then
         --resort note selection
         if vbwp["histogramasctype"].value == 2 then
-            table.sort(noteSelection, sortFromLowToTop)
+            table.sort(noteSelection, sortFunc.sortFromLowToTop)
         else
-            table.sort(noteSelection, sortLeftOneFirstFromLowToTop)
+            table.sort(noteSelection, sortFunc.sortLeftOneFirstFromLowToTop)
         end
         --fill value table
         for i = 1, #noteSelection do
@@ -6525,7 +6525,7 @@ local function handleKeyEvent(keyEvent)
                     table.insert(clipboard, note_data)
                 end
                 --set paste cursor, to the first note
-                table.sort(clipboard, sortLeftOneFirst)
+                table.sort(clipboard, sortFunc.sortLeftOneFirst)
                 pasteCursor = { clipboard[1].line, clipboard[1].note }
                 --set status
                 showStatus(#noteSelection .. " notes cut.", true)
@@ -6988,7 +6988,7 @@ local function handleXypad(val)
             end
         end
         --resort notes
-        table.sort(playNotes, sortLeftOneFirst)
+        table.sort(playNotes, sortFunc.sortLeftOneFirst)
         --play notes, but first column first
         for i = 1, #playNotes do
             triggerNoteOfCurrentInstrument(playNotes[i].note, true, playNotes[i].vel, false, playNotes[i].ins)
@@ -8546,6 +8546,43 @@ showPreferences = function()
                             height = 8,
                         },
                         vbp:text {
+                            text = "MIDI In",
+                            width = "100%",
+                            font = "bold",
+                            style = "strong",
+                            align = "center",
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.midiIn,
+                            },
+                            vbp:text {
+                                text = "Enable MIDI In support",
+                            },
+                        },
+                        vbp:horizontal_aligner {
+                            mode = "justify",
+                            vbp:text {
+                                text = "Input Device:",
+                                width = "50%"
+                            },
+                            vbp:popup {
+                                id = "midi",
+                                width = "50%",
+                                notifier = function(i)
+                                    preferences.midiDevice.value = vbwp.midi.items[i]
+                                    --reset midi device, when initialized
+                                    if midiDevice and midiDevice.is_open then
+                                        midiDevice:close()
+                                        midiDevice = nil
+                                    end
+                                end
+                            },
+                        },
+                        vbp:space {
+                            height = 8,
+                        },
+                        vbp:text {
                             text = "Additional features",
                             width = "100%",
                             font = "bold",
@@ -8584,41 +8621,12 @@ showPreferences = function()
                                 text = "Load ChordGun presets for chord stamping",
                             },
                         },
-                        vbp:space {
-                            height = 8,
-                        },
-                        vbp:text {
-                            text = "MIDI In",
-                            width = "100%",
-                            font = "bold",
-                            style = "strong",
-                            align = "center",
-                        },
                         vbp:row {
                             vbp:checkbox {
-                                bind = preferences.midiIn,
+                                bind = preferences.enableAdditonalSampleTools,
                             },
                             vbp:text {
-                                text = "Enable MIDI In support",
-                            },
-                        },
-                        vbp:horizontal_aligner {
-                            mode = "justify",
-                            vbp:text {
-                                text = "Input Device:",
-                                width = "50%"
-                            },
-                            vbp:popup {
-                                id = "midi",
-                                width = "50%",
-                                notifier = function(i)
-                                    preferences.midiDevice.value = vbwp.midi.items[i]
-                                    --reset midi device, when initialized
-                                    if midiDevice and midiDevice.is_open then
-                                        midiDevice:close()
-                                        midiDevice = nil
-                                    end
-                                end
+                                text = "Enable optional editing Tools (Sample, Master chain)",
                             },
                         },
                     },
@@ -10157,3 +10165,271 @@ tool:add_menu_entry {
         showPreferences()
     end
 }
+
+--additional tools non piano roll related
+if preferences.enableAdditonalSampleTools.value then
+
+    --search for typical vstfx on master chain to switch reference
+    local lastRefValue = 0.04
+    local function switchVSTFxReference(type)
+        --search for master track
+        for it, track in ipairs(renoise.song().tracks) do
+            if track.type == renoise.Track.TRACK_TYPE_MASTER then
+                --search for mcompare
+                for id, device in ipairs(track.devices) do
+                    if type == 2 then
+                        if device.name == "VST: Voxengo: SPAN" then
+                            if device.external_editor_visible then
+                                device.external_editor_visible = false
+                            else
+                                device.external_editor_visible = true
+                            end
+                        end
+                        if device.name == "VST: Plugin Alliance: ADPTR MetricAB" then
+                            if device.external_editor_visible then
+                                device.external_editor_visible = false
+                            else
+                                device.external_editor_visible = true
+                            end
+                        end
+                    else
+                        if device.name == "VST: MeldaProduction: MCompare" then
+                            for ip, parameter in ipairs(device.parameters) do
+                                if type == 0 then
+                                    if parameter.name == "Selected" then
+                                        if parameter.value > 0 then
+                                            lastRefValue = parameter.value --save latest active reference
+                                            renoise.song().tracks[it].devices[id].parameters[ip]:record_value(0)
+                                        else
+                                            renoise.song().tracks[it].devices[id].parameters[ip]:record_value(lastRefValue)
+                                        end
+                                    end
+                                else
+                                    if parameter.name == "Filter - Filter" then
+                                        if parameter.value > 0 then
+                                            renoise.song().tracks[it].devices[id].parameters[ip]:record_value(0)
+                                        else
+                                            renoise.song().tracks[it].devices[id].parameters[ip]:record_value(1)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                        if device.name == "VST: Plugin Alliance: ADPTR MetricAB" then
+                            for ip, parameter in ipairs(device.parameters) do
+                                if type == 0 then
+                                    if parameter.name == "AB Switch" then
+                                        if parameter.value > 0 then
+                                            renoise.song().tracks[it].devices[id].parameters[ip]:record_value(0)
+                                        else
+                                            renoise.song().tracks[it].devices[id].parameters[ip]:record_value(1)
+                                        end
+                                    end
+                                else
+                                    -- maybe
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    tool:add_keybinding {
+        name = "Global:Simple Pianoroll:Audio reference switch ...",
+        invoke = function()
+            switchVSTFxReference(0)
+        end
+    }
+
+    tool:add_keybinding {
+        name = "Global:Simple Pianoroll:Sub Filter switch ...",
+        invoke = function()
+            switchVSTFxReference(1)
+        end
+    }
+
+    tool:add_keybinding {
+        name = "Global:Simple Pianoroll:Open / Close Analyzer ...",
+        invoke = function()
+            switchVSTFxReference(2)
+        end
+    }
+
+    tool:add_menu_entry {
+        name = "Main Menu:Tools:Simple Pianoroll:Tools:Audio reference switch ...",
+        invoke = function()
+            switchVSTFxReference(0)
+        end
+    }
+
+    tool:add_menu_entry {
+        name = "Main Menu:Tools:Simple Pianoroll:Tools:Sub Filter switch ...",
+        invoke = function()
+            switchVSTFxReference(1)
+        end
+    }
+    tool:add_menu_entry {
+        name = "Main Menu:Tools:Simple Pianoroll:Tools:Open / Close Analyzer ...",
+        invoke = function()
+            switchVSTFxReference(2)
+        end
+    }
+
+
+    --tool to fit sample length for beat sync feature
+    tool:add_menu_entry {
+        name = "Sample Editor:Process:Simple Pianoroll Tools:Fit sample to beat sync ...",
+        invoke = function()
+            local song = renoise.song()
+            local sample = song.selected_sample
+            local sample_buffer = sample.sample_buffer
+
+            if (sample_buffer.has_sample_data) then
+                local vb = renoise.ViewBuilder()
+                local bpm_selector = vb:valuebox { min = 30, max = 250, value = 120 }
+                local view = vb:vertical_aligner {
+                    margin = 10,
+                    vb:horizontal_aligner {
+                        spacing = 10,
+                        vb:vertical_aligner {
+                            vb:text { text = 'BPM:' },
+                            bpm_selector,
+                        },
+                    },
+                }
+
+                local res = app:show_custom_prompt(
+                        "Set sourc BPM - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
+                        view,
+                        { 'Ok', 'Cancel' }
+                );
+                if res == 'Ok' then
+                    local num_frames = sample_buffer.number_of_frames
+                    local num_channels = sample_buffer.number_of_channels
+                    local bit_depth = sample_buffer.bit_depth
+                    local sample_rate = sample_buffer.sample_rate
+                    local sample_data_1 = {}
+                    local sample_data_2 = {}
+                    local bpm = bpm_selector.value
+                    local lpb = song.transport.lpb
+                    local samples_per_beat = 60.0 / bpm * sample_rate
+                    local samples_per_line = samples_per_beat / lpb
+                    local add_samples = 0
+
+                    local lines_in_sample = num_frames / samples_per_line
+                    local lines_in_sample_mod = num_frames % samples_per_line
+
+                    if lines_in_sample_mod > 0 then
+                        lines_in_sample = math.ceil(lines_in_sample)
+                        add_samples = lines_in_sample * samples_per_line - sample_buffer.number_of_frames
+
+                        for frame_idx = 1, num_frames do
+                            sample_data_1[frame_idx] = sample_buffer:sample_data(1, frame_idx)
+                            if (num_channels == 2) then
+                                sample_data_2[frame_idx] = sample_buffer:sample_data(2, frame_idx)
+                            end
+                        end
+
+                        sample_buffer:delete_sample_data()
+                        sample_buffer:create_sample_data(sample_rate, bit_depth, num_channels, num_frames + add_samples)
+                        sample_buffer:prepare_sample_data_changes()
+                        for frame_idx = 1, num_frames do
+                            sample_buffer:set_sample_data(1, frame_idx, sample_data_1[frame_idx])
+                            if (num_channels == 2) then
+                                sample_buffer:set_sample_data(2, frame_idx, sample_data_2[frame_idx])
+                            end
+                        end
+                        sample_buffer:finalize_sample_data_changes()
+                    end
+
+                    sample.beat_sync_enabled = true
+                    sample.beat_sync_lines = lines_in_sample
+                    sample.beat_sync_mode = renoise.Sample.BEAT_SYNC_PERCUSSION
+                    sample.autoseek = true
+                end
+            end
+        end
+    }
+
+    --tool to fit risers a specific line length
+    tool:add_menu_entry {
+        name = "Sample Editor:Process:Simple Pianoroll Tools:Align sample selection to beat ...",
+        invoke = function()
+            local song = renoise.song()
+            local sample = song.selected_sample
+            local sample_buffer = sample.sample_buffer
+
+            if (sample_buffer.has_sample_data) then
+                local bpm = song.transport.bpm
+                local lpb = song.transport.lpb
+                local align_to_lines = 0
+
+                local mpt = app:show_prompt(
+                        "Align sample selection to beat - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
+                        "Please choose one of the following sizes to enlarge the sample selection:",
+                        { "8", "16", "32", "64", "96", "128", "256", "Cancel" }
+                )
+
+                if (mpt == "8") then
+                    align_to_lines = 8
+                elseif (mpt == "16") then
+                    align_to_lines = 16
+                elseif (mpt == "32") then
+                    align_to_lines = 32
+                elseif (mpt == "64") then
+                    align_to_lines = 64
+                elseif (mpt == "96") then
+                    align_to_lines = 96
+                elseif (mpt == "128") then
+                    align_to_lines = 128
+                elseif (mpt == "256") then
+                    align_to_lines = 256
+                else
+                    return
+                end
+
+                if align_to_lines > 0 then
+                    local num_frames = sample_buffer.number_of_frames
+                    local num_channels = sample_buffer.number_of_channels
+                    local bit_depth = sample_buffer.bit_depth
+                    local sample_rate = sample_buffer.sample_rate
+                    local sample_data_1 = {}
+                    local sample_data_2 = {}
+                    local samples_per_beat = 60.0 / bpm * sample_rate
+                    local samples_per_line = samples_per_beat / lpb
+                    local selection_end = sample_buffer.selection_end
+                    local add_samples = (align_to_lines * samples_per_line) - selection_end
+
+                    for frame_idx = 1, num_frames do
+                        sample_data_1[frame_idx] = sample_buffer:sample_data(1, frame_idx)
+                        if (num_channels == 2) then
+                            sample_data_2[frame_idx] = sample_buffer:sample_data(2, frame_idx)
+                        end
+                    end
+
+                    if add_samples > 0 then
+
+                        -- add silence before, so impakt will stay in sync with beat
+                        sample_buffer:delete_sample_data()
+                        sample_buffer:create_sample_data(sample_rate, bit_depth, num_channels, num_frames + add_samples)
+                        sample_buffer:prepare_sample_data_changes()
+                        for frame_idx = 1, num_frames do
+                            sample_buffer:set_sample_data(1, frame_idx + add_samples, sample_data_1[frame_idx])
+                            if (num_channels == 2) then
+                                sample_buffer:set_sample_data(2, frame_idx + add_samples, sample_data_2[frame_idx])
+                            end
+                        end
+                        sample_buffer:finalize_sample_data_changes()
+
+                        -- enable auto seek
+                        sample.autoseek = true
+                    else
+                        app:show_warning("End selection too long, Sample will not be truncated!")
+                    end
+                end
+            end
+        end
+    }
+end
