@@ -10278,16 +10278,15 @@ if preferences.enableAdditonalSampleTools.value then
         end
     }
 
+    local function fitSampleBeatSync(bpm)
+        song = renoise.song()
+        local sample = song.selected_sample
+        local sample_buffer = sample.sample_buffer
+        local res = 'Ok'
 
-    --tool to fit sample length for beat sync feature
-    tool:add_menu_entry {
-        name = "Sample Editor:Process:Simple Pianoroll Tools:Fit sample to beat sync ...",
-        invoke = function()
-            song = renoise.song()
-            local sample = song.selected_sample
-            local sample_buffer = sample.sample_buffer
-
-            if (sample_buffer.has_sample_data) then
+        if (sample_buffer.has_sample_data) then
+            if bpm == nil then
+                res = nil
                 local vb = renoise.ViewBuilder()
                 local bpm_selector = vb:valuebox { min = 30, max = 250, value = lastValTools.lastBPM }
                 local view = vb:vertical_aligner {
@@ -10302,63 +10301,80 @@ if preferences.enableAdditonalSampleTools.value then
                     },
                 }
 
-                local res = app:show_custom_prompt(
+                res = app:show_custom_prompt(
                         "Set sample BPM - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
                         view,
                         { 'Ok', 'Cancel' }
-                );
-                if res == 'Ok' then
-                    local num_frames = sample_buffer.number_of_frames
-                    local num_channels = sample_buffer.number_of_channels
-                    local bit_depth = sample_buffer.bit_depth
-                    local sample_rate = sample_buffer.sample_rate
-                    local sample_data_1 = {}
-                    local sample_data_2 = {}
-                    local bpm = bpm_selector.value
-                    local lpb = song.transport.lpb
-                    local samples_per_beat = 60.0 / bpm * sample_rate
-                    local samples_per_line = samples_per_beat / lpb
-                    local add_samples = 0
-                    lastValTools.lastBPM = bpm
+                )
+            end
 
-                    local lines_in_sample = num_frames / samples_per_line
-                    local lines_in_sample_mod = num_frames % samples_per_line
+            if res == 'Ok' then
+                local num_frames = sample_buffer.number_of_frames
+                local num_channels = sample_buffer.number_of_channels
+                local bit_depth = sample_buffer.bit_depth
+                local sample_rate = sample_buffer.sample_rate
+                local sample_data_1 = {}
+                local sample_data_2 = {}
+                local lpb = song.transport.lpb
+                local samples_per_beat = 60.0 / bpm * sample_rate
+                local samples_per_line = samples_per_beat / lpb
+                local add_samples = 0
+                lastValTools.lastBPM = bpm
 
-                    if lines_in_sample_mod > 0 then
-                        lines_in_sample = math.ceil(lines_in_sample)
-                        add_samples = lines_in_sample * samples_per_line - sample_buffer.number_of_frames
+                local lines_in_sample = num_frames / samples_per_line
+                local lines_in_sample_mod = num_frames % samples_per_line
 
-                        for frame_idx = 1, num_frames do
-                            sample_data_1[frame_idx] = sample_buffer:sample_data(1, frame_idx)
-                            if (num_channels == 2) then
-                                sample_data_2[frame_idx] = sample_buffer:sample_data(2, frame_idx)
-                            end
+                if lines_in_sample_mod > 0 then
+                    lines_in_sample = math.ceil(lines_in_sample)
+                    add_samples = lines_in_sample * samples_per_line - sample_buffer.number_of_frames
+
+                    for frame_idx = 1, num_frames do
+                        sample_data_1[frame_idx] = sample_buffer:sample_data(1, frame_idx)
+                        if (num_channels == 2) then
+                            sample_data_2[frame_idx] = sample_buffer:sample_data(2, frame_idx)
                         end
-
-                        sample_buffer:delete_sample_data()
-                        sample_buffer:create_sample_data(sample_rate, bit_depth, num_channels, num_frames + add_samples)
-                        sample_buffer:prepare_sample_data_changes()
-                        for frame_idx = 1, num_frames do
-                            sample_buffer:set_sample_data(1, frame_idx, sample_data_1[frame_idx])
-                            if (num_channels == 2) then
-                                sample_buffer:set_sample_data(2, frame_idx, sample_data_2[frame_idx])
-                            end
-                        end
-                        sample_buffer:finalize_sample_data_changes()
                     end
 
-                    sample.beat_sync_enabled = true
-                    sample.beat_sync_lines = lines_in_sample
-                    sample.beat_sync_mode = renoise.Sample.BEAT_SYNC_PERCUSSION
-                    sample.autoseek = true
+                    sample_buffer:delete_sample_data()
+                    sample_buffer:create_sample_data(sample_rate, bit_depth, num_channels, num_frames + add_samples)
+                    sample_buffer:prepare_sample_data_changes()
+                    for frame_idx = 1, num_frames do
+                        sample_buffer:set_sample_data(1, frame_idx, sample_data_1[frame_idx])
+                        if (num_channels == 2) then
+                            sample_buffer:set_sample_data(2, frame_idx, sample_data_2[frame_idx])
+                        end
+                    end
+                    sample_buffer:finalize_sample_data_changes()
                 end
+
+                sample.beat_sync_enabled = true
+                sample.beat_sync_lines = lines_in_sample
+                sample.beat_sync_mode = renoise.Sample.BEAT_SYNC_PERCUSSION
+                sample.autoseek = true
             end
+        end
+    end
+
+    --tool to fit sample length for beat sync feature
+    tool:add_menu_entry {
+        name = "Sample Editor:Process:Fit sample to beat sync ...",
+        invoke = function()
+            fitSampleBeatSync()
         end
     }
 
+    --tool to fit sample length for beat sync feature (use song bpm)
+    tool:add_menu_entry {
+        name = "Sample Editor:Process:Fit sample to beat sync (Song BPM) ...",
+        invoke = function()
+            fitSampleBeatSync(renoise.song().transport.bpm)
+        end
+    }
+
+
     --tool to fit risers a specific line length
     tool:add_menu_entry {
-        name = "Sample Editor:Process:Simple Pianoroll Tools:Align sample selection to beat ...",
+        name = "Sample Editor:Process:Align sample selection to beat ...",
         invoke = function()
             song = renoise.song()
             local sample = song.selected_sample
