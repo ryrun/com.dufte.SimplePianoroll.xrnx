@@ -8635,7 +8635,7 @@ showPreferences = function()
                                 bind = preferences.enableAdditonalSampleTools,
                             },
                             vbp:text {
-                                text = "Enable optional editing tools (Sample, Master chain, ...)",
+                                text = "Enable optional editing tools (Sample, Mixing, Pattern ...)",
                             },
                         },
                     },
