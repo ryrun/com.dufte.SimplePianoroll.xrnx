@@ -6137,7 +6137,7 @@ local function handleKeyEvent(keyEvent)
     end
 
     --renoise bug? using value boxes sometimes set wrong focus so key events will be fired doubled?
-    restoreFocus()
+    --restoreFocus()
 
     --convert number keys from azerty to qwerty
     if preferences.azertyMode.value then
