@@ -10181,7 +10181,6 @@ if preferences.enableAdditonalSampleTools.value then
                 --search for mcompare
                 for id, device in ipairs(track.devices) do
                     if type == 3 then
-                        print(device.name)
                         if device.name == "VST: Xfer Records: LFOTool_x64" then
                             device.external_editor_visible = not device.external_editor_visible
                         end
