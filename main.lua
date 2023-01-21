@@ -10248,28 +10248,28 @@ if preferences.enableAdditonalSampleTools.value then
     end
 
     tool:add_keybinding {
-        name = "Global:Simple Pianoroll:Audio reference switch ...",
+        name = "Global:Simple Pianoroll - Workflow Tools:Audio reference switch ...",
         invoke = function()
             switchVSTFxReference(0)
         end
     }
 
     tool:add_keybinding {
-        name = "Global:Simple Pianoroll:Sub Filter switch ...",
+        name = "Global:Simple Pianoroll - Workflow Tools:Sub Filter switch ...",
         invoke = function()
             switchVSTFxReference(1)
         end
     }
 
     tool:add_keybinding {
-        name = "Global:Simple Pianoroll:Show / Hide Analyzer ...",
+        name = "Global:Simple Pianoroll - Workflow Tools:Show / Hide Analyzer ...",
         invoke = function()
             switchVSTFxReference(2)
         end
     }
 
     tool:add_keybinding {
-        name = "Global:Simple Pianoroll:Show / Hide Waveform Analyzer ...",
+        name = "Global:Simple Pianoroll - Workflow Tools:Show / Hide Waveform Analyzer ...",
         invoke = function()
             switchVSTFxReference(3)
         end
