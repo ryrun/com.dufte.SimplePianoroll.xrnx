@@ -10180,20 +10180,14 @@ if preferences.enableAdditonalSampleTools.value then
             if track.type == renoise.Track.TRACK_TYPE_MASTER then
                 --search for mcompare
                 for id, device in ipairs(track.devices) do
-                    if type == 2 then
-                        if device.name == "VST: Voxengo: SPAN" then
-                            if device.external_editor_visible then
-                                device.external_editor_visible = false
-                            else
-                                device.external_editor_visible = true
-                            end
+                    if type == 3 then
+                        print(device.name)
+                        if device.name == "VST: Xfer Records: LFOTool_x64" then
+                            device.external_editor_visible = not device.external_editor_visible
                         end
-                        if device.name == "VST: Plugin Alliance: ADPTR MetricAB" then
-                            if device.external_editor_visible then
-                                device.external_editor_visible = false
-                            else
-                                device.external_editor_visible = true
-                            end
+                    elseif type == 2 then
+                        if device.name == "VST: Voxengo: SPAN" or device.name == "VST: Plugin Alliance: ADPTR MetricAB" then
+                            device.external_editor_visible = not device.external_editor_visible
                         end
                     else
                         if device.name == "VST: MeldaProduction: MCompare" then
@@ -10228,6 +10222,14 @@ if preferences.enableAdditonalSampleTools.value then
                                             renoise.song().tracks[it].devices[id].parameters[ip]:record_value(1)
                                         end
                                     end
+                                else
+                                    if parameter.name == "Filter Preset" then
+                                        if parameter.value == 1 then
+                                            renoise.song().tracks[it].devices[id].parameters[ip]:record_value(0.6)
+                                        else
+                                            renoise.song().tracks[it].devices[id].parameters[ip]:record_value(1)
+                                        end
+                                    end
                                 end
                             end
                         end
@@ -10252,29 +10254,16 @@ if preferences.enableAdditonalSampleTools.value then
     }
 
     tool:add_keybinding {
-        name = "Global:Simple Pianoroll:Open / Close Analyzer ...",
+        name = "Global:Simple Pianoroll:Show / Hide Analyzer ...",
         invoke = function()
             switchVSTFxReference(2)
         end
     }
 
-    tool:add_menu_entry {
-        name = "Main Menu:Tools:Simple Pianoroll:Tools:Audio reference switch ...",
+    tool:add_keybinding {
+        name = "Global:Simple Pianoroll:Show / Hide Waveform Analyzer ...",
         invoke = function()
-            switchVSTFxReference(0)
-        end
-    }
-
-    tool:add_menu_entry {
-        name = "Main Menu:Tools:Simple Pianoroll:Tools:Sub Filter switch ...",
-        invoke = function()
-            switchVSTFxReference(1)
-        end
-    }
-    tool:add_menu_entry {
-        name = "Main Menu:Tools:Simple Pianoroll:Tools:Open / Close Analyzer ...",
-        invoke = function()
-            switchVSTFxReference(2)
+            switchVSTFxReference(3)
         end
     }
 
@@ -10306,6 +10295,7 @@ if preferences.enableAdditonalSampleTools.value then
                         view,
                         { 'Ok', 'Cancel' }
                 )
+                bpm = bpm_selector.value
             end
 
             if res == 'Ok' then
