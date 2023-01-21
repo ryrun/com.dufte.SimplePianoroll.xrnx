@@ -7311,10 +7311,14 @@ local function appIdleEvent()
                 transport.loop_sequence_start > 0 or
                 song.transport.loop_pattern
         ) and not (
-                transport.edit_pos.sequence == transport.loop_start.sequence and transport.edit_pos.sequence == transport.loop_end.sequence and transport.loop_start.line == 1 and transport.loop_end.line == song.selected_pattern.number_of_lines + 1 and transport.loop_sequence_start == 0 and not transport.loop_pattern
+                transport.edit_pos.sequence == transport.loop_start.sequence and transport.edit_pos.sequence == transport.loop_end.sequence and
+                        transport.loop_start.line == 1 and transport.loop_end.line == song.selected_pattern.number_of_lines + 1 and
+                        transport.loop_sequence_start == 0 and not transport.loop_pattern
         )
         then
-            currentloopingrange = tostring(transport.loop_start) .. tostring(transport.loop_end) .. tostring(transport.loop_pattern) .. tostring(transport.loop_block_enabled) .. tostring(transport.loop_sequence_start)
+            currentloopingrange = tostring(transport.loop_start) .. tostring(transport.loop_end) ..
+                    tostring(transport.loop_pattern) .. tostring(transport.loop_block_enabled) ..
+                    tostring(transport.loop_sequence_start)
         end
         if loopingrange ~= currentloopingrange then
             loopingrange = currentloopingrange
@@ -10274,16 +10278,14 @@ if preferences.enableAdditonalSampleTools.value then
 
         if (sample_buffer.has_sample_data) then
             if bpm == nil then
-                res = nil
-                local vb = renoise.ViewBuilder()
-                local bpm_selector = vb:valuebox { min = 30, max = 250, value = lastValTools.lastBPM }
-                local view = vb:vertical_aligner {
+                local bpm_selector = renoise.ViewBuilder():valuebox { min = 30, max = 250, value = lastValTools.lastBPM }
+                local view = renoise.ViewBuilder():vertical_aligner {
                     margin = 10,
-                    vb:horizontal_aligner {
+                    renoise.ViewBuilder():horizontal_aligner {
                         spacing = 10,
-                        vb:vertical_aligner {
-                            vb:text { text = 'Calculate and set a fixed Beatsync value for the current sample.' },
-                            vb:text { text = 'BPM of your sample:' },
+                        renoise.ViewBuilder():vertical_aligner {
+                            renoise.ViewBuilder():text { text = 'Calculate and set a fixed Beatsync value for the current sample.' },
+                            renoise.ViewBuilder():text { text = 'BPM of your sample:' },
                             bpm_selector,
                         },
                     },
@@ -10307,7 +10309,7 @@ if preferences.enableAdditonalSampleTools.value then
                 local lpb = song.transport.lpb
                 local samples_per_beat = 60.0 / bpm * sample_rate
                 local samples_per_line = samples_per_beat / lpb
-                local add_samples = 0
+                local add_samples
                 lastValTools.lastBPM = bpm
 
                 local lines_in_sample = num_frames / samples_per_line
@@ -10372,7 +10374,7 @@ if preferences.enableAdditonalSampleTools.value then
             if (sample_buffer.has_sample_data) then
                 local bpm = song.transport.bpm
                 local lpb = song.transport.lpb
-                local align_to_lines = 0
+                local align_to_lines
 
                 local mpt = app:show_prompt(
                         "Align sample selection to beat - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
