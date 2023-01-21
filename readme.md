@@ -305,3 +305,4 @@ So you don't need to hold <kbd>shift</kbd>.
 | <kbd>shift + i</kbd>                                                                                         | Invert note selection                                                                        |
 | <kbd>del</kbd> or <kbd>backspace</kbd>                                                                       | Remove selected notes                                                                        |
 | <kbd>esc</kbd>                                                                                               | Deselect all notes                                                                           |
+| <kbd>ctrl + shift + r</kbd>                                                                                  | Randomly deselect all notes                                                                  |
