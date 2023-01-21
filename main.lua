@@ -10367,6 +10367,23 @@ if preferences.enableAdditonalSampleTools.value then
         end
     }
 
+    --tool to duplicate a pattern so 64 becomes 128
+    tool:add_menu_entry {
+        name = "Pattern Sequencer:Duplicate content ...",
+        invoke = function()
+            local current_pattern = renoise.song().selected_pattern
+            local pattern_length = current_pattern.number_of_lines
+            current_pattern.number_of_lines = pattern_length * 2
+            if pattern_length * 2 <= 512 then
+                for it, current_patterntrack in ipairs(current_pattern.tracks) do
+                    for line_idx = 1, pattern_length do
+                        current_patterntrack:line(line_idx + pattern_length):copy_from(current_patterntrack:line(line_idx))
+                    end
+                end
+            end
+        end
+    }
+
 
     --tool to fit risers a specific line length
     tool:add_menu_entry {
