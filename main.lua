@@ -9189,6 +9189,8 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         end
                         currentNoteLength = number
                         refreshControls = true
+                        --fix for bad keyevents of key handler, bug
+                        restoreFocus()
                     end,
                     tonumber = function(string)
                         local lpb = song.transport.lpb
@@ -9272,6 +9274,8 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                             changePropertiesOfSelectedNotes(currentNoteVelocity)
                         end
                         refreshControls = true
+                        --fix for bad keyevents of key handler, bug
+                        restoreFocus()
                     end,
                 },
                 vb:button {
@@ -9320,6 +9324,8 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                             changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity)
                         end
                         refreshControls = true
+                        --fix for bad keyevents of key handler, bug
+                        restoreFocus()
                     end,
                 },
                 vb:button {
@@ -9378,6 +9384,8 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                             changePropertiesOfSelectedNotes(nil, nil, nil, nil, currentNotePan)
                         end
                         refreshControls = true
+                        --fix for bad keyevents of key handler, bug
+                        restoreFocus()
                     end,
                 },
                 vb:button {
@@ -9431,6 +9439,8 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                             changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay)
                         end
                         refreshControls = true
+                        --fix for bad keyevents of key handler, bug
+                        restoreFocus()
                     end,
                 },
                 vb:button {
@@ -9474,6 +9484,8 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                             changePropertiesOfSelectedNotes(nil, nil, nil, currentNoteEndDelay)
                         end
                         refreshControls = true
+                        --fix for bad keyevents of key handler, bug
+                        restoreFocus()
                     end,
                 },
                 vb:button {
