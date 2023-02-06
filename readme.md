@@ -306,3 +306,22 @@ So you don't need to hold <kbd>shift</kbd>.
 | <kbd>del</kbd> or <kbd>backspace</kbd>                                                                       | Remove selected notes                                                                        |
 | <kbd>esc</kbd>                                                                                               | Deselect all notes                                                                           |
 | <kbd>ctrl + shift + r</kbd>                                                                                  | Randomly deselect all notes                                                                  |
+
+## Inbuilt additional tools
+
+I've added some of my internal tools, which improved my workflow in Renoise alot. 
+I don't want to mantain more than one tool, so I've added them to this tool instead.
+It's optional and disabled by default. You need to enable them in the piano roll settings (restart of Renoise is needed).
+
+### Instrument box: Change instrument's global pitch
+
+With this function it's possible to change the instrument pitch of several instrument at once.
+Because of the current API limitations, it's not possible to use the instrument selection.
+Instead, its using empty instruments as selection borders.
+So, when you group your instruments and want to change the pitch of these in one step, it's possible now.
+
+### Matrix view: Duplicate content ...
+
+I often want to duplicate a whole pattern. 
+So a 64 pattern can be enlarged to a 128 pattern and the content will be duplicated.
+Just right-click on a pattern and choose "Duplicate content ...".
