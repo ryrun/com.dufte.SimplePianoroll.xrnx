@@ -10306,7 +10306,7 @@ if preferences.enableAdditonalSampleTools.value then
         if (sample_buffer.has_sample_data) then
             if bpm == nil then
                 --when there is a selection, try to calculate the bpm (dirty)
-                local samplecount = math.abs(selection_end - selection_start)
+                local samplecount = math.abs(sample_buffer.selection_end - sample_buffer.selection_start)
                 if samplecount > 100 then
                     local newbpm = 60.0 * sample_rate / samplecount
                     for i = 0, 4 do
@@ -10336,7 +10336,29 @@ if preferences.enableAdditonalSampleTools.value then
                             renoise.ViewBuilder():text { text = 'Calculate and set a fixed Beatsync value for the current sample and set a beat sync mode.' },
                             renoise.ViewBuilder():text { text = 'When you select a range in the sample editor, the bpm value will be calculated.' },
                             renoise.ViewBuilder():text { text = 'BPM of your sample:' },
-                            bpm_selector,
+                            renoise.ViewBuilder():horizontal_aligner {
+                                bpm_selector,
+                                renoise.ViewBuilder():button {
+                                    text = ":2",
+                                    tooltip = "Halve BPM number",
+                                    notifier = function()
+                                        local new = bpm_selector.value / 2
+                                        if new >= 30 then
+                                            bpm_selector.value = new
+                                        end
+                                    end,
+                                },
+                                renoise.ViewBuilder():button {
+                                    text = "*2",
+                                    tooltip = "Double BPM number",
+                                    notifier = function()
+                                        local new = bpm_selector.value * 2
+                                        if new <= 250 then
+                                            bpm_selector.value = new
+                                        end
+                                    end,
+                                },
+                            }
                         },
                     },
                 }
