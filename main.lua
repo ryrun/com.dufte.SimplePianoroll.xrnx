@@ -10327,7 +10327,7 @@ if preferences.enableAdditonalSampleTools.value then
                     lastValTools.lastBPM = math.floor(newbpm + 0.5)
                 end
 
-                local bpm_selector = renoise.ViewBuilder():valuebox { min = 30, max = 250, value = lastValTools.lastBPM }
+                local bpm_selector = renoise.ViewBuilder():valuebox { min = 20, max = 999, value = lastValTools.lastBPM }
                 local view = renoise.ViewBuilder():vertical_aligner {
                     margin = 10,
                     renoise.ViewBuilder():horizontal_aligner {
@@ -10343,7 +10343,7 @@ if preferences.enableAdditonalSampleTools.value then
                                     tooltip = "Halve BPM number",
                                     notifier = function()
                                         local new = bpm_selector.value / 2
-                                        if new >= 30 then
+                                        if new >= 20 then
                                             bpm_selector.value = new
                                         end
                                     end,
@@ -10353,7 +10353,7 @@ if preferences.enableAdditonalSampleTools.value then
                                     tooltip = "Double BPM number",
                                     notifier = function()
                                         local new = bpm_selector.value * 2
-                                        if new <= 420 then
+                                        if new <= 999 then
                                             bpm_selector.value = new
                                         end
                                     end,
