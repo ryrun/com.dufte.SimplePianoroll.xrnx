@@ -10353,7 +10353,7 @@ if preferences.enableAdditonalSampleTools.value then
                                     tooltip = "Double BPM number",
                                     notifier = function()
                                         local new = bpm_selector.value * 2
-                                        if new <= 250 then
+                                        if new <= 420 then
                                             bpm_selector.value = new
                                         end
                                     end,
