@@ -10309,7 +10309,7 @@ if preferences.enableAdditonalSampleTools.value then
                 local samplecount = math.abs(sample_buffer.selection_end - sample_buffer.selection_start)
                 if samplecount > 100 then
                     local newbpm = 60.0 * sample_rate / samplecount
-                    for i = 0, 4 do
+                    for i = 0, 10 do
                         if newbpm > 180 then
                             newbpm = newbpm / 2
                         end
@@ -10387,39 +10387,42 @@ if preferences.enableAdditonalSampleTools.value then
                 local lines_in_sample = num_frames / samples_per_line
                 local lines_in_sample_mod = num_frames % samples_per_line
 
-                if lines_in_sample_mod > 0 then
-                    lines_in_sample = math.ceil(lines_in_sample)
-                    add_samples = lines_in_sample * samples_per_line - sample_buffer.number_of_frames
+                if lines_in_sample < 512 then
+                    if lines_in_sample_mod > 0 then
+                        lines_in_sample = math.ceil(lines_in_sample)
+                        add_samples = lines_in_sample * samples_per_line - sample_buffer.number_of_frames
 
-                    for frame_idx = 1, num_frames do
-                        sample_data_1[frame_idx] = sample_buffer:sample_data(1, frame_idx)
-                        if (num_channels == 2) then
-                            sample_data_2[frame_idx] = sample_buffer:sample_data(2, frame_idx)
+                        for frame_idx = 1, num_frames do
+                            sample_data_1[frame_idx] = sample_buffer:sample_data(1, frame_idx)
+                            if (num_channels == 2) then
+                                sample_data_2[frame_idx] = sample_buffer:sample_data(2, frame_idx)
+                            end
                         end
-                    end
 
-                    sample_buffer:delete_sample_data()
-                    sample_buffer:create_sample_data(sample_rate, bit_depth, num_channels, num_frames + add_samples)
-                    sample_buffer:prepare_sample_data_changes()
-                    for frame_idx = 1, num_frames do
-                        sample_buffer:set_sample_data(1, frame_idx, sample_data_1[frame_idx])
-                        if (num_channels == 2) then
-                            sample_buffer:set_sample_data(2, frame_idx, sample_data_2[frame_idx])
+                        sample_buffer:delete_sample_data()
+                        sample_buffer:create_sample_data(sample_rate, bit_depth, num_channels, num_frames + add_samples)
+                        sample_buffer:prepare_sample_data_changes()
+                        for frame_idx = 1, num_frames do
+                            sample_buffer:set_sample_data(1, frame_idx, sample_data_1[frame_idx])
+                            if (num_channels == 2) then
+                                sample_buffer:set_sample_data(2, frame_idx, sample_data_2[frame_idx])
+                            end
                         end
+                        sample_buffer:finalize_sample_data_changes()
                     end
-                    sample_buffer:finalize_sample_data_changes()
-                end
-
-                sample.beat_sync_enabled = true
-                sample.beat_sync_lines = lines_in_sample
-                if res == 'Repitch' then
-                    sample.beat_sync_mode = renoise.Sample.BEAT_SYNC_REPITCH
-                elseif res == 'Texture' then
-                    sample.beat_sync_mode = renoise.Sample.BEAT_SYNC_TEXTURE
+                    sample.beat_sync_enabled = true
+                    sample.beat_sync_lines = lines_in_sample
+                    if res == 'Repitch' then
+                        sample.beat_sync_mode = renoise.Sample.BEAT_SYNC_REPITCH
+                    elseif res == 'Texture' then
+                        sample.beat_sync_mode = renoise.Sample.BEAT_SYNC_TEXTURE
+                    else
+                        sample.beat_sync_mode = renoise.Sample.BEAT_SYNC_PERCUSSION
+                    end
+                    sample.autoseek = true
                 else
-                    sample.beat_sync_mode = renoise.Sample.BEAT_SYNC_PERCUSSION
+                    app:show_warning("Sample is too long, calculated beat sync value is higher than 512 (" .. math.floor(lines_in_sample + 0.5) .. " calculated)!")
                 end
-                sample.autoseek = true
             end
         end
     end
