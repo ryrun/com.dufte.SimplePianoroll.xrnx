@@ -10193,7 +10193,8 @@ if preferences.enableAdditonalSampleTools.value then
     --search for typical vstfx on master chain to switch reference
     local lastValTools = {
         lastRefValue = 0.04,
-        lastBPM = 120
+        lastBPM = 120,
+        lastMode = nil
     }
     local function switchVSTFxReference(type)
         --search for master track
@@ -10291,17 +10292,46 @@ if preferences.enableAdditonalSampleTools.value then
         song = renoise.song()
         local sample = song.selected_sample
         local sample_buffer = sample.sample_buffer
-        local res = 'Ok'
+        local sample_rate = sample_buffer.sample_rate
+        local song_bpm = song.transport.bpm
+        local res = 'Percussion'
+
+        if lastValTools.lastMode ~= nil then
+            res = lastValTools.lastMode
+        end
 
         if (sample_buffer.has_sample_data) then
             if bpm == nil then
+                --when there is a selection, try to calculate the bpm (dirty)
+                local samplecount = math.abs(selection_end - selection_start)
+                if samplecount > 100 then
+                    local newbpm = 60.0 * sample_rate / samplecount
+                    for i = 0, 4 do
+                        if newbpm > 180 then
+                            newbpm = newbpm / 2
+                        end
+                        if newbpm < 60 then
+                            newbpm = newbpm * 2
+                        end
+                        if newbpm > 60 and newbpm < 180 then
+                            break
+                        end
+                    end
+                    --check if the doubled value is near the current song bpm
+                    if math.abs(newbpm * 2 - song_bpm) < math.abs(newbpm - song_bpm) then
+                        newbpm = newbpm * 2
+                    end
+                    lastValTools.lastBPM = math.floor(newbpm + 0.5)
+                end
+
                 local bpm_selector = renoise.ViewBuilder():valuebox { min = 30, max = 250, value = lastValTools.lastBPM }
                 local view = renoise.ViewBuilder():vertical_aligner {
                     margin = 10,
                     renoise.ViewBuilder():horizontal_aligner {
                         spacing = 10,
                         renoise.ViewBuilder():vertical_aligner {
-                            renoise.ViewBuilder():text { text = 'Calculate and set a fixed Beatsync value for the current sample.' },
+                            renoise.ViewBuilder():text { text = 'Calculate and set a fixed Beatsync value for the current sample and set a beat sync mode.' },
+                            renoise.ViewBuilder():text { text = 'When you select a range in the sample editor, the bpm value will be calculated.' },
                             renoise.ViewBuilder():text { text = 'BPM of your sample:' },
                             bpm_selector,
                         },
@@ -10311,16 +10341,15 @@ if preferences.enableAdditonalSampleTools.value then
                 res = app:show_custom_prompt(
                         "Set sample BPM - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
                         view,
-                        { 'Ok', 'Cancel' }
+                        { 'Repitch', 'Percussion', 'Texture', 'Cancel' }
                 )
                 bpm = bpm_selector.value
             end
 
-            if res == 'Ok' then
+            if res ~= 'Cancel' and res ~= '' then
                 local num_frames = sample_buffer.number_of_frames
                 local num_channels = sample_buffer.number_of_channels
                 local bit_depth = sample_buffer.bit_depth
-                local sample_rate = sample_buffer.sample_rate
                 local sample_data_1 = {}
                 local sample_data_2 = {}
                 local lpb = song.transport.lpb
@@ -10328,6 +10357,7 @@ if preferences.enableAdditonalSampleTools.value then
                 local samples_per_line = samples_per_beat / lpb
                 local add_samples
                 lastValTools.lastBPM = bpm
+                lastValTools.lastMode = res
 
                 local lines_in_sample = num_frames / samples_per_line
                 local lines_in_sample_mod = num_frames % samples_per_line
@@ -10357,7 +10387,13 @@ if preferences.enableAdditonalSampleTools.value then
 
                 sample.beat_sync_enabled = true
                 sample.beat_sync_lines = lines_in_sample
-                sample.beat_sync_mode = renoise.Sample.BEAT_SYNC_PERCUSSION
+                if res == 'Repitch' then
+                    sample.beat_sync_mode = renoise.Sample.BEAT_SYNC_REPITCH
+                elseif res == 'Texture' then
+                    sample.beat_sync_mode = renoise.Sample.BEAT_SYNC_TEXTURE
+                else
+                    sample.beat_sync_mode = renoise.Sample.BEAT_SYNC_PERCUSSION
+                end
                 sample.autoseek = true
             end
         end
@@ -10396,6 +10432,14 @@ if preferences.enableAdditonalSampleTools.value then
         end
     }
 
+    --    tool to set transpose value for instruments
+    --    tool:add_menu_entry {
+    --        name = "Instrument Box:Change instrument's global pitch ...",
+    --        invoke = function()
+    --            song = renoise.song()
+    --            local l_song = song
+    --        end
+    --    }
 
     --tool to fit risers a specific line length
     tool:add_menu_entry {
