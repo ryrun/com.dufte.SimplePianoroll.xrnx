@@ -10194,7 +10194,8 @@ if preferences.enableAdditonalSampleTools.value then
     local lastValTools = {
         lastRefValue = 0.04,
         lastBPM = 120,
-        lastMode = nil
+        lastMode = nil,
+        lastGlobalPitch = nil
     }
 
     --search for typical vstfx on master chain to switch reference
@@ -10434,14 +10435,58 @@ if preferences.enableAdditonalSampleTools.value then
         end
     }
 
-    --    tool to set transpose value for instruments
-    --    tool:add_menu_entry {
-    --        name = "Instrument Box:Change instrument's global pitch ...",
-    --        invoke = function()
-    --            song = renoise.song()
-    --            local l_song = song
-    --        end
-    --    }
+    -- tool to set transpose value for instruments
+    tool:add_menu_entry {
+        name = "Instrument Box:Change instrument's global pitch ...",
+        invoke = function()
+            song = renoise.song()
+            --there is current no way to get the selection via api, so search start and end by check for empty instruments
+            local from = song.selected_instrument_index
+            local to = song.selected_instrument_index
+            for i = from, 1, -1 do
+                local ins = song.instruments[i]
+                if not ins or (#ins.samples == 0 and ins.plugin_properties.plugin_loaded == false) then
+                    break
+                end
+                from = i
+                lastValTools.lastGlobalPitch = math.max(ins.transpose)
+            end
+            --check till next empty one
+            for i = to, math.min(from + renoise.Song.MAX_NUMBER_OF_INSTRUMENTS, renoise.Song.MAX_NUMBER_OF_INSTRUMENTS) do
+                local ins = song.instruments[i]
+                if not ins or (#ins.samples == 0 and ins.plugin_properties.plugin_loaded == false) then
+                    break
+                end
+                to = i
+                lastValTools.lastGlobalPitch = math.max(ins.transpose)
+            end
+            --show dialog
+            local global_pitch_box = renoise.ViewBuilder():valuebox { min = -120, max = 1220, value = lastValTools.lastGlobalPitch }
+            local view = renoise.ViewBuilder():vertical_aligner {
+                margin = 10,
+                renoise.ViewBuilder():horizontal_aligner {
+                    spacing = 10,
+                    renoise.ViewBuilder():vertical_aligner {
+                        renoise.ViewBuilder():text { text = 'Because of the API limitations, empty instruments are used for to detect the selection.' },
+                        renoise.ViewBuilder():text { text = "New instrument's global pitch:" },
+                        global_pitch_box,
+                    },
+                },
+            }
+            local res = app:show_custom_prompt(
+                    "Change instrument's global pitch (" .. (to - from) .. " instrument's) - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
+                    view,
+                    { 'Ok', 'Cancel' }
+            )
+            if res == 'Ok' then
+                --apply new transpose value
+                for i = from, to do
+                    local ins = song.instruments[i]
+                    ins.transpose = global_pitch_box.value
+                end
+            end
+        end
+    }
 
     --tool to fit risers a specific line length
     tool:add_menu_entry {
