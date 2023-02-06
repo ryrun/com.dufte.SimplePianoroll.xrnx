@@ -10190,12 +10190,14 @@ tool:add_menu_entry {
 --additional tools non piano roll related
 if preferences.enableAdditonalSampleTools.value then
 
-    --search for typical vstfx on master chain to switch reference
+    --some values to remember
     local lastValTools = {
         lastRefValue = 0.04,
         lastBPM = 120,
         lastMode = nil
     }
+
+    --search for typical vstfx on master chain to switch reference
     local function switchVSTFxReference(type)
         --search for master track
         for it, track in ipairs(renoise.song().tracks) do
