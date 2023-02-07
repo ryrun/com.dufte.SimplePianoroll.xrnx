@@ -320,6 +320,8 @@ Because of the current API limitations, it's not possible to use the instrument 
 Instead, its using empty instruments as selection borders.
 So, when you group your instruments and want to change the pitch of these in one step, it's possible now.
 
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/globalpitchinstr.png?raw=true" width="300">
+
 ### Matrix view: Duplicate content ...
 
 I often want to duplicate a whole pattern. 
