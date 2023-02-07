@@ -371,11 +371,11 @@ I often want to duplicate a whole pattern.
 So a 64 pattern can be enlarged to a 128 pattern and the content will be duplicated.
 Just right-click on a pattern and choose "Duplicate content ...".
 
-### Useful keyboard shortcuts
+### Useful global keyboard shortcuts
 
 Some useful keyboard shortcuts for mixing and analysing. 
 These can be found under "Global \ Simple Pianoroll - Workflow Tools".  
-Supported plugins is currently limited. Other plugins can be added via feature requests. 
+Supported plugins are currently limited. Other plugins can be added via feature requests. 
 
 #### Audio reference switch
 
