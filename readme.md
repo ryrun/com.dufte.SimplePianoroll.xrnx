@@ -38,7 +38,7 @@
   * [Inbuilt additional tools](#inbuilt-additional-tools)
     * [Instrument box - Change instruments global pitch](#instrument-box---change-instruments-global-pitch)
     * [Matrix view - Duplicate content](#matrix-view---duplicate-content)
-    * [Useful keyboard shortcuts](#useful-keyboard-shortcuts)
+    * [Useful global keyboard shortcuts](#useful-global-keyboard-shortcuts)
       * [Audio reference switch](#audio-reference-switch)
       * [Sub Filter switch](#sub-filter-switch)
       * [Show / Hide Analyzer](#show--hide-analyzer)
