@@ -36,8 +36,8 @@
     * [Nothing selected](#nothing-selected)
     * [One or more notes selected](#one-or-more-notes-selected)
   * [Inbuilt additional tools](#inbuilt-additional-tools)
-    * [Instrument box: Change instrument's global pitch](#instrument-box--change-instruments-global-pitch)
-    * [Matrix view: Duplicate content ...](#matrix-view--duplicate-content-)
+    * [Instrument box - Change instruments global pitch](#instrument-box---change-instruments-global-pitch)
+    * [Matrix view - Duplicate content](#matrix-view---duplicate-content)
 <!-- TOC -->
 
 ## Videos on Youtube
@@ -351,7 +351,7 @@ I've added some of my internal tools, which improved my workflow in Renoise alot
 I don't want to mantain more than one tool, so I've added them to this tool instead.
 It's optional and disabled by default. You need to enable them in the piano roll settings (restart of Renoise is needed).
 
-### Instrument box: Change instrument's global pitch
+### Instrument box - Change instruments global pitch
 
 With this function it's possible to change the instrument pitch of several instrument at once.
 Because of the current API limitations, it's not possible to use the instrument selection.
@@ -360,7 +360,7 @@ So, when you group your instruments and want to change the pitch of these in one
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/globalpitchinstr.png?raw=true" width="400">
 
-### Matrix view: Duplicate content ...
+### Matrix view - Duplicate content
 
 I often want to duplicate a whole pattern. 
 So a 64 pattern can be enlarged to a 128 pattern and the content will be duplicated.
