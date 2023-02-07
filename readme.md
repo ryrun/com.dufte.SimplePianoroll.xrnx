@@ -1,12 +1,50 @@
-# Simple Pianoroll Tool for Renoise
+<h1>Simple Pianoroll Tool for Renoise</h1>
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pianorollanim3.gif?raw=true" alt="Simple Pianoroll Tool for Renoise" />
+
+<h2>Table of contents</h2>
+
+<!-- TOC -->
+  * [Videos on Youtube](#videos-on-youtube)
+    * [Older ones](#older-ones)
+  * [Thread on official Renoise forum](#thread-on-official-renoise-forum)
+  * [Features](#features)
+  * [Important](#important)
+  * [Note rendering in piano roll](#note-rendering-in-piano-roll)
+      * [Note overlapping](#note-overlapping)
+      * [Note cut fx](#note-cut-fx)
+      * [Note retrigger fx](#note-retrigger-fx)
+      * [Note delay](#note-delay)
+      * [Note delay for note off](#note-delay-for-note-off)
+      * [Different instruments in one pattern](#different-instruments-in-one-pattern)
+  * [Install and Update](#install-and-update)
+  * [How to use it](#how-to-use-it)
+    * [General](#general)
+    * [Open the piano roll](#open-the-piano-roll)
+      * [Pattern editor](#pattern-editor)
+      * [Matrix view](#matrix-view)
+    * [Note preview](#note-preview)
+    * [Timeline bar](#timeline-bar)
+    * [Scale highlighting](#scale-highlighting)
+    * [Ghost track](#ghost-track)
+    * [Step sequencing with computer keyboard](#step-sequencing-with-computer-keyboard)
+    * [Histogram](#histogram)
+    * [Chord detection and scale degree detection](#chord-detection-and-scale-degree-detection)
+    * [Chord stamping](#chord-stamping)
+  * [Mouse actions](#mouse-actions)
+  * [Keyboard actions](#keyboard-actions)
+    * [Nothing selected](#nothing-selected)
+    * [One or more notes selected](#one-or-more-notes-selected)
+  * [Inbuilt additional tools](#inbuilt-additional-tools)
+    * [Instrument box: Change instrument's global pitch](#instrument-box--change-instruments-global-pitch)
+    * [Matrix view: Duplicate content ...](#matrix-view--duplicate-content-)
+<!-- TOC -->
 
 ## Videos on Youtube
 
 Showing version 2.0 in action:
 
-[<img src="https://img.youtube.com/vi/EZJcpnwaY1I/0.jpg" width="300">](https://www.youtube.com/watch?v=EZJcpnwaY1I)
+[<img src="https://img.youtube.com/vi/EZJcpnwaY1I/0.jpg" width="400">](https://www.youtube.com/watch?v=EZJcpnwaY1I)
 
 ### Older ones
 
@@ -57,27 +95,27 @@ used in the pattern.
 
 #### Note overlapping
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/noteoverlapping.png?raw=true" width="300" alt="Note overlapping" />
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/noteoverlapping.png?raw=true" width="400" alt="Note overlapping" />
 
 #### Note cut fx
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/notecutfx.png?raw=true" width="300" alt="Note cut fx" />
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/notecutfx.png?raw=true" width="400" alt="Note cut fx" />
 
 #### Note retrigger fx
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/noteretriggerfx.png?raw=true" width="300" alt="Note retrigger fx" />
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/noteretriggerfx.png?raw=true" width="400" alt="Note retrigger fx" />
 
 #### Note delay
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/notedelay.png?raw=true" width="300" alt="Note delay" />
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/notedelay.png?raw=true" width="400" alt="Note delay" />
 
 #### Note delay for note off
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/noteoffdelay.png?raw=true" width="300" alt="Note delay for note off" />
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/noteoffdelay.png?raw=true" width="400" alt="Note delay for note off" />
 
 #### Different instruments in one pattern
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/diffinsinpattern.png?raw=true" width="300" alt="Note delay for note off" />
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/diffinsinpattern.png?raw=true" width="400" alt="Note delay for note off" />
 
 ## Install and Update
 
@@ -90,7 +128,7 @@ Tool updater is supported, so when a new version is released, it should show you
 
 More information about how you can install and update Renoise tools:
 
-[<img src="https://img.youtube.com/vi/E3ZfSlQ8m_4/0.jpg" width="300">](https://www.youtube.com/watch?v=E3ZfSlQ8m_4)
+[<img src="https://img.youtube.com/vi/E3ZfSlQ8m_4/0.jpg" width="400">](https://www.youtube.com/watch?v=E3ZfSlQ8m_4)
 
 ## How to use it
 
@@ -107,11 +145,11 @@ pane and also via main menu.
 
 #### Pattern editor
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/openit.gif?raw=true" width="300" alt="Open Piano Roll in Renoise">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/openit.gif?raw=true" width="400" alt="Open Piano Roll in Renoise">
 
 #### Matrix view
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/editviamatrix.gif?raw=true" width="300" alt="Open Piano Roll in Renoise in the Matrix view">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/editviamatrix.gif?raw=true" width="400" alt="Open Piano Roll in Renoise in the Matrix view">
 
 ### Note preview
 
@@ -121,7 +159,7 @@ through the pattern and play all notes at the respective position.
 By default, the OSC server is turned off, so you have to activate it first. Furthermore, the protocol and the port
 number must match the settings of the Pianoroll tool. After that it should work immediately.
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/oscserver.png?raw=true" alt="OSC Server settings in Renoise" width="300">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/oscserver.png?raw=true" alt="OSC Server settings in Renoise" width="400">
 
 ### Timeline bar
 
@@ -134,7 +172,7 @@ back into the loop automatically. Double click removes the current loop. Single 
 
 Made a Youtube short about this, so you can see it in action:
 
-[<img src="https://img.youtube.com/vi/Ay_wcQsvPrE/0.jpg" width="300">](https://www.youtube.com/shorts/Ay_wcQsvPrE)
+[<img src="https://img.youtube.com/vi/Ay_wcQsvPrE/0.jpg" width="400">](https://www.youtube.com/shorts/Ay_wcQsvPrE)
 
 ### Scale highlighting
 
@@ -180,7 +218,7 @@ With **Apply** the values will be written. With **Reset** the histogram controls
 
 Here a little video showing you, how you can use it:
 
-[<img src="https://img.youtube.com/vi/zkE5SCw0TyE/0.jpg" width="300">](https://www.youtube.com/watch?v=zkE5SCw0TyE)
+[<img src="https://img.youtube.com/vi/zkE5SCw0TyE/0.jpg" width="400">](https://www.youtube.com/watch?v=zkE5SCw0TyE)
 
 ### Chord detection and scale degree detection
 
@@ -320,7 +358,7 @@ Because of the current API limitations, it's not possible to use the instrument 
 Instead, its using empty instruments as selection borders.
 So, when you group your instruments and want to change the pitch of these in one step, it's possible now.
 
-<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/globalpitchinstr.png?raw=true" width="500">
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/globalpitchinstr.png?raw=true" width="400">
 
 ### Matrix view: Duplicate content ...
 
