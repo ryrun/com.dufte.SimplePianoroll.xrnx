@@ -38,6 +38,11 @@
   * [Inbuilt additional tools](#inbuilt-additional-tools)
     * [Instrument box - Change instruments global pitch](#instrument-box---change-instruments-global-pitch)
     * [Matrix view - Duplicate content](#matrix-view---duplicate-content)
+    * [Useful keyboard shortcuts](#useful-keyboard-shortcuts)
+      * [Audio reference switch](#audio-reference-switch)
+      * [Sub Filter switch](#sub-filter-switch)
+      * [Show / Hide Analyzer](#show--hide-analyzer)
+      * [Show / Hide Waveform Analyzer](#show--hide-waveform-analyzer)
 <!-- TOC -->
 
 ## Videos on Youtube
@@ -365,3 +370,40 @@ So, when you group your instruments and want to change the pitch of these in one
 I often want to duplicate a whole pattern. 
 So a 64 pattern can be enlarged to a 128 pattern and the content will be duplicated.
 Just right-click on a pattern and choose "Duplicate content ...".
+
+### Useful keyboard shortcuts
+
+Some useful keyboard shortcuts for mixing and analysing. 
+These can be found under "Global \ Simple Pianoroll - Workflow Tools".  
+Supported plugins is currently limited. Other plugins can be added via feature requests. 
+
+#### Audio reference switch
+
+Switch between Renoise song and a Reference song in your plugin on a master channel.
+Supported plugins currently are:
+
+* MeldaProduction: MCompare
+* Plugin Alliance: ADPTR MetricAB
+
+#### Sub Filter switch
+
+Enable / disable sub only filter on master channel for checking sub frequencies.
+Supported plugins currently are:
+
+* MeldaProduction: MCompare
+* Plugin Alliance: ADPTR MetricAB
+
+#### Show / Hide Analyzer
+
+Show or Hide the audio analyzer plugin on the master channel.
+Supported plugins currently are:
+
+* Voxengo: SPAN
+* Plugin Alliance: ADPTR MetricAB
+
+#### Show / Hide Waveform Analyzer
+
+Show or Hide the waveform analyzer plugin on the master channel.
+Supported plugins currently are:
+
+* Xfer Records: LFOTool_x64
