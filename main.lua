@@ -10499,7 +10499,7 @@ if preferences.enableAdditonalSampleTools.value then
                 },
             }
             local res = app:show_custom_prompt(
-                    "Change instrument's global pitch (" .. (to - from) .. " instrument's) - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
+                    "Change instrument's global pitch (" .. (to - from + 1) .. " instrument's) - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
                     view,
                     { 'Ok', 'Cancel' }
             )
