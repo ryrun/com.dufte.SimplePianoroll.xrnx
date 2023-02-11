@@ -10206,7 +10206,7 @@ if preferences.enableAdditonalSampleTools.value then
                 --search for mcompare
                 for id, device in ipairs(track.devices) do
                     if type == 3 then
-                        if device.name == "VST: Xfer Records: LFOTool_x64" then
+                        if device.name == "VST: Xfer Records: LFOTool_x64" or device.name == "VST: Cableguys: ShaperBox 3" then
                             device.external_editor_visible = not device.external_editor_visible
                         end
                     elseif type == 2 then
