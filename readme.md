@@ -356,6 +356,36 @@ I've added some of my internal tools, which improved my workflow in Renoise alot
 I don't want to mantain more than one tool, so I've added them to this tool instead.
 It's optional and disabled by default. You need to enable them in the piano roll settings (restart of Renoise is needed).
 
+### Sample Editor - Fit sample to beat sync ...
+
+This tool helps you to calculate the correct beat sync value for timestretching of loops and set it. It tries to detect 
+the correct BPM by the sample length in samples. Please note that the beat sync value also use your lines per beat song 
+parameter. So this parameter shouldn't be automated in your song.
+When you select a part of your sample (from snare to snare) to manually select a 4 bar loop, because the sample is longer, 
+it's using the selection length for calculation.
+It'll also extend the sample, when the calculated beat sync value is not a whole number.
+Float numbers for the beat sync parameter is currently not supported in Renoise.
+
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/beatsynccalc.png?raw=true" width="400">
+
+#### Sample Editor - Fit sample to beat sync (Song BPM)
+
+Instead of calculate the correct BPM of a sample, it uses the current Song BPM.
+With this you can create some glitchy sounds, when you automate the line per beat parameter of your song.
+Set a quite high LPB value, 16 for example. Then just load some drum sounds like kick / snare and hihats.
+Apply the "Fit sample to beat sync (Song BPM)" to each drum sample.
+Now create a simple drum pattern and use the ZLxx parameter to automate / change the line per beats in some parts of your loop.
+
+This idea is inspired by a song from suunk. Here is a good interview about his technique:
+[<img src="https://img.youtube.com/vi/G0ZRMnpBh1M/0.jpg" width="400">](https://www.youtube.com/watch?v=G0ZRMnpBh1M)
+
+### Sample Editor - Align sample selection to beat
+
+This tool helps you to align swoops or risers in your song. You set the selection cursor to a point of your riser sample, 
+where the crash would hit, and then you choose how many lines you would use for the "rising"-part fit in.
+So, when you choose 32 lines, the "tail" part of the riser should be played from line 33.
+This can also be used on reverse crash samples, when you want to have it exaclty 32 lines long for your song.
+
 ### Instrument box - Change instruments global pitch
 
 With this function it's possible to change the instrument pitch of several instrument at once.
@@ -376,6 +406,8 @@ Just right-click on a pattern and choose "Duplicate content ...".
 Some useful keyboard shortcuts for mixing and analysing. 
 These can be found under "Global \ Simple Pianoroll - Workflow Tools".  
 Supported plugins are currently limited. Other plugins can be added via feature requests. 
+
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/keyshortcuts.png?raw=true" width="400">
 
 #### Audio reference switch
 
@@ -407,3 +439,4 @@ Show or Hide the waveform analyzer plugin on the master channel.
 Supported plugins currently are:
 
 * Xfer Records: LFOTool_x64
+* Cableguys: ShaperBox 3
