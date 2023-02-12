@@ -10208,10 +10208,12 @@ if preferences.enableAdditonalSampleTools.value then
                     if type == 3 then
                         if device.name == "VST: Xfer Records: LFOTool_x64" or device.name == "VST: Cableguys: ShaperBox 3" then
                             device.external_editor_visible = not device.external_editor_visible
+                            return
                         end
                     elseif type == 2 then
                         if device.name == "VST: Voxengo: SPAN" or device.name == "VST: Plugin Alliance: ADPTR MetricAB" then
                             device.external_editor_visible = not device.external_editor_visible
+                            return
                         end
                     else
                         if device.name == "VST: MeldaProduction: MCompare" then
@@ -10224,6 +10226,7 @@ if preferences.enableAdditonalSampleTools.value then
                                         else
                                             renoise.song().tracks[it].devices[id].parameters[ip]:record_value(lastValTools.lastRefValue)
                                         end
+                                        return
                                     end
                                 else
                                     if parameter.name == "Filter - Filter" then
@@ -10232,6 +10235,7 @@ if preferences.enableAdditonalSampleTools.value then
                                         else
                                             renoise.song().tracks[it].devices[id].parameters[ip]:record_value(1)
                                         end
+                                        return
                                     end
                                 end
                             end
@@ -10245,6 +10249,7 @@ if preferences.enableAdditonalSampleTools.value then
                                         else
                                             renoise.song().tracks[it].devices[id].parameters[ip]:record_value(1)
                                         end
+                                        return
                                     end
                                 else
                                     if parameter.name == "Filter Preset" then
@@ -10253,6 +10258,7 @@ if preferences.enableAdditonalSampleTools.value then
                                         else
                                             renoise.song().tracks[it].devices[id].parameters[ip]:record_value(1)
                                         end
+                                        return
                                     end
                                 end
                             end
