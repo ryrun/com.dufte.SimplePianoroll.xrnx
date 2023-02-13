@@ -359,6 +359,8 @@ I've added some of my internal tools, which improved my workflow in Renoise alot
 I don't want to mantain more than one tool, so I've added them to this tool instead.
 It's optional and disabled by default. You need to enable them in the piano roll settings (restart of Renoise is needed).
 
+[<img src="https://img.youtube.com/vi/TYaiSegnP9A/0.jpg" width="400">](https://www.youtube.com/watch?v=TYaiSegnP9A)
+
 ### Sample Editor - Fit sample to beat sync ...
 
 This tool helps you to calculate the correct beat sync value for timestretching of loops and set it. It tries to detect 
