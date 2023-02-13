@@ -376,7 +376,8 @@ Float numbers for the beat sync parameter is currently not supported in Renoise.
 #### Sample Editor - Fit sample to beat sync (Song BPM)
 
 Instead of calculate the correct BPM of a sample, it uses the current Song BPM.
-With this you can create some glitchy sounds, when you automate the line per beat parameter of your song.
+You can use it for one shot synth for pitch shifting.
+Or you can create some glitchy sounds, when you automate the line per beat parameter of your song.
 Set a quite high LPB value, 16 for example. Then just load some drum sounds like kick / snare and hihats.
 Apply the "Fit sample to beat sync (Song BPM)" to each drum sample.
 Now create a simple drum pattern and use the ZLxx parameter to automate / change the line per beats in some parts of your loop.
