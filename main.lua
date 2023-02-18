@@ -3133,7 +3133,7 @@ function noteClick(x, y, c, released, forceScaling)
                             and checkMode("pen") then
                         xypadpos.notemode = false
                         xypadpos.removemode = true
-                        xypadpos.ny = y
+                        refreshControls = true
                     end
                 end
             end
