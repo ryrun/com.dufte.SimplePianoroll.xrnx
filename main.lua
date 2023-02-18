@@ -3129,7 +3129,7 @@ function noteClick(x, y, c, released, forceScaling)
                     removeSelectedNotes()
                     --when removing notes switch into remove mode
                     if not preferences.mouseWarpingCompatibilityMode.value
-                       and not preferences.disableNoteEraserMode.value
+                            and not preferences.disableNoteEraserMode.value
                             and checkMode("pen") then
                         xypadpos.notemode = false
                         xypadpos.removemode = true
@@ -6993,13 +6993,13 @@ local function handleXypad(val)
         return
     end
     if xypadpos.removemode then
-        if xypadpos.time < os.clock() - xypadpos.pickuptiming then
+        if xypadpos.time < os.clock() - (xypadpos.pickuptiming * 10) and xypadpos.leftClick then
             --check which notes are hit
             for key in pairs(noteData) do
                 local note_data = noteData[key]
                 if posInNoteRange(val.x + stepOffset, note_data) and #noteSelection == 0
                         and note_data.note == math.floor((val.y - 1.1) + noteOffset)
-                and not noteInSelection(note_data) then
+                        and not noteInSelection(note_data) then
                     updateNoteSelection(note_data, true, true)
                     break
                 elseif noteInSelection(note_data) then
@@ -7316,7 +7316,7 @@ local function appIdleEvent()
             refreshControls = true
         end
         --process eraser mode, when there is still a selection
-        if xypadpos.leftClick == true and xypadpos.removemode == true and #noteSelection>0 then
+        if xypadpos.leftClick == true and xypadpos.removemode == true and #noteSelection > 0 then
             blockLineModifier = true
             removeNoteInPattern(noteSelection[1].column, noteSelection[1].line, noteSelection[1].len)
             noteSelection = {}
