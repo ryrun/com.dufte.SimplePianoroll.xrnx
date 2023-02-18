@@ -1092,7 +1092,7 @@ local function setNoteColor(note_data, isOnStep, isInSelection)
 end
 
 --clear selection and set note colors back
-local function updateNoteSelection(note_data, clear)
+local function updateNoteSelection(note_data, clear, noNoteReadOut)
     local newNotes = {}
     local wasInSelection = {}
     if note_data ~= nil then
@@ -1157,7 +1157,7 @@ local function updateNoteSelection(note_data, clear)
         end
     end
     --jump sel start
-    if #noteSelection > 0 then
+    if #noteSelection > 0 and noNoteReadOut ~= true then
         jumpToNoteInPattern("sel")
         --set control values
         if preferences.setVelPanDlyLenFromLastNote.value then
@@ -3125,7 +3125,7 @@ function noteClick(x, y, c, released, forceScaling)
                     --dont delete notes, when use altKey in non pen mode
                     updateNoteSelection(note_data, note_data)
                 else
-                    updateNoteSelection(note_data, true)
+                    updateNoteSelection(note_data, true, true)
                     removeSelectedNotes()
                     --when removing notes switch into remove mode
                     if not preferences.mouseWarpingCompatibilityMode.value
@@ -7000,7 +7000,7 @@ local function handleXypad(val)
                 if posInNoteRange(val.x + stepOffset, note_data) and #noteSelection == 0
                         and note_data.note == math.floor((val.y - 1.1) + noteOffset)
                 and not noteInSelection(note_data) then
-                    updateNoteSelection(note_data, true)
+                    updateNoteSelection(note_data, true, true)
                     break
                 elseif noteInSelection(note_data) then
                     blockLineModifier = true
