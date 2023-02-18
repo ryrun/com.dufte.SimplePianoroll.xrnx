@@ -4657,7 +4657,11 @@ local function fillPianoRoll(quickRefresh)
                         --refresh step indicator
                         if y == 1 then
                             l_vbw["s" .. stepString].active = true
-                            l_vbw["se" .. stepString].visible = false
+                            if s == song.transport.edit_pos.line - stepOffset then
+                                l_vbw["se" .. stepString].visible = true
+                            else
+                                l_vbw["se" .. stepString].visible = false
+                            end
                             l_vbw["s" .. stepString].color = colorStepOff
                         end
                         --refresh keyboard
