@@ -159,7 +159,8 @@ local defaultPreferences = {
     previewPolyphony = 3,
     previewMidiStuckWorkaround = false,
     limitPreviewBySelectionSize = true,
-    disableAltClickNoteRemove = true,
+    disableAltClickNoteRemove = false,
+    disableNoteEraserMode = false,
     resetVolPanDlyControlOnClick = true,
     minSizeOfNoteButton = 5,
     setLastEditedTrackAsGhost = true,
@@ -260,6 +261,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     midiDevice = defaultPreferences.midiDevice,
     midiIn = defaultPreferences.midiIn,
     chordGunPreset = defaultPreferences.chordGunPreset,
+    disableNoteEraserMode = defaultPreferences.disableNoteEraserMode,
     enableAdditonalSampleTools = defaultPreferences.enableAdditonalSampleTools,
     useChordStampingForNotePreview = defaultPreferences.useChordStampingForNotePreview,
     chordPainterPresetTbl = 1, --default bank
@@ -481,6 +483,7 @@ local xypadpos = {
     notemode = false, --when note mode is active
     previewmode = false, --is scale mode active?
     scalemode = false, --is scale mode active?
+    removemode = false, --is remove mode active
     scaling = false, --are we scaling currently?
     duplicate = false, --for duplicate shortcut state var
     distanceblock = false, --some distance needed before process anything
@@ -1653,13 +1656,21 @@ local function refreshNoteControls()
 
     if checkMode("pen") then
         vbw.mode_pen.color = colorStepOn
+        if xypadpos.removemode then
+            vbw.mode_pen.bitmap = "Icons/Delete.bmp"
+        else
+            vbw.mode_pen.bitmap = "Icons/SampleEd_DrawTool.bmp"
+        end
+        vbw.mode_select.color = colorDefault
         vbw.mode_select.color = colorDefault
         vbw.mode_audiopreview.color = colorDefault
     elseif checkMode("preview") then
+        vbw.mode_pen.bitmap = "Icons/SampleEd_DrawTool.bmp"
         vbw.mode_pen.color = colorDefault
         vbw.mode_select.color = colorDefault
         vbw.mode_audiopreview.color = colorStepOn
     else
+        vbw.mode_pen.bitmap = "Icons/SampleEd_DrawTool.bmp"
         vbw.mode_pen.color = colorDefault
         vbw.mode_select.color = colorStepOn
         vbw.mode_audiopreview.color = colorDefault
@@ -3116,6 +3127,14 @@ function noteClick(x, y, c, released, forceScaling)
                 else
                     updateNoteSelection(note_data, true)
                     removeSelectedNotes()
+                    --when removing notes switch into remove mode
+                    if not preferences.mouseWarpingCompatibilityMode.value
+                       and not preferences.disableNoteEraserMode.value
+                            and checkMode("pen") then
+                        xypadpos.notemode = false
+                        xypadpos.removemode = true
+                        xypadpos.ny = y
+                    end
                 end
             end
         else
@@ -3176,6 +3195,7 @@ function pianoGridClick(x, y, released)
         xypadpos.ny = y
         xypadpos.preview = {}
         xypadpos.previewmode = false
+        xypadpos.removemode = false
         xypadpos.scalemode = false
         xypadpos.resetscale = false
         xypadpos.notemode = false
@@ -6953,6 +6973,9 @@ local function handleXypad(val)
         if val.x == snapBackVal.x and val.y == snapBackVal.y and xypadpos.leftClick then
             xypadpos.leftClick = false
             drawRectangle(false)
+            --stop removemode
+            xypadpos.removemode = false
+            refreshControls = true
             --stop old notes
             if xypadpos.previewmode then
                 for key in pairs(xypadpos.preview) do
@@ -6969,7 +6992,26 @@ local function handleXypad(val)
         end
         return
     end
-    if xypadpos.previewmode then
+    if xypadpos.removemode then
+        if xypadpos.time < os.clock() - xypadpos.pickuptiming then
+            --check which notes are hit
+            for key in pairs(noteData) do
+                local note_data = noteData[key]
+                if posInNoteRange(val.x + stepOffset, note_data) and #noteSelection == 0
+                        and note_data.note == math.floor((val.y - 1.1) + noteOffset)
+                and not noteInSelection(note_data) then
+                    updateNoteSelection(note_data, true)
+                    break
+                elseif noteInSelection(note_data) then
+                    blockLineModifier = true
+                    removeNoteInPattern(note_data.column, note_data.line, note_data.len)
+                    noteSelection = {}
+                    forceFullRefresh = true
+                    break
+                end
+            end
+        end
+    elseif xypadpos.previewmode then
         local playNotes = {}
         --stop old notes
         for key in pairs(xypadpos.preview) do
@@ -7272,6 +7314,13 @@ local function appIdleEvent()
                 xypadpos.loopslider = nil
             end
             refreshControls = true
+        end
+        --process eraser mode, when there is still a selection
+        if xypadpos.leftClick == true and xypadpos.removemode == true and #noteSelection>0 then
+            blockLineModifier = true
+            removeNoteInPattern(noteSelection[1].column, noteSelection[1].line, noteSelection[1].len)
+            noteSelection = {}
+            refreshPianoRollNeeded = true
         end
         --process after edit features
         if afterEditProcessTime ~= nil and afterEditProcessTime < os.clock() - 0.1 then
@@ -8333,6 +8382,14 @@ showPreferences = function()
                             },
                             vbp:text {
                                 text = "Allow move, scale and duplication of notes in pen mode",
+                            },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.disableNoteEraserMode,
+                            },
+                            vbp:text {
+                                text = "Disable note eraser mode",
                             },
                         },
                         vbp:row {
