@@ -8389,7 +8389,7 @@ showPreferences = function()
                                 bind = preferences.disableNoteEraserMode,
                             },
                             vbp:text {
-                                text = "Disable note eraser function in pen mode",
+                                text = "Disable note eraser mode in pen mode",
                             },
                         },
                         vbp:row {
