@@ -3100,7 +3100,10 @@ function noteClick(x, y, c, released, forceScaling)
         xypadpos.lastval = nil
         xypadpos.duplicate = (modifier.keyShift or modifier.keyControl) and (not checkMode("pen") or preferences.moveNoteInPenMode.value) and not modifier.keyAlt
         xypadpos.time = os.clock()
-        triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true, note_data.ins)
+
+        if not checkMode("pen") then
+            triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true, note_data.ins)
+        end
         return
     end
 
