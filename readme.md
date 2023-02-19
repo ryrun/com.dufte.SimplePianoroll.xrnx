@@ -46,6 +46,8 @@
       * [Sub Filter switch](#sub-filter-switch)
       * [Show / Hide Analyzer](#show--hide-analyzer)
       * [Show / Hide Waveform Analyzer](#show--hide-waveform-analyzer)
+    * [Other tools via main menu](#other-tools-via-main-menu)
+      * [Upgrade filters of all instruments](#upgrade-filters-of-all-instruments)
 <!-- TOC -->
 
 ## Videos on Youtube
