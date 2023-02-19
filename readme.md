@@ -357,7 +357,7 @@ So you don't need to hold <kbd>shift</kbd>.
 
 I've added some of my internal tools, which improved my workflow in Renoise alot. 
 I don't want to mantain more than one tool, so I've added them to this tool instead.
-It's optional and disabled by default. You need to enable them in the piano roll settings (restart of Renoise is needed).
+The context menu ones are optional and disabled by default. You need to enable them in the piano roll settings (restart of Renoise is needed).
 
 [<img src="https://img.youtube.com/vi/TYaiSegnP9A/0.jpg" width="400">](https://www.youtube.com/watch?v=TYaiSegnP9A)
 
@@ -446,3 +446,10 @@ Supported plugins currently are:
 
 * Xfer Records: LFOTool_x64
 * Cableguys: ShaperBox 3
+
+### Other tools via main menu
+
+#### Upgrade filters of all instruments
+
+A small tool to upgrade old Renoise filters in instruments to the new one. 
+Can also be used to enable anti aliasing in all samples.
