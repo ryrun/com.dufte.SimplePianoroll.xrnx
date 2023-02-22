@@ -1670,17 +1670,27 @@ local function refreshNoteControls()
             vbw.mode_pen.bitmap = "Icons/SampleEd_DrawTool.bmp"
         end
         vbw.mode_select.color = colorDefault
-        vbw.mode_select.color = colorDefault
+        vbw.mode_select.bitmap = "Icons/AutomationList_Empty.bmp"
+        vbw.mode_select.text = ""
         vbw.mode_audiopreview.color = colorDefault
     elseif checkMode("preview") then
         vbw.mode_pen.bitmap = "Icons/SampleEd_DrawTool.bmp"
         vbw.mode_pen.color = colorDefault
         vbw.mode_select.color = colorDefault
+        vbw.mode_select.bitmap = "Icons/AutomationList_Empty.bmp"
+        vbw.mode_select.text = ""
         vbw.mode_audiopreview.color = colorStepOn
     else
         vbw.mode_pen.bitmap = "Icons/SampleEd_DrawTool.bmp"
         vbw.mode_pen.color = colorDefault
         vbw.mode_select.color = colorStepOn
+        if xypadpos.scalemode and xypadpos.leftClick == true then
+            vbw.mode_select.bitmap = ""
+            vbw.mode_select.text = "↔"
+        else
+            vbw.mode_select.bitmap = "Icons/AutomationList_Empty.bmp"
+            vbw.mode_select.text = ""
+        end
         vbw.mode_audiopreview.color = colorDefault
     end
 
