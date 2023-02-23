@@ -1724,6 +1724,12 @@ local function refreshNoteControls()
         vbw.mute.color = colorDefault
     end
     vbw.chorddetection.visible = preferences.chordDetection.value
+    --on current track, mirror mode = chord ghost track
+    if currentGhostTrack == song.selected_track_index then
+        vbw.ghosttrackmirror.bitmap = "Icons/Browser_RenoiseSongFile.bmp"
+    else
+        vbw.ghosttrackmirror.bitmap = "Icons/Clone.bmp"
+    end
     if preferences.mirroringGhostTrack.value then
         vbw.ghosttrackmirror.color = colorStepOn
     else
@@ -3916,53 +3922,88 @@ end
 
 --render ghost track by simply change the color of piano grid buttons
 local function ghostTrack(trackIndex)
-    local track = song:track(trackIndex)
-    local columns = track.visible_note_columns
-    local steps = song.selected_pattern.number_of_lines
-    local stepsCount = math.min(steps, gridWidth)
-    local lineValues = song.selected_pattern:track(trackIndex).lines
-    local mirrorMode = preferences.mirroringGhostTrack.value
     local note, note_column, rowoffset
-    for c = 1, columns do
-        rowoffset = nil
 
-        if stepOffset > 0 then
-            for i = stepOffset + 1, 1, -1 do
-                note_column = lineValues[i]:note_column(c)
-                note = note_column.note_value
-                if note < 120 then
-                    rowoffset = noteValue2GridRowOffset(note, mirrorMode)
-                    break
-                elseif note == 120 then
-                    break
+    --special chord ghost track, based on bass notes
+    if trackIndex == nil then
+        for i = 1, gridWidth do
+            if noteOnStep[i] then
+                note = nil
+                for j = 1, #noteOnStep[i] do
+                    if not note then
+                        note = noteOnStep[i][j]['note']
+                    elseif note > noteOnStep[i][j]['note'] then
+                        note = noteOnStep[i][j]['note']
+                    end
+                end
+                --check if note is in key
+                for oct = 0, 12, 12 do
+                    for off = -2, 7 do
+                        if (oct > 0 or oct == 0 and off >= 0) and noteInScale(note + oct + off) then
+                            rowoffset = noteValue2GridRowOffset(note + oct + off)
+                            if rowoffset then
+                                local idx = "p" .. i .. "_"
+                                local p
+                                p = vbw[idx .. rowoffset]
+                                if p then
+                                    p.color = colorGhostTrackNote
+                                    defaultColor[idx] = p.color
+                                end
+                            end
+                        end
+                    end
                 end
             end
         end
+    else
+        local track = song:track(trackIndex)
+        local columns = track.visible_note_columns
+        local steps = song.selected_pattern.number_of_lines
+        local stepsCount = math.min(steps, gridWidth)
+        local lineValues = song.selected_pattern:track(trackIndex).lines
+        local mirrorMode = preferences.mirroringGhostTrack.value
 
-        for s = 1, stepsCount do
-            note_column = lineValues[s + stepOffset]:note_column(c)
-            note = note_column.note_value
+        for c = 1, columns do
+            rowoffset = nil
 
-            if note < 120 then
-                rowoffset = noteValue2GridRowOffset(note, mirrorMode)
-            elseif note == 120 then
-                rowoffset = nil
+            if stepOffset > 0 then
+                for i = stepOffset + 1, 1, -1 do
+                    note_column = lineValues[i]:note_column(c)
+                    note = note_column.note_value
+                    if note < 120 then
+                        rowoffset = noteValue2GridRowOffset(note, mirrorMode)
+                        break
+                    elseif note == 120 then
+                        break
+                    end
+                end
             end
 
-            if rowoffset then
-                local idx = "p" .. s .. "_"
-                local p
-                p = vbw[idx .. rowoffset]
-                if p then
-                    p.color = colorGhostTrackNote
-                    defaultColor[idx] = p.color
+            for s = 1, stepsCount do
+                note_column = lineValues[s + stepOffset]:note_column(c)
+                note = note_column.note_value
+
+                if note < 120 then
+                    rowoffset = noteValue2GridRowOffset(note, mirrorMode)
+                elseif note == 120 then
+                    rowoffset = nil
                 end
-                if mirrorMode then
-                    for i = -108, 108, 12 do
-                        p = vbw[idx .. (rowoffset + i)]
-                        if p then
-                            p.color = colorGhostTrackNote
-                            defaultColor[idx] = p.color
+
+                if rowoffset then
+                    local idx = "p" .. s .. "_"
+                    local p
+                    p = vbw[idx .. rowoffset]
+                    if p then
+                        p.color = colorGhostTrackNote
+                        defaultColor[idx] = p.color
+                    end
+                    if mirrorMode then
+                        for i = -108, 108, 12 do
+                            p = vbw[idx .. (rowoffset + i)]
+                            if p then
+                                p.color = colorGhostTrackNote
+                                defaultColor[idx] = p.color
+                            end
                         end
                     end
                 end
@@ -4943,6 +4984,9 @@ local function fillPianoRoll(quickRefresh)
             vbw.ghosttracks.value = currentGhostTrack
             showStatus("Current selected track cant be a ghost track.")
         end
+    elseif currentGhostTrack == l_song.selected_track_index and preferences.mirroringGhostTrack.value then
+        --chord ghost track
+        ghostTrack()
     end
 
     --refresh playback pos indicator
@@ -9625,7 +9669,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         id = "ghosttrackmirror",
                         bitmap = "Icons/Clone.bmp",
                         width = 24,
-                        tooltip = "Mirror notes of the current ghost track",
+                        tooltip = "Mirror notes of the current ghost track or enable chord ghost track",
                         notifier = function()
                             preferences.mirroringGhostTrack.value = not preferences.mirroringGhostTrack.value
                             refreshPianoRollNeeded = true
