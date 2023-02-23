@@ -3937,17 +3937,28 @@ local function ghostTrack(trackIndex)
                     end
                 end
                 --check if note is in key
-                for oct = 0, 12, 12 do
-                    for off = -2, 7 do
-                        if (oct > 0 or oct == 0 and off >= 0) and noteInScale(note + oct + off) then
-                            rowoffset = noteValue2GridRowOffset(note + oct + off)
-                            if rowoffset then
-                                local idx = "p" .. i .. "_"
-                                local p
-                                p = vbw[idx .. rowoffset]
-                                if p then
-                                    p.color = colorGhostTrackNote
-                                    defaultColor[idx] = p.color
+                if noteInScale(note) then
+                    for oct = 0, 12, 12 do
+                        for off = -2, 11 do
+                            if (oct > 0 or oct == 0 and off >= 0) and noteInScale(note + oct + off) and off ~= 1 then
+                                rowoffset = noteValue2GridRowOffset(note + oct + off)
+                                if rowoffset then
+                                    local idx = "p" .. i .. "_"
+                                    local p
+                                    p = vbw[idx .. rowoffset]
+                                    if p then
+                                        if (off == 3 or off == 7)
+                                                or (not noteInScale(note + oct + off - 1) and off == 4)
+                                                or (not noteInScale(note + oct + off + 1) and off == 6)
+                                        then
+                                            p.color = alphablendColors(colorNoteHighlight, p.color, 0.8)
+                                        elseif off == 0 then
+                                            p.color = alphablendColors(colorNoteHighlight2, p.color, 0.7)
+                                        elseif (not noteInScale(note + oct + off - 1) and off == 2) or off == 5 or off == 11 or off == 10 then
+                                            p.color = colorGhostTrackNote
+                                        end
+                                        defaultColor[idx] = p.color
+                                    end
                                 end
                             end
                         end
