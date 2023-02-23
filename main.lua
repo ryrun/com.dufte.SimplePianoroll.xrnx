@@ -110,6 +110,8 @@ local chordsTable = {
     --chords with some missing notes
     ["0,7,11"] = "Maj7",
     ["0,4,11"] = "Maj7",
+    ["0,2,11"] = "Maj9",
+    ["0,2,5"] = "9sus4",
     ["0,3,5,7"] = "min11",
     ["0,4,5,7"] = "Maj11",
 }
@@ -3954,7 +3956,7 @@ local function ghostTrack(trackIndex)
                                             p.color = alphablendColors(colorNoteHighlight, p.color, 0.8)
                                         elseif off == 0 then
                                             p.color = alphablendColors(colorNoteHighlight2, p.color, 0.7)
-                                        elseif (not noteInScale(note + oct + off - 1) and off == 2) or off == 5 or off == 11 or off == 10 then
+                                        elseif (not noteInScale(note + oct + off - 1) and off == 2) or off == 5 or off >=8 then
                                             p.color = colorGhostTrackNote
                                         end
                                         defaultColor[idx] = p.color
