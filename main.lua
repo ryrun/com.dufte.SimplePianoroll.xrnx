@@ -175,6 +175,7 @@ local defaultPreferences = {
     setComputerKeyboardVelocity = false,
     moveNoteInPenMode = false,
     mirroringGhostTrack = false,
+    chordGhostTrack = false,
     noteColorShiftDegree = 45,
     midiDevice = "",
     midiIn = false,
@@ -259,6 +260,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     setComputerKeyboardVelocity = defaultPreferences.setComputerKeyboardVelocity,
     moveNoteInPenMode = defaultPreferences.moveNoteInPenMode,
     mirroringGhostTrack = defaultPreferences.mirroringGhostTrack,
+    chordGhostTrack = defaultPreferences.chordGhostTrack,
     noteColorShiftDegree = defaultPreferences.noteColorShiftDegree,
     midiDevice = defaultPreferences.midiDevice,
     midiIn = defaultPreferences.midiIn,
@@ -1729,13 +1731,18 @@ local function refreshNoteControls()
     --on current track, mirror mode = chord ghost track
     if currentGhostTrack == song.selected_track_index then
         vbw.ghosttrackmirror.bitmap = "Icons/Browser_RenoiseSongFile.bmp"
+        if preferences.chordGhostTrack.value then
+            vbw.ghosttrackmirror.color = colorStepOn
+        else
+            vbw.ghosttrackmirror.color = colorDefault
+        end
     else
         vbw.ghosttrackmirror.bitmap = "Icons/Clone.bmp"
-    end
-    if preferences.mirroringGhostTrack.value then
-        vbw.ghosttrackmirror.color = colorStepOn
-    else
-        vbw.ghosttrackmirror.color = colorDefault
+        if preferences.mirroringGhostTrack.value then
+            vbw.ghosttrackmirror.color = colorStepOn
+        else
+            vbw.ghosttrackmirror.color = colorDefault
+        end
     end
     refreshControls = false
 end
@@ -3924,7 +3931,7 @@ end
 
 --render ghost track by simply change the color of piano grid buttons
 local function ghostTrack(trackIndex)
-    local note, note_column, rowoffset
+    local note, note_column, rowoffset, p, idx
 
     --special chord ghost track, based on bass notes
     if trackIndex == nil then
@@ -3945,18 +3952,17 @@ local function ghostTrack(trackIndex)
                             if (oct > 0 or oct == 0 and off >= 0) and noteInScale(note + oct + off) and off ~= 1 then
                                 rowoffset = noteValue2GridRowOffset(note + oct + off)
                                 if rowoffset then
-                                    local idx = "p" .. i .. "_"
-                                    local p
+                                    idx = "p" .. i .. "_"
                                     p = vbw[idx .. rowoffset]
                                     if p then
                                         if (off == 3 or off == 7)
-                                                or (not noteInScale(note + oct + off - 1) and off == 4)
-                                                or (not noteInScale(note + oct + off + 1) and off == 6)
+                                                or (off == 4 and not noteInScale(note + oct + off - 1))
+                                                or (off == 6 and not noteInScale(note + oct + off + 1))
                                         then
                                             p.color = alphablendColors(colorNoteHighlight, p.color, 0.8)
                                         elseif off == 0 then
                                             p.color = alphablendColors(colorNoteHighlight2, p.color, 0.7)
-                                        elseif (not noteInScale(note + oct + off - 1) and off == 2) or off == 5 or off >=8 then
+                                        elseif off == 5 or off >=8 or (off == 2 and not noteInScale(note + oct + off - 1)) then
                                             p.color = colorGhostTrackNote
                                         end
                                         defaultColor[idx] = p.color
@@ -4003,8 +4009,7 @@ local function ghostTrack(trackIndex)
                 end
 
                 if rowoffset then
-                    local idx = "p" .. s .. "_"
-                    local p
+                    idx = "p" .. s .. "_"
                     p = vbw[idx .. rowoffset]
                     if p then
                         p.color = colorGhostTrackNote
@@ -4997,7 +5002,7 @@ local function fillPianoRoll(quickRefresh)
             vbw.ghosttracks.value = currentGhostTrack
             showStatus("Current selected track cant be a ghost track.")
         end
-    elseif currentGhostTrack == l_song.selected_track_index and preferences.mirroringGhostTrack.value then
+    elseif currentGhostTrack == l_song.selected_track_index and preferences.chordGhostTrack.value then
         --chord ghost track
         ghostTrack()
     end
@@ -9684,7 +9689,11 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         width = 24,
                         tooltip = "Mirror notes of the current ghost track or enable chord ghost track",
                         notifier = function()
-                            preferences.mirroringGhostTrack.value = not preferences.mirroringGhostTrack.value
+                            if currentGhostTrack == song.selected_track_index then
+                                preferences.chordGhostTrack.value = not preferences.chordGhostTrack.value
+                            else
+                                preferences.mirroringGhostTrack.value = not preferences.mirroringGhostTrack.value
+                            end
                             refreshPianoRollNeeded = true
                             refreshControls = true
                         end
