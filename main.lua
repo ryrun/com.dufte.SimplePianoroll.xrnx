@@ -175,7 +175,6 @@ local defaultPreferences = {
     setComputerKeyboardVelocity = false,
     moveNoteInPenMode = false,
     mirroringGhostTrack = false,
-    chordGhostTrack = false,
     noteColorShiftDegree = 45,
     midiDevice = "",
     midiIn = false,
@@ -260,7 +259,6 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     setComputerKeyboardVelocity = defaultPreferences.setComputerKeyboardVelocity,
     moveNoteInPenMode = defaultPreferences.moveNoteInPenMode,
     mirroringGhostTrack = defaultPreferences.mirroringGhostTrack,
-    chordGhostTrack = defaultPreferences.chordGhostTrack,
     noteColorShiftDegree = defaultPreferences.noteColorShiftDegree,
     midiDevice = defaultPreferences.midiDevice,
     midiIn = defaultPreferences.midiIn,
@@ -502,12 +500,13 @@ local xypadpos = {
     loopslider = nil
 }
 
---some values to remember for additional
+--some values to remember for additional tools, prevent upval limit error
 local lastValTools = {
     lastRefValue = 0.04,
     lastBPM = 120,
     lastMode = nil,
-    lastGlobalPitch = nil
+    lastGlobalPitch = nil,
+    chordGhostTrack = false
 }
 
 --pen mode
@@ -1731,7 +1730,7 @@ local function refreshNoteControls()
     --on current track, mirror mode = chord ghost track
     if currentGhostTrack == song.selected_track_index then
         vbw.ghosttrackmirror.bitmap = "Icons/Browser_RenoiseSongFile.bmp"
-        if preferences.chordGhostTrack.value then
+        if lastValTools.chordGhostTrack then
             vbw.ghosttrackmirror.color = colorStepOn
         else
             vbw.ghosttrackmirror.color = colorDefault
@@ -5002,7 +5001,7 @@ local function fillPianoRoll(quickRefresh)
             vbw.ghosttracks.value = currentGhostTrack
             showStatus("Current selected track cant be a ghost track.")
         end
-    elseif currentGhostTrack == l_song.selected_track_index and preferences.chordGhostTrack.value then
+    elseif currentGhostTrack == l_song.selected_track_index and lastValTools.chordGhostTrack then
         --chord ghost track
         ghostTrack()
     end
@@ -5093,6 +5092,7 @@ local function appNewDoc()
     currentNoteVelocityPreview = 127
     currentNoteEndVelocity = 255
     currentEditPos = 0
+    lastValTools.chordGhostTrack = false
     --set new observers
     song.transport.lpb_observable:add_notifier(function()
         refreshPianoRollNeeded = true
@@ -9690,7 +9690,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         tooltip = "Mirror notes of the current ghost track or enable chord ghost track",
                         notifier = function()
                             if currentGhostTrack == song.selected_track_index then
-                                preferences.chordGhostTrack.value = not preferences.chordGhostTrack.value
+                                lastValTools.chordGhostTrack = not lastValTools.chordGhostTrack
                             else
                                 preferences.mirroringGhostTrack.value = not preferences.mirroringGhostTrack.value
                             end
