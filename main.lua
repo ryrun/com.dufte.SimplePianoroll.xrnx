@@ -3238,6 +3238,7 @@ function pianoGridClick(x, y, released)
         if checkMode("preview") and not preferences.mouseWarpingCompatibilityMode.value then
             xypadpos.previewmode = true
             xypadpos.leftClick = true
+            refreshChordDetection = true
         elseif checkMode("pen") then
             xypadpos.scalemode = true
             xypadpos.resetscale = true
@@ -4361,7 +4362,7 @@ local function refreshDetectedChord()
         table.insert(rawnotes, key)
     end
     --no notes found? current selected notes?
-    if #rawnotes == 0 and #noteSelection > 0 and not song.transport.playing then
+    if #rawnotes == 0 and #noteSelection > 0 and not song.transport.playing and not (xypadpos.previewmode and xypadpos.leftClick) then
         for i = 1, #noteSelection do
             table.insert(rawnotes, noteSelection[i].note)
         end
@@ -7063,6 +7064,7 @@ local function handleXypad(val)
             --stop removemode
             xypadpos.removemode = false
             refreshControls = true
+            refreshChordDetection = true
             --stop old notes
             if xypadpos.previewmode then
                 for key in pairs(xypadpos.preview) do
