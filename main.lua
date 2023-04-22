@@ -3947,7 +3947,7 @@ local function ghostTrack(trackIndex)
                 end
                 --check if note is in key
                 if noteInScale(note) then
-                    for oct = 0, 12, 12 do
+                    for oct = 0, 24, 12 do
                         for off = -2, 11 do
                             if (oct > 0 or oct == 0 and off >= 0) and noteInScale(note + oct + off) and off ~= 1 then
                                 rowoffset = noteValue2GridRowOffset(note + oct + off)
@@ -10193,21 +10193,35 @@ tool:add_menu_entry {
         local patternTrack
         local lineValues
         local note_column
-        local idx = song.selected_instrument_index - 1
+        local instrumentsTable = {}
         local trackidx
-        for i = 1, #patterns do
-            tracks = patterns[i].tracks
-            for j = 1, #tracks do
-                patternTrack = patterns[i]:track(j)
-                maxColumns = song.tracks[j].visible_note_columns
-                for c = 1, maxColumns do
-                    lineValues = patternTrack.lines
-                    for line = 1, #lineValues do
-                        note_column = lineValues[line]:note_column(c)
-                        if note_column.instrument_value == idx then
-                            trackidx = j
-                            break
-                        elseif note_column.instrument_value ~= 255 then
+        --push current instrument into search table
+        table.insert(instrumentsTable, song.selected_instrument_index - 1)
+        --search for midi targets to the current instrument
+        for i=1, #song.instruments do
+            if song.instruments[i].plugin_properties and song.instruments[i].plugin_properties.midi_output_routing_index == song.selected_instrument_index then
+                table.insert(instrumentsTable, i - 1)
+            end
+        end
+        --search for track
+        for x = 1, #instrumentsTable do
+            for i = 1, #patterns do
+                tracks = patterns[i].tracks
+                for j = 1, #tracks do
+                    patternTrack = patterns[i]:track(j)
+                    maxColumns = song.tracks[j].visible_note_columns
+                    for c = 1, maxColumns do
+                        lineValues = patternTrack.lines
+                        for line = 1, #lineValues do
+                            note_column = lineValues[line]:note_column(c)
+                            if note_column.instrument_value == instrumentsTable[x] then
+                                trackidx = j
+                                break
+                            elseif note_column.instrument_value ~= 255 then
+                                break
+                            end
+                        end
+                        if trackidx ~= nil then
                             break
                         end
                     end
