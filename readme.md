@@ -150,7 +150,7 @@ Everyone who is familiar with a piano roll, can use it right away. It's heavily 
 which I've used in the past. Most common keyboard shortcuts of these like <kbd>ctrl+b</kbd>
 or <kbd>ctrl+d</kbd> for note duplication are working here, too.
 
-### Eraser sub mode:
+### Eraser sub mode
 
 When you hold the mouse button on note deletion and move, you can remove others notes, too. It will internally swap to the eraser mode, you can see in the toolbar, where the pen tool icon swaps to “X”.
 
