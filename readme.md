@@ -208,7 +208,7 @@ switch between the current and the ghost track.
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/ghosttrack.gif?raw=true" alt="Ghost track" width="600">
 
-#### Chord ghost track:
+#### Chord ghost track
 
 When no ghost track target is set, you can enable the ghost chord track. It’s using the lowest note as the first note of a chord and showing your notes above it as ghost to, so you create a chord very fast. I used it alot lately for chord melodies.
 
