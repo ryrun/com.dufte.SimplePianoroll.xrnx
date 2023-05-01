@@ -601,7 +601,8 @@ end
 
 --bring focus back to main dialog, when out of focus
 local function restoreFocus()
-    if windowObj and windowObj.visible then
+    --dont set focus on note control refresh
+    if windowObj and windowObj.visible and not refreshControls then
         windowObj:show()
     end
 end
@@ -6243,9 +6244,6 @@ local function handleKeyEvent(keyEvent)
     if preferences.disableKeyHandler.value then
         return false
     end
-
-    --renoise bug? using value boxes sometimes set wrong focus so key events will be fired doubled?
-    --restoreFocus()
 
     --convert number keys from azerty to qwerty
     if preferences.azertyMode.value then
