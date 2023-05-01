@@ -20,6 +20,7 @@
   * [Install and Update](#install-and-update)
   * [How to use it](#how-to-use-it)
     * [General](#general)
+    * [Eraser sub mode:](#eraser-sub-mode-)
     * [Open the piano roll](#open-the-piano-roll)
       * [Pattern editor](#pattern-editor)
       * [Matrix view](#matrix-view)
@@ -27,6 +28,7 @@
     * [Timeline bar](#timeline-bar)
     * [Scale highlighting](#scale-highlighting)
     * [Ghost track](#ghost-track)
+      * [Chord ghost track:](#chord-ghost-track-)
     * [Step sequencing with computer keyboard](#step-sequencing-with-computer-keyboard)
     * [Histogram](#histogram)
     * [Chord detection and scale degree detection](#chord-detection-and-scale-degree-detection)
@@ -148,6 +150,12 @@ Everyone who is familiar with a piano roll, can use it right away. It's heavily 
 which I've used in the past. Most common keyboard shortcuts of these like <kbd>ctrl+b</kbd>
 or <kbd>ctrl+d</kbd> for note duplication are working here, too.
 
+### Eraser sub mode:
+
+When you hold the mouse button on note deletion and move, you can remove others notes, too. It will internally swap to the eraser mode, you can see in the toolbar, where the pen tool icon swaps to “X”.
+
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/eraser_mode.gif?raw=true" width="400" alt="Eraser mode" />
+
 ### Open the piano roll
 
 There are several ways to open the piano roll. It's possible in the pattern view, matrix view, mixer view, instruments
@@ -199,6 +207,12 @@ octaves. So manually copy or transpose notes across octaves is not needed anymor
 switch between the current and the ghost track.
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/ghosttrack.gif?raw=true" alt="Ghost track" width="600">
+
+#### Chord ghost track:
+
+When no ghost track target is set, you can enable the ghost chord track. It’s using the lowest note as the first note of a chord and showing your notes above it as ghost to, so you create a chord very fast. I used it alot lately for chord melodies.
+
+<img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/chordtrack.png?raw=true" alt="Chord track">
 
 ### Step sequencing with computer keyboard
 
