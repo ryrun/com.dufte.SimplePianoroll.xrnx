@@ -602,7 +602,7 @@ end
 --bring focus back to main dialog, when out of focus
 local function restoreFocus()
     --dont set focus on note control refresh
-    if windowObj and windowObj.visible and not refreshControls then
+    if windowObj and windowObj.visible and (not dialogVars.histogramObj or not dialogVars.histogramObj.visible) then
         windowObj:show()
     end
 end
