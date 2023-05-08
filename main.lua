@@ -3963,7 +3963,7 @@ local function ghostTrack(trackIndex)
                                             p.color = alphablendColors(colorNoteHighlight, p.color, 0.8)
                                         elseif off == 0 then
                                             p.color = alphablendColors(colorNoteHighlight2, p.color, 0.7)
-                                        elseif off == 5 or off >=8 or (off == 2 and not noteInScale(note + oct + off - 1)) then
+                                        elseif off == 5 or off >= 8 or (off == 2 and not noteInScale(note + oct + off - 1)) then
                                             p.color = colorGhostTrackNote
                                         end
                                         defaultColor[idx] = p.color
@@ -7662,6 +7662,20 @@ end
 showPreferences = function()
     dialogVars.preferencesWasShown = true
     if dialogVars.preferencesContent == nil then
+        --crc2 of main.lua file
+        local crc = 0
+        local file = assert(io.open("main.lua", "r"))
+        if file then
+            while true do
+                local byte = file:read(1)
+                if byte == nil then
+                    break
+                else
+                    crc = crc + string.byte(byte)
+                end
+            end
+            file:close()
+        end
         --preinit colors, when piano roll wasn't opened before
         if not vbw then
             initColors()
@@ -8831,6 +8845,9 @@ showPreferences = function()
                         app:open_url("https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx/63034")
                         dialogVars.preferencesObj:close()
                     end
+                },
+                vbp:text {
+                    text = "CRC: " .. string.format("%x", crc)
                 },
             },
         }
@@ -10208,7 +10225,7 @@ tool:add_menu_entry {
         --push current instrument into search table
         table.insert(instrumentsTable, song.selected_instrument_index - 1)
         --search for midi targets to the current instrument
-        for i=1, #song.instruments do
+        for i = 1, #song.instruments do
             if song.instruments[i].plugin_properties and song.instruments[i].plugin_properties.midi_output_routing_index == song.selected_instrument_index then
                 table.insert(instrumentsTable, i - 1)
             end
