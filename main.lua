@@ -5131,6 +5131,18 @@ local function appNewDoc()
         if not song.selected_track.delay_column_visible_observable:has_notifier(obsColumnRefresh) then
             song.selected_track.delay_column_visible_observable:add_notifier(obsColumnRefresh)
         end
+        if not song.selected_track.name_observable:has_notifier(obsColumnRefresh) then
+            song.selected_track.name_observable:add_notifier(obsColumnRefresh)
+        end
+        if not song.selected_track.color_observable:has_notifier(obsColumnRefresh) then
+            song.selected_track.color_observable:add_notifier(obsColumnRefresh)
+        end
+        if not song.selected_track.mute_state_observable:has_notifier(obsColumnRefresh) then
+            song.selected_track.mute_state_observable:add_notifier(obsColumnRefresh)
+        end
+        if not song.selected_track.solo_state_observable:has_notifier(obsColumnRefresh) then
+            song.selected_track.solo_state_observable:add_notifier(obsColumnRefresh)
+        end
         pasteCursor = {}
         currentInstrument = nil
         patternInstrument = nil
