@@ -9764,7 +9764,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                     height = gridStepSizeH,
                                     width = pianoKeyWidth / 2 + 2,
                                     notifier = function()
-                                        if song.selected_track.mute_state == 3 then
+                                        if song.selected_track.mute_state == 3 or song.selected_track.mute_state == 2 then
                                             song.selected_track:unmute()
                                         else
                                             song.selected_track:mute()
