@@ -1722,7 +1722,7 @@ local function refreshNoteControls()
     else
         vbw.solo.color = colorDefault
     end
-    if track.mute_state == 3 then
+    if track.mute_state == 3 or track.mute_state == 2 then
         vbw.mute.color = colorStepOn
     else
         vbw.mute.color = colorDefault
