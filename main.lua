@@ -3955,7 +3955,7 @@ local function ghostTrack(trackIndex)
                 end
                 --check if note is in key
                 if noteInScale(note) then
-                    for oct = 0, 24, 12 do
+                    for oct = 0, 36, 12 do
                         for off = -2, 11 do
                             if (oct > 0 or oct == 0 and off >= 0) and noteInScale(note + oct + off) and off ~= 1 then
                                 rowoffset = noteValue2GridRowOffset(note + oct + off)
