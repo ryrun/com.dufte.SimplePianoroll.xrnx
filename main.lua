@@ -182,6 +182,7 @@ local defaultPreferences = {
     useChordStampingForNotePreview = true,
     useTrackColorFor = 1,
     enableAdditonalSampleToolsContextMenu = false,
+    resetNoteSizeOnNoteDraw = true,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -247,6 +248,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     useTrackColorFor = defaultPreferences.useTrackColorFor,
     autoEnableDelayWhenNeeded = defaultPreferences.autoEnableDelayWhenNeeded,
     snapToGridSize = defaultPreferences.snapToGridSize,
+    resetNoteSizeOnNoteDraw = defaultPreferences.resetNoteSizeOnNoteDraw,
     setVelPanDlyLenFromLastNote = defaultPreferences.setVelPanDlyLenFromLastNote,
     keyLabels = defaultPreferences.keyLabels,
     centerViewOnOpen = defaultPreferences.centerViewOnOpen,
@@ -3242,7 +3244,12 @@ function pianoGridClick(x, y, released)
             refreshChordDetection = true
         elseif checkMode("pen") then
             xypadpos.scalemode = true
-            xypadpos.resetscale = true
+            if preferences.resetNoteSizeOnNoteDraw.value then
+                xypadpos.resetscale = true
+            else
+                xypadpos.resetscale = false
+                xypadpos.nx = xypadpos.nx - currentNoteLength
+            end
             xypadpos.notemode = true
             xypadpos.previewmode = false
         else
@@ -8499,6 +8506,14 @@ showPreferences = function()
                         },
                         vbp:row {
                             vbp:checkbox {
+                                bind = preferences.resetNoteSizeOnNoteDraw,
+                            },
+                            vbp:text {
+                                text = "Reset note size when note drawing",
+                            },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
                                 bind = preferences.disableNoteEraserMode,
                             },
                             vbp:text {
@@ -10417,6 +10432,7 @@ local function switchVSTFxReference(type)
                     if device.name == "VST: Xfer Records: LFOTool_x64"
                             or device.name == "VST: Cableguys: ShaperBox 3"
                             or device.name == "VST: schulz.audio: Oszillos Mega Scope"
+                            or device.name == "VST: Excite Audio: VISION 4X"
                     then
                         device.external_editor_visible = not device.external_editor_visible
                         return
