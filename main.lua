@@ -442,7 +442,7 @@ local lastClickCache = {}
 local lastClickIndex
 local pasteCursor = {}
 local currentInstrument
-local currentNoteLength = 2
+local currentNoteLength = 1
 local currentNoteVelocity = 255
 local currentNotePan = 255
 local currentNoteDelay = 0
