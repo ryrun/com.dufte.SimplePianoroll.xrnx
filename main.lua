@@ -3123,12 +3123,11 @@ function noteClick(x, y, c, released, forceScaling)
         xypadpos.ny = y
         xypadpos.nlen = note_data.len
         xypadpos.previewmode = false
+        xypadpos.scaling = false
         if forceScaling then
             xypadpos.scalemode = true
-            xypadpos.scaling = true
         else
             xypadpos.scalemode = false
-            xypadpos.scaling = false
         end
         xypadpos.resetscale = false
         xypadpos.notemode = true
@@ -7217,6 +7216,12 @@ local function handleXypad(val)
                     if changeSizeSelectedNotesByMicroSteps(v) then
                         xypadpos.scaling = true
                         xypadpos.resetscale = false
+                    end
+                elseif not xypadpos.scaling then
+                    if math.floor(xypadpos.y) - math.floor(val.y + 0.5) > 0 then
+                        xypadpos.scalemode = false
+                    elseif math.floor(xypadpos.y) - math.floor(val.y - 0.5) < 0 then
+                        xypadpos.scalemode = false
                     end
                 end
             end
