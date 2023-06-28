@@ -10194,7 +10194,7 @@ local function main_function()
                                 "Mouse warping - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
                                 "Attention! You currently have mouse warping active in the Renoise settings.\n" ..
                                         "This causes the mouse cursor to jump into a corner when moving notes in the piano\n" ..
-                                        "roll or simply clicking. You can either use the mouse warping compatibility mode\n" ..
+                                        "roll or by simply clicking. You can either use the mouse warping compatibility mode\n" ..
                                         "or disable mouse warping in the Renoise settings under GUI / Global.",
                                 { 'Enable Mouse warping compatibility mode', 'Ignore' }
                         )
