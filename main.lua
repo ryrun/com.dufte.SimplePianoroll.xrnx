@@ -1347,6 +1347,10 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly, end_dly)
     end
     for c = 1, maxColumns do
         validSpace = true
+        --check if column is muted
+        if song.selected_track:column_is_muted(c) then
+            validSpace = false
+        end
         --check for note on before
         if line > 1 then
             for i = line, 1, -1 do
@@ -1719,6 +1723,19 @@ local function refreshNoteControls()
     else
         vbw.trackcolor.text = track.name
     end
+    --set hint, when column is muted
+    for c = 1, song.selected_track.visible_note_columns do
+        if song.selected_track:column_is_muted(c) then
+            vbw.trackcolor.tooltip = vbw.trackcolor.tooltip .. "\nSome note columns are muted."
+            if string.len(track.name) > 9 then
+                vbw.trackcolor.text = "*" .. string.sub(track.name, 1, 7) .. "…"
+            else
+                vbw.trackcolor.text = "*" .. track.name
+            end
+            break
+        end
+    end
+    --
     if track.solo_state then
         vbw.solo.color = colorStepOn
     else
@@ -3990,44 +4007,46 @@ local function ghostTrack(trackIndex)
         local mirrorMode = preferences.mirroringGhostTrack.value
 
         for c = 1, columns do
-            rowoffset = nil
+            if not track:column_is_muted(c) then
+                rowoffset = nil
 
-            if stepOffset > 0 then
-                for i = stepOffset + 1, 1, -1 do
-                    note_column = lineValues[i]:note_column(c)
+                if stepOffset > 0 then
+                    for i = stepOffset + 1, 1, -1 do
+                        note_column = lineValues[i]:note_column(c)
+                        note = note_column.note_value
+                        if note < 120 then
+                            rowoffset = noteValue2GridRowOffset(note, mirrorMode)
+                            break
+                        elseif note == 120 then
+                            break
+                        end
+                    end
+                end
+
+                for s = 1, stepsCount do
+                    note_column = lineValues[s + stepOffset]:note_column(c)
                     note = note_column.note_value
+
                     if note < 120 then
                         rowoffset = noteValue2GridRowOffset(note, mirrorMode)
-                        break
                     elseif note == 120 then
-                        break
+                        rowoffset = nil
                     end
-                end
-            end
 
-            for s = 1, stepsCount do
-                note_column = lineValues[s + stepOffset]:note_column(c)
-                note = note_column.note_value
-
-                if note < 120 then
-                    rowoffset = noteValue2GridRowOffset(note, mirrorMode)
-                elseif note == 120 then
-                    rowoffset = nil
-                end
-
-                if rowoffset then
-                    idx = "p" .. s .. "_"
-                    p = vbw[idx .. rowoffset]
-                    if p then
-                        p.color = colorGhostTrackNote
-                        defaultColor[idx] = p.color
-                    end
-                    if mirrorMode then
-                        for i = -108, 108, 12 do
-                            p = vbw[idx .. (rowoffset + i)]
-                            if p then
-                                p.color = colorGhostTrackNote
-                                defaultColor[idx] = p.color
+                    if rowoffset then
+                        idx = "p" .. s .. "_"
+                        p = vbw[idx .. rowoffset]
+                        if p then
+                            p.color = colorGhostTrackNote
+                            defaultColor[idx] = p.color
+                        end
+                        if mirrorMode then
+                            for i = -108, 108, 12 do
+                                p = vbw[idx .. (rowoffset + i)]
+                                if p then
+                                    p.color = colorGhostTrackNote
+                                    defaultColor[idx] = p.color
+                                end
                             end
                         end
                     end
@@ -4592,7 +4611,7 @@ local function afterEditProcess()
         lineValues = patternTrack.lines
         for c = 1, maxColumns do
             note_column = lineValues[1]:note_column(c)
-            if note_column.note_value == 121 then
+            if not song.selected_track:column_is_muted(c) and note_column.note_value == 121 then
                 note_column.note_value = 120
             end
         end
@@ -4617,6 +4636,7 @@ local function fillPianoRoll(quickRefresh)
     local newNotes_length = 0
     local usedInstruments = {}
     local noteIndexCache = {}
+    local firstInit = false
 
     --set auto ghost track
     if preferences.setLastEditedTrackAsGhost.value and lastTrackIndex and lastTrackIndex ~= l_song.selected_track_index and lastTrackIndex <= song.sequencer_track_count then
@@ -4686,155 +4706,200 @@ local function fillPianoRoll(quickRefresh)
         local current_note_line
         local current_note_rowIndex
 
-        --loop through lines as steps
-        for line = 1, steps do
-            local s = line - stepOffset
-            local stepString
-            if line > stepOffset and line - stepOffset <= gridWidth then
-                stepString = tostring(s)
-            end
+        --skip muted columns
+        if not song.selected_track:column_is_muted(c) then
 
-            --only reset buttons on first column
-            if not quickRefresh and c == 1 and stepString then
-                local bar = calculateBarBeat(s + stepOffset, false, lpb)
-                local beat = calculateBarBeat(s + stepOffset, true, lpb)
-                local bb = (bar - 1) * 4 + (beat - 1)
+            --loop through lines as steps
+            for line = 1, steps do
+                local s = line - stepOffset
+                local stepString
+                if line > stepOffset and line - stepOffset <= gridWidth then
+                    stepString = tostring(s)
+                end
 
-                for y = 1, gridHeight do
-                    local ystring = tostring(y)
-                    local index = stepString .. "_" .. ystring
-                    local p = l_vbw["p" .. index]
-                    local ps = l_vbw["ps" .. index]
-                    local color = colorWhiteKey[bb % 8 + 1]
-                    local yPLusOffMod12 = (y + noffset) % 12
-                    p.active = true
+                --only reset buttons on first column
+                if not quickRefresh and not firstInit and stepString then
+                    local bar = calculateBarBeat(s + stepOffset, false, lpb)
+                    local beat = calculateBarBeat(s + stepOffset, true, lpb)
+                    local bb = (bar - 1) * 4 + (beat - 1)
 
-                    if s < stepsCount and (
-                            (preferences.gridVLines.value == 2 and (s + stepOffset) % (lpb * 4) == 0) or
-                                    (preferences.gridVLines.value == 3 and (s + stepOffset) % lpb == 0))
-                    then
-                        p.width = gridStepSizeW - 2
-                        ps.width = 2
-                    else
-                        p.width = gridStepSizeW - 1
-                        ps.width = 1
-                    end
+                    for y = 1, gridHeight do
+                        local ystring = tostring(y)
+                        local index = stepString .. "_" .. ystring
+                        local p = l_vbw["p" .. index]
+                        local ps = l_vbw["ps" .. index]
+                        local color = colorWhiteKey[bb % 8 + 1]
+                        local yPLusOffMod12 = (y + noffset) % 12
+                        p.active = true
 
-                    if
-                    currentScaleOffset and (
-                            (preferences.gridHLines.value == 2 and (y + noteOffset) % 12 == 1) or
-                                    (preferences.gridHLines.value == 3 and (y + noteOffset - currentScaleOffset) % 12 == 0))
-                    then
-                        p.height = gridStepSizeH - 1
-                    else
-                        p.height = gridStepSizeH
-                    end
-
-                    if noteIndexCache[yPLusOffMod12] == nil then
-                        noteIndexCache[yPLusOffMod12] = noteInScale(yPLusOffMod12)
-                    end
-                    blackKey = not noteIndexCache[yPLusOffMod12]
-                    --color black notes
-                    if blackKey then
-                        color = colorBlackKey[bb % 8 + 1]
-                    end
-                    if s <= stepsCount then
-                        defaultColor["p" .. index] = color
-                        p.color = color
-                        --refresh step indicator
-                        if y == 1 then
-                            l_vbw["s" .. stepString].active = true
-                            if s == song.transport.edit_pos.line - stepOffset then
-                                l_vbw["se" .. stepString].visible = true
-                            else
-                                l_vbw["se" .. stepString].visible = false
-                            end
-                            l_vbw["s" .. stepString].color = colorStepOff
+                        if s < stepsCount and (
+                                (preferences.gridVLines.value == 2 and (s + stepOffset) % (lpb * 4) == 0) or
+                                        (preferences.gridVLines.value == 3 and (s + stepOffset) % lpb == 0))
+                        then
+                            p.width = gridStepSizeW - 2
+                            ps.width = 2
+                        else
+                            p.width = gridStepSizeW - 1
+                            ps.width = 1
                         end
-                        --refresh keyboard
-                        if s == 1 then
-                            local idx = "k" .. ystring
-                            local key = l_vbw[idx]
-                            local isRootKey = false
-                            local outOfPentatnicScale = false
-                            local nIdx
-                            if preferences.scaleHighlightingType.value ~= 5 then
-                                nIdx = noteIndexInScale(yPLusOffMod12)
-                                if nIdx == 5 or nIdx == 11 then
-                                    outOfPentatnicScale = true
+
+                        if
+                        currentScaleOffset and (
+                                (preferences.gridHLines.value == 2 and (y + noteOffset) % 12 == 1) or
+                                        (preferences.gridHLines.value == 3 and (y + noteOffset - currentScaleOffset) % 12 == 0))
+                        then
+                            p.height = gridStepSizeH - 1
+                        else
+                            p.height = gridStepSizeH
+                        end
+
+                        if noteIndexCache[yPLusOffMod12] == nil then
+                            noteIndexCache[yPLusOffMod12] = noteInScale(yPLusOffMod12)
+                        end
+                        blackKey = not noteIndexCache[yPLusOffMod12]
+                        --color black notes
+                        if blackKey then
+                            color = colorBlackKey[bb % 8 + 1]
+                        end
+                        if s <= stepsCount then
+                            defaultColor["p" .. index] = color
+                            p.color = color
+                            --refresh step indicator
+                            if y == 1 then
+                                l_vbw["s" .. stepString].active = true
+                                if s == song.transport.edit_pos.line - stepOffset then
+                                    l_vbw["se" .. stepString].visible = true
+                                else
+                                    l_vbw["se" .. stepString].visible = false
                                 end
-                                if currentScale == 2 then
-                                    if nIdx == 0 then
-                                        isRootKey = true
+                                l_vbw["s" .. stepString].color = colorStepOff
+                            end
+                            --refresh keyboard
+                            if s == 1 then
+                                local idx = "k" .. ystring
+                                local key = l_vbw[idx]
+                                local isRootKey = false
+                                local outOfPentatnicScale = false
+                                local nIdx
+                                if preferences.scaleHighlightingType.value ~= 5 then
+                                    nIdx = noteIndexInScale(yPLusOffMod12)
+                                    if nIdx == 5 or nIdx == 11 then
+                                        outOfPentatnicScale = true
                                     end
-                                elseif currentScale == 3 then
-                                    if nIdx == 9 then
-                                        isRootKey = true
+                                    if currentScale == 2 then
+                                        if nIdx == 0 then
+                                            isRootKey = true
+                                        end
+                                    elseif currentScale == 3 then
+                                        if nIdx == 9 then
+                                            isRootKey = true
+                                        end
                                     end
-                                end
-                            elseif preferences.scaleHighlightingType.value == 5 and currentScale == 2 and noteIndexInScale(yPLusOffMod12) == 0 then
-                                isRootKey = true
-                            end
-                            if preferences.keyboardStyle.value == 2 then
-                                defaultColor[idx] = colorList
-                            elseif noteInScale(yPLusOffMod12, true) then
-                                defaultColor[idx] = colorKeyWhite
-                            else
-                                defaultColor[idx] = colorKeyBlack
-                            end
-                            if isRootKey then
-                                defaultColor[idx] = shadeColor(defaultColor[idx], preferences.rootKeyShadingAmount.value)
-                            elseif outOfPentatnicScale then
-                                defaultColor[idx] = alphablendColors(defaultColor[idx], colorNoteHighlight2, preferences.outOfPentatonicScaleHighlightingAmount.value)
-                            end
-                            if notesPlaying[y + noffset] then
-                                key.color = colorStepOn
-                            else
-                                key.color = defaultColor[idx]
-                            end
-                            --set root label
-                            if preferences.keyLabels.value == 4 or
-                                    (preferences.keyLabels.value == 2 and (
-                                            ((currentScale == 1 or (preferences.scaleHighlightingType.value == 5 and currentScale == 1)) and noteIndexInScale(yPLusOffMod12, true) == 0) or
-                                                    isRootKey))
-                                    or
-                                    (preferences.keyLabels.value == 3 and
-                                            noteInScale(yPLusOffMod12))
-                            then
-                                local note = notesTable[yPLusOffMod12 + 1]
-                                if string.len(note) == 1 then
-                                    note = note .. "-"
+                                elseif preferences.scaleHighlightingType.value == 5 and currentScale == 2 and noteIndexInScale(yPLusOffMod12) == 0 then
+                                    isRootKey = true
                                 end
                                 if preferences.keyboardStyle.value == 2 then
-                                    key.text = note .. tostring(l_math_floor((y + noffset) / 12)) .. "         "
+                                    defaultColor[idx] = colorList
+                                elseif noteInScale(yPLusOffMod12, true) then
+                                    defaultColor[idx] = colorKeyWhite
                                 else
-                                    key.text = "         " .. note .. tostring(l_math_floor((y + noffset) / 12))
+                                    defaultColor[idx] = colorKeyBlack
                                 end
-                            else
-                                key.text = ""
+                                if isRootKey then
+                                    defaultColor[idx] = shadeColor(defaultColor[idx], preferences.rootKeyShadingAmount.value)
+                                elseif outOfPentatnicScale then
+                                    defaultColor[idx] = alphablendColors(defaultColor[idx], colorNoteHighlight2, preferences.outOfPentatonicScaleHighlightingAmount.value)
+                                end
+                                if notesPlaying[y + noffset] then
+                                    key.color = colorStepOn
+                                else
+                                    key.color = defaultColor[idx]
+                                end
+                                --set root label
+                                if preferences.keyLabels.value == 4 or
+                                        (preferences.keyLabels.value == 2 and (
+                                                ((currentScale == 1 or (preferences.scaleHighlightingType.value == 5 and currentScale == 1)) and noteIndexInScale(yPLusOffMod12, true) == 0) or
+                                                        isRootKey))
+                                        or
+                                        (preferences.keyLabels.value == 3 and
+                                                noteInScale(yPLusOffMod12))
+                                then
+                                    local note = notesTable[yPLusOffMod12 + 1]
+                                    if string.len(note) == 1 then
+                                        note = note .. "-"
+                                    end
+                                    if preferences.keyboardStyle.value == 2 then
+                                        key.text = note .. tostring(l_math_floor((y + noffset) / 12)) .. "         "
+                                    else
+                                        key.text = "         " .. note .. tostring(l_math_floor((y + noffset) / 12))
+                                    end
+                                else
+                                    key.text = ""
+                                end
+                                --reset key sub state button color
+                                l_vbw["ks" .. ystring].visible = false
+                                l_vbw["kss" .. ystring].visible = true
                             end
-                            --reset key sub state button color
-                            l_vbw["ks" .. ystring].visible = false
-                            l_vbw["kss" .. ystring].visible = true
                         end
                     end
                 end
-            end
-            --render notes
-            local note_column = lineValues[line]:note_column(c)
-            local note = note_column.note_value
-            local note_string = note_column.note_string
-            local volume_string = note_column.volume_string
-            local panning_string = note_column.panning_string
-            local delay_string = note_column.delay_string
-            local instrument = note_column.instrument_value
+                --render notes
+                local note_column = lineValues[line]:note_column(c)
+                local note = note_column.note_value
+                local note_string = note_column.note_string
+                local volume_string = note_column.volume_string
+                local panning_string = note_column.panning_string
+                local delay_string = note_column.delay_string
+                local instrument = note_column.instrument_value
 
-            if note < 120 then
-                if currentInstrument == nil and note_column.instrument_value < 255 then
-                    currentInstrument = note_column.instrument_value
-                    refreshControls = true
-                end
-                if current_note ~= nil then
+                if note < 120 then
+                    if currentInstrument == nil and note_column.instrument_value < 255 then
+                        currentInstrument = note_column.instrument_value
+                        refreshControls = true
+                    end
+                    if current_note ~= nil then
+                        if usedInstruments[current_note_ins] then
+                            usedInstruments[current_note_ins] = usedInstruments[current_note_ins] + 1
+                        else
+                            usedInstruments[current_note_ins] = 1
+                        end
+                        newNotes_length = newNotes_length + 1
+                        newNotes[newNotes_length] = { c,
+                                                      current_note_line,
+                                                      current_note_step,
+                                                      current_note_rowIndex,
+                                                      current_note,
+                                                      current_note_len,
+                                                      current_note_string,
+                                                      current_note_vel,
+                                                      current_note_end_vel,
+                                                      current_note_pan,
+                                                      current_note_dly,
+                                                      current_note_end_dly,
+                                                      current_note_ins,
+                                                      false --note off
+                        }
+                    end
+                    current_note = note
+                    current_note_string = note_string
+                    current_note_len = 0
+                    current_note_end_vel = nil
+                    current_note_step = s
+                    current_note_line = line
+                    current_note_ins = instrument
+                    current_note_vel = fromRenoiseHex(volume_string)
+                    current_note_pan = fromRenoiseHex(panning_string)
+                    current_note_dly = fromRenoiseHex(delay_string)
+                    current_note_end_dly = 0
+                    current_note_rowIndex = noteValue2GridRowOffset(current_note, true)
+                    --add current note to note index table for scale detection
+                    usedNoteIndices[line .. "_" .. c] = note % 12
+                elseif note == 120 and current_note ~= nil then
+                    --note off delay
+                    current_note_end_dly = fromRenoiseHex(delay_string)
+                    if not current_note_step and s then
+                        current_note_step = current_note_line - stepOffset
+                    end
                     if usedInstruments[current_note_ins] then
                         usedInstruments[current_note_ins] = usedInstruments[current_note_ins] + 1
                     else
@@ -4854,61 +4919,24 @@ local function fillPianoRoll(quickRefresh)
                                                   current_note_dly,
                                                   current_note_end_dly,
                                                   current_note_ins,
-                                                  false --note off
+                                                  true --note off
                     }
-                end
-                current_note = note
-                current_note_string = note_string
-                current_note_len = 0
-                current_note_end_vel = nil
-                current_note_step = s
-                current_note_line = line
-                current_note_ins = instrument
-                current_note_vel = fromRenoiseHex(volume_string)
-                current_note_pan = fromRenoiseHex(panning_string)
-                current_note_dly = fromRenoiseHex(delay_string)
-                current_note_end_dly = 0
-                current_note_rowIndex = noteValue2GridRowOffset(current_note, true)
-                --add current note to note index table for scale detection
-                usedNoteIndices[line .. "_" .. c] = note % 12
-            elseif note == 120 and current_note ~= nil then
-                --note off delay
-                current_note_end_dly = fromRenoiseHex(delay_string)
-                if not current_note_step and s then
-                    current_note_step = current_note_line - stepOffset
-                end
-                if usedInstruments[current_note_ins] then
-                    usedInstruments[current_note_ins] = usedInstruments[current_note_ins] + 1
+                    current_note = nil
+                    current_note_len = 0
+                    current_note_rowIndex = nil
+                    current_note_ins = 0
                 else
-                    usedInstruments[current_note_ins] = 1
+                    current_note_end_vel = fromRenoiseHex(volume_string)
                 end
-                newNotes_length = newNotes_length + 1
-                newNotes[newNotes_length] = { c,
-                                              current_note_line,
-                                              current_note_step,
-                                              current_note_rowIndex,
-                                              current_note,
-                                              current_note_len,
-                                              current_note_string,
-                                              current_note_vel,
-                                              current_note_end_vel,
-                                              current_note_pan,
-                                              current_note_dly,
-                                              current_note_end_dly,
-                                              current_note_ins,
-                                              true --note off
-                }
-                current_note = nil
-                current_note_len = 0
-                current_note_rowIndex = nil
-                current_note_ins = 0
-            else
-                current_note_end_vel = fromRenoiseHex(volume_string)
+
+                if current_note_rowIndex ~= nil then
+                    current_note_len = current_note_len + 1
+                end
             end
 
-            if current_note_rowIndex ~= nil then
-                current_note_len = current_note_len + 1
-            end
+            --first columns proccessed
+            firstInit = true
+
         end
         --pattern end, no note off, enable last note
         if current_note ~= nil then
@@ -5149,6 +5177,11 @@ local function appNewDoc()
         if not song.selected_track.solo_state_observable:has_notifier(obsColumnRefresh) then
             song.selected_track.solo_state_observable:add_notifier(obsColumnRefresh)
         end
+        for column = 1, song.selected_track.max_note_columns do
+            if not song.selected_track:column_is_muted_observable(column):has_notifier(obsColumnRefresh) then
+                song.selected_track:column_is_muted_observable(column):add_notifier(obsColumnRefresh)
+            end
+        end
         pasteCursor = {}
         currentInstrument = nil
         patternInstrument = nil
@@ -5161,6 +5194,11 @@ local function appNewDoc()
     song.selected_track.color_observable:add_notifier(obsColumnRefresh)
     song.selected_track.mute_state_observable:add_notifier(obsColumnRefresh)
     song.selected_track.solo_state_observable:add_notifier(obsColumnRefresh)
+    for column = 1, song.selected_track.max_note_columns do
+        if not song.selected_track:column_is_muted_observable(column):has_notifier(obsColumnRefresh) then
+            song.selected_track:column_is_muted_observable(column):add_notifier(obsColumnRefresh)
+        end
+    end
     --transport observable
     song.transport.playing_observable:add_notifier(obsColumnRefresh)
     --clear selection and refresh piano roll
