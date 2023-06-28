@@ -10183,6 +10183,29 @@ local function main_function()
         penMode = preferences.forcePenMode.value
         --create main dialog
         if not windowContent or rebuildWindowDialog then
+            --check if mouse warping is enabled
+            if not preferences.mouseWarpingCompatibilityMode.value then
+                local f = io.open("../../../Config.xml", "r")
+                if f then
+                    local configcontent = f:read("*all")
+                    f:close()
+                    if not string.match(configcontent, '\<WarpCursorOnDrag\>false\<\/WarpCursorOnDrag\>') then
+                        local res = app:show_prompt(
+                                "Mouse warping - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
+                                "Attention! You currently have mouse warping active in the Renoise settings.\n" ..
+                                        "This causes the mouse cursor to jump into a corner when moving notes in the piano\n" ..
+                                        "roll or simply clicking. You can either use the mouse warping compatibility mode\n" ..
+                                        "or disable mouse warping in the Renoise settings under GUI / Global.",
+                                { 'Enable Mouse warping compatibility mode', 'Ignore' }
+                        )
+                        if res == 'Enable Mouse warping compatibility mode' then
+                            preferences.mouseWarpingCompatibilityMode.value = true
+                            app:show_message("Mouse warping compatibility mode enabled.")
+                        end
+                    end
+                    configcontent = nil
+                end
+            end
             --init colors
             initColors()
             --setup grid settings
