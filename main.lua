@@ -4586,6 +4586,10 @@ local function afterEditProcess()
                 lineValues = patternTrack.lines
                 for line = 1, #patternTrack.lines do
                     note_column = lineValues[line]:note_column(c)
+                    if song.selected_track:column_is_muted(c) then
+                        empty = false
+                        break
+                    end
                     if not note_column.is_empty then
                         if not (line == 1 and note_column.note_value == 120) then
                             empty = false
