@@ -3924,7 +3924,7 @@ local function fillTimeline()
     else
         --calculate width and start pos for block loop line indicator
         local len = song.transport.loop_range[2].line - song.transport.loop_range[1].line
-        if song.transport.edit_pos.sequence == song.transport.loop_end.sequence - 1 and song.transport.loop_end.line == 1 then
+        if song.transport.edit_pos.sequence >= song.transport.loop_start.sequence and song.transport.edit_pos.sequence < song.transport.loop_end.sequence then
             len = song.selected_pattern.number_of_lines + 1 - song.transport.loop_range[1].line
         end
         local pos = song.transport.loop_range[1].line
@@ -7510,22 +7510,16 @@ local function appIdleEvent()
         refreshPlaybackPosIndicator()
         --edit pos render
         refreshEditPosIndicator()
+
         --check loop stats
         local currentloopingrange
         local transport = song.transport
-        if ((transport.edit_pos.sequence == transport.loop_start.sequence and transport.edit_pos.sequence == transport.loop_end.sequence - 1 and transport.loop_end.line == 1) or
-                (transport.edit_pos.sequence == transport.loop_start.sequence and transport.edit_pos.sequence == transport.loop_end.sequence) or
-                transport.loop_sequence_start > 0 or
-                song.transport.loop_pattern
-        ) and not (
-                transport.edit_pos.sequence == transport.loop_start.sequence and transport.edit_pos.sequence == transport.loop_end.sequence and
-                        transport.loop_start.line == 1 and transport.loop_end.line == song.selected_pattern.number_of_lines + 1 and
-                        transport.loop_sequence_start == 0 and not transport.loop_pattern
-        )
-        then
-            currentloopingrange = tostring(transport.loop_start) .. tostring(transport.loop_end) ..
-                    tostring(transport.loop_pattern) .. tostring(transport.loop_block_enabled) ..
-                    tostring(transport.loop_sequence_start)
+        local loopstart = (transport.loop_start.line / 1000) + transport.loop_start.sequence
+        local loopend = (transport.loop_end.line / 1000) + transport.loop_end.sequence
+        local songlength = (transport.song_length.line / 1000) + transport.song_length.sequence
+        local editpos = (transport.edit_pos.line / 1000) + transport.edit_pos.sequence
+        if editpos >= math.floor(loopstart) and editpos <= math.ceil(loopend) and not (loopstart == 1.001 and loopend - 0.001 == songlength) then
+            currentloopingrange = tostring(transport.loop_start) .. tostring(transport.loop_end) .. tostring(transport.edit_pos)
         end
         if loopingrange ~= currentloopingrange then
             loopingrange = currentloopingrange
