@@ -199,6 +199,7 @@ local defaultPreferences = {
     colorVelocity = "#D4BC24",
     colorPan = "#8ABB7A",
     colorDelay = "#47C2EC",
+    colorLoopSelection = "#F49695",
 }
 
 --tool preferences
@@ -285,6 +286,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     colorVelocity = defaultPreferences.colorVelocity,
     colorPan = defaultPreferences.colorPan,
     colorDelay = defaultPreferences.colorDelay,
+    colorLoopSelection = defaultPreferences.colorLoopSelection,
 }
 tool.preferences = preferences
 
@@ -341,6 +343,7 @@ local colorKeyBlack
 local colorVelocity
 local colorPan
 local colorDelay
+local colorLoopSelection
 
 --calculated colors
 local colorWhiteKey = {}
@@ -940,6 +943,7 @@ local function initColors()
     colorVelocity = convertStringToColorValue(preferences.colorVelocity.value, defaultPreferences.colorVelocity)
     colorPan = convertStringToColorValue(preferences.colorPan.value, defaultPreferences.colorPan)
     colorDelay = convertStringToColorValue(preferences.colorDelay.value, defaultPreferences.colorDelay)
+    colorLoopSelection = convertStringToColorValue(preferences.colorLoopSelection.value, defaultPreferences.colorLoopSelection)
     --prepare shading colors
     colorWhiteKey = {
         colorBaseGridColor,
@@ -3941,7 +3945,7 @@ local function fillTimeline()
         else
             vbw.blockloop.width = gridStepSizeW * len - (gridSpacing * (len - 1)) - 1
             vbw.blockloopspc.width = math.max(gridStepSizeW * (pos - 1) - (gridSpacing * (pos - 1)) + 4, 4)
-            vbw.blockloop.color = colorNoteSelected
+            vbw.blockloop.color = colorLoopSelection
             vbw.blockloop.visible = true
         end
     end
@@ -8422,6 +8426,26 @@ showPreferences = function()
                                 vbp:button {
                                     id = "colorDelay",
                                     color = colorDelay,
+                                }, },
+                        },
+                        vbp:horizontal_aligner {
+                            mode = "justify",
+                            vbp:text {
+                                text = "Loop selection:",
+                            },
+                            vbp:row {
+                                vbp:textfield {
+                                    id = "colorLoopSelectionField",
+                                    bind = preferences.colorLoopSelection,
+                                    notifier = function()
+                                        initColors()
+                                        vbwp.colorLoopSelection.color = colorLoopSelection
+                                        vbwp.colorLoopSelectionField.value = convertColorValueToString(colorLoopSelection)
+                                    end
+                                },
+                                vbp:button {
+                                    id = "colorLoopSelection",
+                                    color = colorLoopSelection,
                                 }, },
                         },
                         vbp:text {
