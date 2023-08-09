@@ -199,7 +199,7 @@ local defaultPreferences = {
     colorVelocity = "#D4BC24",
     colorPan = "#8ABB7A",
     colorDelay = "#47C2EC",
-    colorLoopSelection = "#F49695",
+    colorLoopSelection = "#D47675",
 }
 
 --tool preferences
@@ -3901,7 +3901,7 @@ local function fillTimeline()
             if beat == 1 then
                 timeslot.style = "strong"
             else
-                timeslot.style = "disabled"
+                timeslot.style = "strong"
             end
             timeslot.visible = true
             lastbeat = beat
