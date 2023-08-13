@@ -183,6 +183,8 @@ local defaultPreferences = {
     useTrackColorFor = 1,
     enableAdditonalSampleToolsContextMenu = false,
     resetNoteSizeOnNoteDraw = true,
+    timelineEven = 2,
+    timelineOdd = 3,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -270,6 +272,8 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     enableAdditonalSampleToolsContextMenu = defaultPreferences.enableAdditonalSampleToolsContextMenu,
     useChordStampingForNotePreview = defaultPreferences.useChordStampingForNotePreview,
     chordPainterPresetTbl = 1, --default bank
+    timelineEven = defaultPreferences.timelineEven,
+    timelineOdd = defaultPreferences.timelineOdd,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -3899,9 +3903,21 @@ local function fillTimeline()
                 timeslot.text = ""
             end
             if beat == 1 then
-                timeslot.style = "strong"
+                if preferences.timelineEven.value == 2 then
+                    timeslot.style = "strong"
+                elseif preferences.timelineEven.value == 3 then
+                    timeslot.style = "disabled"
+                else
+                    timeslot.style = "normal"
+                end
             else
-                timeslot.style = "strong"
+                if preferences.timelineOdd.value == 2 then
+                    timeslot.style = "strong"
+                elseif preferences.timelineOdd.value == 3 then
+                    timeslot.style = "disabled"
+                else
+                    timeslot.style = "normal"
+                end
             end
             timeslot.visible = true
             lastbeat = beat
@@ -7519,11 +7535,11 @@ local function appIdleEvent()
         local currentloopingrange
         local transport = song.transport
         local loopstart = (transport.loop_start.line / 1000) + transport.loop_start.sequence
-        local loopend = (transport.loop_end.line / 1000) + transport.loop_end.sequence  - 0.001
+        local loopend = (transport.loop_end.line / 1000) + transport.loop_end.sequence - 0.001
         local songlength = (transport.song_length.line / 1000) + transport.song_length.sequence
         local editpos = (transport.edit_pos.line / 1000) + transport.edit_pos.sequence
         if editpos >= math.floor(loopstart) and editpos <= math.ceil(loopend) and not (loopstart == 1.001 and loopend == songlength) then
-            currentloopingrange = tostring(transport.loop_start) .. "-" ..  tostring(transport.loop_end) .. "-" .. tostring(transport.edit_pos)
+            currentloopingrange = tostring(transport.loop_start) .. "-" .. tostring(transport.loop_end) .. "-" .. tostring(transport.edit_pos)
         end
         if loopingrange ~= currentloopingrange then
             loopingrange = currentloopingrange
@@ -8447,6 +8463,44 @@ showPreferences = function()
                                     id = "colorLoopSelection",
                                     color = colorLoopSelection,
                                 }, },
+                        },
+                        vbp:horizontal_aligner {
+                            mode = "justify",
+                            vbp:text {
+                                text = "Timeline even font stlye:",
+                                width = "60%"
+                            },
+                            vbp:popup {
+                                width = "40%",
+                                items = {
+                                    "normal",
+                                    "strong",
+                                    "disabled",
+                                },
+                                bind = preferences.timelineEven,
+                                notifier = function()
+                                    refreshTimeline = true
+                                end
+                            },
+                        },
+                        vbp:horizontal_aligner {
+                            mode = "justify",
+                            vbp:text {
+                                text = "Timeline odd font stlye:",
+                                width = "60%"
+                            },
+                            vbp:popup {
+                                width = "40%",
+                                items = {
+                                    "normal",
+                                    "strong",
+                                    "disabled",
+                                },
+                                bind = preferences.timelineOdd,
+                                notifier = function()
+                                    refreshTimeline = true
+                                end
+                            },
                         },
                         vbp:text {
                             text = "IMPORTANT: Please note that color #000000\n" ..
