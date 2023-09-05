@@ -4860,6 +4860,7 @@ local function fillPianoRoll(quickRefresh)
                                 else
                                     key.text = ""
                                 end
+                                key.width = pianoKeyWidth
                                 --reset key sub state button color
                                 l_vbw["ks" .. ystring].visible = false
                                 l_vbw["kss" .. ystring].visible = true
