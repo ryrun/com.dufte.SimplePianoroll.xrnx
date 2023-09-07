@@ -3825,6 +3825,11 @@ local function drawNotesToGrid(allNotes)
                     --add button body
                     btn:add_child(btn_body);
 
+                    --fix dialog resize
+                    if btn.width > (gridStepSizeW * gridWidth - (gridSpacing * (gridWidth))) + 1 then
+                        btn.width = (gridStepSizeW * gridWidth - (gridSpacing * (gridWidth))) + 1
+                    end
+
                     l_table_insert(noteButtons[current_note_rowIndex], btn);
                     l_vbw["row" .. current_note_rowIndex]:add_child(btn)
 
@@ -3867,8 +3872,6 @@ local function drawNotesToGrid(allNotes)
                             n = n + 1
                         end
                     end
-                    --reset row width, prevent dialog resize
-                    l_vbw["row" .. current_note_rowIndex].width = (gridStepSizeW * gridWidth - (gridSpacing * (gridWidth))) + 1
                 end
             end
         end
