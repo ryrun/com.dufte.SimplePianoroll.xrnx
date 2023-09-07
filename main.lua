@@ -3867,6 +3867,8 @@ local function drawNotesToGrid(allNotes)
                             n = n + 1
                         end
                     end
+                    --reset row width, prevent dialog resize
+                    l_vbw["row" .. current_note_rowIndex].width = (gridStepSizeW * gridWidth - (gridSpacing * (gridWidth))) + 1
                 end
             end
         end
@@ -4853,9 +4855,9 @@ local function fillPianoRoll(quickRefresh)
                                         note = note .. "-"
                                     end
                                     if preferences.keyboardStyle.value == 2 then
-                                        key.text = note .. tostring(l_math_floor((y + noffset) / 12)) .. "         "
+                                        key.text = note .. tostring(l_math_floor((y + noffset) / 12)) .. "         "
                                     else
-                                        key.text = "         " .. note .. tostring(l_math_floor((y + noffset) / 12))
+                                        key.text = "         " .. note .. tostring(l_math_floor((y + noffset) / 12))
                                     end
                                 else
                                     key.text = ""
