@@ -185,6 +185,7 @@ local defaultPreferences = {
     resetNoteSizeOnNoteDraw = true,
     timelineEven = 2,
     timelineOdd = 3,
+    themeHasWideFont = false,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -274,6 +275,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     chordPainterPresetTbl = 1, --default bank
     timelineEven = defaultPreferences.timelineEven,
     timelineOdd = defaultPreferences.timelineOdd,
+    themeHasWideFont = defaultPreferences.themeHasWideFont,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -4861,10 +4863,19 @@ local function fillPianoRoll(quickRefresh)
                                     if string.len(note) == 1 then
                                         note = note .. "-"
                                     end
-                                    if preferences.keyboardStyle.value == 2 then
-                                        key.text = note .. tostring(l_math_floor((y + noffset) / 12)) .. "         "
+                                    if preferences.themeHasWideFont.value then
+                                        if preferences.keyboardStyle.value == 2 then
+                                            key.text = note .. tostring(l_math_floor((y + noffset) / 12)) .. "     "
+                                        else
+                                            key.text = "     " .. note .. tostring(l_math_floor((y + noffset) / 12))
+                                        end
                                     else
-                                        key.text = "         " .. note .. tostring(l_math_floor((y + noffset) / 12))
+                                        if preferences.keyboardStyle.value == 2 then
+                                            key.text = note .. tostring(l_math_floor((y + noffset) / 12)) .. "         "
+                                        else
+                                            key.text = "         " .. note .. tostring(l_math_floor((y + noffset) / 12))
+                                        end
+
                                     end
                                 else
                                     key.text = ""
@@ -8059,6 +8070,14 @@ showPreferences = function()
                                 tonumber = function(v)
                                     return tonumber(v)
                                 end
+                            },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.themeHasWideFont
+                            },
+                            vbp:text {
+                                text = "Current Renoise theme has a wide font",
                             },
                         },
                         vbp:space {
