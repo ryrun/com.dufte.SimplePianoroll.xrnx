@@ -4720,6 +4720,10 @@ local function fillPianoRoll(quickRefresh)
         stepOffset = 0
     end
 
+    --hide all elements, so renoise doesn't render it instant
+    l_vbw["pianoKeys"].visible = false
+    l_vbw["pianorollColumns"].visible = false
+
     --loop through columns
     for c = 1, columns do
         local current_note
@@ -5013,6 +5017,10 @@ local function fillPianoRoll(quickRefresh)
         drawNotesToGrid(newNotes)
     end
 
+    --show all with one call
+    l_vbw["pianoKeys"].visible = true
+    l_vbw["pianorollColumns"].visible = true
+
     --nothing else to do in quick refresh
     if quickRefresh then
         return
@@ -5035,13 +5043,6 @@ local function fillPianoRoll(quickRefresh)
             p.height = gridStepSizeH
             l_vbw["ps" .. i .. "_" .. y].width = 1
         end
-    end
-
-    --quirk? i need to visible and hide a note button to get fast vertical scroll
-    local dummy = l_vbw["dummy" .. tostring(4) .. "_" .. tostring(4)]
-    if not dummy.visible then
-        dummy.visible = true
-        dummy.visible = false
     end
 
     --set current instrument, when no instrument is used
@@ -9073,6 +9074,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
     local pianorollColumns = vb:column {
         margin = 0,
         spacing = -1,
+        id = "pianorollColumns",
     }
 
     for y = gridHeight, 1, -1 do
@@ -9155,6 +9157,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
     local whiteKeys = vb:column {
         margin = 0,
         spacing = -1,
+        id = "pianoKeys"
     }
     for y = gridHeight, 1, -1 do
         whiteKeys:add_child(
