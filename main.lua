@@ -4979,7 +4979,7 @@ local function fillPianoRoll(quickRefresh)
                 end
             end
 
-            --first columns proccessed
+            --first columns processed
             firstInit = true
 
         end
@@ -5153,7 +5153,7 @@ local function numberOfLinesNotifier()
     obsPianoRefresh()
 end
 
---on each new song, reset pianoroll and setup locals
+--on each new song, reset piano roll and setup locals
 local function appNewDoc()
     --close window, when a new song was opened
     if windowObj and windowObj.visible then
@@ -9124,15 +9124,6 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     height = gridStepSizeH,
                     visible = true,
                 }
-            }
-            row:add_child(vb_temp)
-            --dummy for quirk?
-            vb_temp = vb:button {
-                id = "dummy" .. tostring(x) .. "_" .. tostring(y),
-                height = gridStepSizeH,
-                width = gridStepSizeW,
-                visible = false,
-                color = colorNote,
             }
             row:add_child(vb_temp)
         end
