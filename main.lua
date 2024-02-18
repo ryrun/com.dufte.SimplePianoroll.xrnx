@@ -181,7 +181,7 @@ local defaultPreferences = {
     chordGunPreset = false,
     useChordStampingForNotePreview = true,
     useTrackColorFor = 1,
-    enableAdditonalSampleToolsContextMenu = false,
+    enableAdditionalSampleToolsContextMenu = false,
     resetNoteSizeOnNoteDraw = true,
     timelineEven = 2,
     timelineOdd = 3,
@@ -270,7 +270,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     midiIn = defaultPreferences.midiIn,
     chordGunPreset = defaultPreferences.chordGunPreset,
     disableNoteEraserMode = defaultPreferences.disableNoteEraserMode,
-    enableAdditonalSampleToolsContextMenu = defaultPreferences.enableAdditonalSampleToolsContextMenu,
+    enableAdditionalSampleToolsContextMenu = defaultPreferences.enableAdditionalSampleToolsContextMenu,
     useChordStampingForNotePreview = defaultPreferences.useChordStampingForNotePreview,
     chordPainterPresetTbl = 1, --default bank
     timelineEven = defaultPreferences.timelineEven,
@@ -718,7 +718,7 @@ local function shadeColor(color, shade)
     }
 end
 
---alphablend colors
+--alpha blend colors
 local function alphablendColors(color1, color2, alphablend)
     if alphablend == 0 then
         return color1
@@ -8952,7 +8952,7 @@ showPreferences = function()
                         },
                         vbp:row {
                             vbp:checkbox {
-                                bind = preferences.enableAdditonalSampleToolsContextMenu,
+                                bind = preferences.enableAdditionalSampleToolsContextMenu,
                             },
                             vbp:text {
                                 text = "Show optional editing tools in context menus",
@@ -10558,12 +10558,12 @@ tool:add_menu_entry {
                 { 'Upgrade filters', 'Upgrade filters and enable anti aliasing', 'Cancel' }
         )
         if res ~= '' or res ~= 'Cancel' then
-            for k, i in pairs(renoise.song().instruments) do
-                for _k, ms in pairs(i.sample_modulation_sets) do
+            for _, i in pairs(renoise.song().instruments) do
+                for _, ms in pairs(i.sample_modulation_sets) do
                     ms:upgrade_filter_version()
                 end
                 if res == 'Upgrade filters and enable anti aliasing' then
-                    for _k, ms in pairs(i.samples) do
+                    for _, ms in pairs(i.samples) do
                         ms.oversample_enabled = true
                     end
                 end
@@ -10676,7 +10676,7 @@ tool:add_keybinding {
 }
 
 --additional contextmenu tools non piano roll related
-if preferences.enableAdditonalSampleToolsContextMenu.value then
+if preferences.enableAdditionalSampleToolsContextMenu.value then
 
     local function fitSampleBeatSync(bpm)
         song = renoise.song()
@@ -10696,7 +10696,7 @@ if preferences.enableAdditonalSampleToolsContextMenu.value then
                 local samplecount = math.abs(sample_buffer.selection_end - sample_buffer.selection_start)
                 if samplecount > 100 then
                     local newbpm = 60.0 * sample_rate / samplecount
-                    for i = 0, 10 do
+                    for _ = 0, 10 do
                         if newbpm > 180 then
                             newbpm = newbpm / 2
                         end
@@ -10838,7 +10838,7 @@ if preferences.enableAdditonalSampleToolsContextMenu.value then
             local pattern_length = current_pattern.number_of_lines
             current_pattern.number_of_lines = pattern_length * 2
             if pattern_length * 2 <= 512 then
-                for it, current_patterntrack in ipairs(current_pattern.tracks) do
+                for _, current_patterntrack in ipairs(current_pattern.tracks) do
                     for line_idx = 1, pattern_length do
                         current_patterntrack:line(line_idx + pattern_length):copy_from(current_patterntrack:line(line_idx))
                     end
