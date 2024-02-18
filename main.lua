@@ -581,11 +581,11 @@ local sortFunc = {
 }
 
 --force value between and inclusive min/max values
-local function clamp(val, min, max)
-    if min > max then
-        min, max = max, min
+local function clamp(value, lowerBound, upperBound)
+    if lowerBound > upperBound then
+        lowerBound, upperBound = upperBound, lowerBound
     end
-    return math.max(min, math.min(max, val))
+    return math.max(lowerBound, math.min(upperBound, value))
 end
 
 --calc distance
@@ -667,13 +667,6 @@ local function getSingularPlural(val, singular, plural, addVal)
         return b .. singular
     end
     return b .. plural
-end
-
---simple minMax
-local function forceValueToRange(val, lowerBound, upperBound)
-    val = math.max(val, lowerBound)
-    val = math.min(val, upperBound)
-    return val
 end
 
 --find nearest values
@@ -2634,10 +2627,10 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
             else
                 if tostring(special) == "add" then
                     if selection.vel == 255 and vel < 0 then
-                        selection.vel = forceValueToRange(128 + vel, 0, 127)
+                        selection.vel = clamp(128 + vel, 0, 127)
                         note.volume_string = toRenoiseHex(selection.vel)
                     elseif selection.vel >= 0 and selection.vel <= 127 then
-                        selection.vel = forceValueToRange(selection.vel + vel, 0, 127)
+                        selection.vel = clamp(selection.vel + vel, 0, 127)
                         note.volume_string = toRenoiseHex(selection.vel)
                     end
                 else
@@ -6791,15 +6784,15 @@ local function handleKeyEvent(keyEvent)
                 else
                     keyInfoText = "Move through the grid"
                     steps = steps * -1
-                    stepSlider.value = forceValueToRange(stepSlider.value + steps, stepSlider.min, stepSlider.max)
+                    stepSlider.value = clamp(stepSlider.value + steps, stepSlider.min, stepSlider.max)
                 end
             elseif not modifier.keyAlt and modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
                 keyInfoText = "Move through the grid"
                 steps = steps * -1
-                stepSlider.value = forceValueToRange(stepSlider.value + steps, stepSlider.min, stepSlider.max)
+                stepSlider.value = clamp(stepSlider.value + steps, stepSlider.min, stepSlider.max)
             elseif not modifier.keyAlt and not modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
                 keyInfoText = "Move through the grid"
-                noteSlider.value = forceValueToRange(noteSlider.value + steps, noteSlider.min, noteSlider.max)
+                noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max)
             end
         end
         handled = true
@@ -6811,7 +6804,7 @@ local function handleKeyEvent(keyEvent)
                 steps = steps * -1
             end
             keyInfoText = "Move through the grid"
-            noteSlider.value = forceValueToRange(noteSlider.value + steps, noteSlider.min, noteSlider.max)
+            noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max)
         end
         handled = true
     end
@@ -6843,7 +6836,7 @@ local function handleKeyEvent(keyEvent)
                     end
                 else
                     keyInfoText = "Move through the grid"
-                    noteSlider.value = forceValueToRange(noteSlider.value + transpose, noteSlider.min, noteSlider.max)
+                    noteSlider.value = clamp(noteSlider.value + transpose, noteSlider.min, noteSlider.max)
                 end
             end
         end
@@ -7307,21 +7300,21 @@ local function handleXypad(val)
                 --scroll through, when note hits border
                 if val.scroll then
                     if val.y == 1 and noteSlider.value > 0 then
-                        noteSlider.value = forceValueToRange(noteSlider.value - 1, noteSlider.min, noteSlider.max)
+                        noteSlider.value = clamp(noteSlider.value - 1, noteSlider.min, noteSlider.max)
                         xypadpos.y = xypadpos.y + 1
                         forceFullRefresh = true
                     elseif val.y - 1 == gridHeight and noteSlider.value < noteSlider.max then
-                        noteSlider.value = forceValueToRange(noteSlider.value + 1, noteSlider.min, noteSlider.max)
+                        noteSlider.value = clamp(noteSlider.value + 1, noteSlider.min, noteSlider.max)
                         xypadpos.y = xypadpos.y - 1
                         forceFullRefresh = true
                     end
                     if val.x == 1 and stepSlider.value > 0 then
-                        stepSlider.value = forceValueToRange(stepSlider.value - 1, stepSlider.min, stepSlider.max)
+                        stepSlider.value = clamp(stepSlider.value - 1, stepSlider.min, stepSlider.max)
                         xypadpos.x = xypadpos.x + 1
                         xypadpos.lastx = xypadpos.lastx + 1
                         forceFullRefresh = true
                     elseif val.x - 1 == gridWidth and stepSlider.value < stepSlider.max then
-                        stepSlider.value = forceValueToRange(stepSlider.value + 1, stepSlider.min, stepSlider.max)
+                        stepSlider.value = clamp(stepSlider.value + 1, stepSlider.min, stepSlider.max)
                         xypadpos.x = xypadpos.x - 1
                         xypadpos.lastx = xypadpos.lastx - 1
                         forceFullRefresh = true
