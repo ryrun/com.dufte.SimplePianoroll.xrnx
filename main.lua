@@ -670,12 +670,9 @@ local function getSingularPlural(val, singular, plural, addVal)
 end
 
 --simple minMax
-local function forceValueToRange(val, min, max)
-    if val >= max then
-        val = max
-    elseif val <= min then
-        val = min
-    end
+local function forceValueToRange(val, lowerBound, upperBound)
+    val = math.max(val, lowerBound)
+    val = math.min(val, upperBound)
     return val
 end
 
