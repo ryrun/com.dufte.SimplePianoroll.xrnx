@@ -7544,9 +7544,8 @@ local function appIdleEvent()
         local transport = song.transport
         local loopstart = (transport.loop_start.line / 1000) + transport.loop_start.sequence
         local loopend = (transport.loop_end.line / 1000) + transport.loop_end.sequence - 0.001
-        local songlength = (transport.song_length.line / 1000) + transport.song_length.sequence
         local editpos = (transport.edit_pos.line / 1000) + transport.edit_pos.sequence
-        if editpos >= math.floor(loopstart) and editpos <= math.ceil(loopend) and not (loopstart == 1.001 and loopend == songlength) then
+        if editpos >= math.floor(loopstart) and editpos <= math.ceil(loopend) and not (transport.loop_start_beats == 0 and transport.loop_end_beats == transport.song_length_beats) then
             currentloopingrange = tostring(transport.loop_start) .. "-" .. tostring(transport.loop_end) .. "-" .. tostring(transport.edit_pos)
         end
         if loopingrange ~= currentloopingrange then
