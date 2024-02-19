@@ -3045,6 +3045,7 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
     local note_data
     local newNoteSelection = {}
     local n = 0
+    local dummyNote
     --loop through all notes
     for key in pairs(noteData) do
         note_data = noteData[key]
@@ -3056,9 +3057,25 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
                                 (note_data.step >= smin and note_data.step + note_data.len - 1 <= smax)
                 )
         then
+            --check if the note is already in the selection table
+            dummyNote = nil
+            for k2 in pairs(newNoteSelection) do
+                if newNoteSelection[k2].step == note_data.step
+                        and newNoteSelection[k2].len == note_data.len
+                        and newNoteSelection[k2].note == note_data.note then
+                    dummyNote = k2
+                    break
+                end
+            end
             --add to selection table
-            n = n + 1
-            newNoteSelection[n] = note_data
+            if dummyNote then
+                if newNoteSelection[dummyNote].column < note_data.column then
+                    newNoteSelection[dummyNote] = note_data
+                end
+            else
+                n = n + 1
+                newNoteSelection[n] = note_data
+            end
         end
     end
     updateNoteSelection(newNoteSelection, not addToSelection)
