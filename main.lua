@@ -3953,7 +3953,7 @@ local function fillTimeline()
     end
     --set blockloop indicator, when enabled
     local hideblockloop = false
-    if loopingrange == nil then
+    if loopingrange == nil or (song.transport.loop_start_beats == 0 and song.transport.loop_end_beats == song.transport.song_length_beats) then
         hideblockloop = true
     else
         --calculate width and start pos for block loop line indicator
