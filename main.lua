@@ -186,6 +186,7 @@ local defaultPreferences = {
     timelineEven = 2,
     timelineOdd = 3,
     themeHasWideFont = false,
+    restrictNotesToScale = false,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -242,6 +243,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     oddBeatShadingAmount = defaultPreferences.oddBeatShadingAmount,
     rootKeyShadingAmount = defaultPreferences.rootKeyShadingAmount,
     outOfNoteScaleShadingAmount = defaultPreferences.outOfNoteScaleShadingAmount,
+    restrictNotesToScale = defaultPreferences.restrictNotesToScale,
     azertyMode = defaultPreferences.azertyMode,
     swapCtrlAlt = defaultPreferences.swapCtrlAlt,
     scrollWheelSpeed = defaultPreferences.scrollWheelSpeed,
@@ -6961,6 +6963,16 @@ local function handleKeyEvent(keyEvent)
         local othernote
         local note
         local last_note
+        --force note to scale
+        if preferences.restrictNotesToScale.value then
+            if not noteInScale(key.note) then
+                if key.note == 0 then
+                    key.note = key.note + 1
+                else
+                    key.note = key.note - 1
+                end
+            end
+        end
         --use chord stamping chord as preview, too
         if preferences.useChordStampingForNotePreview.value then
             chord = chordPainter
@@ -8565,6 +8577,14 @@ showPreferences = function()
                             },
                             vbp:text {
                                 text = "Enable note preview",
+                            },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.restrictNotesToScale
+                            },
+                            vbp:text {
+                                text = "Restrict notes to scale (computer keyboard and midi)",
                             },
                         },
                         vbp:row {
