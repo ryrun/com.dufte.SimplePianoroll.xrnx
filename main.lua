@@ -187,6 +187,7 @@ local defaultPreferences = {
     timelineOdd = 3,
     themeHasWideFont = false,
     restrictNotesToScale = false,
+    sortNewNotesMode = 2,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -278,6 +279,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     timelineEven = defaultPreferences.timelineEven,
     timelineOdd = defaultPreferences.timelineOdd,
     themeHasWideFont = defaultPreferences.themeHasWideFont,
+    sortNewNotesMode = defaultPreferences.sortNewNotesMode,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -3328,6 +3330,7 @@ function pianoGridClick(x, y, released)
             local noteoff
             local notesOnLine
             local note_data
+            local new_note_data
             --move x by stepoffset
             x = x + stepOffset
             --check if current note length is too long for pattern size, reduce len if needed
@@ -3373,18 +3376,20 @@ function pianoGridClick(x, y, released)
                     end
                     --
                     setUndoDescription("Draw a note ...")
-                    --save all notes on current line and remove them
-                    for key in pairs(noteData) do
-                        note_data = noteData[key]
-                        if note_data.line == x then
-                            table.insert(notesOnLine, key)
-                            removeNoteInPattern(note_data.column, note_data.line, note_data.len)
+                    if preferences.sortNewNotesMode.value == 2 then
+                        --save all notes on current line and remove them
+                        for key in pairs(noteData) do
+                            note_data = noteData[key]
+                            if note_data.line == x then
+                                table.insert(notesOnLine, key)
+                                removeNoteInPattern(note_data.column, note_data.line, note_data.len)
+                            end
                         end
+                        --sort notes by column
+                        table.sort(notesOnLine, function(a, b)
+                            return noteData[a].column < noteData[b].column
+                        end)
                     end
-                    --sort notes by column
-                    table.sort(notesOnLine, function(a, b)
-                        return noteData[a].column < noteData[b].column
-                    end)
                     --add new note, so its the first one on line, better for legato porta
                     column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay, currentNoteEndDelay)
                     noteoff = addNoteToPattern(
@@ -3400,7 +3405,7 @@ function pianoGridClick(x, y, released)
                             currentInstrument
                     )
                     --create note data table
-                    note_data = {
+                    new_note_data = {
                         idx = tostring(x - stepOffset) .. "_" .. tostring(y) .. "_" .. tostring(column),
                         line = x,
                         step = x - stepOffset,
@@ -3415,11 +3420,26 @@ function pianoGridClick(x, y, released)
                         column = column,
                         ins = currentInstrument
                     }
+                    noteData[new_note_data.idx] = new_note_data
+                    if preferences.sortNewNotesMode.value == 3 then
+                        --save all notes on current line and remove them
+                        for key in pairs(noteData) do
+                            note_data = noteData[key]
+                            if note_data.line == x then
+                                table.insert(notesOnLine, key)
+                                removeNoteInPattern(note_data.column, note_data.line, note_data.len)
+                            end
+                        end
+                        --sort notes by pitch
+                        table.sort(notesOnLine, function(a, b)
+                            return noteData[a].note < noteData[b].note
+                        end)
+                    end
                     --clear selection and add new note as new selection
                     if cidx > 1 then
-                        updateNoteSelection(note_data, false)
+                        updateNoteSelection(new_note_data, false)
                     else
-                        updateNoteSelection(note_data, true)
+                        updateNoteSelection(new_note_data, true)
                     end
                     --add other notes on this line back
                     for i = 1, #notesOnLine do
@@ -8658,6 +8678,22 @@ showPreferences = function()
                             font = "bold",
                             style = "strong",
                             align = "center",
+                        },
+                        vbp:horizontal_aligner {
+                            mode = "justify",
+                            vbp:text {
+                                text = "Sort new notes by:",
+                                width = "50%"
+                            },
+                            vbp:popup {
+                                width = "50%",
+                                items = {
+                                    "None",
+                                    "Force first available column",
+                                    "Per note pitch ascending"
+                                },
+                                bind = preferences.sortNewNotesMode,
+                            },
                         },
                         vbp:row {
                             vbp:checkbox {
