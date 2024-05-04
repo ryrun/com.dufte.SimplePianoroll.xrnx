@@ -4519,8 +4519,8 @@ local function refreshPlaybackPosIndicator()
         if preferences.followPlayCursor.value and song.transport.follow_player and (lastStepOn > gridWidth or lastStepOn < 0) then
             --follow play cursor, when enabled
             local v = stepSlider.value + (gridWidth * (lastStepOn / gridWidth)) - 1
-            if v > stepSlider.max then
-                v = stepSlider.max
+            if v >= stepSlider.max then
+                v = stepSlider.max - 1
             end
             if v < stepSlider.min then
                 v = stepSlider.min
@@ -4666,13 +4666,13 @@ local function fillPianoRoll(quickRefresh)
 
     --check if stepoffset is inside the grid, also setup stepSlider if needed
     if steps > gridWidth then
-        stepSlider.max = steps - gridWidth
-        if stepOffset > stepSlider.max then
-            stepOffset = stepSlider.max
+        stepSlider.max = steps - gridWidth + 1
+        if stepOffset >= stepSlider.max then
+            stepOffset = stepSlider.max - 1
         end
         stepSlider.visible = true
     else
-        stepSlider.max = 0
+        stepSlider.max = 1
         stepSlider.visible = false
         stepOffset = 0
     end
@@ -6740,13 +6740,11 @@ local function handleKeyEvent(keyEvent)
                     end
                 else
                     keyInfoText = "Move through the grid"
-                    steps = steps * -1
-                    stepSlider.value = clamp(stepSlider.value + steps, stepSlider.min, stepSlider.max)
+                    stepSlider.value = clamp(stepSlider.value + steps, stepSlider.min, stepSlider.max - 1)
                 end
             elseif not modifier.keyAlt and modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
                 keyInfoText = "Move through the grid"
-                steps = steps * -1
-                stepSlider.value = clamp(stepSlider.value + steps, stepSlider.min, stepSlider.max)
+                stepSlider.value = clamp(stepSlider.value + steps, stepSlider.min, stepSlider.max - 1)
             elseif not modifier.keyAlt and not modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
                 keyInfoText = "Move through the grid"
                 noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max - 1)
@@ -7275,12 +7273,12 @@ local function handleXypad(val)
                         forceFullRefresh = true
                     end
                     if val.x == 1 and stepSlider.value > 0 then
-                        stepSlider.value = clamp(stepSlider.value - 1, stepSlider.min, stepSlider.max)
+                        stepSlider.value = clamp(stepSlider.value - 1, stepSlider.min, stepSlider.max-1)
                         xypadpos.x = xypadpos.x + 1
                         xypadpos.lastx = xypadpos.lastx + 1
                         forceFullRefresh = true
-                    elseif val.x - 1 == gridWidth and stepSlider.value < stepSlider.max then
-                        stepSlider.value = clamp(stepSlider.value + 1, stepSlider.min, stepSlider.max)
+                    elseif val.x - 1 == gridWidth and stepSlider.value <= stepSlider.max-1 then
+                        stepSlider.value = clamp(stepSlider.value + 1, stepSlider.min, stepSlider.max-1)
                         xypadpos.x = xypadpos.x - 1
                         xypadpos.lastx = xypadpos.lastx - 1
                         forceFullRefresh = true
@@ -9081,11 +9079,13 @@ local function createPianoRollDialog(gridWidth, gridHeight)
     end
 
     --horizontal scrollbar
-    stepSlider = vb:minislider {
+    stepSlider = vb:scrollbar {
         width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)),
         height = math.max(16, gridStepSizeW / 2),
         min = 0,
-        max = 0,
+        max = 1,
+        background = "plain",
+        pagestep = 1,
         visible = false,
         notifier = function(number)
             number = math.floor(number)
@@ -10153,7 +10153,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         },
         vb:row {
             vb:space {
-                width = math.max(16, gridStepSizeW / 2) + (gridStepSizeW * 3)
+                width = math.max(16, gridStepSizeW / 2) + (gridStepSizeW * 3) + 1
             },
             stepSlider,
         },
