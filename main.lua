@@ -3832,7 +3832,8 @@ local function drawNotesToGrid(allNotes)
                                         height = gridStepSizeH,
                                         width = preferences.clickAreaSizeForScalingPx.value,
                                         notifier = loadstring(current_note_param .. ",true,true)"),
-                                        pressed = loadstring(current_note_param .. ",false,true)")
+                                        pressed = loadstring(current_note_param .. ",false,true)"),
+                                        cursor = "resize_horizontal",
                                     }
                                 }
                         )
