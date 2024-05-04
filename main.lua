@@ -6735,7 +6735,7 @@ local function handleKeyEvent(keyEvent)
     if (key.name == "scrollup" or key.name == "scrolldown") then
         if key.state == "pressed" then
             local steps = preferences.scrollWheelSpeed.value
-            if key.name == "scrolldown" then
+            if key.name == "scrollup" then
                 steps = steps * -1
             end
             if (modifier.keyAlt or modifier.keyShift or modifier.keyRShift) and not modifier.keyControl then
@@ -6765,7 +6765,7 @@ local function handleKeyEvent(keyEvent)
                 stepSlider.value = clamp(stepSlider.value + steps, stepSlider.min, stepSlider.max)
             elseif not modifier.keyAlt and not modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
                 keyInfoText = "Move through the grid"
-                noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max)
+                noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max-1)
             end
         end
         handled = true
@@ -6777,7 +6777,7 @@ local function handleKeyEvent(keyEvent)
                 steps = steps * -1
             end
             keyInfoText = "Move through the grid"
-            noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max)
+            noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max-1)
         end
         handled = true
     end
@@ -6809,7 +6809,7 @@ local function handleKeyEvent(keyEvent)
                     end
                 else
                     keyInfoText = "Move through the grid"
-                    noteSlider.value = clamp(noteSlider.value + transpose, noteSlider.min, noteSlider.max)
+                    noteSlider.value = clamp(noteSlider.value + transpose, noteSlider.min, noteSlider.max-1)
                 end
             end
         end
@@ -7281,12 +7281,12 @@ local function handleXypad(val)
             if not xypadpos.scalemode then
                 --scroll through, when note hits border
                 if val.scroll then
-                    if val.y == 1 and noteSlider.value > 0 then
-                        noteSlider.value = clamp(noteSlider.value - 1, noteSlider.min, noteSlider.max)
+                    if val.y == 1 and noteSlider.value < noteSlider.max then
+                        noteSlider.value = clamp(noteSlider.value + 1, noteSlider.min, noteSlider.max-1)
                         xypadpos.y = xypadpos.y + 1
                         forceFullRefresh = true
-                    elseif val.y - 1 == gridHeight and noteSlider.value < noteSlider.max then
-                        noteSlider.value = clamp(noteSlider.value + 1, noteSlider.min, noteSlider.max)
+                    elseif val.y - 1 == gridHeight and noteSlider.value > 0 then
+                        noteSlider.value = clamp(noteSlider.value - 1, noteSlider.min, noteSlider.max-1)
                         xypadpos.y = xypadpos.y - 1
                         forceFullRefresh = true
                     end
@@ -9122,15 +9122,17 @@ local function createPianoRollDialog(gridWidth, gridHeight)
     }
 
     --vertical scrollbar
-    noteSlider = vb:minislider {
+    noteSlider = vb:scrollbar {
         width = math.max(16, gridStepSizeW / 2),
         height = "100%",
         min = 0,
-        max = 120 - gridHeight,
+        max = 120 - gridHeight + 1,
+        background = "plain",
+        pagestep = 1,
         notifier = function(number)
             number = math.floor(number)
             if number ~= noteOffset then
-                noteOffset = number
+                noteOffset = 120 - gridHeight - number
                 refreshPianoRollNeeded = true
             end
         end,
@@ -10273,14 +10275,13 @@ local function main_function()
         fillPianoRoll()
         --center note view
         if lowestNote ~= nil and preferences.centerViewOnOpen.value then
-            local nOffset = math.floor(((lowestNote + highestNote) / 2) - (gridHeight / 2))
+            local nOffset = gridHeight - math.floor(((lowestNote + highestNote) / 2) - (gridHeight / 2))
             if nOffset < 0 then
                 nOffset = 0
-            elseif nOffset > noteSlider.max then
-                nOffset = noteSlider.max
+            elseif nOffset > noteSlider.max - 1 then
+                nOffset = noteSlider.max - 1
             end
             noteSlider.value = nOffset
-            noteOffset = nOffset
         end
         --reset rebuild flag
         rebuildWindowDialog = false
