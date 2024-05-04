@@ -1771,6 +1771,14 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
     if instrument == nil then
         instrument = currentInstrument
     end
+    --ghost note are not possible with the new api
+    if instrument == 255 then
+        if patternInstrument ~= nil and patternInstrument ~= 255 then
+            instrument = patternInstrument
+        else
+            instrument = song.selected_instrument_index - 1
+        end
+    end
     --disable record mode, when enabled
     song.transport.edit_mode = false
     if not velocity or velocity > 127 then
