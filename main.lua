@@ -1717,20 +1717,14 @@ local function refreshNoteControls()
     --set color indicator to current track color and name
     vbw.trackcolor.color = track.color
     vbw.trackcolor.tooltip = track.name .. "\n(Switch to ghost track)"
-    if string.len(track.name) > 9 then
-        vbw.trackcolor.text = string.sub(track.name, 1, 8) .. "…"
-    else
-        vbw.trackcolor.text = track.name
-    end
+    vbw.trackcolor.text = track.name
+    vbw.trackcolor.width = pianoKeyWidth + noteSlider.width
     --set hint, when column is muted
     for c = 1, song.selected_track.visible_note_columns do
         if song.selected_track:column_is_muted(c) then
             vbw.trackcolor.tooltip = vbw.trackcolor.tooltip .. "\nSome note columns are muted."
-            if string.len(track.name) > 9 then
-                vbw.trackcolor.text = "*" .. string.sub(track.name, 1, 7) .. "…"
-            else
-                vbw.trackcolor.text = "*" .. track.name
-            end
+            vbw.trackcolor.text = "*" .. track.name
+            vbw.trackcolor.width = pianoKeyWidth + noteSlider.width
             break
         end
     end
@@ -1787,7 +1781,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
     if pressed == true then
         notesPlaying[note_value] = 1
         notesPlayingLine[note_value] = nil
-        song:trigger_instrument_note_on(instrument + 1, song.selected_track_index, note_value, velocity/127.0)
+        song:trigger_instrument_note_on(instrument + 1, song.selected_track_index, note_value, velocity / 127.0)
         refreshChordDetection = true
     elseif pressed == false then
         notesPlaying[note_value] = nil
@@ -1837,7 +1831,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
             instrument_index = instrument + 1,
             track_index = song.selected_track_index,
             note = note_value,
-            volume = velocity/127.0
+            volume = velocity / 127.0
         }
         song:trigger_instrument_note_on(noteEvent.instrument_index, noteEvent.track_index, noteEvent.note, noteEvent.volume)
         table.insert(lastTriggerNote, noteEvent)
@@ -6765,7 +6759,7 @@ local function handleKeyEvent(keyEvent)
                 stepSlider.value = clamp(stepSlider.value + steps, stepSlider.min, stepSlider.max)
             elseif not modifier.keyAlt and not modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
                 keyInfoText = "Move through the grid"
-                noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max-1)
+                noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max - 1)
             end
         end
         handled = true
@@ -6777,7 +6771,7 @@ local function handleKeyEvent(keyEvent)
                 steps = steps * -1
             end
             keyInfoText = "Move through the grid"
-            noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max-1)
+            noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max - 1)
         end
         handled = true
     end
@@ -6809,7 +6803,7 @@ local function handleKeyEvent(keyEvent)
                     end
                 else
                     keyInfoText = "Move through the grid"
-                    noteSlider.value = clamp(noteSlider.value + transpose, noteSlider.min, noteSlider.max-1)
+                    noteSlider.value = clamp(noteSlider.value + transpose, noteSlider.min, noteSlider.max - 1)
                 end
             end
         end
@@ -7056,9 +7050,9 @@ end
 
 --handle scroll wheel value boxes
 local function handleScrollWheel(event)
-    if event.direction=="up" then
+    if event.direction == "up" then
         handleKeyEvent({ name = "scrollup" })
-    elseif event.direction=="down" then
+    elseif event.direction == "down" then
         handleKeyEvent({ name = "scrolldown" })
     end
 end
@@ -7282,11 +7276,11 @@ local function handleXypad(val)
                 --scroll through, when note hits border
                 if val.scroll then
                     if val.y == 1 and noteSlider.value < noteSlider.max then
-                        noteSlider.value = clamp(noteSlider.value + 1, noteSlider.min, noteSlider.max-1)
+                        noteSlider.value = clamp(noteSlider.value + 1, noteSlider.min, noteSlider.max - 1)
                         xypadpos.y = xypadpos.y + 1
                         forceFullRefresh = true
                     elseif val.y - 1 == gridHeight and noteSlider.value > 0 then
-                        noteSlider.value = clamp(noteSlider.value - 1, noteSlider.min, noteSlider.max-1)
+                        noteSlider.value = clamp(noteSlider.value - 1, noteSlider.min, noteSlider.max - 1)
                         xypadpos.y = xypadpos.y - 1
                         forceFullRefresh = true
                     end
@@ -9132,11 +9126,11 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         notifier = function(number)
             number = math.floor(number)
             if number ~= noteOffset then
-                noteOffset = 120 - gridHeight - number
+                noteOffset = (noteSlider.max - 1) - number
                 refreshPianoRollNeeded = true
             end
         end,
-        value = noteOffset
+        value = 0
     }
 
     local whiteKeys = vb:column {
@@ -9845,36 +9839,30 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         vb:row {
             vb:column {
                 vb:row {
-                    noteSlider,
                     vb:column {
                         vb:column {
                             spacing = -1,
                             vb:row {
-                                spacing = -pianoKeyWidth,
-                                width = pianoKeyWidth,
                                 margin = -1,
-                                vb:space {
-                                    width = pianoKeyWidth + 1,
-                                },
                                 vb:button {
                                     id = "trackcolor",
                                     height = gridStepSizeH + 3,
                                     color = { 44, 77, 66 },
                                     active = true,
-                                    width = pianoKeyWidth,
+                                    width = pianoKeyWidth + noteSlider.width,
                                     notifier = function()
                                         switchGhostTrack()
                                     end
                                 }
                             },
                             vb:row {
-                                spacing = -4,
+                                spacing = -3,
                                 vb:button {
                                     id = "mute",
                                     text = "M",
                                     tooltip = "Mute/Unmute current track",
                                     height = gridStepSizeH,
-                                    width = pianoKeyWidth / 2 + 2,
+                                    width = (pianoKeyWidth + noteSlider.width) / 2 + 1,
                                     notifier = function()
                                         if song.selected_track.mute_state == 3 or song.selected_track.mute_state == 2 then
                                             song.selected_track:unmute()
@@ -9889,7 +9877,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                     text = "S",
                                     height = gridStepSizeH,
                                     tooltip = "Solo/Unsolo current track",
-                                    width = pianoKeyWidth / 2 + 2,
+                                    width = (pianoKeyWidth + noteSlider.width) / 2 + 1,
                                     notifier = function()
                                         song.selected_track:solo()
                                         refreshControls = true
@@ -9899,7 +9887,10 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         },
                         vb:column {
                             spacing = -1,
-                            whiteKeys,
+                            vb:row {
+                                noteSlider,
+                                whiteKeys,
+                            },
                             vb:space {
                                 height = 2
                             },
@@ -9908,7 +9899,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                 vb:button {
                                     id = "currentscale",
                                     text = "",
-                                    width = pianoKeyWidth,
+                                    width = pianoKeyWidth + noteSlider.width,
                                     height = gridStepSizeH + 3,
                                     tooltip = "Scale highlighting\nIf you hold down the Ctrl key while clicking, you switch to relative minor or major.",
                                     notifier = function()
@@ -10275,14 +10266,11 @@ local function main_function()
         fillPianoRoll()
         --center note view
         if lowestNote ~= nil and preferences.centerViewOnOpen.value then
-            local nOffset = gridHeight - math.floor(((lowestNote + highestNote) / 2) - (gridHeight / 2))
-            if nOffset < 0 then
-                nOffset = 0
-            elseif nOffset > noteSlider.max - 1 then
-                nOffset = noteSlider.max - 1
-            end
-            noteSlider.value = nOffset
+            noteOffset = math.floor(((lowestNote + highestNote) / 2) - (gridHeight / 2))
         end
+        noteSlider.value = clamp(noteSlider.max - 1 - noteOffset, noteSlider.min, noteSlider.max - 1)
+
+        refreshPianoRollNeeded = true
         --reset rebuild flag
         rebuildWindowDialog = false
         --show dialog
