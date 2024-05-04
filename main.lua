@@ -7055,13 +7055,12 @@ local function midiInCallback(message)
 end
 
 --handle scroll wheel value boxes
-local function handleSrollWheel(number, id)
-    if number > 0 then
+local function handleScrollWheel(event)
+    if event.direction=="up" then
         handleKeyEvent({ name = "scrollup" })
-    elseif number < 0 then
+    elseif event.direction=="down" then
         handleKeyEvent({ name = "scrolldown" })
     end
-    vbw[id].value = 0
 end
 
 --just refresh selected notes, improves mouse actions
@@ -9064,6 +9063,10 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         margin = 0,
         spacing = -1,
         id = "pianorollColumns",
+        mouse_events = {
+            "wheel"
+        },
+        mouse_handler = handleScrollWheel,
     }
 
     for y = gridHeight, 1, -1 do
@@ -9137,7 +9140,11 @@ local function createPianoRollDialog(gridWidth, gridHeight)
     local whiteKeys = vb:column {
         margin = 0,
         spacing = -1,
-        id = "pianoKeys"
+        id = "pianoKeys",
+        mouse_events = {
+            "wheel"
+        },
+        mouse_handler = handleScrollWheel
     }
     for y = gridHeight, 1, -1 do
         whiteKeys:add_child(
@@ -9298,26 +9305,6 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         timeline_row:add_child(temp)
     end
     timeline:add_child(timeline_row)
-
-    --another quirk, instead of using jsut one valuebox, i need a valuebox for each column
-    --its alot faster scrolling without stuttering, it seems a big valuebox slows down the rendering
-    local scrollwheelgrid = vb:row {
-        style = "plain",
-        spacing = -gridSpacing,
-    }
-    for i = 1, gridWidth do
-        local temp = vb:valuebox {
-            id = "sw" .. i,
-            width = gridStepSizeW,
-            height = (gridStepSizeH - 2.9) * (gridHeight + 1),
-            min = -1,
-            max = 1,
-            notifier = function(number)
-                handleSrollWheel(number, "sw" .. i)
-            end,
-        }
-        scrollwheelgrid:add_child(temp)
-    end
 
     windowContent = vb:column {
         vb:horizontal_aligner {
@@ -9908,43 +9895,30 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                 },
                             },
                         },
-                        vb:row {
-                            spacing = -pianoKeyWidth + 1,
-                            vb:valuebox {
-                                id = "swk",
-                                width = pianoKeyWidth,
-                                height = (gridStepSizeH - 2.9) * (gridHeight + 1),
-                                min = -1,
-                                max = 1,
-                                notifier = function(number)
-                                    handleSrollWheel(number, "swk")
-                                end,
+                        vb:column {
+                            spacing = -1,
+                            whiteKeys,
+                            vb:space {
+                                height = 2
                             },
-                            vb:column {
-                                spacing = -1,
-                                whiteKeys,
-                                vb:space {
-                                    height = 2
-                                },
-                                vb:row {
-                                    margin = -1,
-                                    vb:button {
-                                        id = "currentscale",
-                                        text = "",
-                                        width = pianoKeyWidth,
-                                        height = gridStepSizeH + 3,
-                                        tooltip = "Scale highlighting\nIf you hold down the Ctrl key while clicking, you switch to relative minor or major.",
-                                        notifier = function()
-                                            if modifier.keyControl then
-                                                switchToRelativeScale()
-                                            else
-                                                showSetScaleDialog()
-                                            end
+                            vb:row {
+                                margin = -1,
+                                vb:button {
+                                    id = "currentscale",
+                                    text = "",
+                                    width = pianoKeyWidth,
+                                    height = gridStepSizeH + 3,
+                                    tooltip = "Scale highlighting\nIf you hold down the Ctrl key while clicking, you switch to relative minor or major.",
+                                    notifier = function()
+                                        if modifier.keyControl then
+                                            switchToRelativeScale()
+                                        else
+                                            showSetScaleDialog()
                                         end
-                                    },
-                                }
+                                    end
+                                },
                             }
-                        },
+                        }
                     },
                 },
             },
@@ -9972,9 +9946,6 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                             spacing = -(gridStepSizeW * (gridWidth) - (gridSpacing * (gridWidth))) - 4,
                             vb:space {
                                 width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)),
-                            },
-                            vb:row {
-                                scrollwheelgrid,
                             },
                         },
                         vb:xypad {
