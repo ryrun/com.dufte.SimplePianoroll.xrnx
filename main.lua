@@ -132,9 +132,7 @@ local defaultPreferences = {
     dblClickTime = 400,
     forcePenMode = false,
     notePreview = true,
-    enableOSCClient = true,
     snapToGridSize = 20,
-    oscConnectionString = "udp://127.0.0.1:8000",
     applyVelocityColorShading = true,
     velocityColorShadingAmount = 0.49,
     followPlayCursor = true,
@@ -219,12 +217,10 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     gridVLines = defaultPreferences.gridVLines,
     minSizeOfNoteButton = defaultPreferences.minSizeOfNoteButton,
     triggerTime = defaultPreferences.triggerTime,
-    enableOSCClient = defaultPreferences.enableOSCClient,
     noNotePreviewDuringSongPlayback = defaultPreferences.noNotePreviewDuringSongPlayback,
     dblClickTime = defaultPreferences.dblClickTime,
     forcePenMode = defaultPreferences.forcePenMode,
     notePreview = defaultPreferences.notePreview,
-    oscConnectionString = defaultPreferences.oscConnectionString,
     applyVelocityColorShading = defaultPreferences.applyVelocityColorShading,
     velocityColorShadingAmount = defaultPreferences.velocityColorShadingAmount,
     scaleBtnShadingAmount = defaultPreferences.scaleBtnShadingAmount,
@@ -363,7 +359,6 @@ local colorBlackKey = {}
 local defaultColor = {}
 
 --note trigger vars
-local oscClient
 local lastTriggerNote = {}
 
 --missing block loop observable? use a variable for check there was a change
@@ -1770,13 +1765,7 @@ local function refreshNoteControls()
     refreshControls = false
 end
 
---simple note trigger
 local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, newOrChanged, instrument)
-    local socket_error, successSend, errorSend
-    --if osc client is enabled
-    if not preferences.enableOSCClient.value then
-        return
-    end
     --special handling of preview notes, on new notes or changed notes (transpose)
     if newOrChanged then
         if not preferences.notePreview.value then
@@ -1792,63 +1781,24 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
     end
     --disable record mode, when enabled
     song.transport.edit_mode = false
-    --init server connection, when not ready
-    if oscClient == nil then
-        local protocol, host, port = string.match(
-                preferences.oscConnectionString.value,
-                '([a-zA-Z]+)://([0-9a-zA-Z.]+):([0-9]+)'
-        )
-        if protocol and host and port then
-            port = tonumber(port)
-            if string.lower(protocol) == "udp" then
-                oscClient, socket_error = renoise.Socket.create_client(host, port, renoise.Socket.PROTOCOL_UDP)
-            elseif string.lower(protocol) == "tcp" then
-                oscClient, socket_error = renoise.Socket.create_client(host, port, renoise.Socket.PROTOCOL_TCP)
-            else
-                socket_error = "Invalid protocol"
-            end
-            if (socket_error) then
-                showStatus("Error: Cant create OSC socket: " .. socket_error)
-                preferences.notePreview.value = false
-                preferences.enableOSCClient.value = false
-                refreshControls = true
-                return
-            end
-        else
-            showStatus("Error: OSC connection string malformed. Note preview disabled.")
-            preferences.notePreview.value = false
-            preferences.enableOSCClient.value = false
-            refreshControls = true
-            return
-        end
-    end
     if not velocity or velocity > 127 then
         velocity = currentNoteVelocityPreview
     end
     if pressed == true then
         notesPlaying[note_value] = 1
         notesPlayingLine[note_value] = nil
-        successSend, errorSend = oscClient:send(
-                renoise.Osc.Message("/renoise/trigger/note_on", { { tag = "i", value = instrument + 1 },
-                                                                  { tag = "i", value = song.selected_track_index },
-                                                                  { tag = "i", value = note_value },
-                                                                  { tag = "i", value = velocity } })
-        )
+        song:trigger_instrument_note_on(instrument + 1, song.selected_track_index, note_value, velocity/127.0)
         refreshChordDetection = true
     elseif pressed == false then
         notesPlaying[note_value] = nil
         notesPlayingLine[note_value] = nil
-        successSend, errorSend = oscClient:send(
-                renoise.Osc.Message("/renoise/trigger/note_off", { { tag = "i", value = instrument + 1 },
-                                                                   { tag = "i", value = song.selected_track_index },
-                                                                   { tag = "i", value = note_value } })
-        )
+        song:trigger_instrument_note_off(instrument + 1, song.selected_track_index, note_value)
         refreshChordDetection = true
     else
         local polyLimit = preferences.previewPolyphony.value
         --check if the current note already playing
         for i = 1, #lastTriggerNote do
-            if lastTriggerNote[i] and lastTriggerNote[i].packet[3].value == note_value then
+            if lastTriggerNote[i] and lastTriggerNote[i].note == note_value then
                 return
             end
         end
@@ -1874,8 +1824,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
                 --just send note off's directly
                 for i = 1, #lastTriggerNote do
                     if i <= math.max(1, #lastTriggerNote - preferences.previewPolyphony.value) then
-                        table.remove(lastTriggerNote[i].packet, 4) --remove velocity
-                        oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote[i].packet))
+                        song:trigger_instrument_note_off(lastTriggerNote[i].instrument_index, lastTriggerNote[i].track_index, lastTriggerNote[i].note)
                     else
                         table.insert(newLastTriggerNote, lastTriggerNote[i])
                     end
@@ -1883,31 +1832,15 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
                 lastTriggerNote = newLastTriggerNote
             end
         end
-        local packet = { { tag = "i", value = instrument + 1 },
-                         { tag = "i", value = song.selected_track_index },
-                         { tag = "i", value = note_value },
-                         { tag = "i", value = velocity } }
-        --send note event to osc server
-        successSend, errorSend = oscClient:send(renoise.Osc.Message("/renoise/trigger/note_on", packet))
-        --create a timer for note off, whenn note on was successful
-        if successSend then
-            table.insert(lastTriggerNote, {
-                time = os.clock(),
-                packet = packet,
-            }
-            )
-        end
-    end
-    --on send fail, disable note preview, clsoe socket and show error
-    if not successSend then
-        showStatus("Error: OSC socket send: " .. errorSend)
-        preferences.notePreview.value = false
-        preferences.enableOSCClient.value = false
-        if oscClient then
-            oscClient:close()
-            oscClient = nil
-        end
-        refreshControls = true
+        local noteEvent = {
+            time = os.clock(),
+            instrument_index = instrument + 1,
+            track_index = song.selected_track_index,
+            note = note_value,
+            volume = velocity/127.0
+        }
+        song:trigger_instrument_note_on(noteEvent.instrument_index, noteEvent.track_index, noteEvent.note, noteEvent.volume)
+        table.insert(lastTriggerNote, noteEvent)
     end
 end
 
@@ -7636,12 +7569,11 @@ local function appIdleEvent()
             midiDevice = nil
         end
         --
-        if #lastTriggerNote > 0 and oscClient then
+        if #lastTriggerNote > 0 then
             local newLastTriggerNote = {}
             for i = 1, #lastTriggerNote do
                 if lastTriggerNote[i].time < os.clock() - (preferences.triggerTime.value / 1000) then
-                    table.remove(lastTriggerNote[i].packet, 4) --remove velocity
-                    oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote[i].packet))
+                    song:trigger_instrument_note_off(lastTriggerNote[i].instrument_index, lastTriggerNote[i].track_index, lastTriggerNote[i].note)
                 else
                     table.insert(newLastTriggerNote, lastTriggerNote[i])
                 end
@@ -7651,10 +7583,6 @@ local function appIdleEvent()
         --refresh after prefernces changes
         if dialogVars.preferencesWasShown and dialogVars.preferencesObj and not dialogVars.preferencesObj.visible then
             restoreFocus()
-            if oscClient then
-                oscClient:close()
-                oscClient = nil
-            end
             refreshControls = true
             refreshPianoRollNeeded = true
             --when invisible is enabled, no snapback needed
@@ -8586,14 +8514,6 @@ showPreferences = function()
                         },
                         vbp:row {
                             vbp:checkbox {
-                                bind = preferences.enableOSCClient
-                            },
-                            vbp:text {
-                                text = "Enable OSC client",
-                            },
-                        },
-                        vbp:row {
-                            vbp:checkbox {
                                 bind = preferences.notePreview
                             },
                             vbp:text {
@@ -8656,19 +8576,6 @@ showPreferences = function()
                                 max = 2000,
                                 bind = preferences.triggerTime,
                             },
-                        },
-                        vbp:text {
-                            text = "OSC connection string: [protocol]://[ip]:[port]",
-                        },
-                        vbp:textfield {
-                            bind = preferences.oscConnectionString,
-                            width = "100%",
-                        },
-                        vbp:text {
-                            text = "Please check in the Renoise preferences in the OSC\n" ..
-                                    "section that the OSC server has been activated and is\n" ..
-                                    "running with the same protocol (UDP, TCP) and port\n" ..
-                                    "settings as specified here."
                         },
                         vbp:space {
                             height = 8,
