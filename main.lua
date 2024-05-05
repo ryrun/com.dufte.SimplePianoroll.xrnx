@@ -310,7 +310,7 @@ local dialogVars = {
 }
 local stepSlider
 local noteSlider
-local snapBackVal = { x = 1.01234, y = 1.01234 }
+--local snapBackVal = { x = 1.01234, y = 1.01234 }
 
 --last step position for resetting the last step button
 local lastStepOn
@@ -328,6 +328,7 @@ local gridSpacing
 local gridMargin
 local gridWidth
 local gridHeight
+local gridOverlapping = -3
 local pianoKeyWidth
 
 --colors
@@ -3053,39 +3054,7 @@ function noteClick(x, y, c, released, forceScaling)
     --mouse drag support, very very hacky
     if not released and not checkMode("preview") then
         xypadpos.disabled = {}
-        --disable grid buttons, so these doesn't receive click events
-        for i = 1, gridWidth do
-            vbw["p" .. i .. "_" .. y].active = false
-            table.insert(xypadpos.disabled, "p" .. i .. "_" .. y)
-        end
-        --disable all notes on step, so other notes doesn't receive click events
-        for j = 1, note_data.len do
-            local ns = noteOnStep[x + (j - 1)]
-            if ns ~= nil and #ns > 0 then
-                for i = 1, #ns do
-                    if ns[i] ~= nil and ns[i].note == note_data.note and ns[i].index ~= index then
-                        if vbw["b" .. ns[i].index] then
-                            vbw["b" .. ns[i].index].active = false
-                            table.insert(xypadpos.disabled, "b" .. ns[i].index)
-                        end
-                        if vbw["bs" .. ns[i].index] then
-                            vbw["bs" .. ns[i].index].active = false
-                            table.insert(xypadpos.disabled, "bs" .. ns[i].index)
-                        end
-                    end
-                end
-            end
-        end
-        --remove and add the clicked button, disable underlaying buttons, so the xypad in the background
-        --can receive the click event, remove/add trick from joule:
-        --https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
         local rowidx = noteValue2GridRowOffset(note_data.note, true)
-        vbw["row" .. rowidx]:remove_child(vbw["bc" .. index])
-        vbw["row" .. rowidx]:add_child(vbw["bc" .. index])
-        if forceScaling then
-            vbw["b" .. index].active = false
-            table.insert(xypadpos.disabled, "b" .. index)
-        end
         xypadpos.leftClick = true
         xypadpos.selection_key = noteInSelection(note_data)
         xypadpos.idx = note_data.idx
@@ -3161,7 +3130,7 @@ function noteClick(x, y, c, released, forceScaling)
 end
 
 --will be called, when an empty grid button was clicked
-local function pianoGridClick(x, y, released)
+function pianoGridClick(x, y, released)
     local index = tostring(x) .. "_" .. tostring(y)
     local outside = false
     local noteDrawn = {}
@@ -3590,7 +3559,7 @@ local function drawNotesToGrid(allNotes)
             end
 
             --only process notes on steps and visibility, when there is a valid row
-            if l_vbw["row" .. current_note_rowIndex] then
+            if current_note_rowIndex>=1 and current_note_rowIndex<=gridHeight then
                 --change note display len
                 if current_note_step < 1 then
                     current_note_len = current_note_len + (current_note_step - 1)
@@ -3645,8 +3614,7 @@ local function drawNotesToGrid(allNotes)
                         end
                     end
 
-                    buttonWidth = (gridStepSizeW) * current_note_len
-                    buttonSpace = gridSpacing * (current_note_len - 1)
+                    buttonWidth = (gridStepSizeW * current_note_len) - (-gridOverlapping * (current_note_len-2))
 
                     if delayWidth > 0 then
                         delayWidth = delayWidth - 416
@@ -3662,17 +3630,6 @@ local function drawNotesToGrid(allNotes)
                         if cutValue < l_song_transport.tpl then
                             buttonWidth = buttonWidth - ((gridStepSizeW - gridSpacing) / 100 * (100 / l_song_transport.tpl * (l_song_transport.tpl - cutValue)))
                         end
-                    end
-
-                    l_vbw["bc" .. current_note_index] = nil
-                    local btn = vb:row {
-                        margin = -gridMargin,
-                        spacing = -gridSpacing,
-                        id = "bc" .. current_note_index,
-                    }
-
-                    if current_note_step > 1 then
-                        spaceWidth = (gridStepSizeW * (current_note_step - 1)) - (gridSpacing * (current_note_step - 2))
                     end
 
                     if l_song_st.delay_column_visible then
@@ -3698,12 +3655,6 @@ local function drawNotesToGrid(allNotes)
                         buttonWidth = buttonWidth + addWidth
                     end
 
-                    if spaceWidth > 0 then
-                        btn:add_child(vb:space {
-                            width = spaceWidth,
-                        });
-                    end
-
                     --recalc retrigger value, reset it to 0, when greater than tpl
                     if retriggerWidth > 0 then
                         retriggerWidth = retriggerWidth - 432
@@ -3712,29 +3663,32 @@ local function drawNotesToGrid(allNotes)
                         end
                     end
 
-                    noteWidth = l_math_max(buttonWidth - buttonSpace - 1, l_math_max(1, preferences.minSizeOfNoteButton.value + preferences.clickAreaSizeForScalingPx.value))
+                    noteWidth = l_math_max(buttonWidth - 1, l_math_max(1, preferences.minSizeOfNoteButton.value + preferences.clickAreaSizeForScalingPx.value))
 
                     if not isScaleBtnHidden then
                         noteWidth = noteWidth - preferences.clickAreaSizeForScalingPx.value + 4
                     end
 
                     l_vbw["b" .. current_note_index] = nil
-                    local btn_body = vb:row {
-                        spacing = -2,
-                        vb:button {
-                            id = "b" .. current_note_index,
-                            height = gridStepSizeH,
-                            width = noteWidth,
-                            text = current_note_string,
-                            notifier = loadstring(current_note_param .. ",true)"),
-                            pressed = loadstring(current_note_param .. ",false)")
+                    --print(noteWidth, buttonWidth, gridStepSizeW)
+                    local btn = vb:button {
+                        id = "b" .. current_note_index,
+                        height = gridStepSizeH,
+                        width = buttonWidth,
+                        text = current_note_string,
+                        origin = {
+                            x = delayWidth + ((current_note_step - 1) * gridStepSizeW + (current_note_step - 1) * gridOverlapping),
+                            y = (gridHeight - current_note_rowIndex) * gridStepSizeH + (gridHeight - current_note_rowIndex) * gridOverlapping
                         },
+                        notifier = loadstring(current_note_param .. ",true)"),
+                        pressed = loadstring(current_note_param .. ",false)")
                     }
 
                     if not noteButtons[current_note_rowIndex] then
                         noteButtons[current_note_rowIndex] = {}
                     end
 
+                    --[[
                     if not isScaleBtnHidden then
                         l_vbw["bs" .. current_note_index] = nil
                         btn_body:add_child(
@@ -3753,6 +3707,7 @@ local function drawNotesToGrid(allNotes)
                                 }
                         )
                     end
+                    ]]--
 
                     --shorten note button text, when its too large
                     if l_vbw["b" .. current_note_index].width > noteWidth then
@@ -3770,15 +3725,17 @@ local function drawNotesToGrid(allNotes)
                     end
 
                     --add button body
-                    btn:add_child(btn_body);
+                    --btn:add_child(btn_body);
 
                     --fix dialog resize
+                    --[[
                     if btn.width > (gridStepSizeW * gridWidth - (gridSpacing * (gridWidth))) + 1 then
                         btn.width = (gridStepSizeW * gridWidth - (gridSpacing * (gridWidth))) + 1
                     end
+                    ]]--
 
                     l_table_insert(noteButtons[current_note_rowIndex], btn);
-                    l_vbw["row" .. current_note_rowIndex]:add_child(btn)
+                    l_vbw["pianorollColumns"]:add_child(btn);
 
                     --set color
                     setNoteColor(noteData[current_note_index], false, isInSelection, current_note_ins)
@@ -4632,7 +4589,7 @@ local function fillPianoRoll(quickRefresh)
     for y = 1, gridHeight do
         if noteButtons[y] then
             for key in pairs(noteButtons[y]) do
-                l_vbw["row" .. y]:remove_child(noteButtons[y][key])
+                l_vbw["pianorollColumns"]:remove_child(noteButtons[y][key])
             end
         end
     end
@@ -4704,31 +4661,33 @@ local function fillPianoRoll(quickRefresh)
                     local ystring = tostring(y)
                     local index = stepString .. "_" .. ystring
                     local p = l_vbw["p" .. index]
-                    local ps = l_vbw["ps" .. index]
+                    --local ps = l_vbw["ps" .. index]
                     local color = colorWhiteKey[bb % 8 + 1]
                     local yPLusOffMod12 = (y + noffset) % 12
                     p.active = true
 
-                    if s < stepsCount and (
-                            (preferences.gridVLines.value == 2 and (s + stepOffset) % (lpb * 4) == 0) or
-                                    (preferences.gridVLines.value == 3 and (s + stepOffset) % lpb == 0))
-                    then
-                        p.width = gridStepSizeW - 2
-                        ps.width = 2
-                    else
-                        p.width = gridStepSizeW - 1
-                        ps.width = 1
-                    end
+                    --[[
+                        if s < stepsCount and (
+                                (preferences.gridVLines.value == 2 and (s + stepOffset) % (lpb * 4) == 0) or
+                                        (preferences.gridVLines.value == 3 and (s + stepOffset) % lpb == 0))
+                        then
+                            p.width = gridStepSizeW - 2
+                            --ps.width = 2
+                        else
+                            p.width = gridStepSizeW - 1
+                            --ps.width = 1
+                        end
 
-                    if
-                    currentScaleOffset and (
-                            (preferences.gridHLines.value == 2 and (y + noteOffset) % 12 == 1) or
-                                    (preferences.gridHLines.value == 3 and (y + noteOffset - currentScaleOffset) % 12 == 0))
-                    then
-                        p.height = gridStepSizeH - 1
-                    else
-                        p.height = gridStepSizeH
-                    end
+                        if
+                        currentScaleOffset and (
+                                (preferences.gridHLines.value == 2 and (y + noteOffset) % 12 == 1) or
+                                        (preferences.gridHLines.value == 3 and (y + noteOffset - currentScaleOffset) % 12 == 0))
+                        then
+                            p.height = gridStepSizeH - 1
+                        else
+                            p.height = gridStepSizeH
+                        end
+                        ]]--
 
                     if noteIndexCache[yPLusOffMod12] == nil then
                         noteIndexCache[yPLusOffMod12] = noteInScale(yPLusOffMod12)
@@ -4987,9 +4946,6 @@ local function fillPianoRoll(quickRefresh)
             end
             p.color = temp
             p.active = true
-            p.width = gridStepSizeW - 1
-            p.height = gridStepSizeH
-            l_vbw["ps" .. i .. "_" .. y].width = 1
         end
     end
 
@@ -7085,24 +7041,25 @@ end
 --handle mouse events
 local function handleMouse(event)
     local setCursor = "default"
-    local x,y,c,type
+    local x, y, c, type
 
     if event.direction then
         return handleScrollWheel(event)
     end
     if event.hover_view then
+        local el = vbw[event.hover_view['id']]
         x, y = string.match(event.hover_view['id'], '^[p]+([0-9]+)_([0-9]+)$')
         if x and y then
             type = "g"
         else
             type, x, y, c = string.match(event.hover_view['id'], '^([bs]+)([0-9]+)_([0-9]+)_([0-9]+)$')
             if type and x and y and c then
-                if type == "bs" then
-                    type = "b"
-                    setCursor = "resize_horizontal"
-                elseif type == "b" then
+                if type == "b" then
                     type = "b"
                     setCursor = "move"
+                    if event.position['x']>=el.origin.x+el.width-preferences.clickAreaSizeForScalingPx.value then
+                        setCursor = "resize_horizontal"
+                    end
                 end
             end
         end
@@ -7115,9 +7072,15 @@ local function handleMouse(event)
         elseif event.type == "up" and event.button == "left" then
             pianoGridClick(x, y, true)
         end
+    elseif type == "b" then
+        if event.type == "down" and event.button == "left" then
+            noteClick(x,y,c,false, false)
+        elseif event.type == "up" and event.button == "left" then
+            noteClick(x,y,c,true, false)
+        end
     end
 
-    --rprint(xypadpos)
+    --rprint(event)
     vbw["pianorollColumns"].cursor = setCursor
 end
 
@@ -9017,7 +8980,7 @@ showPreferences = function()
 end
 
 --create main piano roll dialog
-local function createPianoRollDialog(gridWidth, gridHeight)
+local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
     local vb_temp
     local playCursor = vb:row {
         margin = -gridMargin,
@@ -9062,9 +9025,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         }
         playCursor:add_child(vb_temp)
     end
-    local pianorollColumns = vb:column {
-        margin = 0,
-        spacing = -1,
+    local pianorollColumns = vb:stack {
         id = "pianorollColumns",
         mouse_events = {
             "enter", "exit", "move", "drag", "down", "up", "wheel"
@@ -9073,35 +9034,19 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         cursor = "default",
     }
 
-    for y = gridHeight, 1, -1 do
-        local grow = vb:column {
-            id = "row" .. tostring(y),
-            spacing = -(gridStepSizeH - gridSpacing + 2)
-        }
-        local row = vb:row {
-            margin = -gridMargin,
-            spacing = -gridSpacing,
-        }
+    for y = 1, gridHeight do
         for x = 1, gridWidth do
-            vb_temp = vb:row {
-                id = "ppp" .. tostring(x) .. "_" .. tostring(y),
-                vb:button {
-                    id = "p" .. tostring(x) .. "_" .. tostring(y),
-                    height = gridStepSizeH,
-                    width = gridStepSizeW - 1,
-                    color = colorWhiteKey[1]
+            pianorollColumns:add_child(vb:button {
+                id = "p" .. tostring(x) .. "_" .. tostring(gridHeight + 1 - y),
+                height = gridStepSizeH,
+                width = gridStepSizeW,
+                origin = {
+                    x = (x - 1) * gridStepSizeW + (x - 1) * gridOverlapping,
+                    y = (y - 1) * gridStepSizeH + (y - 1) * gridOverlapping
                 },
-                vb:space {
-                    id = "ps" .. tostring(x) .. "_" .. tostring(y),
-                    width = 1,
-                    height = gridStepSizeH,
-                    visible = true,
-                }
-            }
-            row:add_child(vb_temp)
+                color = colorWhiteKey[1]
+            })
         end
-        grow:add_child(row)
-        pianorollColumns:add_child(grow)
     end
 
     --horizontal scrollbar
@@ -10262,11 +10207,11 @@ local function main_function()
             noteButtons = {}
             vb = renoise.ViewBuilder()
             vbw = vb.views
-            createPianoRollDialog(gridWidth, gridHeight)
+            createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
         end
         --when invisible is enabled, no snapback needed
         if not preferences.mouseWarpingCompatibilityMode.value then
-            vbw["xypad"].snapback = snapBackVal
+            --vbw["xypad"].snapback = snapBackVal
         end
         --fill new created pianoroll, timeline and refresh controls
         refreshNoteControls()
