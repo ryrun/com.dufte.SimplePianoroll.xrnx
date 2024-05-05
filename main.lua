@@ -3161,7 +3161,7 @@ function noteClick(x, y, c, released, forceScaling)
 end
 
 --will be called, when an empty grid button was clicked
-function pianoGridClick(x, y, released)
+local function pianoGridClick(x, y, released)
     local index = tostring(x) .. "_" .. tostring(y)
     local outside = false
     local noteDrawn = {}
@@ -3182,23 +3182,6 @@ function pianoGridClick(x, y, released)
         if outside and #noteSelection > 0 then
             updateNoteSelection(nil, true)
         end
-        --remove and add the clicked button, disable all buttons in the row, so the xypad in the background can
-        --receive the click event remove/add trick from joule:
-        --https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
-        --disabled buttons need to be enabled again outside this call when just one click was triggered
-        for i = 1, gridWidth do
-            vbw["p" .. i .. "_" .. y].active = false
-            table.insert(xypadpos.disabled, "p" .. i .. "_" .. y)
-            --prevent accidentally note drawing "twins", when piano grid buttons overlap
-            if vbw["p" .. i .. "_" .. y + 1] then
-                vbw["p" .. i .. "_" .. y + 1].active = false
-                table.insert(xypadpos.disabled, "p" .. i .. "_" .. y + 1)
-            end
-        end
-        vbw["ppp" .. index]:remove_child(vbw["p" .. index])
-        vbw["ppp" .. index]:remove_child(vbw["ps" .. index])
-        vbw["ppp" .. index]:add_child(vbw["p" .. index])
-        vbw["ppp" .. index]:add_child(vbw["ps" .. index])
         xypadpos.nx = x
         xypadpos.ny = y
         xypadpos.preview = {}
@@ -3766,7 +3749,6 @@ local function drawNotesToGrid(allNotes)
                                         width = preferences.clickAreaSizeForScalingPx.value,
                                         notifier = loadstring(current_note_param .. ",true,true)"),
                                         pressed = loadstring(current_note_param .. ",false,true)"),
-                                        cursor = "resize_horizontal",
                                     }
                                 }
                         )
@@ -7100,6 +7082,45 @@ local function refreshSelectedNotes()
     refreshPianoRollNeeded = true
 end
 
+--handle mouse events
+local function handleMouse(event)
+    local setCursor = "default"
+    local x,y,c,type
+
+    if event.direction then
+        return handleScrollWheel(event)
+    end
+    if event.hover_view then
+        x, y = string.match(event.hover_view['id'], '^[p]+([0-9]+)_([0-9]+)$')
+        if x and y then
+            type = "g"
+        else
+            type, x, y, c = string.match(event.hover_view['id'], '^([bs]+)([0-9]+)_([0-9]+)_([0-9]+)$')
+            if type and x and y and c then
+                if type == "bs" then
+                    type = "b"
+                    setCursor = "resize_horizontal"
+                elseif type == "b" then
+                    type = "b"
+                    setCursor = "move"
+                end
+            end
+        end
+    end
+    --print(type,x,y,c)
+    --
+    if type == "g" then
+        if event.type == "down" and event.button == "left" then
+            pianoGridClick(x, y, false)
+        elseif event.type == "up" and event.button == "left" then
+            pianoGridClick(x, y, true)
+        end
+    end
+
+    --rprint(xypadpos)
+    vbw["pianorollColumns"].cursor = setCursor
+end
+
 --handle xy pad events
 local function handleXypad(val)
     local quickRefresh
@@ -7281,12 +7302,12 @@ local function handleXypad(val)
                         forceFullRefresh = true
                     end
                     if val.x == 1 and stepSlider.value > 0 then
-                        stepSlider.value = clamp(stepSlider.value - 1, stepSlider.min, stepSlider.max-1)
+                        stepSlider.value = clamp(stepSlider.value - 1, stepSlider.min, stepSlider.max - 1)
                         xypadpos.x = xypadpos.x + 1
                         xypadpos.lastx = xypadpos.lastx + 1
                         forceFullRefresh = true
-                    elseif val.x - 1 == gridWidth and stepSlider.value <= stepSlider.max-1 then
-                        stepSlider.value = clamp(stepSlider.value + 1, stepSlider.min, stepSlider.max-1)
+                    elseif val.x - 1 == gridWidth and stepSlider.value <= stepSlider.max - 1 then
+                        stepSlider.value = clamp(stepSlider.value + 1, stepSlider.min, stepSlider.max - 1)
                         xypadpos.x = xypadpos.x - 1
                         xypadpos.lastx = xypadpos.lastx - 1
                         forceFullRefresh = true
@@ -9046,9 +9067,10 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         spacing = -1,
         id = "pianorollColumns",
         mouse_events = {
-            "wheel"
+            "enter", "exit", "move", "drag", "down", "up", "wheel"
         },
-        mouse_handler = handleScrollWheel,
+        mouse_handler = handleMouse,
+        cursor = "default",
     }
 
     for y = gridHeight, 1, -1 do
@@ -9061,17 +9083,13 @@ local function createPianoRollDialog(gridWidth, gridHeight)
             spacing = -gridSpacing,
         }
         for x = 1, gridWidth do
-            local temp = "pianoGridClick(" .. tostring(x) .. "," .. tostring(y) .. ",true)"
-            local temp2 = "pianoGridClick(" .. tostring(x) .. "," .. tostring(y) .. ",false)"
             vb_temp = vb:row {
                 id = "ppp" .. tostring(x) .. "_" .. tostring(y),
                 vb:button {
                     id = "p" .. tostring(x) .. "_" .. tostring(y),
                     height = gridStepSizeH,
                     width = gridStepSizeW - 1,
-                    color = colorWhiteKey[1],
-                    notifier = loadstring(temp),
-                    pressed = loadstring(temp2)
+                    color = colorWhiteKey[1]
                 },
                 vb:space {
                     id = "ps" .. tostring(x) .. "_" .. tostring(y),
