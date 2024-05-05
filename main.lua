@@ -3712,20 +3712,15 @@ local function drawNotesToGrid(allNotes)
                     --print(noteWidth, buttonWidth, gridStepSizeW)
                     local btn = vb:button {
                         id = "b" .. current_note_index,
+                        tooltip = "b" .. current_note_index,
                         height = gridStepSizeH,
                         width = buttonWidth,
                         text = current_note_string,
                         origin = {
                             x = delayWidth + ((current_note_step - 1) * gridStepSizeW + (current_note_step - 1) * gridOverlapping),
                             y = (gridHeight - current_note_rowIndex) * gridStepSizeH + (gridHeight - current_note_rowIndex) * gridOverlapping
-                        },
-                        notifier = loadstring(current_note_param .. ",true)"),
-                        pressed = loadstring(current_note_param .. ",false)")
+                        }
                     }
-
-                    if not noteButtons[current_note_rowIndex] then
-                        noteButtons[current_note_rowIndex] = {}
-                    end
 
                     --[[
                     if not isScaleBtnHidden then
@@ -3773,7 +3768,7 @@ local function drawNotesToGrid(allNotes)
                     end
                     ]]--
 
-                    l_table_insert(noteButtons[current_note_rowIndex], btn);
+                    l_table_insert(noteButtons, btn);
                     l_vbw["pianorollColumns"]:add_child(btn);
 
                     --set color
@@ -3810,7 +3805,7 @@ local function drawNotesToGrid(allNotes)
                                         }
                                     }
                             );
-                            l_table_insert(noteButtons[current_note_rowIndex], retrigger);
+                            --l_table_insert(noteButtons[current_note_rowIndex], retrigger);
                             l_vbw["row" .. current_note_rowIndex]:add_child(retrigger)
                             n = n + 1
                         end
@@ -4625,12 +4620,8 @@ local function fillPianoRoll(quickRefresh)
     end
 
     --remove old notes
-    for y = 1, gridHeight do
-        if noteButtons[y] then
-            for key in pairs(noteButtons[y]) do
-                l_vbw["pianorollColumns"]:remove_child(noteButtons[y][key])
-            end
-        end
+    for _,el in pairs(noteButtons) do
+        l_vbw["pianorollColumns"]:remove_child(el)
     end
 
     --reset vars
@@ -7092,7 +7083,7 @@ local function handleMouse(event)
     end
 
     if event.hover_view then
-        --print(event.hover_view.id)
+        print(event.hover_view.id)
         --rprint(noteData)
         --print("---")
     end
@@ -7122,6 +7113,7 @@ local function handleMouse(event)
             end
             --when scale mode is active, scale notes
             if xypadpos.scalemode then
+                setCursor = "resize_horizontal"
                 if #noteSelection == 1 and xypadpos.resetscale then
                     --when a new len will be drawn, then reset len to 1
                     changeSizeSelectedNotes(1)
@@ -7176,6 +7168,7 @@ local function handleMouse(event)
             end
             --when move note is active, move notes
             if not xypadpos.scalemode then
+                setCursor = "move"
                 --scroll through, when note hits border
                 --[[
                 if val and val.scroll then
