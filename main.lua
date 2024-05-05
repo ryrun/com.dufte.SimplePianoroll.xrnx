@@ -487,6 +487,7 @@ local xypadpos = {
     y = 0, --click pos y
     nx = 0, --note x pos
     ny = 0, --note y pos
+    nc = 0, --note column
     nlen = 0, --note len
     time = 0, --click time
     lastx = 0,
@@ -506,7 +507,8 @@ local xypadpos = {
     leftClick = false,
     disabled = {},
     preview = {},
-    loopslider = nil
+    loopslider = nil,
+    dragging = false
 }
 
 --some values to remember for additional tools, prevent upval limit error
@@ -2914,63 +2916,97 @@ end
 
 --draw selection rectangle
 local function drawRectangle(show, x, y, x2, y2)
+    local pianorollColumns = vbw["pianorollColumns"]
+    if not vbw["seltop"] then
+        pianorollColumns:add_child(vb:button {
+            id = "seltop",
+            origin = {
+                x = 0,
+                y = 0
+            },
+            width = 1,
+            height = 5,
+            color = colorStepOn,
+            visible = false
+        })
+        pianorollColumns:add_child(vb:button {
+            id = "selbottom",
+            origin = {
+                x = 0,
+                y = 0
+            },
+            width = 1,
+            height = 5,
+            color = colorStepOn,
+            visible = false
+        })
+        pianorollColumns:add_child(vb:button {
+            id = "selleft",
+            origin = {
+                x = 0,
+                y = 0
+            },
+            width = 5,
+            height = 1,
+            color = colorStepOn,
+            visible = false
+        })
+        pianorollColumns:add_child(vb:button {
+            id = "selright",
+            origin = {
+                x = 0,
+                y = 0
+            },
+            width = 5,
+            height = 1,
+            color = colorStepOn,
+            visible = false
+        })
+    end
     if not show then
-        vbw["sel"].visible = false
+        pianorollColumns:remove_child(vbw["seltop"])
+        pianorollColumns:remove_child(vbw["selleft"])
+        pianorollColumns:remove_child(vbw["selright"])
+        pianorollColumns:remove_child(vbw["selbottom"])
+        vbw["seltop"] = nil
+        vbw["selleft"] = nil
+        vbw["selright"] = nil
+        vbw["selbottom"] = nil
     elseif x ~= nil and y ~= nil and x2 ~= nil and y2 ~= nil then
-        local rx = math.min(x, x2)
+        local rx = math.max(math.min(x, x2), 1)
         local rx2 = math.min(math.max(x, x2), gridWidth)
-        local ry = math.min(y, y2)
+        local ry = math.max(math.min(y, y2), 1)
         local ry2 = math.min(math.max(y, y2), gridHeight)
-        local addW
         if rx ~= rx2 or ry ~= ry2 then
-            if (gridHeight - ry2) * gridStepSizeH > 0 then
-                vbw["seltopspace"].height = (gridHeight - ry2) * (gridStepSizeH - 3)
-                vbw["seltopspace1"].height = vbw["seltopspace"].height
-                vbw["seltopspace2"].height = vbw["seltopspace"].height
-                vbw["seltopspace"].visible = true
-                vbw["seltopspace1"].visible = true
-                vbw["seltopspace2"].visible = true
-            else
-                vbw["seltopspace"].visible = false
-                vbw["seltopspace1"].visible = false
-                vbw["seltopspace2"].visible = false
-            end
-            if rx > 1 then
-                vbw["selleftspace"].width = (rx - 1) * (gridStepSizeW - 4)
-                addW = 2
-            else
-                vbw["selleftspace"].width = 2
-                addW = 0
-            end
-            vbw["seltop"].width = gridStepSizeW + ((rx2 - rx) * (gridStepSizeW - 4)) - 5 + addW
-            vbw["seltop"].color = colorStepOn
+            vbw["seltop"].origin = {
+                x = ((rx - 1) * gridStepSizeW + (rx - 1) * gridOverlapping),
+                y = (gridHeight - ry2) * gridStepSizeH + (gridHeight - ry2) * gridOverlapping
+            }
+            vbw["seltop"].width = (gridStepSizeW * (rx2 - rx + 1)) - (-gridOverlapping * (rx2 - rx + 1))
             vbw["seltop"].visible = true
+            vbw["selbottom"].origin = {
+                x = vbw["seltop"].origin.x,
+                y = (gridHeight - ry + 1) * gridStepSizeH + (gridHeight - ry + 2) * gridOverlapping
+            }
             vbw["selbottom"].width = vbw["seltop"].width
-            vbw["selbottom"].color = colorStepOn
             vbw["selbottom"].visible = true
-            vbw["selheightspace"].height = math.max(1, (ry2 - ry) * (gridStepSizeH - 3)) + 9
-            vbw["selleft"].height = vbw["selheightspace"].height + 10
-            vbw["selleft"].color = colorStepOn
-            vbw["selright"].height = vbw["selheightspace"].height + 10
-            vbw["selright"].color = colorStepOn
-            vbw["sel"].visible = true
+            vbw["selleft"].height = vbw["selbottom"].origin.y - vbw["seltop"].origin.y + -gridOverlapping
+            vbw["selleft"].origin = vbw["seltop"].origin
+            vbw["selleft"].visible = true
+            vbw["selright"].height = vbw["selleft"].height
+            vbw["selright"].origin = {
+                x = vbw["selleft"].origin.x + vbw["seltop"].width + gridOverlapping,
+                y = vbw["selleft"].origin.y
+            }
+            vbw["selright"].visible = true
         else
-            vbw["sel"].visible = false
+            vbw["seltop"].visible = false
+            vbw["selleft"].visible = false
+            vbw["selright"].visible = false
+            vbw["selbottom"].visible = false
         end
     elseif x ~= nil then
-        vbw["seltopspace"].height = 1
-        vbw["seltopspace1"].height = vbw["seltopspace"].height
-        vbw["seltopspace2"].height = vbw["seltopspace"].height
-        vbw["seltop"].visible = false
-        vbw["selbottom"].visible = false
-        vbw["selleft"].height = gridHeight * (gridStepSizeH - 3)
-        vbw["selleft"].color = colorStepOn
-        if x > 1 then
-            vbw["selleftspace"].width = (x - 1) * (gridStepSizeW - 4)
-        else
-            vbw["selleftspace"].width = 2
-        end
-        vbw["sel"].visible = true
+
     end
 end
 
@@ -3061,9 +3097,11 @@ function noteClick(x, y, c, released, forceScaling)
         xypadpos.lastx = -1
         xypadpos.nx = x
         xypadpos.ny = y
+        xypadpos.nc = c
         xypadpos.nlen = note_data.len
         xypadpos.previewmode = false
         xypadpos.scaling = false
+        xypadpos.dragging = false
         if forceScaling then
             xypadpos.scalemode = true
         else
@@ -3159,6 +3197,7 @@ function pianoGridClick(x, y, released)
         xypadpos.scalemode = false
         xypadpos.resetscale = false
         xypadpos.notemode = false
+        xypadpos.dragging = false
         xypadpos.time = os.clock()
         if checkMode("preview") and not preferences.mouseWarpingCompatibilityMode.value then
             xypadpos.previewmode = true
@@ -3559,7 +3598,7 @@ local function drawNotesToGrid(allNotes)
             end
 
             --only process notes on steps and visibility, when there is a valid row
-            if current_note_rowIndex>=1 and current_note_rowIndex<=gridHeight then
+            if current_note_rowIndex >= 1 and current_note_rowIndex <= gridHeight then
                 --change note display len
                 if current_note_step < 1 then
                     current_note_len = current_note_len + (current_note_step - 1)
@@ -3614,7 +3653,7 @@ local function drawNotesToGrid(allNotes)
                         end
                     end
 
-                    buttonWidth = (gridStepSizeW * current_note_len) - (-gridOverlapping * (current_note_len-2))
+                    buttonWidth = (gridStepSizeW * current_note_len) - (-gridOverlapping * (current_note_len - 2))
 
                     if delayWidth > 0 then
                         delayWidth = delayWidth - 416
@@ -7001,9 +7040,10 @@ local function refreshSelectedNotes()
     local rowIndex
 
     for key = 1, #noteSelection do
-        if l_vbw["bc" .. noteSelection[key].idx] then
-            l_vbw["bc" .. noteSelection[key].idx].visible = false
+        if l_vbw["b" .. noteSelection[key].idx] then
+            l_vbw["b" .. noteSelection[key].idx].visible = false
         end
+        --[[
         for i = 1, 0xf do
             if l_vbw["br" .. noteSelection[key].idx .. "_" .. i] then
                 l_vbw["br" .. noteSelection[key].idx .. "_" .. i].visible = false
@@ -7011,6 +7051,7 @@ local function refreshSelectedNotes()
                 break
             end
         end
+        ]]--
         rowIndex = noteValue2GridRowOffset(noteSelection[key].note, true)
         noteSelection[key].idx = tostring(noteSelection[key].step) .. "_" .. tostring(rowIndex) .. "_" .. tostring(noteSelection[key].column)
         noteString = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column).note_string
@@ -7041,47 +7082,284 @@ end
 --handle mouse events
 local function handleMouse(event)
     local setCursor = "default"
-    local x, y, c, type
+    local pianorollColumns = vbw["pianorollColumns"]
+    local x, y, c, type, forceScaling, val_x, val_y, quickRefresh, forceFullRefresh
 
-    if event.direction then
-        return handleScrollWheel(event)
+    --when in dragmode reset
+    if xypadpos.dragging and event.type == "up" and event.button == "left" then
+        xypadpos.dragging = false
+        return
     end
+
     if event.hover_view then
-        local el = vbw[event.hover_view['id']]
-        x, y = string.match(event.hover_view['id'], '^[p]+([0-9]+)_([0-9]+)$')
-        if x and y then
-            type = "g"
+        --print(event.hover_view.id)
+        --rprint(noteData)
+        --print("---")
+    end
+
+    --calculate grid pos
+    val_x = (gridWidth / pianorollColumns.width * event.position.x) + 1
+    val_y = gridHeight - (gridHeight / pianorollColumns.height * event.position.y) + 1
+
+    if event.type == "up" and event.button == "left" then
+        drawRectangle(false)
+    end
+
+    if event.type == "drag" and event.button_flags["left"] then
+        if xypadpos.notemode then
+            if not xypadpos.dragging then
+                noteClick(xypadpos.nx, xypadpos.ny, xypadpos.nc, true)
+                xypadpos.dragging = true
+                xypadpos.x = val_x
+                xypadpos.y = val_y
+            end
+            --mouse dragging and scaling
+            local max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
+
+            --prevent moving and scaling outside the grid
+            if val_x > max then
+                val_x = max
+            end
+            --when scale mode is active, scale notes
+            if xypadpos.scalemode then
+                if #noteSelection == 1 and xypadpos.resetscale then
+                    --when a new len will be drawn, then reset len to 1
+                    changeSizeSelectedNotes(1)
+                    --and remove delay
+                    changePropertiesOfSelectedNotes(nil, nil, 0, 0, nil, nil, nil, "removecut")
+                    --switch to scale mode, when note was resettet
+                    xypadpos.scaling = true
+                    xypadpos.resetscale = false
+                end
+                local v = 0
+                local note_data = noteSelection[xypadpos.selection_key]
+                if not note_data and noteSelection[1] then
+                    note_data = noteSelection[1]
+                end
+                if note_data then
+                    if modifier.keyAlt and isDelayColumnActive() then
+                        v = math.floor((val_x - (xypadpos.nx + note_data.len + (note_data.end_dly / 0x100))) * 0x100)
+                        --calculate snap
+                        local delay = (note_data.end_dly + v) % 0x100
+                        local len = math.floor((note_data.end_dly + v) / 0x100)
+                        local scalesnapsize = math.floor(0x100 / 100 * preferences.snapToGridSize.value)
+                        if delay > 0x100 - scalesnapsize then
+                            v = v - delay + 0x100
+                        elseif delay < scalesnapsize then
+                            v = v - delay
+                        end
+                        --no scaling when target len < 1, then no scaling
+                        if note_data.len + len < 1 then
+                            v = 0
+                        end
+                    else
+                        v = math.floor(math.floor((val_x - (xypadpos.nx + note_data.len)) * 0x100 - note_data.end_dly) / 0x100 + 0.5) * 0x100
+                        if note_data.len + math.floor((note_data.end_dly + v) / 0x100) < 1 then
+                            v = 0
+                        end
+                    end
+                end
+                if v ~= 0 then
+                    blockLineModifier = true
+                    quickRefresh = true
+                    if changeSizeSelectedNotesByMicroSteps(v) then
+                        xypadpos.scaling = true
+                        xypadpos.resetscale = false
+                    end
+                elseif not xypadpos.scaling then
+                    if math.floor(xypadpos.y) - math.floor(val_y + 0.5) > 0 then
+                        xypadpos.scalemode = false
+                    elseif math.floor(xypadpos.y) - math.floor(val_y - 0.5) < 0 then
+                        xypadpos.scalemode = false
+                    end
+                end
+            end
+            --when move note is active, move notes
+            if not xypadpos.scalemode then
+                --scroll through, when note hits border
+                --[[
+                if val and val.scroll then
+                    if val_y == 1 and noteSlider.value < noteSlider.max then
+                        noteSlider.value = clamp(noteSlider.value + 1, noteSlider.min, noteSlider.max - 1)
+                        xypadpos.y = xypadpos.y + 1
+                        forceFullRefresh = true
+                    elseif val_y - 1 == gridHeight and noteSlider.value > 0 then
+                        noteSlider.value = clamp(noteSlider.value - 1, noteSlider.min, noteSlider.max - 1)
+                        xypadpos.y = xypadpos.y - 1
+                        forceFullRefresh = true
+                    end
+                    if val_x == 1 and stepSlider.value > 0 then
+                        stepSlider.value = clamp(stepSlider.value - 1, stepSlider.min, stepSlider.max - 1)
+                        xypadpos.x = xypadpos.x + 1
+                        xypadpos.lastx = xypadpos.lastx + 1
+                        forceFullRefresh = true
+                    elseif val_x - 1 == gridWidth and stepSlider.value <= stepSlider.max - 1 then
+                        stepSlider.value = clamp(stepSlider.value + 1, stepSlider.min, stepSlider.max - 1)
+                        xypadpos.x = xypadpos.x - 1
+                        xypadpos.lastx = xypadpos.lastx - 1
+                        forceFullRefresh = true
+                    end
+                end
+                ]]--
+                if modifier.keyAlt and isDelayColumnActive(true) then
+                    local v = math.floor((val_x - xypadpos.x) * 0x100)
+                    if v ~= 0 then
+                        blockLineModifier = true
+                        quickRefresh = true
+                        v = moveSelectedNotesByMicroSteps(v, modifier.keyShift)
+                        if v ~= false then
+                            xypadpos.x = xypadpos.x + (v / 0x100)
+                        end
+                    end
+                else
+                    xypadpos.x = math.floor(xypadpos.x)
+                    xypadpos.y = math.floor(xypadpos.y)
+                    if xypadpos.x - math.floor(val_x) > 0 and math.floor(val_x) ~= xypadpos.lastx then
+                        if xypadpos.duplicate then
+                            if modifier.keyControl and xypadpos.idx then
+                                if noteInSelection(noteData[xypadpos.idx]) then
+                                    noteSelection = {}
+                                end
+                                table.insert(noteSelection, noteData[xypadpos.idx])
+                                xypadpos.idx = nil
+                            end
+                            duplicateSelectedNotes(0)
+                            forceFullRefresh = true
+                            xypadpos.duplicate = false
+                        end
+                        for d = math.abs(xypadpos.x - math.floor(val_x)), 1, -1 do
+                            blockLineModifier = true
+                            quickRefresh = true
+                            if moveSelectedNotes(-d) then
+                                xypadpos.x = xypadpos.x - d
+                                break
+                            end
+                        end
+                        xypadpos.lastx = math.floor(val_x)
+                    elseif xypadpos.x - math.floor(val_x) < 0 and math.floor(val_x) ~= xypadpos.lastx then
+                        if xypadpos.duplicate then
+                            if modifier.keyControl and xypadpos.idx then
+                                if noteInSelection(noteData[xypadpos.idx]) then
+                                    noteSelection = {}
+                                end
+                                table.insert(noteSelection, noteData[xypadpos.idx])
+                                xypadpos.idx = nil
+                            end
+                            duplicateSelectedNotes(0)
+                            forceFullRefresh = true
+                            xypadpos.duplicate = false
+                        end
+                        for d = math.abs(xypadpos.x - math.floor(val_x)), 1, -1 do
+                            blockLineModifier = true
+                            quickRefresh = true
+                            if moveSelectedNotes(d) then
+                                xypadpos.x = xypadpos.x + d
+                                break
+                            end
+                        end
+                        xypadpos.lastx = math.floor(val_x)
+                    end
+                end
+                if math.floor(xypadpos.y) - math.floor(val_y + 0.1) > 0 then
+                    if xypadpos.duplicate then
+                        if modifier.keyControl and xypadpos.idx then
+                            if noteInSelection(noteData[xypadpos.idx]) then
+                                noteSelection = {}
+                            end
+                            table.insert(noteSelection, noteData[xypadpos.idx])
+                            xypadpos.idx = nil
+                        end
+                        duplicateSelectedNotes(0)
+                        forceFullRefresh = true
+                        xypadpos.duplicate = false
+                    end
+                    for d = math.abs(math.floor(xypadpos.y) - math.floor(val_y + 0.1)), 1, -1 do
+                        blockLineModifier = true
+                        quickRefresh = true
+                        if transposeSelectedNotes(-d) then
+                            xypadpos.y = math.floor(xypadpos.y) - d
+                            break
+                        end
+                    end
+                elseif math.floor(xypadpos.y) - math.floor(val_y - 0.1) < 0 then
+                    if xypadpos.duplicate then
+                        if modifier.keyControl and xypadpos.idx then
+                            if noteInSelection(noteData[xypadpos.idx]) then
+                                noteSelection = {}
+                            end
+                            table.insert(noteSelection, noteData[xypadpos.idx])
+                            xypadpos.idx = nil
+                        end
+                        duplicateSelectedNotes(0)
+                        forceFullRefresh = true
+                        xypadpos.duplicate = false
+                    end
+                    for d = math.abs(math.floor(xypadpos.y) - math.floor(val_y - 0.1)), 1, -1 do
+                        blockLineModifier = true
+                        quickRefresh = true
+                        if transposeSelectedNotes(d) then
+                            xypadpos.y = math.floor(xypadpos.y) + d
+                            break
+                        end
+                    end
+                end
+            end
         else
-            type, x, y, c = string.match(event.hover_view['id'], '^([bs]+)([0-9]+)_([0-9]+)_([0-9]+)$')
-            if type and x and y and c then
-                if type == "b" then
-                    type = "b"
-                    setCursor = "move"
-                    if event.position['x']>=el.origin.x+el.width-preferences.clickAreaSizeForScalingPx.value then
-                        setCursor = "resize_horizontal"
+            if xypadpos.x ~= math.floor(val_x) or xypadpos.y ~= math.floor(val_y) then
+                xypadpos.x = math.floor(val_x)
+                xypadpos.y = math.floor(val_y)
+                if not preferences.mouseWarpingCompatibilityMode.value then
+                    drawRectangle(true, xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny)
+                end
+                selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, modifier.keyShift)
+            end
+        end
+    else
+        if event.direction then
+            return handleScrollWheel(event)
+        end
+        if event.hover_view then
+            local el = vbw[event.hover_view['id']]
+            x, y = string.match(event.hover_view['id'], '^[p]+([0-9]+)_([0-9]+)$')
+            if x and y then
+                type = "g"
+            else
+                type, x, y, c = string.match(event.hover_view['id'], '^([bs]+)([0-9]+)_([0-9]+)_([0-9]+)$')
+                if type and x and y and c then
+                    if type == "b" then
+                        type = "b"
+                        setCursor = "move"
+                        forceScaling = false
+                        if event.position['x'] >= el.origin.x + el.width - preferences.clickAreaSizeForScalingPx.value then
+                            setCursor = "resize_horizontal"
+                            forceScaling = true
+                        end
                     end
                 end
             end
         end
-    end
-    --print(type,x,y,c)
-    --
-    if type == "g" then
-        if event.type == "down" and event.button == "left" then
-            pianoGridClick(x, y, false)
-        elseif event.type == "up" and event.button == "left" then
-            pianoGridClick(x, y, true)
-        end
-    elseif type == "b" then
-        if event.type == "down" and event.button == "left" then
-            noteClick(x,y,c,false, false)
-        elseif event.type == "up" and event.button == "left" then
-            noteClick(x,y,c,true, false)
-        end
-    end
 
-    --rprint(event)
-    vbw["pianorollColumns"].cursor = setCursor
+        if type == "g" then
+            if event.type == "down" and event.button == "left" then
+                pianoGridClick(x, y, false)
+            elseif event.type == "up" and event.button == "left" then
+                pianoGridClick(x, y, true)
+            end
+        elseif type == "b" then
+            if event.type == "down" and event.button == "left" then
+                noteClick(x, y, c, false, forceScaling)
+            elseif event.type == "up" and event.button == "left" then
+                noteClick(x, y, c, true, forceScaling)
+            end
+        end
+    end
+    pianorollColumns.cursor = setCursor
+    if forceFullRefresh then
+        blockLineModifier = false
+        fillPianoRoll()
+    elseif quickRefresh then
+        refreshSelectedNotes()
+    end
 end
 
 --handle xy pad events
@@ -10055,69 +10333,6 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
                                 },
                             }
                         },
-                        vb:row {
-                            id = "sel",
-                            visible = false,
-                            spacing = -3,
-                            margin = -gridMargin,
-                            vb:space {
-                                id = "selleftspace",
-                                width = 1,
-                                height = 1,
-                            },
-                            vb:column {
-                                vb:space {
-                                    id = "seltopspace1",
-                                    height = 1,
-                                    width = 1,
-                                },
-                                vb:button {
-                                    id = "selleft",
-                                    width = 5,
-                                    height = 1,
-                                    active = false,
-                                    color = colorStepOn,
-                                },
-                            },
-                            vb:column {
-                                vb:space {
-                                    id = "seltopspace",
-                                    height = 1,
-                                },
-                                vb:button {
-                                    id = "seltop",
-                                    active = false,
-                                    width = gridStepSizeW * 2 - gridSpacing * 2,
-                                    height = 5,
-                                    color = colorStepOn,
-                                },
-                                vb:space {
-                                    id = "selheightspace",
-                                    height = gridStepSizeH * 2,
-                                },
-                                vb:button {
-                                    id = "selbottom",
-                                    active = false,
-                                    width = gridStepSizeW * 2 - gridSpacing * 2,
-                                    height = 5,
-                                    color = colorStepOn,
-                                },
-                            },
-                            vb:column {
-                                vb:space {
-                                    id = "seltopspace2",
-                                    height = 1,
-                                    width = 1,
-                                },
-                                vb:button {
-                                    id = "selright",
-                                    width = 5,
-                                    height = 1,
-                                    active = false,
-                                    color = colorStepOn,
-                                },
-                            },
-                        },
                     },
                 },
             },
@@ -10171,7 +10386,7 @@ local function main_function()
                 if f then
                     local configcontent = f:read("*all")
                     f:close()
-                    if not string.match(configcontent, '\<WarpCursorOnDrag\>false\<\/WarpCursorOnDrag\>') then
+                    if not string.match(configcontent, '%<WarpCursorOnDrag%>false%<%/WarpCursorOnDrag%>') then
                         local res = app:show_prompt(
                                 "Mouse warping - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
                                 "Attention! You currently have mouse warping active in the Renoise settings.\n" ..
