@@ -4620,7 +4620,7 @@ local function fillPianoRoll(quickRefresh)
     end
 
     --remove old notes
-    for _,el in pairs(noteButtons) do
+    for _, el in pairs(noteButtons) do
         l_vbw["pianorollColumns"]:remove_child(el)
     end
 
@@ -4696,28 +4696,26 @@ local function fillPianoRoll(quickRefresh)
                     local yPLusOffMod12 = (y + noffset) % 12
                     p.active = true
 
-                    --[[
-                        if s < stepsCount and (
-                                (preferences.gridVLines.value == 2 and (s + stepOffset) % (lpb * 4) == 0) or
-                                        (preferences.gridVLines.value == 3 and (s + stepOffset) % lpb == 0))
-                        then
-                            p.width = gridStepSizeW - 2
-                            --ps.width = 2
-                        else
-                            p.width = gridStepSizeW - 1
-                            --ps.width = 1
-                        end
+                    if s < stepsCount and (
+                            (preferences.gridVLines.value == 2 and (s + stepOffset) % (lpb * 4) == 0) or
+                                    (preferences.gridVLines.value == 3 and (s + stepOffset) % lpb == 0))
+                    then
+                        p.width = gridStepSizeW - 1
+                        --ps.width = 2
+                    else
+                        p.width = gridStepSizeW
+                        --ps.width = 1
+                    end
 
-                        if
-                        currentScaleOffset and (
-                                (preferences.gridHLines.value == 2 and (y + noteOffset) % 12 == 1) or
-                                        (preferences.gridHLines.value == 3 and (y + noteOffset - currentScaleOffset) % 12 == 0))
-                        then
-                            p.height = gridStepSizeH - 1
-                        else
-                            p.height = gridStepSizeH
-                        end
-                        ]]--
+                    if
+                    currentScaleOffset and (
+                            (preferences.gridHLines.value == 2 and (y + noteOffset) % 12 == 1) or
+                                    (preferences.gridHLines.value == 3 and (y + noteOffset - currentScaleOffset) % 12 == 0))
+                    then
+                        p.height = gridStepSizeH - 1
+                    else
+                        p.height = gridStepSizeH
+                    end
 
                     if noteIndexCache[yPLusOffMod12] == nil then
                         noteIndexCache[yPLusOffMod12] = noteInScale(yPLusOffMod12)
@@ -4954,12 +4952,11 @@ local function fillPianoRoll(quickRefresh)
         drawNotesToGrid(newNotes)
     end
 
-    --show all with one call
-    l_vbw["pianoKeys"].visible = true
-    l_vbw["pianorollColumns"].visible = true
-
     --nothing else to do in quick refresh
     if quickRefresh then
+        --show all with one call
+        l_vbw["pianoKeys"].visible = true
+        l_vbw["pianorollColumns"].visible = true
         return
     end
 
@@ -5012,6 +5009,10 @@ local function fillPianoRoll(quickRefresh)
 
     --refresh histogram if needed
     refreshHistogram = true
+
+    --show all with one call
+    l_vbw["pianoKeys"].visible = true
+    l_vbw["pianorollColumns"].visible = true
 end
 
 --set playback pos via playback pos indicator
@@ -9303,6 +9304,9 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
         },
         mouse_handler = handleMouse,
         cursor = "default",
+        autosize = false,
+        width = (gridStepSizeW * gridWidth) - (-gridOverlapping * (gridWidth - 1)),
+        height = (gridStepSizeH * gridHeight) - (-gridOverlapping * (gridHeight - 1))
     }
 
     for y = 1, gridHeight do
@@ -10171,6 +10175,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
                             height = (gridStepSizeH - 3) * gridHeight,
                             min = { x = 1, y = 1 },
                             max = { x = gridWidth + 1, y = gridHeight + 1 },
+                            visible = false,
                             notifier = function(val)
                                 handleXypad(val)
                             end
