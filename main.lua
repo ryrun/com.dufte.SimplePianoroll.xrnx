@@ -1554,6 +1554,7 @@ end
 --refresh all controls
 local function refreshNoteControls()
     local track = song.selected_track
+    local setCursor = "default"
 
     vbw.note_len.value = currentNoteLength
 
@@ -2963,7 +2964,7 @@ local function drawRectangle(show, x, y, x2, y2)
             visible = false
         })
     end
-    if not show then
+    if not show and vbw["seltop"] then
         pianorollColumns:remove_child(vbw["seltop"])
         pianorollColumns:remove_child(vbw["selleft"])
         pianorollColumns:remove_child(vbw["selright"])
@@ -4605,6 +4606,10 @@ local function fillPianoRoll(quickRefresh)
     local noteIndexCache = {}
     local firstInit = false
 
+    --hide all elements, so renoise doesn't render it instant
+    l_vbw["pianoKeys"].visible = false
+    l_vbw["pianorollColumns"].visible = false
+
     --set auto ghost track
     if preferences.setLastEditedTrackAsGhost.value and lastTrackIndex and lastTrackIndex ~= l_song.selected_track_index and lastTrackIndex <= song.sequencer_track_count then
         l_vbw.ghosttracks.value = lastTrackIndex
@@ -4653,10 +4658,6 @@ local function fillPianoRoll(quickRefresh)
         stepSlider.visible = false
         stepOffset = 0
     end
-
-    --hide all elements, so renoise doesn't render it instant
-    l_vbw["pianoKeys"].visible = false
-    l_vbw["pianorollColumns"].visible = false
 
     --loop through columns
     for c = 1, columns do
@@ -7030,20 +7031,11 @@ local function refreshSelectedNotes()
     local newNotes_length = 0
     local noteString
     local rowIndex
-
+    l_vbw["pianorollColumns"].visible = false
     for key = 1, #noteSelection do
         if l_vbw["b" .. noteSelection[key].idx] then
             l_vbw["b" .. noteSelection[key].idx].visible = false
         end
-        --[[
-        for i = 1, 0xf do
-            if l_vbw["br" .. noteSelection[key].idx .. "_" .. i] then
-                l_vbw["br" .. noteSelection[key].idx .. "_" .. i].visible = false
-            else
-                break
-            end
-        end
-        ]]--
         rowIndex = noteValue2GridRowOffset(noteSelection[key].note, true)
         noteSelection[key].idx = tostring(noteSelection[key].step) .. "_" .. tostring(rowIndex) .. "_" .. tostring(noteSelection[key].column)
         noteString = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column).note_string
@@ -7068,6 +7060,7 @@ local function refreshSelectedNotes()
     if newNotes_length > 0 then
         drawNotesToGrid(newNotes)
     end
+    l_vbw["pianorollColumns"].visible = true
     refreshPianoRollNeeded = true
 end
 
@@ -7082,6 +7075,13 @@ local function handleMouse(event)
         xypadpos.dragging = false
         drawRectangle(false)
         return
+    end
+
+    --cursor per mode
+    if checkMode("pen") then
+        setCursor = "pencil"
+    elseif checkMode("preview") then
+        setCursor = "play"
     end
 
     --calculate grid pos
@@ -7304,7 +7304,7 @@ local function handleMouse(event)
         if event.direction then
             return handleScrollWheel(event)
         end
-        if #event.hover_views>0 then
+        if #event.hover_views > 0 then
             local el = vbw[event.hover_views[1]['id']]
             x, y = string.match(event.hover_views[1]['id'], '^[p]+([0-9]+)_([0-9]+)$')
             if x and y then
