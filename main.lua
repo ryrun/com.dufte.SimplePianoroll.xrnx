@@ -3087,6 +3087,7 @@ end
 
 --will be called, when a note was clicked
 function noteClick(x, y, c, released, forceScaling)
+    print(x, y, c, released, forceScaling, xypadpos.notemode, xypadpos.scalemode)
     local index = tostring(x) .. "_" .. tostring(y) .. "_" .. tostring(c)
     local note_data = noteData[index]
     local row = noteValue2GridRowOffset(note_data.note)
@@ -3532,7 +3533,6 @@ local function drawNotesToGrid(allNotes)
         if current_note_rowIndex ~= nil then
             local noteOnStepIndex = current_note_step
             local current_note_index = tostring(current_note_step) .. "_" .. tostring(current_note_rowIndex) .. "_" .. tostring(column)
-            local current_note_param = "noteClick(" .. l_string_gsub(current_note_index, "_", ",")
             if current_note_vel == nil then
                 current_note_vel = 255
             end
@@ -7041,7 +7041,7 @@ local function handleMouse(event)
     local x, y, c, type, forceScaling, val_x, val_y, quickRefresh, forceFullRefresh
 
     --when in dragmode reset
-    if xypadpos.dragging and event.type == "up" and event.button == "left" then
+    if xypadpos.dragging and event.type == "up" and (event.button == "left" or event.button == "right") then
         xypadpos.dragging = false
         drawRectangle(false)
         --stop removemode
@@ -7075,7 +7075,10 @@ local function handleMouse(event)
     val_x = (gridWidth / pianorollColumns.width * event.position.x) + 1
     val_y = gridHeight - (gridHeight / pianorollColumns.height * event.position.y) + 1
 
-    if event.type == "drag" and event.button_flags["left"] then
+    if event.type == "drag" and (event.button_flags["left"] or event.button_flags["right"]) then
+        if event.button_flags["right"] and not event.button_flags["left"] then
+            xypadpos.previewmode = true
+        end
         if xypadpos.removemode then
             --check which notes are hit
             for key in pairs(noteData) do
@@ -7133,7 +7136,9 @@ local function handleMouse(event)
             xypadpos.dragging = true
         elseif xypadpos.notemode then
             if not xypadpos.dragging then
-                noteClick(xypadpos.nx, xypadpos.ny, xypadpos.nc, true, xypadpos.scaling)
+                if not xypadpos.scalemode then
+                    noteClick(xypadpos.nx, xypadpos.ny, xypadpos.nc, true)
+                end
                 xypadpos.dragging = true
                 xypadpos.x = val_x
                 xypadpos.y = val_y
@@ -7377,6 +7382,9 @@ local function handleMouse(event)
         elseif type == "b" then
             if event.type == "down" and event.button == "left" then
                 noteClick(x, y, c, false, forceScaling)
+                if forceScaling then
+                    noteClick(x, y, c, true, forceScaling)
+                end
             elseif event.type == "up" and event.button == "left" then
                 noteClick(x, y, c, true, forceScaling)
             end
