@@ -169,7 +169,6 @@ local defaultPreferences = {
     centerViewOnOpen = true,
     chordDetection = true,
     keyLabels = 2,
-    mouseWarpingCompatibilityMode = false,
     setComputerKeyboardVelocity = false,
     moveNoteInPenMode = false,
     mirroringGhostTrack = false,
@@ -258,7 +257,6 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     previewMidiStuckWorkaround = defaultPreferences.previewMidiStuckWorkaround,
     limitPreviewBySelectionSize = defaultPreferences.limitPreviewBySelectionSize,
     chordDetection = defaultPreferences.chordDetection,
-    mouseWarpingCompatibilityMode = defaultPreferences.mouseWarpingCompatibilityMode,
     outOfPentatonicScaleHighlightingAmount = defaultPreferences.outOfPentatonicScaleHighlightingAmount,
     setComputerKeyboardVelocity = defaultPreferences.setComputerKeyboardVelocity,
     moveNoteInPenMode = defaultPreferences.moveNoteInPenMode,
@@ -3007,7 +3005,12 @@ local function drawRectangle(show, x, y, x2, y2)
             vbw["selbottom"].visible = false
         end
     elseif x ~= nil then
-
+        vbw["selleft"].origin = {
+            x = ((x - 1) * gridStepSizeW + (x - 1) * gridOverlapping),
+            y = 0
+        }
+        vbw["selleft"].height = (gridHeight) * gridStepSizeH + (gridHeight - 1) * gridOverlapping
+        vbw["selleft"].visible = true
     end
 end
 
@@ -3144,8 +3147,7 @@ function noteClick(x, y, c, released, forceScaling)
                     updateNoteSelection(note_data, true, true)
                     removeSelectedNotes()
                     --when removing notes switch into remove mode
-                    if not preferences.mouseWarpingCompatibilityMode.value
-                            and not preferences.disableNoteEraserMode.value
+                    if not preferences.disableNoteEraserMode.value
                             and checkMode("pen") then
                         xypadpos.notemode = false
                         xypadpos.removemode = true
@@ -3179,19 +3181,14 @@ function pianoGridClick(x, y, released)
         outside = true
     end
 
-    if not released and
-            (
-                    (not checkMode("preview") and not modifier.keyControl and not (outside and checkMode("pen")))
-                            or (checkMode("preview") and not preferences.mouseWarpingCompatibilityMode.value)
-            )
-    then
-        xypadpos.disabled = {}
+    if not released then
         --deselect current notes, when outside was clicked
         if outside and #noteSelection > 0 then
             updateNoteSelection(nil, true)
         end
         xypadpos.nx = x
         xypadpos.ny = y
+        xypadpos.nc = nil
         xypadpos.preview = {}
         xypadpos.previewmode = false
         xypadpos.removemode = false
@@ -3200,7 +3197,7 @@ function pianoGridClick(x, y, released)
         xypadpos.notemode = false
         xypadpos.dragging = false
         xypadpos.time = os.clock()
-        if checkMode("preview") and not preferences.mouseWarpingCompatibilityMode.value then
+        if checkMode("preview") then
             xypadpos.previewmode = true
             xypadpos.leftClick = true
             refreshChordDetection = true
@@ -3317,6 +3314,11 @@ function pianoGridClick(x, y, released)
                     end
                     --add new note, so its the first one on line, better for legato porta
                     column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay, currentNoteEndDelay)
+                    --
+                    if not xypadpos.nc then
+                        xypadpos.nc = column
+                    end
+                    --
                     noteoff = addNoteToPattern(
                             column,
                             x,
@@ -3713,7 +3715,6 @@ local function drawNotesToGrid(allNotes)
                     --print(noteWidth, buttonWidth, gridStepSizeW)
                     local btn = vb:button {
                         id = "b" .. current_note_index,
-                        tooltip = "b" .. current_note_index,
                         height = gridStepSizeH,
                         width = buttonWidth,
                         text = current_note_string,
@@ -3722,27 +3723,6 @@ local function drawNotesToGrid(allNotes)
                             y = (gridHeight - current_note_rowIndex) * gridStepSizeH + (gridHeight - current_note_rowIndex) * gridOverlapping
                         }
                     }
-
-                    --[[
-                    if not isScaleBtnHidden then
-                        l_vbw["bs" .. current_note_index] = nil
-                        btn_body:add_child(
-                                vb:row {
-                                    spacing = -3,
-                                    vb:space {
-                                        width = 1,
-                                    },
-                                    vb:button {
-                                        id = "bs" .. current_note_index,
-                                        height = gridStepSizeH,
-                                        width = preferences.clickAreaSizeForScalingPx.value,
-                                        notifier = loadstring(current_note_param .. ",true,true)"),
-                                        pressed = loadstring(current_note_param .. ",false,true)"),
-                                    }
-                                }
-                        )
-                    end
-                    ]]--
 
                     --shorten note button text, when its too large
                     if l_vbw["b" .. current_note_index].width > noteWidth then
@@ -3758,16 +3738,6 @@ local function drawNotesToGrid(allNotes)
                             end
                         end
                     end
-
-                    --add button body
-                    --btn:add_child(btn_body);
-
-                    --fix dialog resize
-                    --[[
-                    if btn.width > (gridStepSizeW * gridWidth - (gridSpacing * (gridWidth))) + 1 then
-                        btn.width = (gridStepSizeW * gridWidth - (gridSpacing * (gridWidth))) + 1
-                    end
-                    ]]--
 
                     l_table_insert(noteButtons, btn);
                     l_vbw["pianorollColumns"]:add_child(btn);
@@ -7074,6 +7044,23 @@ local function handleMouse(event)
     if xypadpos.dragging and event.type == "up" and event.button == "left" then
         xypadpos.dragging = false
         drawRectangle(false)
+        --stop removemode
+        xypadpos.removemode = false
+        refreshControls = true
+        refreshChordDetection = true
+        --stop old notes
+        if xypadpos.previewmode then
+            for key in pairs(xypadpos.preview) do
+                local note_data = xypadpos.preview[key]
+                xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] = nil
+                triggerNoteOfCurrentInstrument(note_data.note, false, false, note_data.vel, note_data.ins)
+                local row = noteValue2GridRowOffset(note_data.note)
+                if row ~= nil then
+                    setKeyboardKeyColor(row, false, false)
+                    highlightNoteRow(row, false)
+                end
+            end
+        end
         return
     end
 
@@ -7089,9 +7076,64 @@ local function handleMouse(event)
     val_y = gridHeight - (gridHeight / pianorollColumns.height * event.position.y) + 1
 
     if event.type == "drag" and event.button_flags["left"] then
-        if xypadpos.notemode then
+        if xypadpos.removemode then
+            --check which notes are hit
+            for key in pairs(noteData) do
+                local note_data = noteData[key]
+                if posInNoteRange(val_x + stepOffset, note_data) and #noteSelection == 0
+                        and note_data.note == math.floor((val_y - 1.1) + noteOffset)
+                        and not noteInSelection(note_data) then
+                    updateNoteSelection(note_data, true, true)
+                    break
+                elseif noteInSelection(note_data) then
+                    blockLineModifier = true
+                    removeNoteInPattern(note_data.column, note_data.line, note_data.len)
+                    noteSelection = {}
+                    forceFullRefresh = true
+                    break
+                end
+            end
+            xypadpos.dragging = true
+        elseif xypadpos.previewmode then
+            local playNotes = {}
+            --stop old notes
+            for key in pairs(xypadpos.preview) do
+                local note_data = xypadpos.preview[key]
+                if not posInNoteRange(val_x + stepOffset, note_data) then
+                    xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] = nil
+                    triggerNoteOfCurrentInstrument(note_data.note, false, note_data.vel, false, note_data.ins)
+                    local row = noteValue2GridRowOffset(note_data.note)
+                    if row ~= nil then
+                        setKeyboardKeyColor(row, false, false)
+                        highlightNoteRow(row, false)
+                    end
+                end
+            end
+            --play new notes
+            for key in pairs(noteData) do
+                local note_data = noteData[key]
+                if posInNoteRange(val_x + stepOffset, note_data) and xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] == nil then
+                    xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] = note_data
+                    table.insert(playNotes, note_data)
+                end
+            end
+            --resort notes
+            table.sort(playNotes, sortFunc.sortLeftOneFirst)
+            --play notes, but first column first
+            for i = 1, #playNotes do
+                triggerNoteOfCurrentInstrument(playNotes[i].note, true, playNotes[i].vel, false, playNotes[i].ins)
+                local row = noteValue2GridRowOffset(playNotes[i].note)
+                if row ~= nil then
+                    setKeyboardKeyColor(row, true, false)
+                    highlightNoteRow(row, true)
+                end
+            end
+            --draw cursor
+            drawRectangle(true, val_x)
+            xypadpos.dragging = true
+        elseif xypadpos.notemode then
             if not xypadpos.dragging then
-                noteClick(xypadpos.nx, xypadpos.ny, xypadpos.nc, true)
+                noteClick(xypadpos.nx, xypadpos.ny, xypadpos.nc, true, xypadpos.scaling)
                 xypadpos.dragging = true
                 xypadpos.x = val_x
                 xypadpos.y = val_y
@@ -7293,9 +7335,7 @@ local function handleMouse(event)
             if xypadpos.x ~= math.floor(val_x) or xypadpos.y ~= math.floor(val_y) then
                 xypadpos.x = math.floor(val_x)
                 xypadpos.y = math.floor(val_y)
-                if not preferences.mouseWarpingCompatibilityMode.value then
-                    drawRectangle(true, xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny)
-                end
+                drawRectangle(true, xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny)
                 selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, modifier.keyShift)
                 xypadpos.dragging = true
             end
@@ -7328,6 +7368,9 @@ local function handleMouse(event)
         if type == "g" then
             if event.type == "down" and event.button == "left" then
                 pianoGridClick(x, y, false)
+                if xypadpos.notemode then
+                    pianoGridClick(x, y, true)
+                end
             elseif event.type == "up" and event.button == "left" then
                 pianoGridClick(x, y, true)
             end
@@ -7348,335 +7391,10 @@ local function handleMouse(event)
     end
 end
 
---handle xy pad events
-local function handleXypad(val)
-    local quickRefresh
-    local forceFullRefresh
-    --reenabled disable elements
-    if #xypadpos.disabled > 0 then
-        for i = 1, #xypadpos.disabled do
-            local el = vbw[xypadpos.disabled[i]]
-            if el then
-                el.active = true
-            end
-        end
-        xypadpos.disabled = {}
-    end
-    --snap back
-    if (val.x == snapBackVal.x or val.y == snapBackVal.y) then
-        if val.x == snapBackVal.x and val.y == snapBackVal.y and xypadpos.leftClick then
-            xypadpos.leftClick = false
-            drawRectangle(false)
-            --stop removemode
-            xypadpos.removemode = false
-            refreshControls = true
-            refreshChordDetection = true
-            --stop old notes
-            if xypadpos.previewmode then
-                for key in pairs(xypadpos.preview) do
-                    local note_data = xypadpos.preview[key]
-                    xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] = nil
-                    triggerNoteOfCurrentInstrument(note_data.note, false, false, note_data.vel, note_data.ins)
-                    local row = noteValue2GridRowOffset(note_data.note)
-                    if row ~= nil then
-                        setKeyboardKeyColor(row, false, false)
-                        highlightNoteRow(row, false)
-                    end
-                end
-            end
-        end
-        return
-    end
-    if xypadpos.removemode then
-        if xypadpos.time < os.clock() - (xypadpos.pickuptiming * 10) and xypadpos.leftClick then
-            --check which notes are hit
-            for key in pairs(noteData) do
-                local note_data = noteData[key]
-                if posInNoteRange(val.x + stepOffset, note_data) and #noteSelection == 0
-                        and note_data.note == math.floor((val.y - 1.1) + noteOffset)
-                        and not noteInSelection(note_data) then
-                    updateNoteSelection(note_data, true, true)
-                    break
-                elseif noteInSelection(note_data) then
-                    blockLineModifier = true
-                    removeNoteInPattern(note_data.column, note_data.line, note_data.len)
-                    noteSelection = {}
-                    forceFullRefresh = true
-                    break
-                end
-            end
-        end
-    elseif xypadpos.previewmode then
-        local playNotes = {}
-        --stop old notes
-        for key in pairs(xypadpos.preview) do
-            local note_data = xypadpos.preview[key]
-            if not posInNoteRange(val.x + stepOffset, note_data) then
-                xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] = nil
-                triggerNoteOfCurrentInstrument(note_data.note, false, note_data.vel, false, note_data.ins)
-                local row = noteValue2GridRowOffset(note_data.note)
-                if row ~= nil then
-                    setKeyboardKeyColor(row, false, false)
-                    highlightNoteRow(row, false)
-                end
-            end
-        end
-        --play new notes
-        for key in pairs(noteData) do
-            local note_data = noteData[key]
-            if posInNoteRange(val.x + stepOffset, note_data) and xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] == nil then
-                xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] = note_data
-                table.insert(playNotes, note_data)
-            end
-        end
-        --resort notes
-        table.sort(playNotes, sortFunc.sortLeftOneFirst)
-        --play notes, but first column first
-        for i = 1, #playNotes do
-            triggerNoteOfCurrentInstrument(playNotes[i].note, true, playNotes[i].vel, false, playNotes[i].ins)
-            local row = noteValue2GridRowOffset(playNotes[i].note)
-            if row ~= nil then
-                setKeyboardKeyColor(row, true, false)
-                highlightNoteRow(row, true)
-            end
-        end
-        --draw cursor
-        drawRectangle(true, val.x)
-    elseif xypadpos.notemode then
-        --mouse dragging and scaling
-        local max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
-        if xypadpos.time > os.clock() - xypadpos.pickuptiming then
-            xypadpos.x = val.x
-            xypadpos.y = val.y
-            if xypadpos.scalemode then
-                xypadpos.distanceblock = true
-            end
-        elseif xypadpos.distanceblock then
-            --some distance is needed
-            if math.max(math.abs(xypadpos.x - val.x), math.abs(xypadpos.y - val.y)) > 0.69 then
-                xypadpos.distanceblock = false
-            end
-        else
-            --prevent moving and scaling outside the grid
-            if val.x > max then
-                val.x = max
-            end
-            --when scale mode is active, scale notes
-            if xypadpos.scalemode then
-                if #noteSelection == 1 and xypadpos.resetscale then
-                    --when a new len will be drawn, then reset len to 1
-                    changeSizeSelectedNotes(1)
-                    --and remove delay
-                    changePropertiesOfSelectedNotes(nil, nil, 0, 0, nil, nil, nil, "removecut")
-                    --switch to scale mode, when note was resettet
-                    xypadpos.scaling = true
-                    xypadpos.resetscale = false
-                end
-                local v = 0
-                local note_data = noteSelection[xypadpos.selection_key]
-                if not note_data and noteSelection[1] then
-                    note_data = noteSelection[1]
-                end
-                if note_data then
-                    if modifier.keyAlt and isDelayColumnActive() then
-                        v = math.floor((val.x - (xypadpos.nx + note_data.len + (note_data.end_dly / 0x100))) * 0x100)
-                        --calculate snap
-                        local delay = (note_data.end_dly + v) % 0x100
-                        local len = math.floor((note_data.end_dly + v) / 0x100)
-                        local scalesnapsize = math.floor(0x100 / 100 * preferences.snapToGridSize.value)
-                        if delay > 0x100 - scalesnapsize then
-                            v = v - delay + 0x100
-                        elseif delay < scalesnapsize then
-                            v = v - delay
-                        end
-                        --no scaling when target len < 1, then no scaling
-                        if note_data.len + len < 1 then
-                            v = 0
-                        end
-                    else
-                        v = math.floor(math.floor((val.x - (xypadpos.nx + note_data.len)) * 0x100 - note_data.end_dly) / 0x100 + 0.5) * 0x100
-                        if note_data.len + math.floor((note_data.end_dly + v) / 0x100) < 1 then
-                            v = 0
-                        end
-                    end
-                end
-                if v ~= 0 then
-                    blockLineModifier = true
-                    quickRefresh = true
-                    if changeSizeSelectedNotesByMicroSteps(v) then
-                        xypadpos.scaling = true
-                        xypadpos.resetscale = false
-                    end
-                elseif not xypadpos.scaling then
-                    if math.floor(xypadpos.y) - math.floor(val.y + 0.5) > 0 then
-                        xypadpos.scalemode = false
-                    elseif math.floor(xypadpos.y) - math.floor(val.y - 0.5) < 0 then
-                        xypadpos.scalemode = false
-                    end
-                end
-            end
-            --when move note is active, move notes
-            if not xypadpos.scalemode then
-                --scroll through, when note hits border
-                if val.scroll then
-                    if val.y == 1 and noteSlider.value < noteSlider.max then
-                        noteSlider.value = clamp(noteSlider.value + 1, noteSlider.min, noteSlider.max - 1)
-                        xypadpos.y = xypadpos.y + 1
-                        forceFullRefresh = true
-                    elseif val.y - 1 == gridHeight and noteSlider.value > 0 then
-                        noteSlider.value = clamp(noteSlider.value - 1, noteSlider.min, noteSlider.max - 1)
-                        xypadpos.y = xypadpos.y - 1
-                        forceFullRefresh = true
-                    end
-                    if val.x == 1 and stepSlider.value > 0 then
-                        stepSlider.value = clamp(stepSlider.value - 1, stepSlider.min, stepSlider.max - 1)
-                        xypadpos.x = xypadpos.x + 1
-                        xypadpos.lastx = xypadpos.lastx + 1
-                        forceFullRefresh = true
-                    elseif val.x - 1 == gridWidth and stepSlider.value <= stepSlider.max - 1 then
-                        stepSlider.value = clamp(stepSlider.value + 1, stepSlider.min, stepSlider.max - 1)
-                        xypadpos.x = xypadpos.x - 1
-                        xypadpos.lastx = xypadpos.lastx - 1
-                        forceFullRefresh = true
-                    end
-                end
-                if modifier.keyAlt and isDelayColumnActive(true) then
-                    local v = math.floor((val.x - xypadpos.x) * 0x100)
-                    if v ~= 0 then
-                        blockLineModifier = true
-                        quickRefresh = true
-                        v = moveSelectedNotesByMicroSteps(v, modifier.keyShift)
-                        if v ~= false then
-                            xypadpos.x = xypadpos.x + (v / 0x100)
-                        end
-                    end
-                else
-                    xypadpos.x = math.floor(xypadpos.x)
-                    xypadpos.y = math.floor(xypadpos.y)
-                    if xypadpos.x - math.floor(val.x) > 0 and math.floor(val.x) ~= xypadpos.lastx then
-                        if xypadpos.duplicate then
-                            if modifier.keyControl and xypadpos.idx then
-                                if noteInSelection(noteData[xypadpos.idx]) then
-                                    noteSelection = {}
-                                end
-                                table.insert(noteSelection, noteData[xypadpos.idx])
-                                xypadpos.idx = nil
-                            end
-                            duplicateSelectedNotes(0)
-                            forceFullRefresh = true
-                            xypadpos.duplicate = false
-                        end
-                        for d = math.abs(xypadpos.x - math.floor(val.x)), 1, -1 do
-                            blockLineModifier = true
-                            quickRefresh = true
-                            if moveSelectedNotes(-d) then
-                                xypadpos.x = xypadpos.x - d
-                                break
-                            end
-                        end
-                        xypadpos.lastx = math.floor(val.x)
-                    elseif xypadpos.x - math.floor(val.x) < 0 and math.floor(val.x) ~= xypadpos.lastx then
-                        if xypadpos.duplicate then
-                            if modifier.keyControl and xypadpos.idx then
-                                if noteInSelection(noteData[xypadpos.idx]) then
-                                    noteSelection = {}
-                                end
-                                table.insert(noteSelection, noteData[xypadpos.idx])
-                                xypadpos.idx = nil
-                            end
-                            duplicateSelectedNotes(0)
-                            forceFullRefresh = true
-                            xypadpos.duplicate = false
-                        end
-                        for d = math.abs(xypadpos.x - math.floor(val.x)), 1, -1 do
-                            blockLineModifier = true
-                            quickRefresh = true
-                            if moveSelectedNotes(d) then
-                                xypadpos.x = xypadpos.x + d
-                                break
-                            end
-                        end
-                        xypadpos.lastx = math.floor(val.x)
-                    end
-                end
-                if math.floor(xypadpos.y) - math.floor(val.y + 0.1) > 0 then
-                    if xypadpos.duplicate then
-                        if modifier.keyControl and xypadpos.idx then
-                            if noteInSelection(noteData[xypadpos.idx]) then
-                                noteSelection = {}
-                            end
-                            table.insert(noteSelection, noteData[xypadpos.idx])
-                            xypadpos.idx = nil
-                        end
-                        duplicateSelectedNotes(0)
-                        forceFullRefresh = true
-                        xypadpos.duplicate = false
-                    end
-                    for d = math.abs(math.floor(xypadpos.y) - math.floor(val.y + 0.1)), 1, -1 do
-                        blockLineModifier = true
-                        quickRefresh = true
-                        if transposeSelectedNotes(-d) then
-                            xypadpos.y = math.floor(xypadpos.y) - d
-                            break
-                        end
-                    end
-                elseif math.floor(xypadpos.y) - math.floor(val.y - 0.1) < 0 then
-                    if xypadpos.duplicate then
-                        if modifier.keyControl and xypadpos.idx then
-                            if noteInSelection(noteData[xypadpos.idx]) then
-                                noteSelection = {}
-                            end
-                            table.insert(noteSelection, noteData[xypadpos.idx])
-                            xypadpos.idx = nil
-                        end
-                        duplicateSelectedNotes(0)
-                        forceFullRefresh = true
-                        xypadpos.duplicate = false
-                    end
-                    for d = math.abs(math.floor(xypadpos.y) - math.floor(val.y - 0.1)), 1, -1 do
-                        blockLineModifier = true
-                        quickRefresh = true
-                        if transposeSelectedNotes(d) then
-                            xypadpos.y = math.floor(xypadpos.y) + d
-                            break
-                        end
-                    end
-                end
-            end
-        end
-    else
-        --only process rectangle selection, when left mouse button is holded
-        if xypadpos.leftClick then
-            if xypadpos.x ~= math.floor(val.x) or xypadpos.y ~= math.floor(val.y) then
-                xypadpos.x = math.floor(val.x)
-                xypadpos.y = math.floor(val.y)
-                if not preferences.mouseWarpingCompatibilityMode.value then
-                    drawRectangle(true, xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny)
-                end
-                selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, modifier.keyShift)
-            end
-        end
-    end
-    if forceFullRefresh then
-        blockLineModifier = false
-        fillPianoRoll()
-    elseif quickRefresh then
-        refreshSelectedNotes()
-    end
-end
-
 --app idle
 local function appIdleEvent()
     --only process when window is created and visible
     if windowObj and windowObj.visible then
-        --scroll via idle, more instant
-        if xypadpos.leftClick then
-            local val = vbw["xypad"].value
-            if val.y == 1 or val.y - 1 == gridHeight or val.x == 1 or val.x - 1 == gridWidth then
-                val.scroll = true
-                handleXypad(val)
-            end
-        end
         --refresh modifier states, when keys are pressed outside focus
         local keyState = app.key_modifier_states
         --swap alt and control?
@@ -7822,14 +7540,6 @@ local function appIdleEvent()
             restoreFocus()
             refreshControls = true
             refreshPianoRollNeeded = true
-            --when invisible is enabled, no snapback needed
-            if vbw and vbw["xypad"] then
-                if not preferences.mouseWarpingCompatibilityMode.value then
-                    vbw["xypad"].snapback = snapBackVal
-                else
-                    vbw["xypad"].snapback = nil
-                end
-            end
             --apply new highlighting colors
             initColors()
             refreshPianoRollNeeded = true
@@ -9064,22 +8774,6 @@ showPreferences = function()
                                 end
                             },
                         },
-                        vbp:row {
-                            vbp:checkbox {
-                                bind = preferences.mouseWarpingCompatibilityMode,
-                                notifier = function()
-                                    rebuildWindowDialog = true
-                                end,
-                                tooltip = "Disable select marker and other mouse related functions to prevent mouse jumping."
-                            },
-                            vbp:text {
-                                text = "Mouse warping compatibility mode",
-                            },
-                        },
-                        vbp:text {
-                            text = "IMPORTANT: To improve mouse control, please disable\nthe mouse warping option in the Renoise preferences\nin section GUI. This" ..
-                                    " will also fix mouse jumping,\nwhen you use the piano roll.\nIf you need mouse warping, you can enable the\nmouse warping compatibility mode."
-                        },
                         vbp:space {
                             height = 8,
                         },
@@ -10161,17 +9855,6 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
                                 width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)),
                             },
                         },
-                        vb:xypad {
-                            id = "xypad",
-                            width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)),
-                            height = (gridStepSizeH - 3) * gridHeight,
-                            min = { x = 1, y = 1 },
-                            max = { x = gridWidth + 1, y = gridHeight + 1 },
-                            visible = false,
-                            notifier = function(val)
-                                handleXypad(val)
-                            end
-                        },
                         vb:column {
                             spacing = -1,
                             pianorollColumns,
@@ -10370,29 +10053,6 @@ local function main_function()
         penMode = preferences.forcePenMode.value
         --create main dialog
         if not windowContent or rebuildWindowDialog then
-            --check if mouse warping is enabled
-            if not preferences.mouseWarpingCompatibilityMode.value then
-                local f = io.open("../../../Config.xml", "r")
-                if f then
-                    local configcontent = f:read("*all")
-                    f:close()
-                    if not string.match(configcontent, '%<WarpCursorOnDrag%>false%<%/WarpCursorOnDrag%>') then
-                        local res = app:show_prompt(
-                                "Mouse warping - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
-                                "Attention! You currently have mouse warping active in the Renoise settings.\n" ..
-                                        "This causes the mouse cursor to jump into a corner when moving notes in the piano\n" ..
-                                        "roll or by simply clicking. You can either use the mouse warping compatibility mode\n" ..
-                                        "or disable mouse warping in the Renoise settings under GUI / Global.",
-                                { 'Enable Mouse warping compatibility mode', 'Ignore' }
-                        )
-                        if res == 'Enable Mouse warping compatibility mode' then
-                            preferences.mouseWarpingCompatibilityMode.value = true
-                            app:show_message("Mouse warping compatibility mode enabled.")
-                        end
-                    end
-                    configcontent = nil
-                end
-            end
             --init colors
             initColors()
             --setup grid settings
@@ -10413,10 +10073,6 @@ local function main_function()
             vb = renoise.ViewBuilder()
             vbw = vb.views
             createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
-        end
-        --when invisible is enabled, no snapback needed
-        if not preferences.mouseWarpingCompatibilityMode.value then
-            --vbw["xypad"].snapback = snapBackVal
         end
         --fill new created pianoroll, timeline and refresh controls
         refreshNoteControls()
