@@ -2917,7 +2917,7 @@ end
 --draw selection rectangle
 local function drawRectangle(show, x, y, x2, y2)
     local pianorollColumns = vbw["pianorollColumns"]
-    if not vbw["seltop"] then
+    if not vbw["seltop"] and show then
         pianorollColumns:add_child(vb:button {
             id = "seltop",
             origin = {
@@ -7080,22 +7080,13 @@ local function handleMouse(event)
     --when in dragmode reset
     if xypadpos.dragging and event.type == "up" and event.button == "left" then
         xypadpos.dragging = false
+        drawRectangle(false)
         return
-    end
-
-    if event.hover_view then
-        print(event.hover_view.id)
-        --rprint(noteData)
-        --print("---")
     end
 
     --calculate grid pos
     val_x = (gridWidth / pianorollColumns.width * event.position.x) + 1
     val_y = gridHeight - (gridHeight / pianorollColumns.height * event.position.y) + 1
-
-    if event.type == "up" and event.button == "left" then
-        drawRectangle(false)
-    end
 
     if event.type == "drag" and event.button_flags["left"] then
         if xypadpos.notemode then
@@ -7306,19 +7297,20 @@ local function handleMouse(event)
                     drawRectangle(true, xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny)
                 end
                 selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, modifier.keyShift)
+                xypadpos.dragging = true
             end
         end
     else
         if event.direction then
             return handleScrollWheel(event)
         end
-        if event.hover_view then
-            local el = vbw[event.hover_view['id']]
-            x, y = string.match(event.hover_view['id'], '^[p]+([0-9]+)_([0-9]+)$')
+        if #event.hover_views>0 then
+            local el = vbw[event.hover_views[1]['id']]
+            x, y = string.match(event.hover_views[1]['id'], '^[p]+([0-9]+)_([0-9]+)$')
             if x and y then
                 type = "g"
             else
-                type, x, y, c = string.match(event.hover_view['id'], '^([bs]+)([0-9]+)_([0-9]+)_([0-9]+)$')
+                type, x, y, c = string.match(event.hover_views[1]['id'], '^([bs]+)([0-9]+)_([0-9]+)_([0-9]+)$')
                 if type and x and y and c then
                     if type == "b" then
                         type = "b"
