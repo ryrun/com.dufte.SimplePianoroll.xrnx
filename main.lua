@@ -7376,12 +7376,12 @@ local function handleMouse(event)
             end
 
             if type == "g" then
-                if event.type == "down" and event.button == "left"  then
+                if (event.type == "down" or event.type == "double") and event.button == "left" then
                     pianoGridClick(x, y, false)
                     pianoGridClick(x, y, true)
                 end
             elseif type == "b" then
-                if event.type == "down" and event.button == "left" then
+                if (event.type == "down" or event.type == "double") and event.button == "left" then
                     noteClick(x, y, c, false, forceScaling)
                     noteClick(x, y, c, true, forceScaling)
                 end
@@ -8992,7 +8992,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
     local pianorollColumns = vb:stack {
         id = "pianorollColumns",
         mouse_events = {
-            "enter", "exit", "move", "drag", "down", "up", "wheel"
+            "enter", "exit", "move", "drag", "down", "up", "wheel", "double"
         },
         mouse_handler = handleMouse,
         cursor = "default",
