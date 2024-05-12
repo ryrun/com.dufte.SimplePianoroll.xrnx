@@ -7142,9 +7142,6 @@ local function handleMouse(event)
                 setCursor = "play"
             elseif xypadpos.notemode then
                 if not xypadpos.dragging then
-                    if not xypadpos.scalemode then
-                        noteClick(xypadpos.nx, xypadpos.ny, xypadpos.nc, true)
-                    end
                     xypadpos.dragging = true
                     xypadpos.x = val_x
                     xypadpos.y = val_y
@@ -7381,19 +7378,11 @@ local function handleMouse(event)
             if type == "g" then
                 if event.type == "down" and event.button == "left"  then
                     pianoGridClick(x, y, false)
-                    if xypadpos.notemode then
-                        pianoGridClick(x, y, true)
-                    end
-                elseif event.type == "up" and event.button == "left" then
                     pianoGridClick(x, y, true)
                 end
             elseif type == "b" then
                 if event.type == "down" and event.button == "left" then
                     noteClick(x, y, c, false, forceScaling)
-                    if forceScaling then
-                        noteClick(x, y, c, true, forceScaling)
-                    end
-                elseif event.type == "up" and event.button == "left" then
                     noteClick(x, y, c, true, forceScaling)
                 end
             end
