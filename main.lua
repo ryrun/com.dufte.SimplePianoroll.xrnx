@@ -4556,6 +4556,95 @@ local function afterEditProcess()
     end
 end
 
+--paint piano roll grid
+local function renderCanvas(context)
+    local w = context.size.width / gridWidth
+    local h = context.size.height / gridHeight
+    local lpb = song.transport.lpb
+
+    --fill color
+    context.fill_color = colorBaseGridColor
+    context:fill_rect(0, 0, context.size.width, context.size.height)
+
+    --base grid
+    context.stroke_color = { 0, 0, 0, 40 }
+    context:begin_path()
+    for y = 0, gridHeight do
+        context:move_to(0, y * h)
+        context:line_to(w * gridWidth, y * h)
+    end
+    for x = 0, gridWidth do
+        context:move_to(x * w, 0)
+        context:line_to(x * w, h * gridHeight)
+    end
+    context:stroke()
+    context:close_path()
+
+    --row coloring
+    context:begin_path()
+    context.fill_color = { 0, 0, 0, preferences.outOfNoteScaleShadingAmount.value * 100 }
+    for y = 0, gridHeight do
+        local yPLusOffMod12 = (gridHeight - y + noteOffset - 1) % 12
+        if not noteInScale(yPLusOffMod12) then
+            context:move_to(0, y * h)
+            context:line_to(w * gridWidth, y * h)
+            context:line_to(w * gridWidth, (y + 1) * h)
+            context:line_to(0, (y + 1) * h)
+        end
+    end
+    context:fill()
+    context:close_path()
+
+    --bar/beat coloring
+    context:begin_path()
+    for x = 0, gridWidth do
+        if (preferences.gridVLines.value == 2 and (x + stepOffset + (lpb * 4)) % (lpb * 8) == 0) or
+                (preferences.gridVLines.value == 3 and (x + stepOffset + lpb) % (lpb * 2) == 0)
+        then
+            context:move_to(x * w, 0)
+            if preferences.gridVLines.value == 3 then
+                context:line_to((x + lpb) * w, 0)
+                context:line_to((x + lpb) * w, h * gridHeight)
+            else
+                context:line_to((x + (lpb * 4)) * w, 0)
+                context:line_to((x + (lpb * 4)) * w, h * gridHeight)
+            end
+            context:line_to(x * w, h * gridHeight)
+        end
+    end
+    context:fill()
+    context:close_path()
+
+    --octave lines
+    context:begin_path()
+    context.stroke_color = { 0, 0, 0, 90 }
+    for y = 0, gridHeight do
+        if
+        currentScaleOffset and (
+                (preferences.gridHLines.value == 2 and (gridHeight - y + noteOffset) % 12 == 1) or
+                        (preferences.gridHLines.value == 3 and (gridHeight - y + noteOffset - currentScaleOffset) % 12 == 0))
+        then
+            context:move_to(0, (y + 1) * h)
+            context:line_to(w * gridWidth, (y + 1) * h)
+        end
+    end
+    context:stroke()
+    context:close_path()
+
+    --bar lines
+    context:begin_path()
+    for x = 0, gridWidth do
+        if (preferences.gridVLines.value == 2 and (x + stepOffset) % (lpb * 4) == 0) or
+                        (preferences.gridVLines.value == 3 and (x + stepOffset) % lpb == 0)
+        then
+            context:move_to(x * w, 0)
+            context:line_to(x * w, h * gridHeight)
+        end
+    end
+    context:stroke()
+    context:close_path()
+end
+
 --reset pianoroll and enable notes
 local function fillPianoRoll(quickRefresh)
     local l_vbw = vbw
@@ -4661,32 +4750,9 @@ local function fillPianoRoll(quickRefresh)
                 for y = 1, gridHeight do
                     local ystring = tostring(y)
                     local index = stepString .. "_" .. ystring
-                    local p = l_vbw["p" .. index]
                     --local ps = l_vbw["ps" .. index]
                     local color = colorWhiteKey[bb % 8 + 1]
                     local yPLusOffMod12 = (y + noffset) % 12
-                    p.active = true
-
-                    if s < stepsCount and (
-                            (preferences.gridVLines.value == 2 and (s + stepOffset) % (lpb * 4) == 0) or
-                                    (preferences.gridVLines.value == 3 and (s + stepOffset) % lpb == 0))
-                    then
-                        p.width = gridStepSizeW - 1
-                        --ps.width = 2
-                    else
-                        p.width = gridStepSizeW
-                        --ps.width = 1
-                    end
-
-                    if
-                    currentScaleOffset and (
-                            (preferences.gridHLines.value == 2 and (y + noteOffset) % 12 == 1) or
-                                    (preferences.gridHLines.value == 3 and (y + noteOffset - currentScaleOffset) % 12 == 0))
-                    then
-                        p.height = gridStepSizeH - 1
-                    else
-                        p.height = gridStepSizeH
-                    end
 
                     if noteIndexCache[yPLusOffMod12] == nil then
                         noteIndexCache[yPLusOffMod12] = noteInScale(yPLusOffMod12)
@@ -4698,7 +4764,6 @@ local function fillPianoRoll(quickRefresh)
                     end
                     if s <= stepsCount then
                         defaultColor["p" .. index] = color
-                        p.color = color
                         --refresh step indicator
                         if y == 1 then
                             l_vbw["s" .. stepString].active = true
@@ -4926,6 +4991,7 @@ local function fillPianoRoll(quickRefresh)
     --nothing else to do in quick refresh
     if quickRefresh then
         --show all with one call
+        --l_vbw["canvas"]:update()
         l_vbw["pianoKeys"].visible = true
         l_vbw["pianorollColumns"].visible = true
         return
@@ -4982,6 +5048,7 @@ local function fillPianoRoll(quickRefresh)
     refreshHistogram = true
 
     --show all with one call
+    l_vbw["canvas"]:update()
     l_vbw["pianoKeys"].visible = true
     l_vbw["pianorollColumns"].visible = true
 end
@@ -7356,9 +7423,10 @@ local function handleMouse(event)
             end
             if #event.hover_views > 0 then
                 local el = vbw[event.hover_views[1]['id']]
-                x, y = string.match(event.hover_views[1]['id'], '^[p]+([0-9]+)_([0-9]+)$')
-                if x and y then
+                if event.hover_views[1]['id'] == 'canvas' then
                     type = "g"
+                    x = math.floor(val_x)
+                    y = math.floor(val_y)
                 else
                     type, x, y, c = string.match(event.hover_views[1]['id'], '^([bs]+)([0-9]+)_([0-9]+)_([0-9]+)$')
                     if type and x and y and c then
@@ -8998,23 +9066,15 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
         cursor = "default",
         autosize = false,
         width = (gridStepSizeW * gridWidth) - (-gridOverlapping * (gridWidth - 1)),
-        height = (gridStepSizeH * gridHeight) - (-gridOverlapping * (gridHeight - 1))
+        height = (gridStepSizeH * gridHeight) - (-gridOverlapping * (gridHeight - 1)),
+        vb:canvas {
+            id = "canvas",
+            width = (gridStepSizeW * gridWidth) - (-gridOverlapping * (gridWidth - 1)),
+            height = (gridStepSizeH * gridHeight) - (-gridOverlapping * (gridHeight - 1)),
+            mode = "plain", -- we do fill the entire canvas
+            render = renderCanvas
+        },
     }
-
-    for y = 1, gridHeight do
-        for x = 1, gridWidth do
-            pianorollColumns:add_child(vb:button {
-                id = "p" .. tostring(x) .. "_" .. tostring(gridHeight + 1 - y),
-                height = gridStepSizeH,
-                width = gridStepSizeW,
-                origin = {
-                    x = (x - 1) * gridStepSizeW + (x - 1) * gridOverlapping,
-                    y = (y - 1) * gridStepSizeH + (y - 1) * gridOverlapping
-                },
-                color = colorWhiteKey[1]
-            })
-        end
-    end
 
     --horizontal scrollbar
     stepSlider = vb:scrollbar {
