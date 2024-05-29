@@ -4462,7 +4462,7 @@ local function afterEditProcess()
 end
 
 --paint piano roll grid
-local function renderCanvas(context)
+local function renderGridCanvas(context)
     local gH = gridHeight + 12
     local w = context.size.width / gridWidth
     local h = context.size.height / gH
@@ -4503,7 +4503,7 @@ local function renderCanvas(context)
     end
 
     --octave lines
-    context.stroke_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value + 0.4)
+    context.stroke_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value + 0.5)
     for y = 0, gH do
         if
         currentScaleOffset and (
@@ -4910,22 +4910,6 @@ local function fillPianoRoll(quickRefresh)
         l_vbw["pianoKeys"].visible = true
         l_vbw["pianorollColumns"].visible = true
         return
-    end
-
-    --hide non used elements of the piano roll grid
-    for y = 1, gridHeight do
-        temp = shadeColor(defaultColor["p1_" .. y], 0.4)
-        for i = steps + 1, gridWidth do
-            local p = l_vbw["p" .. i .. "_" .. y]
-            if y == 1 then
-                local s = l_vbw["s" .. i]
-                s.active = false
-                s.color = colorDefault
-                l_vbw["se" .. i].visible = false
-            end
-            p.color = temp
-            p.active = true
-        end
     end
 
     --set current instrument, when no instrument is used
@@ -9007,7 +8991,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
                 width = (gridStepSizeW * gridWidth) - (-gridOverlapping * (gridWidth - 1)),
                 height = (gridStepSizeH * (gridHeight + 12)) - (-gridOverlapping * ((gridHeight + 12) - 1)),
                 mode = "plain", -- we do fill the entire canvas
-                render = renderCanvas
+                render = renderGridCanvas
             },
         },
         vb:canvas {
@@ -9063,6 +9047,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
             number = math.floor(number)
             if number ~= stepOffset then
                 stepOffset = number
+                refreshStates.updateGridCanvas = true
                 refreshStates.refreshPianoRollNeeded = true
                 refreshStates.refreshTimeline = true
             end
