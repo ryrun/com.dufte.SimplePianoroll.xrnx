@@ -490,7 +490,6 @@ local xypadpos = {
     nc = 0, --note column
     nlen = 0, --note len
     time = 0, --click time
-    mx = 0,
     lastx = 0,
     lastval = nil,
     notemode = false, --when note mode is active
@@ -7059,7 +7058,6 @@ local function handleMouse(event)
 
         --calculate grid pos
         val_x = (gridWidth / pianorollColumns.width * event.position.x) + 1
-        xypadpos.mx = val_x
         val_y = gridHeight - (gridHeight / pianorollColumns.height * event.position.y) + 1
 
         if event.type == "drag" and (event.button_flags["left"] or event.button_flags["right"]) then
@@ -7125,8 +7123,11 @@ local function handleMouse(event)
                     end
                 end
                 --draw cursor
-                vbw["canvas_selection"]:update()
-                vbw["canvas_selection"].visible = true
+                if not vbw["canvas_selection"].visible then
+                    vbw["canvas_selection"]:update()
+                    vbw["canvas_selection"].visible = true
+                end
+                vbw["canvas_selection"].origin = { x = event.position.x, y = 0 }
                 xypadpos.dragging = true
                 setCursor = "play"
             elseif xypadpos.notemode then
@@ -7334,6 +7335,9 @@ local function handleMouse(event)
                 if xypadpos.x ~= math.floor(val_x) or xypadpos.y ~= math.floor(val_y) then
                     xypadpos.x = math.floor(val_x)
                     xypadpos.y = math.floor(val_y)
+                    if not vbw["canvas_selection"].visible then
+                        vbw["canvas_selection"].origin = { x = 0, y = 0 }
+                    end
                     vbw["canvas_selection"]:update()
                     vbw["canvas_selection"].visible = true
                     selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, modifier.keyShift)
@@ -8987,6 +8991,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
     local pianorollColumns = vb:stack {
         width = (gridStepSizeW * gridWidth) - (-gridOverlapping * (gridWidth - 1)),
         height = (gridStepSizeH * gridHeight) - (-gridOverlapping * (gridHeight - 1)),
+        autosize = false,
         vb:stack {
             id = "pianorollColumns",
             mouse_events = {
@@ -9010,6 +9015,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
             width = (gridStepSizeW * gridWidth) - (-gridOverlapping * (gridWidth - 1)),
             height = (gridStepSizeH * gridHeight) - (-gridOverlapping * (gridHeight - 1)),
             mode = "transparent", -- we do fill the entire canvas
+            visible = false,
             render = function(context)
                 local w = context.size.width / gridWidth
                 local h = context.size.height / gridHeight
@@ -9018,7 +9024,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
                     context.stroke_color = colorStepOn
                     context:begin_path()
                     context:rect(
-                            (xypadpos.mx - 1) * w,
+                            0,
                             0,
                             1,
                             context.size.height
