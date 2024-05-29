@@ -9004,12 +9004,9 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
                 if xypadpos.previewmode then
                     context.stroke_color = colorStepOn
                     context:begin_path()
-                    context:rect(
-                            0,
-                            0,
-                            1,
-                            context.size.height
-                    )
+                    context:move_to(0,0)
+                    context:line_to(0,context.size.height)
+                    context.line_width = 4
                     context:stroke()
                 else
                     local w = context.size.width / gridWidth
@@ -9027,6 +9024,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
                     context:line_to(rx2 * w, ry2 * h)
                     context:line_to(rx * w, ry2 * h)
                     context:line_to(rx * w, ry * h)
+                    context.line_width = 2
                     context:stroke()
                     context:fill()
                 end
