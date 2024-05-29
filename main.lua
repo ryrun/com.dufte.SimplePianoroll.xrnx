@@ -4568,39 +4568,41 @@ local function renderCanvas(context)
 
     --base grid
     context.stroke_color = { 0, 0, 0, 40 }
-    context:begin_path()
     for y = 0, gridHeight do
+        context:begin_path()
         context:move_to(0, y * h)
         context:line_to(w * gridWidth, y * h)
+        context:stroke()
     end
     for x = 0, gridWidth do
+        context:begin_path()
         context:move_to(x * w, 0)
         context:line_to(x * w, h * gridHeight)
+        context:stroke()
     end
-    context:stroke()
-    context:close_path()
 
     --row coloring
-    context:begin_path()
-    context.fill_color = { 0, 0, 0, preferences.outOfNoteScaleShadingAmount.value * 100 }
+    local shading = (1 - preferences.outOfNoteScaleShadingAmount.value)
+    context.fill_color = { colorBaseGridColor[1] * shading, colorBaseGridColor[2] * shading, colorBaseGridColor[3] * shading, 255 }
+
     for y = 0, gridHeight do
         local yPLusOffMod12 = (gridHeight - y + noteOffset - 1) % 12
         if not noteInScale(yPLusOffMod12) then
+            context:begin_path()
             context:move_to(0, y * h)
             context:line_to(w * gridWidth, y * h)
             context:line_to(w * gridWidth, (y + 1) * h)
             context:line_to(0, (y + 1) * h)
+            context:fill()
         end
     end
-    context:fill()
-    context:close_path()
 
     --bar/beat coloring
-    context:begin_path()
     for x = 0, gridWidth do
         if (preferences.gridVLines.value == 2 and (x + stepOffset + (lpb * 4)) % (lpb * 8) == 0) or
                 (preferences.gridVLines.value == 3 and (x + stepOffset + lpb) % (lpb * 2) == 0)
         then
+            context:begin_path()
             context:move_to(x * w, 0)
             if preferences.gridVLines.value == 3 then
                 context:line_to((x + lpb) * w, 0)
@@ -4610,13 +4612,11 @@ local function renderCanvas(context)
                 context:line_to((x + (lpb * 4)) * w, h * gridHeight)
             end
             context:line_to(x * w, h * gridHeight)
+            context:fill()
         end
     end
-    context:fill()
-    context:close_path()
 
     --octave lines
-    context:begin_path()
     context.stroke_color = { 0, 0, 0, 90 }
     for y = 0, gridHeight do
         if
@@ -4624,25 +4624,24 @@ local function renderCanvas(context)
                 (preferences.gridHLines.value == 2 and (gridHeight - y + noteOffset) % 12 == 1) or
                         (preferences.gridHLines.value == 3 and (gridHeight - y + noteOffset - currentScaleOffset) % 12 == 0))
         then
+            context:begin_path()
             context:move_to(0, (y + 1) * h)
             context:line_to(w * gridWidth, (y + 1) * h)
+            context:stroke()
         end
     end
-    context:stroke()
-    context:close_path()
 
     --bar lines
-    context:begin_path()
     for x = 0, gridWidth do
         if (preferences.gridVLines.value == 2 and (x + stepOffset) % (lpb * 4) == 0) or
-                        (preferences.gridVLines.value == 3 and (x + stepOffset) % lpb == 0)
+                (preferences.gridVLines.value == 3 and (x + stepOffset) % lpb == 0)
         then
+            context:begin_path()
             context:move_to(x * w, 0)
             context:line_to(x * w, h * gridHeight)
+            context:stroke()
         end
     end
-    context:stroke()
-    context:close_path()
 end
 
 --reset pianoroll and enable notes
