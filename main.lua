@@ -9017,9 +9017,6 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
             mode = "transparent", -- we do fill the entire canvas
             visible = false,
             render = function(context)
-                local w = context.size.width / gridWidth
-                local h = context.size.height / gridHeight
-
                 if xypadpos.previewmode then
                     context.stroke_color = colorStepOn
                     context:begin_path()
@@ -9031,15 +9028,21 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
                     )
                     context:stroke()
                 else
+                    local w = context.size.width / gridWidth
+                    local h = context.size.height / gridHeight
+                    local rx = math.min(xypadpos.nx, xypadpos.x) - 1
+                    local rx2 = math.max(xypadpos.nx, xypadpos.x)
+                    local ry = gridHeight - math.max(xypadpos.ny, xypadpos.y)
+                    local ry2 = gridHeight - math.min(xypadpos.ny, xypadpos.y) + 1
+
                     context.stroke_color = colorStepOn
                     context.fill_color = { colorStepOn[1], colorStepOn[2], colorStepOn[3], 50 }
                     context:begin_path()
-                    context:rect(
-                            (xypadpos.nx - 1) * w,
-                            (gridHeight - xypadpos.ny) * h,
-                            (xypadpos.x - xypadpos.nx + 1) * w,
-                            (xypadpos.ny - xypadpos.y + 1) * h
-                    )
+                    context:move_to(rx * w, ry * h)
+                    context:line_to(rx2 * w, ry * h)
+                    context:line_to(rx2 * w, ry2 * h)
+                    context:line_to(rx * w, ry2 * h)
+                    context:line_to(rx * w, ry * h)
                     context:stroke()
                     context:fill()
                 end
