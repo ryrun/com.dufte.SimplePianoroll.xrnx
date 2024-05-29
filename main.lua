@@ -707,6 +707,7 @@ local function shadeColor(color, shade)
     if shade == 0 then
         return color
     end
+    shade = math.min(1, shade)
     local math_ceil = math.ceil
     local math_max = math.max
     return {
@@ -4566,24 +4567,8 @@ local function renderCanvas(context)
     context.fill_color = colorBaseGridColor
     context:fill_rect(0, 0, context.size.width, context.size.height)
 
-    --base grid
-    context.stroke_color = { 0, 0, 0, 40 }
-    for y = 0, gridHeight do
-        context:begin_path()
-        context:move_to(0, y * h)
-        context:line_to(w * gridWidth, y * h)
-        context:stroke()
-    end
-    for x = 0, gridWidth do
-        context:begin_path()
-        context:move_to(x * w, 0)
-        context:line_to(x * w, h * gridHeight)
-        context:stroke()
-    end
-
     --row coloring
-    local shading = (1 - preferences.outOfNoteScaleShadingAmount.value)
-    context.fill_color = { colorBaseGridColor[1] * shading, colorBaseGridColor[2] * shading, colorBaseGridColor[3] * shading, 255 }
+    context.fill_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value)
 
     for y = 0, gridHeight do
         local yPLusOffMod12 = (gridHeight - y + noteOffset - 1) % 12
@@ -4597,27 +4582,23 @@ local function renderCanvas(context)
         end
     end
 
-    --bar/beat coloring
+    --base grid
+    context.stroke_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value + 0.2)
+    for y = 0, gridHeight do
+        context:begin_path()
+        context:move_to(0, y * h)
+        context:line_to(w * gridWidth, y * h)
+        context:stroke()
+    end
     for x = 0, gridWidth do
-        if (preferences.gridVLines.value == 2 and (x + stepOffset + (lpb * 4)) % (lpb * 8) == 0) or
-                (preferences.gridVLines.value == 3 and (x + stepOffset + lpb) % (lpb * 2) == 0)
-        then
-            context:begin_path()
-            context:move_to(x * w, 0)
-            if preferences.gridVLines.value == 3 then
-                context:line_to((x + lpb) * w, 0)
-                context:line_to((x + lpb) * w, h * gridHeight)
-            else
-                context:line_to((x + (lpb * 4)) * w, 0)
-                context:line_to((x + (lpb * 4)) * w, h * gridHeight)
-            end
-            context:line_to(x * w, h * gridHeight)
-            context:fill()
-        end
+        context:begin_path()
+        context:move_to(x * w, 0)
+        context:line_to(x * w, h * gridHeight)
+        context:stroke()
     end
 
     --octave lines
-    context.stroke_color = { 0, 0, 0, 90 }
+    context.stroke_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value + 0.4)
     for y = 0, gridHeight do
         if
         currentScaleOffset and (
@@ -4640,6 +4621,26 @@ local function renderCanvas(context)
             context:move_to(x * w, 0)
             context:line_to(x * w, h * gridHeight)
             context:stroke()
+        end
+    end
+
+    --bar/beat coloring
+    context.fill_color = { 0, 0, 0, 255 * preferences.oddBarsShadingAmount.value }
+    for x = 0, gridWidth do
+        if (preferences.gridVLines.value == 2 and (x + stepOffset + (lpb * 4)) % (lpb * 8) == 0) or
+                (preferences.gridVLines.value == 3 and (x + stepOffset + lpb) % (lpb * 2) == 0)
+        then
+            context:begin_path()
+            context:move_to(x * w, 0)
+            if preferences.gridVLines.value == 3 then
+                context:line_to((x + lpb) * w, 0)
+                context:line_to((x + lpb) * w, h * gridHeight)
+            else
+                context:line_to((x + (lpb * 4)) * w, 0)
+                context:line_to((x + (lpb * 4)) * w, h * gridHeight)
+            end
+            context:line_to(x * w, h * gridHeight)
+            context:fill()
         end
     end
 end
