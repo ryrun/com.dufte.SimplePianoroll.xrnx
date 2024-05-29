@@ -490,6 +490,7 @@ local xypadpos = {
     nc = 0, --note column
     nlen = 0, --note len
     time = 0, --click time
+    mx = 0,
     lastx = 0,
     lastval = nil,
     notemode = false, --when note mode is active
@@ -2917,107 +2918,6 @@ local function moveSelectionThroughNotes(dx, dy, addToSelection)
         return true
     end
     return false
-end
-
---draw selection rectangle
-local function drawRectangle(show, x, y, x2, y2)
-    local pianorollColumns = vbw["pianorollColumns"]
-    if not vbw["seltop"] and show then
-        pianorollColumns:add_child(vb:button {
-            id = "seltop",
-            origin = {
-                x = 0,
-                y = 0
-            },
-            width = 1,
-            height = 5,
-            color = colorStepOn,
-            visible = false
-        })
-        pianorollColumns:add_child(vb:button {
-            id = "selbottom",
-            origin = {
-                x = 0,
-                y = 0
-            },
-            width = 1,
-            height = 5,
-            color = colorStepOn,
-            visible = false
-        })
-        pianorollColumns:add_child(vb:button {
-            id = "selleft",
-            origin = {
-                x = 0,
-                y = 0
-            },
-            width = 5,
-            height = 1,
-            color = colorStepOn,
-            visible = false
-        })
-        pianorollColumns:add_child(vb:button {
-            id = "selright",
-            origin = {
-                x = 0,
-                y = 0
-            },
-            width = 5,
-            height = 1,
-            color = colorStepOn,
-            visible = false
-        })
-    end
-    if not show and vbw["seltop"] then
-        pianorollColumns:remove_child(vbw["seltop"])
-        pianorollColumns:remove_child(vbw["selleft"])
-        pianorollColumns:remove_child(vbw["selright"])
-        pianorollColumns:remove_child(vbw["selbottom"])
-        vbw["seltop"] = nil
-        vbw["selleft"] = nil
-        vbw["selright"] = nil
-        vbw["selbottom"] = nil
-    elseif x ~= nil and y ~= nil and x2 ~= nil and y2 ~= nil then
-        local rx = math.max(math.min(x, x2), 1)
-        local rx2 = math.min(math.max(x, x2), gridWidth)
-        local ry = math.max(math.min(y, y2), 1)
-        local ry2 = math.min(math.max(y, y2), gridHeight)
-        if rx ~= rx2 or ry ~= ry2 then
-            vbw["seltop"].origin = {
-                x = ((rx - 1) * gridStepSizeW + (rx - 1) * gridOverlapping),
-                y = (gridHeight - ry2) * gridStepSizeH + (gridHeight - ry2) * gridOverlapping
-            }
-            vbw["seltop"].width = (gridStepSizeW * (rx2 - rx + 1)) - (-gridOverlapping * (rx2 - rx + 1))
-            vbw["seltop"].visible = true
-            vbw["selbottom"].origin = {
-                x = vbw["seltop"].origin.x,
-                y = (gridHeight - ry + 1) * gridStepSizeH + (gridHeight - ry + 2) * gridOverlapping
-            }
-            vbw["selbottom"].width = vbw["seltop"].width
-            vbw["selbottom"].visible = true
-            vbw["selleft"].height = vbw["selbottom"].origin.y - vbw["seltop"].origin.y + -gridOverlapping
-            vbw["selleft"].origin = vbw["seltop"].origin
-            vbw["selleft"].visible = true
-            vbw["selright"].height = vbw["selleft"].height
-            vbw["selright"].origin = {
-                x = vbw["selleft"].origin.x + vbw["seltop"].width + gridOverlapping,
-                y = vbw["selleft"].origin.y
-            }
-            vbw["selright"].visible = true
-        else
-            vbw["seltop"].visible = false
-            vbw["selleft"].visible = false
-            vbw["selright"].visible = false
-            vbw["selbottom"].visible = false
-        end
-    elseif x ~= nil then
-        vbw["selleft"].origin = {
-            x = ((x - 1) * gridStepSizeW + (x - 1) * gridOverlapping),
-            y = 0
-        }
-        vbw["selleft"].height = (gridHeight) * gridStepSizeH + (gridHeight - 1) * gridOverlapping
-        vbw["selleft"].visible = true
-    end
 end
 
 --add notes from a rectangle to the selection
@@ -7137,7 +7037,7 @@ local function handleMouse(event)
     --when in dragmode reset
     if xypadpos.dragging and event.type == "up" and (event.button == "left" or event.button == "right") then
         xypadpos.dragging = false
-        drawRectangle(false)
+        vbw["canvas_selection"].visible = false
         --stop removemode
         xypadpos.removemode = false
         refreshStates.refreshControls = true
@@ -7159,6 +7059,7 @@ local function handleMouse(event)
 
         --calculate grid pos
         val_x = (gridWidth / pianorollColumns.width * event.position.x) + 1
+        xypadpos.mx = val_x
         val_y = gridHeight - (gridHeight / pianorollColumns.height * event.position.y) + 1
 
         if event.type == "drag" and (event.button_flags["left"] or event.button_flags["right"]) then
@@ -7224,7 +7125,8 @@ local function handleMouse(event)
                     end
                 end
                 --draw cursor
-                drawRectangle(true, val_x)
+                vbw["canvas_selection"]:update()
+                vbw["canvas_selection"].visible = true
                 xypadpos.dragging = true
                 setCursor = "play"
             elseif xypadpos.notemode then
@@ -7432,7 +7334,8 @@ local function handleMouse(event)
                 if xypadpos.x ~= math.floor(val_x) or xypadpos.y ~= math.floor(val_y) then
                     xypadpos.x = math.floor(val_x)
                     xypadpos.y = math.floor(val_y)
-                    drawRectangle(true, xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny)
+                    vbw["canvas_selection"]:update()
+                    vbw["canvas_selection"].visible = true
                     selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, modifier.keyShift)
                     xypadpos.dragging = true
                 end
@@ -9082,21 +8985,59 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
         playCursor:add_child(vb_temp)
     end
     local pianorollColumns = vb:stack {
-        id = "pianorollColumns",
-        mouse_events = {
-            "enter", "exit", "move", "drag", "down", "up", "wheel", "double"
-        },
-        mouse_handler = handleMouse,
-        cursor = "default",
-        autosize = false,
         width = (gridStepSizeW * gridWidth) - (-gridOverlapping * (gridWidth - 1)),
         height = (gridStepSizeH * gridHeight) - (-gridOverlapping * (gridHeight - 1)),
-        vb:canvas {
-            id = "canvas",
+        vb:stack {
+            id = "pianorollColumns",
+            mouse_events = {
+                "enter", "exit", "move", "drag", "down", "up", "wheel", "double"
+            },
+            mouse_handler = handleMouse,
+            cursor = "default",
+            autosize = false,
             width = (gridStepSizeW * gridWidth) - (-gridOverlapping * (gridWidth - 1)),
-            height = (gridStepSizeH * (gridHeight + 12)) - (-gridOverlapping * ((gridHeight + 12) - 1)),
-            mode = "plain", -- we do fill the entire canvas
-            render = renderCanvas
+            height = (gridStepSizeH * gridHeight) - (-gridOverlapping * (gridHeight - 1)),
+            vb:canvas {
+                id = "canvas",
+                width = (gridStepSizeW * gridWidth) - (-gridOverlapping * (gridWidth - 1)),
+                height = (gridStepSizeH * (gridHeight + 12)) - (-gridOverlapping * ((gridHeight + 12) - 1)),
+                mode = "plain", -- we do fill the entire canvas
+                render = renderCanvas
+            },
+        },
+        vb:canvas {
+            id = "canvas_selection",
+            width = (gridStepSizeW * gridWidth) - (-gridOverlapping * (gridWidth - 1)),
+            height = (gridStepSizeH * gridHeight) - (-gridOverlapping * (gridHeight - 1)),
+            mode = "transparent", -- we do fill the entire canvas
+            render = function(context)
+                local w = context.size.width / gridWidth
+                local h = context.size.height / gridHeight
+
+                if xypadpos.previewmode then
+                    context.stroke_color = colorStepOn
+                    context:begin_path()
+                    context:rect(
+                            (xypadpos.mx - 1) * w,
+                            0,
+                            1,
+                            context.size.height
+                    )
+                    context:stroke()
+                else
+                    context.stroke_color = colorStepOn
+                    context.fill_color = { colorStepOn[1], colorStepOn[2], colorStepOn[3], 50 }
+                    context:begin_path()
+                    context:rect(
+                            (xypadpos.nx - 1) * w,
+                            (gridHeight - xypadpos.ny) * h,
+                            (xypadpos.x - xypadpos.nx + 1) * w,
+                            (xypadpos.ny - xypadpos.y + 1) * h
+                    )
+                    context:stroke()
+                    context:fill()
+                end
+            end
         },
     }
 
