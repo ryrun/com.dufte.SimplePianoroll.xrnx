@@ -4459,7 +4459,6 @@ local function renderGridCanvas(context)
 
     --row coloring
     context.fill_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value)
-
     for y = 0, gH do
         local yPLusOffMod12 = (gH - y - 1) % 12
         if not noteInScale(yPLusOffMod12) then
@@ -4506,6 +4505,18 @@ local function renderGridCanvas(context)
     for x = 0, gridWidth do
         if (preferences.gridVLines.value == 2 and (x + stepOffset) % (lpb * 4) == 0) or
                 (preferences.gridVLines.value == 3 and (x + stepOffset) % lpb == 0)
+        then
+            context:begin_path()
+            context:move_to(x * w, 0)
+            context:line_to(x * w, h * gH)
+            context:stroke()
+        end
+    end
+
+    --beat lines
+    context.stroke_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value + 0.25)
+    for x = 0, gridWidth do
+        if (preferences.gridVLines.value == 2 and (x + stepOffset) % lpb == 0)
         then
             context:begin_path()
             context:move_to(x * w, 0)
