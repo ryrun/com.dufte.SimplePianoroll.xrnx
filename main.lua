@@ -138,7 +138,6 @@ local defaultPreferences = {
     followPlayCursor = true,
     scaleHighlightingType = 2,
     keyForSelectedScale = 1,
-    keyForSelectedScale = 1,
     addNoteOffToEmptyNoteColumns = true,
     addNoteColumnsIfNeeded = true,
     keyboardStyle = 1,
