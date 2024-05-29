@@ -118,8 +118,8 @@ local chordsTable = {
 
 --default values, can be used to reset to default
 local defaultPreferences = {
-    gridStepSizeW = 20,
-    gridStepSizeH = 18,
+    gridStepSizeW = 15,
+    gridStepSizeH = 15,
     gridSpacing = 4,
     gridMargin = 1,
     gridWidth = 64,
@@ -137,6 +137,7 @@ local defaultPreferences = {
     velocityColorShadingAmount = 0.49,
     followPlayCursor = true,
     scaleHighlightingType = 2,
+    keyForSelectedScale = 1,
     keyForSelectedScale = 1,
     addNoteOffToEmptyNoteColumns = true,
     addNoteColumnsIfNeeded = true,
@@ -325,7 +326,6 @@ local gridSpacing
 local gridMargin
 local gridWidth
 local gridHeight
-local gridOverlapping = -3
 local pianoKeyWidth
 
 --colors
@@ -3350,9 +3350,6 @@ local function drawNotesToGrid(allNotes)
     local l_math_max = math.max
     local l_math_floor = math.floor
     local l_table_insert = table.insert
-    local l_string_gsub = string.gsub
-    local l_string_sub = string.sub
-    local l_string_len = string.len
     local allNotes_length = #allNotes
     local isInSelection
     local isScaleBtnHidden
@@ -3372,7 +3369,6 @@ local function drawNotesToGrid(allNotes)
     local noteoff
     local noteWidth
     local buttonWidth
-    local buttonSpace
     local spaceWidth
     local retriggerWidth
     local delayWidth
@@ -3561,7 +3557,7 @@ local function drawNotesToGrid(allNotes)
                         end
                     end
 
-                    buttonWidth = (gridStepSizeW * current_note_len) - (-gridOverlapping * (current_note_len - 2))
+                    buttonWidth = (gridStepSizeW * current_note_len)
 
                     if delayWidth > 0 then
                         delayWidth = delayWidth - 416
@@ -3575,7 +3571,7 @@ local function drawNotesToGrid(allNotes)
                     if cutValue and cutValue > 0 then
                         cutValue = cutValue - 192
                         if cutValue < l_song_transport.tpl then
-                            buttonWidth = buttonWidth - ((gridStepSizeW - gridSpacing) / 100 * (100 / l_song_transport.tpl * (l_song_transport.tpl - cutValue)))
+                            buttonWidth = buttonWidth - (gridStepSizeW / 100 * (100 / l_song_transport.tpl * (l_song_transport.tpl - cutValue)))
                         end
                     end
 
@@ -3589,7 +3585,7 @@ local function drawNotesToGrid(allNotes)
                     end
 
                     if delayWidth > 0 and stepOffset < current_note_line then
-                        delayWidth = l_math_max(l_math_floor((gridStepSizeW - gridSpacing) / 0x100 * delayWidth), 1)
+                        delayWidth = l_math_max(l_math_floor(gridStepSizeW / 0x100 * delayWidth), 1)
                         spaceWidth = spaceWidth + delayWidth
                         buttonWidth = buttonWidth - delayWidth
                         if current_note_step < 2 then
@@ -3598,7 +3594,7 @@ local function drawNotesToGrid(allNotes)
                     end
 
                     if addWidth > 0 and (current_note_step + current_note_len) - 1 < gridWidth then
-                        addWidth = l_math_max(l_math_floor((gridStepSizeW - gridSpacing) / 0x100 * addWidth), 1)
+                        addWidth = l_math_max(l_math_floor(gridStepSizeW / 0x100 * addWidth), 1)
                         buttonWidth = buttonWidth + addWidth
                     end
 
@@ -3620,29 +3616,18 @@ local function drawNotesToGrid(allNotes)
                     --print(noteWidth, buttonWidth, gridStepSizeW)
                     local btn = vb:button {
                         id = "b" .. current_note_index,
-                        height = gridStepSizeH,
-                        width = buttonWidth,
+                        height = gridStepSizeH + 2,
+                        width = buttonWidth + 2,
                         text = current_note_string,
                         origin = {
-                            x = delayWidth + ((current_note_step - 1) * gridStepSizeW + (current_note_step - 1) * gridOverlapping),
-                            y = (gridHeight - current_note_rowIndex) * gridStepSizeH + (gridHeight - current_note_rowIndex) * gridOverlapping
+                            x = delayWidth + ((current_note_step - 1) * gridStepSizeW) - 1,
+                            y = (gridHeight - current_note_rowIndex) * gridStepSizeH - 1
                         }
                     }
 
-                    --shorten note button text, when its too large
-                    if l_vbw["b" .. current_note_index].width > noteWidth then
-                        current_note_string = l_string_gsub(current_note_string, '-', '')
-                        l_vbw["b" .. current_note_index].width = noteWidth
-                        l_vbw["b" .. current_note_index].text = current_note_string
-                        if l_vbw["b" .. current_note_index].width > noteWidth then
-                            l_vbw["b" .. current_note_index].width = noteWidth
-                            l_vbw["b" .. current_note_index].text = l_string_sub(current_note_string, 1, l_string_len(current_note_string) - 1)
-                            if l_vbw["b" .. current_note_index].width > noteWidth then
-                                l_vbw["b" .. current_note_index].text = ""
-                                l_vbw["b" .. current_note_index].width = noteWidth
-                            end
-                        end
-                    end
+                    --set width / height again
+                    l_vbw["b" .. current_note_index].width = buttonWidth + 2
+                    l_vbw["b" .. current_note_index].height = gridStepSizeH + 2
 
                     l_table_insert(noteButtons, btn);
                     l_vbw["pianorollColumns"]:add_child(btn);
@@ -8927,7 +8912,7 @@ showPreferences = function()
 end
 
 --create main piano roll dialog
-local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
+local function createPianoRollDialog(gridWidth, gridHeight)
     local vb_temp
     local playCursor = vb:row {
         margin = -gridMargin,
@@ -8973,8 +8958,8 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
         playCursor:add_child(vb_temp)
     end
     local pianorollColumns = vb:stack {
-        width = (gridStepSizeW * gridWidth) - (-gridOverlapping * (gridWidth - 1)),
-        height = (gridStepSizeH * gridHeight) - (-gridOverlapping * (gridHeight - 1)),
+        width = gridStepSizeW * gridWidth,
+        height = gridStepSizeH * gridHeight,
         autosize = false,
         vb:stack {
             id = "pianorollColumns",
@@ -8984,28 +8969,28 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
             mouse_handler = handleMouse,
             cursor = "default",
             autosize = false,
-            width = (gridStepSizeW * gridWidth) - (-gridOverlapping * (gridWidth - 1)),
-            height = (gridStepSizeH * gridHeight) - (-gridOverlapping * (gridHeight - 1)),
+            width = gridStepSizeW * gridWidth,
+            height = gridStepSizeH * gridHeight,
             vb:canvas {
                 id = "canvas",
-                width = (gridStepSizeW * gridWidth) - (-gridOverlapping * (gridWidth - 1)),
-                height = (gridStepSizeH * (gridHeight + 12)) - (-gridOverlapping * ((gridHeight + 12) - 1)),
+                width = gridStepSizeW * gridWidth,
+                height = gridStepSizeH * (gridHeight + 12),
                 mode = "plain", -- we do fill the entire canvas
                 render = renderGridCanvas
             },
         },
         vb:canvas {
             id = "canvas_selection",
-            width = (gridStepSizeW * gridWidth) - (-gridOverlapping * (gridWidth - 1)),
-            height = (gridStepSizeH * gridHeight) - (-gridOverlapping * (gridHeight - 1)),
+            width = gridStepSizeW * gridWidth,
+            height = gridStepSizeH * gridHeight,
             mode = "transparent", -- we do fill the entire canvas
             visible = false,
             render = function(context)
                 if xypadpos.previewmode then
                     context.stroke_color = colorStepOn
                     context:begin_path()
-                    context:move_to(0,0)
-                    context:line_to(0,context.size.height)
+                    context:move_to(0, 0)
+                    context:line_to(0, context.size.height)
                     context.line_width = 4
                     context:stroke()
                 else
@@ -9242,8 +9227,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
     windowContent = vb:column {
         vb:horizontal_aligner {
             margin = 3,
-            spacing = -1,
-            width = gridStepSizeW * (math.max(gridWidth, 64) + 5) - (gridSpacing * (math.max(gridWidth, 64) + 5)) + 2,
+            width = "100%",
             mode = "justify",
             vb:row {
                 margin = 3,
@@ -10095,7 +10079,7 @@ local function main_function()
             noteButtons = {}
             vb = renoise.ViewBuilder()
             vbw = vb.views
-            createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
+            createPianoRollDialog(gridWidth, gridHeight)
         end
         --fill new created pianoroll, timeline and refresh controls
         refreshNoteControls()
