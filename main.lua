@@ -304,7 +304,8 @@ local dialogVars = {
     penSettingsContent = nil,
     preferencesObj = nil,
     preferencesContent = nil,
-    preferencesWasShown = false
+    preferencesWasShown = false,
+    updateGridCanvas = true
 }
 local stepSlider
 local noteSlider
@@ -2743,6 +2744,8 @@ end
 --highlight entire row
 local function highlightNoteRow(row, highlighted)
     if preferences.highlightEntireLineOfPlayingNote.value then
+        --[[
+        TODO
         local n = math.min(song.selected_pattern.number_of_lines, gridWidth)
         for l = 1, n do
             local idx = "p" .. l .. "_" .. row
@@ -2752,6 +2755,7 @@ local function highlightNoteRow(row, highlighted)
                 vbw[idx].color = defaultColor[idx]
             end
         end
+        ]]--
     end
 end
 
@@ -4559,8 +4563,9 @@ end
 
 --paint piano roll grid
 local function renderCanvas(context)
+    local gH = gridHeight + 12
     local w = context.size.width / gridWidth
-    local h = context.size.height / gridHeight
+    local h = context.size.height / gH
     local lpb = song.transport.lpb
 
     --fill color
@@ -4570,8 +4575,8 @@ local function renderCanvas(context)
     --row coloring
     context.fill_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value)
 
-    for y = 0, gridHeight do
-        local yPLusOffMod12 = (gridHeight - y + noteOffset - 1) % 12
+    for y = 0, gH do
+        local yPLusOffMod12 = (gH - y - 1) % 12
         if not noteInScale(yPLusOffMod12) then
             context:begin_path()
             context:move_to(0, y * h)
@@ -4584,7 +4589,7 @@ local function renderCanvas(context)
 
     --base grid
     context.stroke_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value + 0.2)
-    for y = 0, gridHeight do
+    for y = 0, gH do
         context:begin_path()
         context:move_to(0, y * h)
         context:line_to(w * gridWidth, y * h)
@@ -4593,17 +4598,17 @@ local function renderCanvas(context)
     for x = 0, gridWidth do
         context:begin_path()
         context:move_to(x * w, 0)
-        context:line_to(x * w, h * gridHeight)
+        context:line_to(x * w, h * gH)
         context:stroke()
     end
 
     --octave lines
     context.stroke_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value + 0.4)
-    for y = 0, gridHeight do
+    for y = 0, gH do
         if
         currentScaleOffset and (
-                (preferences.gridHLines.value == 2 and (gridHeight - y + noteOffset) % 12 == 1) or
-                        (preferences.gridHLines.value == 3 and (gridHeight - y + noteOffset - currentScaleOffset) % 12 == 0))
+                (preferences.gridHLines.value == 2 and (gH - y) % 12 == 1) or
+                        (preferences.gridHLines.value == 3 and (gH - y - currentScaleOffset) % 12 == 0))
         then
             context:begin_path()
             context:move_to(0, (y + 1) * h)
@@ -4619,7 +4624,7 @@ local function renderCanvas(context)
         then
             context:begin_path()
             context:move_to(x * w, 0)
-            context:line_to(x * w, h * gridHeight)
+            context:line_to(x * w, h * gH)
             context:stroke()
         end
     end
@@ -4634,15 +4639,25 @@ local function renderCanvas(context)
             context:move_to(x * w, 0)
             if preferences.gridVLines.value == 3 then
                 context:line_to((x + lpb) * w, 0)
-                context:line_to((x + lpb) * w, h * gridHeight)
+                context:line_to((x + lpb) * w, h * gH)
             else
                 context:line_to((x + (lpb * 4)) * w, 0)
-                context:line_to((x + (lpb * 4)) * w, h * gridHeight)
+                context:line_to((x + (lpb * 4)) * w, h * gH)
             end
-            context:line_to(x * w, h * gridHeight)
+            context:line_to(x * w, h * gH)
             context:fill()
         end
     end
+end
+
+--update canvas, set new offsets
+local function updateCanvas()
+    if dialogVars.updateGridCanvas then
+        vbw["canvas"]:update()
+        dialogVars.updateGridCanvas = false
+    end
+    --offset y of canvas
+    vbw["canvas"].origin = { 0, ((noteOffset % 12) - 12) * (vbw["canvas"].height / (gridHeight + 12)) }
 end
 
 --reset pianoroll and enable notes
@@ -4991,7 +5006,7 @@ local function fillPianoRoll(quickRefresh)
     --nothing else to do in quick refresh
     if quickRefresh then
         --show all with one call
-        --l_vbw["canvas"]:update()
+        updateCanvas()
         l_vbw["pianoKeys"].visible = true
         l_vbw["pianorollColumns"].visible = true
         return
@@ -5021,6 +5036,7 @@ local function fillPianoRoll(quickRefresh)
 
     --for automatic mode or empty patterns, set scale highlighting again, if needed
     if setScaleHighlighting(true) then
+        dialogVars.updateGridCanvas = true
         refreshPianoRollNeeded = true
     else
         --just refresh selection also values of controls, when enabled
@@ -5048,7 +5064,7 @@ local function fillPianoRoll(quickRefresh)
     refreshHistogram = true
 
     --show all with one call
-    l_vbw["canvas"]:update()
+    updateCanvas()
     l_vbw["pianoKeys"].visible = true
     l_vbw["pianorollColumns"].visible = true
 end
@@ -5133,8 +5149,10 @@ local function appNewDoc()
     currentNoteEndVelocity = 255
     currentEditPos = 0
     lastValTools.chordGhostTrack = false
+    dialogVars.updateGridCanvas = true
     --set new observers
     song.transport.lpb_observable:add_notifier(function()
+        dialogVars.updateGridCanvas = true
         refreshPianoRollNeeded = true
         refreshTimeline = true
     end)
@@ -5149,6 +5167,7 @@ local function appNewDoc()
         end
         pasteCursor = {}
         stepSlider.value = 0
+        dialogVars.updateGridCanvas = true
         refreshPianoRollNeeded = true
         refreshTimeline = true
     end)
@@ -7674,6 +7693,7 @@ local function showSetScaleDialog()
                         items = scaleTypes,
                         bind = preferences.scaleHighlightingType,
                         notifier = function()
+                            dialogVars.updateGridCanvas = true
                             refreshPianoRollNeeded = true
                         end
                     },
@@ -7694,6 +7714,7 @@ local function showSetScaleDialog()
                         items = notesTable,
                         bind = preferences.keyForSelectedScale,
                         notifier = function()
+                            dialogVars.updateGridCanvas = true
                             refreshPianoRollNeeded = true
                         end
                     },
@@ -7709,6 +7730,7 @@ local function showSetScaleDialog()
                     height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
                     width = 100,
                     notifier = function()
+                        dialogVars.updateGridCanvas = true
                         refreshPianoRollNeeded = true
                         dialogVars.setScaleObj:close()
                         restoreFocus()
@@ -7721,6 +7743,7 @@ local function showSetScaleDialog()
         dialogVars.setScaleObj = app:show_custom_dialog("Scale highlighting - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
                 dialogVars.setScaleContent, function(_, key)
                     if key.name == "esc" then
+                        dialogVars.updateGridCanvas = true
                         refreshPianoRollNeeded = true
                         dialogVars.setScaleObj:close()
                         restoreFocus()
@@ -9070,7 +9093,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridOverlapping)
         vb:canvas {
             id = "canvas",
             width = (gridStepSizeW * gridWidth) - (-gridOverlapping * (gridWidth - 1)),
-            height = (gridStepSizeH * gridHeight) - (-gridOverlapping * (gridHeight - 1)),
+            height = (gridStepSizeH * (gridHeight + 12)) - (-gridOverlapping * ((gridHeight + 12) - 1)),
             mode = "plain", -- we do fill the entire canvas
             render = renderCanvas
         },
