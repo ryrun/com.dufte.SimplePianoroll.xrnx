@@ -3686,7 +3686,6 @@ local function fillTimeline()
     local timestep = 0
     local lastbeat
     local timeslot
-    local timeslotsize = 1
     for i = 1, stepsCount do
         local line = i + stepOffset
         local beat = math_ceil((line - lpb) / lpb) % 4 + 1
@@ -3695,7 +3694,7 @@ local function fillTimeline()
         if lastbeat ~= beat then
             timestep = timestep + 1
             timeslot = vbw["timeline" .. timestep]
-            timeslot.width = (gridStepSizeW - 4)
+            timeslot.origin = { (gridStepSizeW * (i - lpb)) - 4, 0 }
             if line % lpb == 1 then
                 if lpb == 2 and beat % lpb == 0 then
                     timeslot.text = ""
@@ -3724,7 +3723,6 @@ local function fillTimeline()
             end
             timeslot.visible = true
             lastbeat = beat
-            timeslotsize = 1
         else
             if line % lpb == 2 or (lpb == 2 and line % lpb == 0) then
                 timeslot.text = "│ " .. bar .. "." .. beat
@@ -3732,8 +3730,7 @@ local function fillTimeline()
             if lpb == 2 and beat % lpb == 0 then
                 timeslot.text = ""
             end
-            timeslotsize = timeslotsize + 1
-            timeslot.width = (gridStepSizeW - 4) * timeslotsize
+            timeslot.origin = { (gridStepSizeW * (i - lpb)) - 4, 0 }
         end
     end
     while vbw["timeline" .. timestep + 1] do
@@ -9107,11 +9104,12 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         )
     end
 
-    local timeline = vb:row {
-        width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
-        spacing = -(gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6),
+    local timeline = vb:stack {
+        width = gridStepSizeW * gridWidth,
+        height = gridStepSizeH + 2,
+        autosize = false,
         vb:minislider {
-            width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
+            width = gridStepSizeW * gridWidth,
             height = gridStepSizeH + 2,
             min = 1,
             max = gridWidth,
@@ -9194,10 +9192,14 @@ local function createPianoRollDialog(gridWidth, gridHeight)
             end
         },
         vb:button {
-            width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
+            width = (gridStepSizeW * gridWidth) + 2,
             height = gridStepSizeH + 4,
             active = false,
             color = colorKeyBlack,
+            origin = {
+                x = -1,
+                y = 0
+            },
         },
         vb:column {
             vb:space {
@@ -9220,19 +9222,18 @@ local function createPianoRollDialog(gridWidth, gridHeight)
             },
         },
     }
-    timeline:add_child(vb:space {
-        width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
-    })
-    local timeline_row = vb:row {}
     for i = 1, gridWidth do
         local temp = vb:text {
+            origin = {
+                x = 0,
+                y = 0
+            },
             id = "timeline" .. i,
             visible = false,
             height = gridStepSizeH + 4,
         }
-        timeline_row:add_child(temp)
+        timeline:add_child(temp)
     end
-    timeline:add_child(timeline_row)
 
     windowContent = vb:column {
         vb:horizontal_aligner {
@@ -9857,13 +9858,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     },
                 },
                 vb:column {
-                    vb:row {
-                        spacing = -5,
-                        vb:space {
-                            width = 1,
-                        },
-                        timeline,
-                    },
+                    timeline,
                     vb:row {
                         spacing = -(gridStepSizeW * gridWidth - (gridSpacing * (gridWidth))),
                         vb:row {
