@@ -3694,12 +3694,12 @@ local function fillTimeline()
         if lastbeat ~= beat then
             timestep = timestep + 1
             timeslot = vbw["timeline" .. timestep]
-            timeslot.origin = { (gridStepSizeW * (i - lpb)) - 4, 0 }
+            timeslot.origin = { (gridStepSizeW * (i - 1)) - 4, 0 }
             if line % lpb == 1 then
                 if lpb == 2 and beat % lpb == 0 then
                     timeslot.text = ""
                 else
-                    timeslot.text = "│"
+                    timeslot.text = "│ " .. bar .. "." .. beat
                 end
             else
                 timeslot.text = ""
@@ -3723,14 +3723,6 @@ local function fillTimeline()
             end
             timeslot.visible = true
             lastbeat = beat
-        else
-            if line % lpb == 2 or (lpb == 2 and line % lpb == 0) then
-                timeslot.text = "│ " .. bar .. "." .. beat
-            end
-            if lpb == 2 and beat % lpb == 0 then
-                timeslot.text = ""
-            end
-            timeslot.origin = { (gridStepSizeW * (i - lpb)) - 4, 0 }
         end
     end
     while vbw["timeline" .. timestep + 1] do
