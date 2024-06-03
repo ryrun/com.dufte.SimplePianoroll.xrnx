@@ -118,7 +118,7 @@ local chordsTable = {
 
 --default values, can be used to reset to default
 local defaultPreferences = {
-    gridStepSizeW = 15,
+    gridStepSizeW = 16,
     gridStepSizeH = 15,
     gridSpacing = 4,
     gridMargin = 1,
@@ -5279,6 +5279,7 @@ local function refreshHistogramWindow(apply)
         end
     end
     --set histogram
+    --TODO bug when no notes in pattern
     for i = 1, #values do
         note = vbwp["histogram" .. tostring(i)]
         note.height = clamp(100 / math.min(#noteSelection, 5) * values[i], 5, 100)
