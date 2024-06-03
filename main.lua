@@ -3686,7 +3686,13 @@ local function fillTimeline()
     local timestep = 0
     local lastbeat
     local timeslot
-    for i = 1, stepsCount do
+    local start_i = 1
+
+    if lpb > 1 then
+        start_i = 1 - lpb
+    end
+
+    for i = start_i, stepsCount do
         local line = i + stepOffset
         local beat = math_ceil((line - lpb) / lpb) % 4 + 1
         local bar = calculateBarBeat(line, false, lpb)
