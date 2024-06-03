@@ -8927,24 +8927,24 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         playCursor:add_child(vb:button {
             id = "se" .. tostring(x),
             height = gridStepSizeH - 3,
-            width = gridStepSizeW - 4,
+            width = gridStepSizeW - 2,
             color = colorStepOn,
             active = false,
             visible = false,
             origin = {
-                x = ((x - 1) * gridStepSizeW) + 2,
+                x = ((x - 1) * gridStepSizeW) + 1,
                 y = 2
             },
         })
         playCursor:add_child(vb:button {
             id = "s" .. tostring(x),
             height = gridStepSizeH - 7,
-            width = gridStepSizeW - 4,
+            width = gridStepSizeW - 2,
             color = colorStepOff,
             active = false,
             notifier = loadstring("setPlaybackPos(" .. tostring(x) .. ")"),
             origin = {
-                x = ((x - 1) * gridStepSizeW) + 2,
+                x = ((x - 1) * gridStepSizeW) + 1,
                 y = 4
             },
         })
