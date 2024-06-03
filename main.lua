@@ -8918,49 +8918,36 @@ end
 
 --create main piano roll dialog
 local function createPianoRollDialog(gridWidth, gridHeight)
-    local vb_temp
-    local playCursor = vb:row {
-        margin = -gridMargin,
-        spacing = -gridSpacing,
+    local playCursor = vb:stack {
+        width = gridStepSizeW * gridWidth,
+        height = gridStepSizeH,
+        autosize = false,
     }
     for x = 1, gridWidth do
-        local temp = "setPlaybackPos(" .. tostring(x) .. ")"
-        vb_temp = vb:row {
-            vb:space {
-                width = 2
+        playCursor:add_child(vb:button {
+            id = "se" .. tostring(x),
+            height = gridStepSizeH - 3,
+            width = gridStepSizeW - 4,
+            color = colorStepOn,
+            active = false,
+            visible = false,
+            origin = {
+                x = ((x - 1) * gridStepSizeW) + 2,
+                y = 2
             },
-            vb:row {
-                spacing = -(gridStepSizeW - 4),
-                vb:button {
-                    id = "se" .. tostring(x),
-                    height = 13,
-                    width = gridStepSizeW - 4,
-                    color = colorStepOn,
-                    active = false,
-                    visible = false,
-                },
-                vb:column {
-                    vb:space {
-                        height = 2,
-                    },
-                    vb:button {
-                        id = "s" .. tostring(x),
-                        height = 9,
-                        width = gridStepSizeW - 4,
-                        color = colorStepOff,
-                        active = false,
-                        notifier = loadstring(temp),
-                    },
-                },
-                vb:space {
-                    height = 13,
-                },
+        })
+        playCursor:add_child(vb:button {
+            id = "s" .. tostring(x),
+            height = gridStepSizeH - 7,
+            width = gridStepSizeW - 4,
+            color = colorStepOff,
+            active = false,
+            notifier = loadstring("setPlaybackPos(" .. tostring(x) .. ")"),
+            origin = {
+                x = ((x - 1) * gridStepSizeW) + 2,
+                y = 4
             },
-            vb:space {
-                width = 2
-            },
-        }
-        playCursor:add_child(vb_temp)
+        })
     end
     local pianorollColumns = vb:stack {
         width = gridStepSizeW * gridWidth,
@@ -9846,15 +9833,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                 },
             },
             vb:column {
-                vb:column {
-                    vb:space {
-                        height = 3,
-                    },
-                    playCursor,
-                    vb:space {
-                        height = 1,
-                    },
-                },
+                playCursor,
                 vb:column {
                     timeline,
                     vb:row {
