@@ -4743,9 +4743,6 @@ local function fillPianoRoll(quickRefresh)
                                 key.text = ""
                             end
                             key.width = pianoKeyWidth
-                            --reset key sub state button color
-                            l_vbw["ks" .. ystring].visible = false
-                            l_vbw["kss" .. ystring].visible = true
                         end
                     end
                 end
@@ -9048,45 +9045,31 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         value = 0
     }
 
-    local whiteKeys = vb:column {
-        margin = 0,
-        spacing = -1,
+    local whiteKeys = vb:stack {
         id = "pianoKeys",
+        height = gridStepSizeH * gridHeight,
+        width = pianoKeyWidth,
         mouse_events = {
             "wheel"
         },
-        mouse_handler = handleScrollWheel
+        mouse_handler = handleScrollWheel,
+        autosize = false
     }
     for y = gridHeight, 1, -1 do
         whiteKeys:add_child(
-                vb:row {
-                    margin = -gridMargin,
-                    spacing = -gridSpacing,
-                    vb:button {
-                        id = "k" .. tostring(y),
-                        height = gridStepSizeH,
-                        width = pianoKeyWidth,
-                        color = { 255, 255, 255 },
-                        pressed = loadstring("keyClick(" .. y .. ",true)"),
-                        released = loadstring("keyClick(" .. y .. ",false)"),
-                        visible = true,
-                    },
-                    vb:space {
-                        width = 5,
-                    },
-                    vb:button {
-                        id = "ks" .. tostring(y),
-                        height = gridStepSizeH,
-                        width = 6,
-                        visible = false,
-                        active = false,
-                    },
-                    vb:space {
-                        id = "kss" .. tostring(y),
-                        width = 6,
-                        visible = false,
-                    },
+            vb:button {
+                id = "k" .. tostring(y),
+                height = gridStepSizeH,
+                width = pianoKeyWidth,
+                color = { 255, 255, 255 },
+                pressed = loadstring("keyClick(" .. y .. ",true)"),
+                released = loadstring("keyClick(" .. y .. ",false)"),
+                visible = true,
+                origin = {
+                    x = -1,
+                    y = (gridStepSizeH * (gridHeight - y)) - 2
                 }
+            }
         )
     end
 
