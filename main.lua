@@ -9057,19 +9057,19 @@ local function createPianoRollDialog(gridWidth, gridHeight)
     }
     for y = gridHeight, 1, -1 do
         whiteKeys:add_child(
-            vb:button {
-                id = "k" .. tostring(y),
-                height = gridStepSizeH,
-                width = pianoKeyWidth,
-                color = { 255, 255, 255 },
-                pressed = loadstring("keyClick(" .. y .. ",true)"),
-                released = loadstring("keyClick(" .. y .. ",false)"),
-                visible = true,
-                origin = {
-                    x = -1,
-                    y = (gridStepSizeH * (gridHeight - y)) - 2
+                vb:button {
+                    id = "k" .. tostring(y),
+                    height = gridStepSizeH,
+                    width = pianoKeyWidth,
+                    color = { 255, 255, 255 },
+                    pressed = loadstring("keyClick(" .. y .. ",true)"),
+                    released = loadstring("keyClick(" .. y .. ",false)"),
+                    visible = true,
+                    origin = {
+                        x = -1,
+                        y = (gridStepSizeH * (gridHeight - y)) - 2
+                    }
                 }
-            }
         )
     end
 
@@ -9801,7 +9801,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                     id = "currentscale",
                                     text = "",
                                     width = pianoKeyWidth + noteSlider.width,
-                                    height = gridStepSizeH + 3,
+                                    height = gridStepSizeH + 5,
                                     tooltip = "Scale highlighting\nIf you hold down the Ctrl key while clicking, you switch to relative minor or major.",
                                     notifier = function()
                                         if modifier.keyControl then
@@ -9836,20 +9836,28 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                             },
                             vb:row {
                                 style = "panel",
-                                spacing = -(gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2),
-                                vb:bitmap {
-                                    width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2,
-                                    height = gridStepSizeH + 1,
-                                    bitmap = "Icons/SwitchOff.bmp",
-                                    mode = "transparent",
-                                    notifier = function()
-                                        --nothing
-                                    end
-                                },
-                                vb:row {
-                                    width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2,
+                                width = gridStepSizeW * gridWidth,
+                                vb:stack {
+                                    width = gridStepSizeW * gridWidth,
+                                    height = gridStepSizeH + 4,
+                                    autosize = false,
+                                    vb:column {
+                                        width = gridStepSizeW * gridWidth,
+                                        id = "key_state_panel",
+                                        visible = false,
+                                        origin = {
+                                            x = 2,
+                                            y = 0
+                                        },
+                                        vb:text {
+                                            id = "key_state",
+                                            text = "",
+                                            font = "bold",
+                                            style = "strong",
+                                        },
+                                    },
                                     vb:horizontal_aligner {
-                                        width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2,
+                                        width = gridStepSizeW * gridWidth,
                                         mode = "right",
                                         spacing = -2,
                                         vb:row {
@@ -9964,17 +9972,6 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                                 },
                                             },
                                         },
-                                    },
-                                },
-                                vb:column {
-                                    width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2,
-                                    id = "key_state_panel",
-                                    visible = false,
-                                    vb:text {
-                                        id = "key_state",
-                                        text = "",
-                                        font = "bold",
-                                        style = "strong",
                                     },
                                 },
                             }
