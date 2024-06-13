@@ -8992,7 +8992,6 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     local ry2 = gridHeight - math.min(xypadpos.ny, xypadpos.y) + 1
 
                     context.stroke_color = colorStepOn
-                    context.fill_color = { colorStepOn[1], colorStepOn[2], colorStepOn[3], 50 }
                     context:begin_path()
                     context:move_to(rx * w, ry * h)
                     context:line_to(rx2 * w, ry * h)
@@ -9001,7 +9000,6 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     context:line_to(rx * w, ry * h)
                     context.line_width = 2
                     context:stroke()
-                    context:fill()
                 end
             end
         },
