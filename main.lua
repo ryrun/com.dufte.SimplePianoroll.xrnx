@@ -9007,7 +9007,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
 
     --horizontal scrollbar
     stepSlider = vb:scrollbar {
-        width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)),
+        width = gridStepSizeW * gridWidth,
         height = math.max(16, gridStepSizeW / 2),
         min = 0,
         max = 1,
@@ -9980,7 +9980,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         },
         vb:row {
             vb:space {
-                width = math.max(16, gridStepSizeW / 2) + (gridStepSizeW * 3) + 1
+                width = gridStepSizeW * 5 - 4
             },
             stepSlider,
         },
