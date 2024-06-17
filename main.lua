@@ -4521,7 +4521,7 @@ local function renderGridCanvas(context)
 
     --bar/beat coloring
     context.fill_color = { 0, 0, 0, 100 * preferences.oddBarsShadingAmount.value }
-    for x = 0, gridWidth do
+    for x = lpb * -8, gridWidth do
         if (preferences.gridVLines.value == 2 and (x + stepOffset + (lpb * 4)) % (lpb * 8) == 0) or
                 (preferences.gridVLines.value == 3 and (x + stepOffset + lpb) % (lpb * 2) == 0)
         then
