@@ -7059,7 +7059,7 @@ local function handleMouse(event)
                     end
                 end
                 xypadpos.dragging = true
-                setCursor = "nodrop"
+                setCursor = "erase"
             elseif xypadpos.previewmode then
                 local playNotes = {}
                 --stop old notes
