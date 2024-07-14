@@ -579,8 +579,11 @@ local sortFunc = {
     end
 }
 
---force value between and inclusive min/max values
+--force value between and inclusive min/max values, return lowerBound when value is nan
 local function clamp(value, lowerBound, upperBound)
+    if value ~= value then
+        return lowerBound
+    end
     if lowerBound > upperBound then
         lowerBound, upperBound = upperBound, lowerBound
     end
@@ -5276,7 +5279,6 @@ local function refreshHistogramWindow(apply)
         end
     end
     --set histogram
-    --TODO bug when no notes in pattern
     for i = 1, #values do
         note = vbwp["histogram" .. tostring(i)]
         note.height = clamp(100 / math.min(#noteSelection, 5) * values[i], 5, 100)
