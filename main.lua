@@ -2994,7 +2994,6 @@ end
 
 --will be called, when a note was clicked
 function noteClick(x, y, c, released, forceScaling)
-    print(x, y, c, released, forceScaling, xypadpos.notemode, xypadpos.scalemode)
     local index = tostring(x) .. "_" .. tostring(y) .. "_" .. tostring(c)
     local note_data = noteData[index]
     local row = noteValue2GridRowOffset(note_data.note)
@@ -7177,31 +7176,27 @@ local function handleMouse(event)
                 --when move note is active, move notes
                 if not xypadpos.scalemode then
                     setCursor = "move"
-                    --scroll through, when note hits border
-                    --[[
-                    if val and val.scroll then
-                        if val_y == 1 and noteSlider.value < noteSlider.max then
-                            noteSlider.value = clamp(noteSlider.value + 1, noteSlider.min, noteSlider.max - 1)
-                            xypadpos.y = xypadpos.y + 1
-                            forceFullRefresh = true
-                        elseif val_y - 1 == gridHeight and noteSlider.value > 0 then
-                            noteSlider.value = clamp(noteSlider.value - 1, noteSlider.min, noteSlider.max - 1)
-                            xypadpos.y = xypadpos.y - 1
-                            forceFullRefresh = true
-                        end
-                        if val_x == 1 and stepSlider.value > 0 then
-                            stepSlider.value = clamp(stepSlider.value - 1, stepSlider.min, stepSlider.max - 1)
-                            xypadpos.x = xypadpos.x + 1
-                            xypadpos.lastx = xypadpos.lastx + 1
-                            forceFullRefresh = true
-                        elseif val_x - 1 == gridWidth and stepSlider.value <= stepSlider.max - 1 then
-                            stepSlider.value = clamp(stepSlider.value + 1, stepSlider.min, stepSlider.max - 1)
-                            xypadpos.x = xypadpos.x - 1
-                            xypadpos.lastx = xypadpos.lastx - 1
-                            forceFullRefresh = true
-                        end
+                    --TODO scroll through, when note hits border
+                    if val_y < 1 and noteSlider.value < noteSlider.max then
+                        noteSlider.value = clamp(noteSlider.value + 1, noteSlider.min, noteSlider.max - 1)
+                        xypadpos.y = xypadpos.y + 1
+                        forceFullRefresh = true
+                    elseif val_y - 1 >= gridHeight and noteSlider.value > 0 then
+                        noteSlider.value = clamp(noteSlider.value - 1, noteSlider.min, noteSlider.max - 1)
+                        xypadpos.y = xypadpos.y - 1
+                        forceFullRefresh = true
                     end
-                    ]]--
+                    if val_x == 1 and stepSlider.value > 0 then
+                        stepSlider.value = clamp(stepSlider.value - 1, stepSlider.min, stepSlider.max - 1)
+                        xypadpos.x = xypadpos.x + 1
+                        xypadpos.lastx = xypadpos.lastx + 1
+                        forceFullRefresh = true
+                    elseif val_x - 1 == gridWidth and stepSlider.value <= stepSlider.max - 1 then
+                        stepSlider.value = clamp(stepSlider.value + 1, stepSlider.min, stepSlider.max - 1)
+                        xypadpos.x = xypadpos.x - 1
+                        xypadpos.lastx = xypadpos.lastx - 1
+                        forceFullRefresh = true
+                    end
                     if modifier.keyAlt and isDelayColumnActive(true) then
                         local v = math.floor((val_x - xypadpos.x) * 0x100)
                         if v ~= 0 then
