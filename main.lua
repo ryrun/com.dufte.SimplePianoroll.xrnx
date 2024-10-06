@@ -9673,7 +9673,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                 vb:button {
                     id = "note_end_dly_clear",
                     text = "C",
-                    tooltip = "Clear note delay",
+                    tooltip = "Clear note off delay",
                     notifier = function()
                         currentNoteEndDelay = 0
                         changePropertiesOfSelectedNotes(nil, nil, nil, currentNoteEndDelay)
