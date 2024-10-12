@@ -129,7 +129,6 @@ local defaultPreferences = {
     triggerTime = 250,
     keyInfoTime = 3,
     enableKeyInfo = true,
-    dblClickTime = 400,
     forcePenMode = false,
     notePreview = true,
     snapToGridSize = 20,
@@ -170,7 +169,6 @@ local defaultPreferences = {
     chordDetection = true,
     keyLabels = 2,
     setComputerKeyboardVelocity = false,
-    moveNoteInPenMode = false,
     mirroringGhostTrack = false,
     noteColorShiftDegree = 45,
     midiDevice = "",
@@ -216,7 +214,6 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     minSizeOfNoteButton = defaultPreferences.minSizeOfNoteButton,
     triggerTime = defaultPreferences.triggerTime,
     noNotePreviewDuringSongPlayback = defaultPreferences.noNotePreviewDuringSongPlayback,
-    dblClickTime = defaultPreferences.dblClickTime,
     forcePenMode = defaultPreferences.forcePenMode,
     notePreview = defaultPreferences.notePreview,
     applyVelocityColorShading = defaultPreferences.applyVelocityColorShading,
@@ -259,7 +256,6 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     chordDetection = defaultPreferences.chordDetection,
     outOfPentatonicScaleHighlightingAmount = defaultPreferences.outOfPentatonicScaleHighlightingAmount,
     setComputerKeyboardVelocity = defaultPreferences.setComputerKeyboardVelocity,
-    moveNoteInPenMode = defaultPreferences.moveNoteInPenMode,
     mirroringGhostTrack = defaultPreferences.mirroringGhostTrack,
     noteColorShiftDegree = defaultPreferences.noteColorShiftDegree,
     midiDevice = defaultPreferences.midiDevice,
@@ -1542,16 +1538,6 @@ local function removeSelectedNotes(cut)
         noteData[notesOnLine[i]] = note_data
     end
     refreshStates.refreshPianoRollNeeded = true
-end
-
---simple function for double click detection for buttons
-local function dbclkDetector(index)
-    if lastClickIndex == index and lastClickCache[index] ~= nil and os.clock() - lastClickCache[index] < preferences.dblClickTime.value / 1000 then
-        return true
-    end
-    lastClickCache[index] = os.clock()
-    lastClickIndex = index
-    return false
 end
 
 --refresh all controls
@@ -3021,7 +3007,7 @@ function noteClick(x, y, c, released, forceScaling)
         xypadpos.resetscale = false
         xypadpos.notemode = true
         xypadpos.lastval = nil
-        xypadpos.duplicate = (modifier.keyShift or modifier.keyControl) and (not checkMode("pen") or preferences.moveNoteInPenMode.value) and not modifier.keyAlt
+        xypadpos.duplicate = (modifier.keyShift or modifier.keyControl) and not modifier.keyAlt
         xypadpos.time = os.clock()
 
         if not checkMode("pen") then
@@ -3039,38 +3025,13 @@ function noteClick(x, y, c, released, forceScaling)
     end
 
     if released then
-        local dbclk
-        if not forceScaling then
-            dbclk = dbclkDetector("b" .. index)
-        end
-        --remove on dblclk or when in penmode or previewmode
-        if (checkMode("pen") and not preferences.moveNoteInPenMode.value) or (dbclk and not checkMode("preview")) then
-            --set clicked note as selected for remove function
-            if note_data ~= nil then
-                if preferences.disableAltClickNoteRemove.value and modifier.keyAlt then
-                    --dont delete notes, when use altKey in non pen mode
+        if note_data ~= nil then
+            if not checkMode("preview") then
+                --clear selection, when ctrl is not holded
+                if #noteSelection > 0 and modifier.keyControl and not forceScaling then
                     updateNoteSelection(note_data, note_data)
                 else
-                    updateNoteSelection(note_data, true, true)
-                    removeSelectedNotes()
-                    --when removing notes switch into remove mode
-                    if not preferences.disableNoteEraserMode.value
-                            and checkMode("pen") then
-                        xypadpos.notemode = false
-                        xypadpos.removemode = true
-                        refreshStates.refreshControls = true
-                    end
-                end
-            end
-        else
-            if note_data ~= nil then
-                if not checkMode("preview") then
-                    --clear selection, when ctrl is not holded
-                    if #noteSelection > 0 and modifier.keyControl and not forceScaling then
-                        updateNoteSelection(note_data, note_data)
-                    else
-                        updateNoteSelection(note_data, "note")
-                    end
+                    updateNoteSelection(note_data, "note")
                 end
             end
         end
@@ -3147,11 +3108,10 @@ function pianoGridClick(x, y, released)
         return
     end
     if released then
-        local dbclk = dbclkDetector("p" .. index)
         --set paste cursor
         pasteCursor = { x + stepOffset, gridOffset2NoteValue(y) }
 
-        if dbclk or checkMode("pen") then
+        if checkMode("pen") then
             local steps = song.selected_pattern.number_of_lines
             local last_note_value
             local column
@@ -6073,14 +6033,6 @@ local function showPenSettingsDialog()
                     },
                     vbp:row {
                         vbp:checkbox {
-                            bind = preferences.moveNoteInPenMode,
-                        },
-                        vbp:text {
-                            text = "Allow move, scale and duplication of notes in pen mode",
-                        },
-                    },
-                    vbp:row {
-                        vbp:checkbox {
                             bind = preferences.useChordStampingForNotePreview,
                         },
                         vbp:text {
@@ -7106,9 +7058,19 @@ local function handleMouse(event)
             elseif xypadpos.notemode then
                 if not xypadpos.dragging then
                     xypadpos.dragging = true
+                    xypadpos.distanceblock = true
                     xypadpos.x = val_x
                     xypadpos.y = val_y
                 end
+
+                --disable distant block
+                if xypadpos.distanceblock then
+                    --some distance is needed
+                    if math.max(math.abs(xypadpos.x - val_x), math.abs(xypadpos.y - val_y)) > 0.69 then
+                        xypadpos.distanceblock = false
+                    end
+                end
+
                 --mouse dragging and scaling
                 local max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
 
@@ -7117,7 +7079,7 @@ local function handleMouse(event)
                     val_x = max
                 end
                 --when scale mode is active, scale notes
-                if xypadpos.scalemode then
+                if xypadpos.scalemode and not xypadpos.distanceblock then
                     if checkMode("pen") then
                         setCursor = "resize_horizontal"
                     end
@@ -7347,12 +7309,12 @@ local function handleMouse(event)
             end
 
             if type == "g" then
-                if (event.type == "down" or event.type == "double") and event.button == "left" then
+                if event.type == "down" and event.button == "left" then
                     pianoGridClick(x, y, false)
                     pianoGridClick(x, y, true)
                 end
             elseif type == "b" then
-                if (event.type == "down" or event.type == "double") and event.button == "left" then
+                if event.type == "down" and event.button == "left" then
                     noteClick(x, y, c, false, forceScaling)
                     noteClick(x, y, c, true, forceScaling)
                 end
@@ -8533,14 +8495,6 @@ showPreferences = function()
                         },
                         vbp:row {
                             vbp:checkbox {
-                                bind = preferences.moveNoteInPenMode,
-                            },
-                            vbp:text {
-                                text = "Allow move, scale and duplication of notes in pen mode",
-                            },
-                        },
-                        vbp:row {
-                            vbp:checkbox {
                                 bind = preferences.resetNoteSizeOnNoteDraw,
                             },
                             vbp:text {
@@ -8706,18 +8660,6 @@ showPreferences = function()
                             font = "bold",
                             style = "strong",
                             align = "center",
-                        },
-                        vbp:horizontal_aligner {
-                            mode = "justify",
-                            vbp:text {
-                                text = "Max double click time (ms):",
-                            },
-                            vbp:valuebox {
-                                steps = { 1, 2 },
-                                min = 50,
-                                max = 2000,
-                                bind = preferences.dblClickTime,
-                            },
                         },
                         vbp:horizontal_aligner {
                             mode = "justify",
@@ -8958,7 +8900,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         vb:stack {
             id = "pianorollColumns",
             mouse_events = {
-                "enter", "exit", "move", "drag", "down", "up", "wheel", "double"
+                "enter", "exit", "move", "drag", "down", "up", "wheel"
             },
             mouse_handler = handleMouse,
             cursor = "default",
@@ -9281,7 +9223,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     tooltip = "Pen mode (F2)\nDouble click or ALT click for pen settings.",
                     id = "mode_pen",
                     notifier = function()
-                        if dbclkDetector("penmodeBtn") or modifier.keyAlt then
+                        if modifier.keyAlt then
                             showPenSettingsDialog()
                         else
                             penMode = true
