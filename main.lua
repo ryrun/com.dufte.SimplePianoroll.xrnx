@@ -129,7 +129,6 @@ local defaultPreferences = {
     triggerTime = 250,
     keyInfoTime = 3,
     enableKeyInfo = true,
-    forcePenMode = false,
     notePreview = true,
     snapToGridSize = 20,
     applyVelocityColorShading = true,
@@ -214,7 +213,6 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     minSizeOfNoteButton = defaultPreferences.minSizeOfNoteButton,
     triggerTime = defaultPreferences.triggerTime,
     noNotePreviewDuringSongPlayback = defaultPreferences.noNotePreviewDuringSongPlayback,
-    forcePenMode = defaultPreferences.forcePenMode,
     notePreview = defaultPreferences.notePreview,
     applyVelocityColorShading = defaultPreferences.applyVelocityColorShading,
     velocityColorShadingAmount = defaultPreferences.velocityColorShadingAmount,
@@ -444,7 +442,7 @@ local lastClickCache = {}
 local lastClickIndex
 local pasteCursor = {}
 local currentInstrument
-local currentNoteLength = 1
+local currentNoteLength = 2
 local currentNoteVelocity = 255
 local currentNotePan = 255
 local currentNoteDelay = 0
@@ -965,12 +963,16 @@ end
 --check mode
 local function checkMode(mode)
     if mode == "preview" then
-        if audioPreviewMode or (modifier.keyControl and modifier.keyShift and not modifier.keyAlt) then
+        if audioPreviewMode or
+                (modifier.keyControl and modifier.keyShift and not modifier.keyAlt)
+        then
             return true
         end
     end
     if mode == "pen" then
-        if (penMode and not modifier.keyAlt) or (not modifier.keyControl and not modifier.keyShift and modifier.keyAlt and not penMode) then
+        if (penMode and not modifier.keyControl) or
+                (not modifier.keyControl and not modifier.keyShift and modifier.keyAlt and not penMode)
+        then
             return true
         end
     end
@@ -3066,6 +3068,7 @@ function pianoGridClick(x, y, released)
         xypadpos.dragging = false
         xypadpos.time = os.clock()
         if checkMode("preview") then
+            print("preview")
             xypadpos.previewmode = true
             xypadpos.leftClick = true
             refreshStates.refreshChordDetection = true
@@ -6025,14 +6028,6 @@ local function showPenSettingsDialog()
                     },
                     vbp:row {
                         vbp:checkbox {
-                            bind = preferences.forcePenMode,
-                        },
-                        vbp:text {
-                            text = "Enable pen mode by default",
-                        },
-                    },
-                    vbp:row {
-                        vbp:checkbox {
                             bind = preferences.useChordStampingForNotePreview,
                         },
                         vbp:text {
@@ -6282,15 +6277,6 @@ local function handleKeyEvent(keyEvent)
     end
     if key.name == "f1" then
         if key.state == "pressed" then
-            keyInfoText = "Select mode"
-            penMode = false
-            audioPreviewMode = false
-            refreshStates.refreshControls = true
-        end
-        handled = true
-    end
-    if key.name == "f2" then
-        if key.state == "pressed" then
             if modifier.keyControl then
                 keyInfoText = "Open Pen mode settings."
                 showPenSettingsDialog()
@@ -6300,6 +6286,15 @@ local function handleKeyEvent(keyEvent)
                 audioPreviewMode = false
                 refreshStates.refreshControls = true
             end
+        end
+        handled = true
+    end
+    if key.name == "f2" then
+        if key.state == "pressed" then
+            keyInfoText = "Select mode"
+            penMode = false
+            audioPreviewMode = false
+            refreshStates.refreshControls = true
         end
         handled = true
     end
@@ -8487,14 +8482,6 @@ showPreferences = function()
                         },
                         vbp:row {
                             vbp:checkbox {
-                                bind = preferences.forcePenMode,
-                            },
-                            vbp:text {
-                                text = "Enable pen mode by default",
-                            },
-                        },
-                        vbp:row {
-                            vbp:checkbox {
                                 bind = preferences.resetNoteSizeOnNoteDraw,
                             },
                             vbp:text {
@@ -9207,20 +9194,9 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                 spacing = -3,
                 style = "panel",
                 vb:button {
-                    bitmap = "Icons/AutomationList_Empty.bmp",
-                    width = 24,
-                    tooltip = "Select mode (F1)",
-                    id = "mode_select",
-                    notifier = function()
-                        penMode = false
-                        audioPreviewMode = false
-                        refreshStates.refreshControls = true
-                    end,
-                },
-                vb:button {
                     bitmap = "Icons/SampleEd_DrawTool.bmp",
                     width = 24,
-                    tooltip = "Pen mode (F2)\nDouble click or ALT click for pen settings.",
+                    tooltip = "Pen mode (F1)\nALT click for pen settings.",
                     id = "mode_pen",
                     notifier = function()
                         if modifier.keyAlt then
@@ -9230,6 +9206,17 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                             audioPreviewMode = false
                             refreshStates.refreshControls = true
                         end
+                    end,
+                },
+                vb:button {
+                    bitmap = "Icons/AutomationList_Empty.bmp",
+                    width = 24,
+                    tooltip = "Select mode (F2)",
+                    id = "mode_select",
+                    notifier = function()
+                        penMode = false
+                        audioPreviewMode = false
+                        refreshStates.refreshControls = true
                     end,
                 },
                 vb:button {
@@ -9963,8 +9950,8 @@ local function main_function()
         --reset note playing
         notesPlaying = {}
         notesPlayingLine = {}
-        --when needed set enable penmode
-        penMode = preferences.forcePenMode.value
+        --pen mode is default
+        penMode = true
         --create main dialog
         if not windowContent or refreshStates.rebuildWindowDialog then
             --init colors
