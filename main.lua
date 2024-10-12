@@ -3068,7 +3068,6 @@ function pianoGridClick(x, y, released)
         xypadpos.dragging = false
         xypadpos.time = os.clock()
         if checkMode("preview") then
-            print("preview")
             xypadpos.previewmode = true
             xypadpos.leftClick = true
             refreshStates.refreshChordDetection = true
