@@ -1666,33 +1666,15 @@ local function refreshNoteControls()
 
     if checkMode("pen") then
         vbw.mode_pen.color = colorStepOn
-        if xypadpos.removemode then
-            vbw.mode_pen.bitmap = "Icons/Delete.bmp"
-        else
-            vbw.mode_pen.bitmap = "Icons/SampleEd_DrawTool.bmp"
-        end
         vbw.mode_select.color = colorDefault
-        vbw.mode_select.bitmap = "Icons/AutomationList_Empty.bmp"
-        vbw.mode_select.text = ""
         vbw.mode_audiopreview.color = colorDefault
     elseif checkMode("preview") then
-        vbw.mode_pen.bitmap = "Icons/SampleEd_DrawTool.bmp"
         vbw.mode_pen.color = colorDefault
         vbw.mode_select.color = colorDefault
-        vbw.mode_select.bitmap = "Icons/AutomationList_Empty.bmp"
-        vbw.mode_select.text = ""
         vbw.mode_audiopreview.color = colorStepOn
     else
-        vbw.mode_pen.bitmap = "Icons/SampleEd_DrawTool.bmp"
         vbw.mode_pen.color = colorDefault
         vbw.mode_select.color = colorStepOn
-        if xypadpos.scalemode and xypadpos.leftClick == true then
-            vbw.mode_select.bitmap = ""
-            vbw.mode_select.text = "↔"
-        else
-            vbw.mode_select.bitmap = "Icons/AutomationList_Empty.bmp"
-            vbw.mode_select.text = ""
-        end
         vbw.mode_audiopreview.color = colorDefault
     end
 
@@ -7312,7 +7294,10 @@ local function handleMouse(event)
                     pianoGridClick(x, y, true)
                 end
             elseif type == "b" then
-                if event.type == "down" and event.button == "left" then
+                if checkMode("pen") and event.type == "down" and event.button == "right" then
+                    event.type = "drag"
+                    handleMouse(event)
+                elseif event.type == "down" and event.button == "left" then
                     noteClick(x, y, c, false, forceScaling)
                     noteClick(x, y, c, true, forceScaling)
                 end
