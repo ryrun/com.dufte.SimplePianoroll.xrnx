@@ -3275,29 +3275,24 @@ function pianoGridClick(x, y, released)
             refreshStates.refreshPianoRollNeeded = true
             refreshStates.refreshChordDetection = true
         else
-            --fast play from cursor
-            if modifier.keyControl and not modifier.keyAlt and not modifier.keyShift then
-                playPatternFromLine(x + stepOffset)
-            else
-                --deselect selected notes
-                if #noteSelection > 0 then
-                    if not modifier.keyShift then
-                        updateNoteSelection(nil, true)
-                        jumpToNoteInPattern(x + stepOffset)
-                    end
-                elseif preferences.resetVolPanDlyControlOnClick.value then
-                    jumpToNoteInPattern(x + stepOffset)
-                    --nothing selected reset vol, pan and dly
-                    currentNoteVelocity = 255
-                    currentNotePan = 255
-                    currentNoteDelay = 0
-                    currentNoteEndDelay = 0
-                    currentNoteVelocityPreview = 127
-                    currentNoteEndVelocity = 255
-                    refreshStates.refreshControls = true
-                else
+            --deselect selected notes
+            if #noteSelection > 0 then
+                if not modifier.keyShift then
+                    updateNoteSelection(nil, true)
                     jumpToNoteInPattern(x + stepOffset)
                 end
+            elseif preferences.resetVolPanDlyControlOnClick.value then
+                jumpToNoteInPattern(x + stepOffset)
+                --nothing selected reset vol, pan and dly
+                currentNoteVelocity = 255
+                currentNotePan = 255
+                currentNoteDelay = 0
+                currentNoteEndDelay = 0
+                currentNoteVelocityPreview = 127
+                currentNoteEndVelocity = 255
+                refreshStates.refreshControls = true
+            else
+                jumpToNoteInPattern(x + stepOffset)
             end
         end
     end
@@ -6944,6 +6939,15 @@ local function handleMouse(event)
     local setCursor = "default"
     local pianorollColumns = vbw["pianorollColumns"]
     local x, y, c, type, forceScaling, val_x, val_y, quickRefresh, forceFullRefresh
+
+    --fix bug
+    if modifier.keyControl and event.button == "right" then
+        event.button = "left"
+    end
+    if modifier.keyControl and not event.button_flags["left"] and event.button_flags["right"] then
+        event.button_flags["left"] = true
+        event.button_flags["right"] = false
+    end
 
     --cursor per mode
     if checkMode("pen") then
