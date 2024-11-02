@@ -1192,7 +1192,10 @@ local function updateNoteSelection(note_data, clear, noNoteReadOut)
     end
     --jump sel start
     if #noteSelection > 0 and noNoteReadOut ~= true then
-        jumpToNoteInPattern("sel")
+        --only jump to note, when piano roll main window is visible
+        if windowObj.visible then
+            jumpToNoteInPattern("sel")
+        end
         --set control values
         if preferences.setVelPanDlyLenFromLastNote.value then
             --set note length
