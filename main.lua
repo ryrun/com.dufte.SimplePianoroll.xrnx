@@ -1110,10 +1110,29 @@ end
 local function updateNoteSelection(note_data, clear, noNoteReadOut)
     local newNotes = {}
     local wasInSelection = {}
+    local selection = song.selection_in_pattern
     if note_data ~= nil then
+        --no selection in renoise, force all
+        if selection == nil and note_data == "renoise_selection" then
+            note_data = "all"
+        end
         if note_data == "all" then
             for k in pairs(noteData) do
                 table.insert(newNotes, noteData[k])
+            end
+        elseif note_data == "renoise_selection" then
+            for k in pairs(noteData) do
+                --check if note is in renoise selection
+                if
+                song.selected_track_index >= selection.start_track and
+                        song.selected_track_index <= selection.end_track and
+                        noteData[k].column >= selection.start_column and
+                        noteData[k].column <= selection.end_column and
+                        noteData[k].line >= selection.start_line and
+                        noteData[k].line <= selection.end_line
+                then
+                    table.insert(newNotes, noteData[k])
+                end
             end
         elseif #note_data == 0 and note_data.idx then
             table.insert(newNotes, note_data)
@@ -7477,9 +7496,10 @@ local function appIdleEvent()
         if dialogVars.setScaleObj and dialogVars.setScaleObj.visible then
             dialogVars.setScaleObj:close()
         end
-        if dialogVars.histogramObj and dialogVars.histogramObj.visible then
-            dialogVars.histogramObj:close()
-        end
+        --allow histogram be open without piano roll main dialog
+        --if dialogVars.histogramObj and dialogVars.histogramObj.visible then
+        --    dialogVars.histogramObj:close()
+        --end
         if dialogVars.penSettingsObj and dialogVars.penSettingsObj.visible then
             dialogVars.penSettingsObj:close()
         end
@@ -9909,7 +9929,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
 end
 
 --edit in pianoroll main function
-local function main_function()
+local function main_function(hidden)
     --setup observers
     if not tool.app_new_document_observable:has_notifier(appNewDoc) then
         tool.app_new_document_observable:add_notifier(appNewDoc)
@@ -9991,6 +10011,10 @@ local function main_function()
             send_key_repeat = true,
             send_key_release = true,
         })
+        --stay hidden, if needed
+        if hidden then
+            windowObj:close()
+        end
     else
         --refresh pianoroll
         refreshStates.refreshPianoRollNeeded = true
@@ -10003,6 +10027,18 @@ tool:add_menu_entry {
     name = "Pattern Editor:Edit with Simple Pianoroll ...",
     invoke = function()
         main_function()
+    end
+}
+
+--add histogram to context menu of pattern editor
+tool:add_menu_entry {
+    name = "Pattern Editor:Edit with Histogram ...",
+    invoke = function()
+        if not vb then
+            main_function(true)
+        end
+        updateNoteSelection("renoise_selection", true)
+        showHistogram()
     end
 }
 
@@ -10119,6 +10155,18 @@ tool:add_keybinding {
         else
             main_function()
         end
+    end
+}
+
+--add key shortcut for histogram
+tool:add_keybinding {
+    name = "Pattern Editor:Tools:Edit with Histogram ...",
+    invoke = function()
+        if not vb then
+            main_function(true)
+        end
+        updateNoteSelection("renoise_selection", true)
+        showHistogram()
     end
 }
 
