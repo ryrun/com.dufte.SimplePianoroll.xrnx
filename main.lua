@@ -587,7 +587,7 @@ local sortFunc = {
 --force value between and inclusive min/max values, return lowerBound when value is nan
 local function clamp(value, lowerBound, upperBound)
     if value ~= value then -- NaN check
-        value = 0
+        value = lowerBound
     end
     if lowerBound > upperBound then
         lowerBound, upperBound = upperBound, lowerBound
