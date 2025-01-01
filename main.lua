@@ -118,8 +118,8 @@ local chordsTable = {
 
 --default values, can be used to reset to default
 local defaultPreferences = {
-    gridStepSizeW = 16,
-    gridStepSizeH = 15,
+    gridStepSizeW = 20,
+    gridStepSizeH = 18,
     gridSpacing = 4,
     gridMargin = 1,
     gridWidth = 64,
@@ -129,8 +129,12 @@ local defaultPreferences = {
     triggerTime = 250,
     keyInfoTime = 3,
     enableKeyInfo = true,
+    dblClickTime = 400,
+    forcePenMode = false,
     notePreview = true,
+    enableOSCClient = true,
     snapToGridSize = 20,
+    oscConnectionString = "udp://127.0.0.1:8000",
     applyVelocityColorShading = true,
     velocityColorShadingAmount = 0.49,
     followPlayCursor = true,
@@ -167,7 +171,9 @@ local defaultPreferences = {
     centerViewOnOpen = true,
     chordDetection = true,
     keyLabels = 2,
+    mouseWarpingCompatibilityMode = false,
     setComputerKeyboardVelocity = false,
+    moveNoteInPenMode = false,
     mirroringGhostTrack = false,
     noteColorShiftDegree = 45,
     midiDevice = "",
@@ -179,6 +185,7 @@ local defaultPreferences = {
     resetNoteSizeOnNoteDraw = true,
     timelineEven = 2,
     timelineOdd = 3,
+    themeHasWideFont = false,
     restrictNotesToScale = false,
     sortNewNotesMode = 2,
     --colors
@@ -212,8 +219,12 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     gridVLines = defaultPreferences.gridVLines,
     minSizeOfNoteButton = defaultPreferences.minSizeOfNoteButton,
     triggerTime = defaultPreferences.triggerTime,
+    enableOSCClient = defaultPreferences.enableOSCClient,
     noNotePreviewDuringSongPlayback = defaultPreferences.noNotePreviewDuringSongPlayback,
+    dblClickTime = defaultPreferences.dblClickTime,
+    forcePenMode = defaultPreferences.forcePenMode,
     notePreview = defaultPreferences.notePreview,
+    oscConnectionString = defaultPreferences.oscConnectionString,
     applyVelocityColorShading = defaultPreferences.applyVelocityColorShading,
     velocityColorShadingAmount = defaultPreferences.velocityColorShadingAmount,
     scaleBtnShadingAmount = defaultPreferences.scaleBtnShadingAmount,
@@ -252,8 +263,10 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     previewMidiStuckWorkaround = defaultPreferences.previewMidiStuckWorkaround,
     limitPreviewBySelectionSize = defaultPreferences.limitPreviewBySelectionSize,
     chordDetection = defaultPreferences.chordDetection,
+    mouseWarpingCompatibilityMode = defaultPreferences.mouseWarpingCompatibilityMode,
     outOfPentatonicScaleHighlightingAmount = defaultPreferences.outOfPentatonicScaleHighlightingAmount,
     setComputerKeyboardVelocity = defaultPreferences.setComputerKeyboardVelocity,
+    moveNoteInPenMode = defaultPreferences.moveNoteInPenMode,
     mirroringGhostTrack = defaultPreferences.mirroringGhostTrack,
     noteColorShiftDegree = defaultPreferences.noteColorShiftDegree,
     midiDevice = defaultPreferences.midiDevice,
@@ -265,6 +278,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     chordPainterPresetTbl = 1, --default bank
     timelineEven = defaultPreferences.timelineEven,
     timelineOdd = defaultPreferences.timelineOdd,
+    themeHasWideFont = defaultPreferences.themeHasWideFont,
     sortNewNotesMode = defaultPreferences.sortNewNotesMode,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
@@ -302,6 +316,7 @@ local dialogVars = {
 }
 local stepSlider
 local noteSlider
+local snapBackVal = { x = 1.01234, y = 1.01234 }
 
 --last step position for resetting the last step button
 local lastStepOn
@@ -348,6 +363,7 @@ local colorBlackKey = {}
 local defaultColor = {}
 
 --note trigger vars
+local oscClient
 local lastTriggerNote = {}
 
 --missing block loop observable? use a variable for check there was a change
@@ -357,17 +373,14 @@ local instrumentScaleMode
 --backup state values, to set it back when piano roll was closed
 local wasFollowPlayer
 
---main flag for refreshing piano roll grid, timeline and toolbars
-local refreshStates = {
-    rebuildWindowDialog = true,
-    refreshPianoRollNeeded = false,
-    blockLineModifier = false,
-    refreshControls = false,
-    refreshTimeline = false,
-    refreshChordDetection = false,
-    refreshHistogram = false,
-    updateGridCanvas = true
-}
+--main flag for refreshing pianoroll
+local rebuildWindowDialog = true
+local refreshPianoRollNeeded = false
+local blockLineModifier = false
+local refreshControls = false
+local refreshTimeline = false
+local refreshChordDetection = false
+local refreshHistogram = false
 local afterEditProcessTime
 
 --table to save note indices per step for highlighting
@@ -442,7 +455,7 @@ local lastClickCache = {}
 local lastClickIndex
 local pasteCursor = {}
 local currentInstrument
-local currentNoteLength = 2
+local currentNoteLength = 1
 local currentNoteVelocity = 255
 local currentNotePan = 255
 local currentNoteDelay = 0
@@ -480,7 +493,6 @@ local xypadpos = {
     y = 0, --click pos y
     nx = 0, --note x pos
     ny = 0, --note y pos
-    nc = 0, --note column
     nlen = 0, --note len
     time = 0, --click time
     lastx = 0,
@@ -500,8 +512,7 @@ local xypadpos = {
     leftClick = false,
     disabled = {},
     preview = {},
-    loopslider = nil,
-    dragging = false
+    loopslider = nil
 }
 
 --some values to remember for additional tools, prevent upval limit error
@@ -573,11 +584,8 @@ local sortFunc = {
     end
 }
 
---force value between and inclusive min/max values, return lowerBound when value is nan
+--force value between and inclusive min/max values
 local function clamp(value, lowerBound, upperBound)
-    if value ~= value then
-        return lowerBound
-    end
     if lowerBound > upperBound then
         lowerBound, upperBound = upperBound, lowerBound
     end
@@ -705,7 +713,6 @@ local function shadeColor(color, shade)
     if shade == 0 then
         return color
     end
-    shade = math.min(1, shade)
     local math_ceil = math.ceil
     local math_max = math.max
     return {
@@ -963,16 +970,12 @@ end
 --check mode
 local function checkMode(mode)
     if mode == "preview" then
-        if audioPreviewMode or
-                (modifier.keyControl and modifier.keyShift and not modifier.keyAlt)
-        then
+        if audioPreviewMode or (modifier.keyControl and modifier.keyShift and not modifier.keyAlt) then
             return true
         end
     end
     if mode == "pen" then
-        if (penMode and not modifier.keyControl) or
-                (not modifier.keyControl and not modifier.keyShift and modifier.keyAlt and not penMode)
-        then
+        if (penMode and not modifier.keyAlt) or (not modifier.keyControl and not modifier.keyShift and modifier.keyAlt and not penMode) then
             return true
         end
     end
@@ -1039,7 +1042,7 @@ local function jumpToNoteInPattern(notedata)
     end
     --refresh edit pos
     refreshEditPosIndicator()
-    refreshStates.refreshChordDetection = true
+    refreshChordDetection = true
 end
 
 --check if a note index is in major scale
@@ -1201,7 +1204,7 @@ local function updateNoteSelection(note_data, clear, noNoteReadOut)
             --set note length
             if note_data and note_data.idx then
                 currentNoteLength = note_data.len
-                refreshStates.refreshControls = true
+                refreshControls = true
             end
 
             local vel, end_vel, pan, dly, end_dly, ins, len
@@ -1252,7 +1255,7 @@ local function updateNoteSelection(note_data, clear, noNoteReadOut)
             if vel == "mixed" and currentNoteVelocity ~= 255 then
                 currentNoteVelocity = 255
                 currentNoteVelocityPreview = 127
-                refreshStates.refreshControls = true
+                refreshControls = true
             elseif type(vel) == "number" and vel ~= currentNoteVelocity then
                 currentNoteVelocity = vel
                 if currentNoteVelocity > 0 and currentNoteVelocity < 128 then
@@ -1260,56 +1263,56 @@ local function updateNoteSelection(note_data, clear, noNoteReadOut)
                 else
                     currentNoteVelocityPreview = 127
                 end
-                refreshStates.refreshControls = true
+                refreshControls = true
             end
 
             if type(ins) == "number" and ins ~= currentInstrument then
                 currentInstrument = ins
-                refreshStates.refreshControls = true
+                refreshControls = true
             end
 
             if type(len) == "number" and len ~= currentNoteLength then
                 currentNoteLength = len
-                refreshStates.refreshControls = true
+                refreshControls = true
             end
 
             if end_vel == "mixed" and currentNoteEndVelocity ~= 255 then
                 currentNoteEndVelocity = 255
-                refreshStates.refreshControls = true
+                refreshControls = true
             elseif type(end_vel) == "number" and end_vel ~= currentNoteEndVelocity then
                 currentNoteEndVelocity = end_vel
-                refreshStates.refreshControls = true
+                refreshControls = true
             end
 
             if pan == "mixed" and currentNotePan ~= 255 then
                 currentNotePan = 255
-                refreshStates.refreshControls = true
+                refreshControls = true
             elseif type(pan) == "number" and pan ~= currentNotePan then
                 currentNotePan = pan
-                refreshStates.refreshControls = true
+                refreshControls = true
             end
 
             if dly == "mixed" and currentNoteDelay ~= 0 then
                 currentNoteDelay = 0
-                refreshStates.refreshControls = true
+                refreshControls = true
             elseif type(dly) == "number" and dly ~= currentNoteDelay then
                 currentNoteDelay = dly
-                refreshStates.refreshControls = true
+                refreshControls = true
             end
 
             if end_dly == "mixed" and currentNoteEndDelay ~= 0 then
                 currentNoteEndDelay = 0
-                refreshStates.refreshControls = true
+                refreshControls = true
             elseif type(end_dly) == "number" and end_dly ~= currentNoteEndDelay then
                 currentNoteEndDelay = end_dly
-                refreshStates.refreshControls = true
+                refreshControls = true
             end
         end
-        refreshStates.refreshHistogram = true
+        refreshHistogram = true
     else
         --refresh chord detection
-        refreshStates.refreshChordDetection = true
-        refreshStates.refreshHistogram = true
+        refreshChordDetection = true
+        refreshHistogram = true
     end
 end
 
@@ -1561,13 +1564,22 @@ local function removeSelectedNotes(cut)
         )
         noteData[notesOnLine[i]] = note_data
     end
-    refreshStates.refreshPianoRollNeeded = true
+    refreshPianoRollNeeded = true
+end
+
+--simple function for double click detection for buttons
+local function dbclkDetector(index)
+    if lastClickIndex == index and lastClickCache[index] ~= nil and os.clock() - lastClickCache[index] < preferences.dblClickTime.value / 1000 then
+        return true
+    end
+    lastClickCache[index] = os.clock()
+    lastClickIndex = index
+    return false
 end
 
 --refresh all controls
 local function refreshNoteControls()
     local track = song.selected_track
-    local setCursor = "default"
 
     vbw.note_len.value = currentNoteLength
 
@@ -1688,15 +1700,33 @@ local function refreshNoteControls()
 
     if checkMode("pen") then
         vbw.mode_pen.color = colorStepOn
+        if xypadpos.removemode then
+            vbw.mode_pen.bitmap = "Icons/Delete.bmp"
+        else
+            vbw.mode_pen.bitmap = "Icons/SampleEd_DrawTool.bmp"
+        end
         vbw.mode_select.color = colorDefault
+        vbw.mode_select.bitmap = "Icons/AutomationList_Empty.bmp"
+        vbw.mode_select.text = ""
         vbw.mode_audiopreview.color = colorDefault
     elseif checkMode("preview") then
+        vbw.mode_pen.bitmap = "Icons/SampleEd_DrawTool.bmp"
         vbw.mode_pen.color = colorDefault
         vbw.mode_select.color = colorDefault
+        vbw.mode_select.bitmap = "Icons/AutomationList_Empty.bmp"
+        vbw.mode_select.text = ""
         vbw.mode_audiopreview.color = colorStepOn
     else
+        vbw.mode_pen.bitmap = "Icons/SampleEd_DrawTool.bmp"
         vbw.mode_pen.color = colorDefault
         vbw.mode_select.color = colorStepOn
+        if xypadpos.scalemode and xypadpos.leftClick == true then
+            vbw.mode_select.bitmap = ""
+            vbw.mode_select.text = "↔"
+        else
+            vbw.mode_select.bitmap = "Icons/AutomationList_Empty.bmp"
+            vbw.mode_select.text = ""
+        end
         vbw.mode_audiopreview.color = colorDefault
     end
 
@@ -1714,14 +1744,20 @@ local function refreshNoteControls()
     --set color indicator to current track color and name
     vbw.trackcolor.color = track.color
     vbw.trackcolor.tooltip = track.name .. "\n(Switch to ghost track)"
-    vbw.trackcolor.text = track.name
-    vbw.trackcolor.width = pianoKeyWidth + noteSlider.width
+    if string.len(track.name) > 9 then
+        vbw.trackcolor.text = string.sub(track.name, 1, 8) .. "…"
+    else
+        vbw.trackcolor.text = track.name
+    end
     --set hint, when column is muted
     for c = 1, song.selected_track.visible_note_columns do
         if song.selected_track:column_is_muted(c) then
             vbw.trackcolor.tooltip = vbw.trackcolor.tooltip .. "\nSome note columns are muted."
-            vbw.trackcolor.text = "*" .. track.name
-            vbw.trackcolor.width = pianoKeyWidth + noteSlider.width
+            if string.len(track.name) > 9 then
+                vbw.trackcolor.text = "*" .. string.sub(track.name, 1, 7) .. "…"
+            else
+                vbw.trackcolor.text = "*" .. track.name
+            end
             break
         end
     end
@@ -1753,10 +1789,16 @@ local function refreshNoteControls()
             vbw.ghosttrackmirror.color = colorDefault
         end
     end
-    refreshStates.refreshControls = false
+    refreshControls = false
 end
 
+--simple note trigger
 local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, newOrChanged, instrument)
+    local socket_error, successSend, errorSend
+    --if osc client is enabled
+    if not preferences.enableOSCClient.value then
+        return
+    end
     --special handling of preview notes, on new notes or changed notes (transpose)
     if newOrChanged then
         if not preferences.notePreview.value then
@@ -1770,34 +1812,65 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
     if instrument == nil then
         instrument = currentInstrument
     end
-    --ghost note are not possible with the new api
-    if instrument == 255 then
-        if patternInstrument ~= nil and patternInstrument ~= 255 then
-            instrument = patternInstrument
-        else
-            instrument = song.selected_instrument_index - 1
-        end
-    end
     --disable record mode, when enabled
     song.transport.edit_mode = false
+    --init server connection, when not ready
+    if oscClient == nil then
+        local protocol, host, port = string.match(
+                preferences.oscConnectionString.value,
+                '([a-zA-Z]+)://([0-9a-zA-Z.]+):([0-9]+)'
+        )
+        if protocol and host and port then
+            port = tonumber(port)
+            if string.lower(protocol) == "udp" then
+                oscClient, socket_error = renoise.Socket.create_client(host, port, renoise.Socket.PROTOCOL_UDP)
+            elseif string.lower(protocol) == "tcp" then
+                oscClient, socket_error = renoise.Socket.create_client(host, port, renoise.Socket.PROTOCOL_TCP)
+            else
+                socket_error = "Invalid protocol"
+            end
+            if (socket_error) then
+                showStatus("Error: Cant create OSC socket: " .. socket_error)
+                preferences.notePreview.value = false
+                preferences.enableOSCClient.value = false
+                refreshControls = true
+                return
+            end
+        else
+            showStatus("Error: OSC connection string malformed. Note preview disabled.")
+            preferences.notePreview.value = false
+            preferences.enableOSCClient.value = false
+            refreshControls = true
+            return
+        end
+    end
     if not velocity or velocity > 127 then
         velocity = currentNoteVelocityPreview
     end
     if pressed == true then
         notesPlaying[note_value] = 1
         notesPlayingLine[note_value] = nil
-        song:trigger_instrument_note_on(instrument + 1, song.selected_track_index, note_value, velocity / 127.0)
-        refreshStates.refreshChordDetection = true
+        successSend, errorSend = oscClient:send(
+                renoise.Osc.Message("/renoise/trigger/note_on", { { tag = "i", value = instrument + 1 },
+                                                                  { tag = "i", value = song.selected_track_index },
+                                                                  { tag = "i", value = note_value },
+                                                                  { tag = "i", value = velocity } })
+        )
+        refreshChordDetection = true
     elseif pressed == false then
         notesPlaying[note_value] = nil
         notesPlayingLine[note_value] = nil
-        song:trigger_instrument_note_off(instrument + 1, song.selected_track_index, note_value)
-        refreshStates.refreshChordDetection = true
+        successSend, errorSend = oscClient:send(
+                renoise.Osc.Message("/renoise/trigger/note_off", { { tag = "i", value = instrument + 1 },
+                                                                   { tag = "i", value = song.selected_track_index },
+                                                                   { tag = "i", value = note_value } })
+        )
+        refreshChordDetection = true
     else
         local polyLimit = preferences.previewPolyphony.value
         --check if the current note already playing
         for i = 1, #lastTriggerNote do
-            if lastTriggerNote[i] and lastTriggerNote[i].note == note_value then
+            if lastTriggerNote[i] and lastTriggerNote[i].packet[3].value == note_value then
                 return
             end
         end
@@ -1823,7 +1896,8 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
                 --just send note off's directly
                 for i = 1, #lastTriggerNote do
                     if i <= math.max(1, #lastTriggerNote - preferences.previewPolyphony.value) then
-                        song:trigger_instrument_note_off(lastTriggerNote[i].instrument_index, lastTriggerNote[i].track_index, lastTriggerNote[i].note)
+                        table.remove(lastTriggerNote[i].packet, 4) --remove velocity
+                        oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote[i].packet))
                     else
                         table.insert(newLastTriggerNote, lastTriggerNote[i])
                     end
@@ -1831,15 +1905,31 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
                 lastTriggerNote = newLastTriggerNote
             end
         end
-        local noteEvent = {
-            time = os.clock(),
-            instrument_index = instrument + 1,
-            track_index = song.selected_track_index,
-            note = note_value,
-            volume = velocity / 127.0
-        }
-        song:trigger_instrument_note_on(noteEvent.instrument_index, noteEvent.track_index, noteEvent.note, noteEvent.volume)
-        table.insert(lastTriggerNote, noteEvent)
+        local packet = { { tag = "i", value = instrument + 1 },
+                         { tag = "i", value = song.selected_track_index },
+                         { tag = "i", value = note_value },
+                         { tag = "i", value = velocity } }
+        --send note event to osc server
+        successSend, errorSend = oscClient:send(renoise.Osc.Message("/renoise/trigger/note_on", packet))
+        --create a timer for note off, whenn note on was successful
+        if successSend then
+            table.insert(lastTriggerNote, {
+                time = os.clock(),
+                packet = packet,
+            }
+            )
+        end
+    end
+    --on send fail, disable note preview, clsoe socket and show error
+    if not successSend then
+        showStatus("Error: OSC socket send: " .. errorSend)
+        preferences.notePreview.value = false
+        preferences.enableOSCClient.value = false
+        if oscClient then
+            oscClient:close()
+            oscClient = nil
+        end
+        refreshControls = true
     end
 end
 
@@ -2125,7 +2215,7 @@ local function pasteNotesFromClipboard()
             clipboard[key].note = clipboard[key].note + noteoffset
         else
             showStatus("Not enough space to paste notes here.")
-            refreshStates.refreshPianoRollNeeded = true
+            refreshPianoRollNeeded = true
             return false
         end
         clipboard[key].noteoff = addNoteToPattern(
@@ -2149,7 +2239,7 @@ local function pasteNotesFromClipboard()
     end)
     pasteCursor = { noteSelection[1].line + noteSelection[1].len, pasteCursor[2] }
     --
-    refreshStates.refreshPianoRollNeeded = true
+    refreshPianoRollNeeded = true
     return true
 end
 
@@ -2202,7 +2292,7 @@ local function scaleNoteSelection(times)
             return false
         end
     end
-    refreshStates.refreshPianoRollNeeded = true
+    refreshPianoRollNeeded = true
     return true
 end
 
@@ -2266,7 +2356,7 @@ local function chopSelectedNotes()
         end
     end
     noteSelection = newSelection
-    refreshStates.refreshPianoRollNeeded = true
+    refreshPianoRollNeeded = true
     return true
 end
 
@@ -2327,7 +2417,7 @@ local function duplicateSelectedNotes(noOffset)
                 noteSelection[key].ins
         )
     end
-    refreshStates.refreshPianoRollNeeded = true
+    refreshPianoRollNeeded = true
     return true
 end
 
@@ -2407,7 +2497,7 @@ local function changeSizeSelectedNotesByMicroSteps(microsteps)
     end
     if #noteSelection == 1 and preferences.setVelPanDlyLenFromLastNote.value then
         currentNoteLength = noteSelection[1].len
-        refreshStates.refreshControls = true
+        refreshControls = true
     end
     return state
 end
@@ -2469,7 +2559,7 @@ local function changeSizeSelectedNotes(len, add)
     --set current scale length as new current length
     if #noteSelection == 1 and preferences.setVelPanDlyLenFromLastNote.value then
         currentNoteLength = newLen
-        refreshStates.refreshControls = true
+        refreshControls = true
     end
     return ret
 end
@@ -2680,7 +2770,7 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
         end
     end
     if tostring(special) ~= "quick" and tostring(special) ~= "removecut" then
-        refreshStates.refreshPianoRollNeeded = true
+        refreshPianoRollNeeded = true
     end
     return true
 end
@@ -2739,8 +2829,6 @@ end
 --highlight entire row
 local function highlightNoteRow(row, highlighted)
     if preferences.highlightEntireLineOfPlayingNote.value then
-        --[[
-        TODO
         local n = math.min(song.selected_pattern.number_of_lines, gridWidth)
         for l = 1, n do
             local idx = "p" .. l .. "_" .. row
@@ -2750,7 +2838,6 @@ local function highlightNoteRow(row, highlighted)
                 vbw[idx].color = defaultColor[idx]
             end
         end
-        ]]--
     end
 end
 
@@ -2840,7 +2927,7 @@ local function stepSequencing(pos, steps)
         end
     end
     if refresh then
-        refreshStates.refreshPianoRollNeeded = true
+        refreshPianoRollNeeded = true
     end
     return refresh
 end
@@ -2911,6 +2998,68 @@ local function moveSelectionThroughNotes(dx, dy, addToSelection)
         return true
     end
     return false
+end
+
+--draw selection rectangle
+local function drawRectangle(show, x, y, x2, y2)
+    if not show then
+        vbw["sel"].visible = false
+    elseif x ~= nil and y ~= nil and x2 ~= nil and y2 ~= nil then
+        local rx = math.min(x, x2)
+        local rx2 = math.min(math.max(x, x2), gridWidth)
+        local ry = math.min(y, y2)
+        local ry2 = math.min(math.max(y, y2), gridHeight)
+        local addW
+        if rx ~= rx2 or ry ~= ry2 then
+            if (gridHeight - ry2) * gridStepSizeH > 0 then
+                vbw["seltopspace"].height = (gridHeight - ry2) * (gridStepSizeH - 3)
+                vbw["seltopspace1"].height = vbw["seltopspace"].height
+                vbw["seltopspace2"].height = vbw["seltopspace"].height
+                vbw["seltopspace"].visible = true
+                vbw["seltopspace1"].visible = true
+                vbw["seltopspace2"].visible = true
+            else
+                vbw["seltopspace"].visible = false
+                vbw["seltopspace1"].visible = false
+                vbw["seltopspace2"].visible = false
+            end
+            if rx > 1 then
+                vbw["selleftspace"].width = (rx - 1) * (gridStepSizeW - 4)
+                addW = 2
+            else
+                vbw["selleftspace"].width = 2
+                addW = 0
+            end
+            vbw["seltop"].width = gridStepSizeW + ((rx2 - rx) * (gridStepSizeW - 4)) - 5 + addW
+            vbw["seltop"].color = colorStepOn
+            vbw["seltop"].visible = true
+            vbw["selbottom"].width = vbw["seltop"].width
+            vbw["selbottom"].color = colorStepOn
+            vbw["selbottom"].visible = true
+            vbw["selheightspace"].height = math.max(1, (ry2 - ry) * (gridStepSizeH - 3)) + 9
+            vbw["selleft"].height = vbw["selheightspace"].height + 10
+            vbw["selleft"].color = colorStepOn
+            vbw["selright"].height = vbw["selheightspace"].height + 10
+            vbw["selright"].color = colorStepOn
+            vbw["sel"].visible = true
+        else
+            vbw["sel"].visible = false
+        end
+    elseif x ~= nil then
+        vbw["seltopspace"].height = 1
+        vbw["seltopspace1"].height = vbw["seltopspace"].height
+        vbw["seltopspace2"].height = vbw["seltopspace"].height
+        vbw["seltop"].visible = false
+        vbw["selbottom"].visible = false
+        vbw["selleft"].height = gridHeight * (gridStepSizeH - 3)
+        vbw["selleft"].color = colorStepOn
+        if x > 1 then
+            vbw["selleftspace"].width = (x - 1) * (gridStepSizeW - 4)
+        else
+            vbw["selleftspace"].width = 2
+        end
+        vbw["sel"].visible = true
+    end
 end
 
 --add notes from a rectangle to the selection
@@ -2993,18 +3142,48 @@ function noteClick(x, y, c, released, forceScaling)
     --mouse drag support, very very hacky
     if not released and not checkMode("preview") then
         xypadpos.disabled = {}
+        --disable grid buttons, so these doesn't receive click events
+        for i = 1, gridWidth do
+            vbw["p" .. i .. "_" .. y].active = false
+            table.insert(xypadpos.disabled, "p" .. i .. "_" .. y)
+        end
+        --disable all notes on step, so other notes doesn't receive click events
+        for j = 1, note_data.len do
+            local ns = noteOnStep[x + (j - 1)]
+            if ns ~= nil and #ns > 0 then
+                for i = 1, #ns do
+                    if ns[i] ~= nil and ns[i].note == note_data.note and ns[i].index ~= index then
+                        if vbw["b" .. ns[i].index] then
+                            vbw["b" .. ns[i].index].active = false
+                            table.insert(xypadpos.disabled, "b" .. ns[i].index)
+                        end
+                        if vbw["bs" .. ns[i].index] then
+                            vbw["bs" .. ns[i].index].active = false
+                            table.insert(xypadpos.disabled, "bs" .. ns[i].index)
+                        end
+                    end
+                end
+            end
+        end
+        --remove and add the clicked button, disable underlaying buttons, so the xypad in the background
+        --can receive the click event, remove/add trick from joule:
+        --https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
         local rowidx = noteValue2GridRowOffset(note_data.note, true)
+        vbw["row" .. rowidx]:remove_child(vbw["bc" .. index])
+        vbw["row" .. rowidx]:add_child(vbw["bc" .. index])
+        if forceScaling then
+            vbw["b" .. index].active = false
+            table.insert(xypadpos.disabled, "b" .. index)
+        end
         xypadpos.leftClick = true
         xypadpos.selection_key = noteInSelection(note_data)
         xypadpos.idx = note_data.idx
         xypadpos.lastx = -1
         xypadpos.nx = x
         xypadpos.ny = y
-        xypadpos.nc = c
         xypadpos.nlen = note_data.len
         xypadpos.previewmode = false
         xypadpos.scaling = false
-        xypadpos.dragging = false
         if forceScaling then
             xypadpos.scalemode = true
         else
@@ -3013,7 +3192,7 @@ function noteClick(x, y, c, released, forceScaling)
         xypadpos.resetscale = false
         xypadpos.notemode = true
         xypadpos.lastval = nil
-        xypadpos.duplicate = (modifier.keyShift or modifier.keyControl) and not modifier.keyAlt
+        xypadpos.duplicate = (modifier.keyShift or modifier.keyControl) and (not checkMode("pen") or preferences.moveNoteInPenMode.value) and not modifier.keyAlt
         xypadpos.time = os.clock()
 
         if not checkMode("pen") then
@@ -3031,13 +3210,39 @@ function noteClick(x, y, c, released, forceScaling)
     end
 
     if released then
-        if note_data ~= nil then
-            if not checkMode("preview") then
-                --clear selection, when ctrl is not holded
-                if #noteSelection > 0 and modifier.keyControl and not forceScaling then
+        local dbclk
+        if not forceScaling then
+            dbclk = dbclkDetector("b" .. index)
+        end
+        --remove on dblclk or when in penmode or previewmode
+        if (checkMode("pen") and not preferences.moveNoteInPenMode.value) or (dbclk and not checkMode("preview")) then
+            --set clicked note as selected for remove function
+            if note_data ~= nil then
+                if preferences.disableAltClickNoteRemove.value and modifier.keyAlt then
+                    --dont delete notes, when use altKey in non pen mode
                     updateNoteSelection(note_data, note_data)
                 else
-                    updateNoteSelection(note_data, "note")
+                    updateNoteSelection(note_data, true, true)
+                    removeSelectedNotes()
+                    --when removing notes switch into remove mode
+                    if not preferences.mouseWarpingCompatibilityMode.value
+                            and not preferences.disableNoteEraserMode.value
+                            and checkMode("pen") then
+                        xypadpos.notemode = false
+                        xypadpos.removemode = true
+                        refreshControls = true
+                    end
+                end
+            end
+        else
+            if note_data ~= nil then
+                if not checkMode("preview") then
+                    --clear selection, when ctrl is not holded
+                    if #noteSelection > 0 and modifier.keyControl and not forceScaling then
+                        updateNoteSelection(note_data, note_data)
+                    else
+                        updateNoteSelection(note_data, "note")
+                    end
                 end
             end
         end
@@ -3055,26 +3260,47 @@ function pianoGridClick(x, y, released)
         outside = true
     end
 
-    if not released then
+    if not released and
+            (
+                    (not checkMode("preview") and not modifier.keyControl and not (outside and checkMode("pen")))
+                            or (checkMode("preview") and not preferences.mouseWarpingCompatibilityMode.value)
+            )
+    then
+        xypadpos.disabled = {}
         --deselect current notes, when outside was clicked
         if outside and #noteSelection > 0 then
             updateNoteSelection(nil, true)
         end
+        --remove and add the clicked button, disable all buttons in the row, so the xypad in the background can
+        --receive the click event remove/add trick from joule:
+        --https://forum.renoise.com/t/custom-sliders-demo-including-the-panning-slider/48921/6
+        --disabled buttons need to be enabled again outside this call when just one click was triggered
+        for i = 1, gridWidth do
+            vbw["p" .. i .. "_" .. y].active = false
+            table.insert(xypadpos.disabled, "p" .. i .. "_" .. y)
+            --prevent accidentally note drawing "twins", when piano grid buttons overlap
+            if vbw["p" .. i .. "_" .. y + 1] then
+                vbw["p" .. i .. "_" .. y + 1].active = false
+                table.insert(xypadpos.disabled, "p" .. i .. "_" .. y + 1)
+            end
+        end
+        vbw["ppp" .. index]:remove_child(vbw["p" .. index])
+        vbw["ppp" .. index]:remove_child(vbw["ps" .. index])
+        vbw["ppp" .. index]:add_child(vbw["p" .. index])
+        vbw["ppp" .. index]:add_child(vbw["ps" .. index])
         xypadpos.nx = x
         xypadpos.ny = y
-        xypadpos.nc = nil
         xypadpos.preview = {}
         xypadpos.previewmode = false
         xypadpos.removemode = false
         xypadpos.scalemode = false
         xypadpos.resetscale = false
         xypadpos.notemode = false
-        xypadpos.dragging = false
         xypadpos.time = os.clock()
-        if checkMode("preview") then
+        if checkMode("preview") and not preferences.mouseWarpingCompatibilityMode.value then
             xypadpos.previewmode = true
             xypadpos.leftClick = true
-            refreshStates.refreshChordDetection = true
+            refreshChordDetection = true
         elseif checkMode("pen") then
             xypadpos.scalemode = true
             if preferences.resetNoteSizeOnNoteDraw.value then
@@ -3114,10 +3340,11 @@ function pianoGridClick(x, y, released)
         return
     end
     if released then
+        local dbclk = dbclkDetector("p" .. index)
         --set paste cursor
         pasteCursor = { x + stepOffset, gridOffset2NoteValue(y) }
 
-        if checkMode("pen") then
+        if dbclk or checkMode("pen") then
             local steps = song.selected_pattern.number_of_lines
             local last_note_value
             local column
@@ -3131,7 +3358,7 @@ function pianoGridClick(x, y, released)
             --check if current note length is too long for pattern size, reduce len if needed
             if x + currentNoteLength > steps then
                 currentNoteLength = steps - x + 1
-                refreshStates.refreshControls = true
+                refreshControls = true
             end
             --disable edit mode because of side effects
             song.transport.edit_mode = false
@@ -3187,11 +3414,6 @@ function pianoGridClick(x, y, released)
                     end
                     --add new note, so its the first one on line, better for legato porta
                     column = returnColumnWhenEnoughSpaceForNote(x, currentNoteLength, currentNoteDelay, currentNoteEndDelay)
-                    --
-                    if not xypadpos.nc then
-                        xypadpos.nc = column
-                    end
-                    --
                     noteoff = addNoteToPattern(
                             column,
                             x,
@@ -3276,27 +3498,32 @@ function pianoGridClick(x, y, released)
                 triggerNoteOfCurrentInstrument(noteSelection[i].note, nil, nil, true, noteSelection[i].ins)
             end
             --
-            refreshStates.refreshPianoRollNeeded = true
-            refreshStates.refreshChordDetection = true
+            refreshPianoRollNeeded = true
+            refreshChordDetection = true
         else
-            --deselect selected notes
-            if #noteSelection > 0 then
-                if not modifier.keyShift then
-                    updateNoteSelection(nil, true)
+            --fast play from cursor
+            if modifier.keyControl and not modifier.keyAlt and not modifier.keyShift then
+                playPatternFromLine(x + stepOffset)
+            else
+                --deselect selected notes
+                if #noteSelection > 0 then
+                    if not modifier.keyShift then
+                        updateNoteSelection(nil, true)
+                        jumpToNoteInPattern(x + stepOffset)
+                    end
+                elseif preferences.resetVolPanDlyControlOnClick.value then
+                    jumpToNoteInPattern(x + stepOffset)
+                    --nothing selected reset vol, pan and dly
+                    currentNoteVelocity = 255
+                    currentNotePan = 255
+                    currentNoteDelay = 0
+                    currentNoteEndDelay = 0
+                    currentNoteVelocityPreview = 127
+                    currentNoteEndVelocity = 255
+                    refreshControls = true
+                else
                     jumpToNoteInPattern(x + stepOffset)
                 end
-            elseif preferences.resetVolPanDlyControlOnClick.value then
-                jumpToNoteInPattern(x + stepOffset)
-                --nothing selected reset vol, pan and dly
-                currentNoteVelocity = 255
-                currentNotePan = 255
-                currentNoteDelay = 0
-                currentNoteEndDelay = 0
-                currentNoteVelocityPreview = 127
-                currentNoteEndVelocity = 255
-                refreshStates.refreshControls = true
-            else
-                jumpToNoteInPattern(x + stepOffset)
             end
         end
     end
@@ -3312,6 +3539,9 @@ local function drawNotesToGrid(allNotes)
     local l_math_max = math.max
     local l_math_floor = math.floor
     local l_table_insert = table.insert
+    local l_string_gsub = string.gsub
+    local l_string_sub = string.sub
+    local l_string_len = string.len
     local allNotes_length = #allNotes
     local isInSelection
     local isScaleBtnHidden
@@ -3331,6 +3561,7 @@ local function drawNotesToGrid(allNotes)
     local noteoff
     local noteWidth
     local buttonWidth
+    local buttonSpace
     local spaceWidth
     local retriggerWidth
     local delayWidth
@@ -3396,6 +3627,7 @@ local function drawNotesToGrid(allNotes)
         if current_note_rowIndex ~= nil then
             local noteOnStepIndex = current_note_step
             local current_note_index = tostring(current_note_step) .. "_" .. tostring(current_note_rowIndex) .. "_" .. tostring(column)
+            local current_note_param = "noteClick(" .. l_string_gsub(current_note_index, "_", ",")
             if current_note_vel == nil then
                 current_note_vel = 255
             end
@@ -3464,7 +3696,7 @@ local function drawNotesToGrid(allNotes)
             end
 
             --only process notes on steps and visibility, when there is a valid row
-            if current_note_rowIndex >= 1 and current_note_rowIndex <= gridHeight then
+            if l_vbw["row" .. current_note_rowIndex] then
                 --change note display len
                 if current_note_step < 1 then
                     current_note_len = current_note_len + (current_note_step - 1)
@@ -3519,7 +3751,8 @@ local function drawNotesToGrid(allNotes)
                         end
                     end
 
-                    buttonWidth = (gridStepSizeW * current_note_len)
+                    buttonWidth = (gridStepSizeW) * current_note_len
+                    buttonSpace = gridSpacing * (current_note_len - 1)
 
                     if delayWidth > 0 then
                         delayWidth = delayWidth - 416
@@ -3533,8 +3766,19 @@ local function drawNotesToGrid(allNotes)
                     if cutValue and cutValue > 0 then
                         cutValue = cutValue - 192
                         if cutValue < l_song_transport.tpl then
-                            buttonWidth = buttonWidth - (gridStepSizeW / 100 * (100 / l_song_transport.tpl * (l_song_transport.tpl - cutValue)))
+                            buttonWidth = buttonWidth - ((gridStepSizeW - gridSpacing) / 100 * (100 / l_song_transport.tpl * (l_song_transport.tpl - cutValue)))
                         end
+                    end
+
+                    l_vbw["bc" .. current_note_index] = nil
+                    local btn = vb:row {
+                        margin = -gridMargin,
+                        spacing = -gridSpacing,
+                        id = "bc" .. current_note_index,
+                    }
+
+                    if current_note_step > 1 then
+                        spaceWidth = (gridStepSizeW * (current_note_step - 1)) - (gridSpacing * (current_note_step - 2))
                     end
 
                     if l_song_st.delay_column_visible then
@@ -3547,7 +3791,7 @@ local function drawNotesToGrid(allNotes)
                     end
 
                     if delayWidth > 0 and stepOffset < current_note_line then
-                        delayWidth = l_math_max(l_math_floor(gridStepSizeW / 0x100 * delayWidth), 1)
+                        delayWidth = l_math_max(l_math_floor((gridStepSizeW - gridSpacing) / 0x100 * delayWidth), 1)
                         spaceWidth = spaceWidth + delayWidth
                         buttonWidth = buttonWidth - delayWidth
                         if current_note_step < 2 then
@@ -3556,8 +3800,14 @@ local function drawNotesToGrid(allNotes)
                     end
 
                     if addWidth > 0 and (current_note_step + current_note_len) - 1 < gridWidth then
-                        addWidth = l_math_max(l_math_floor(gridStepSizeW / 0x100 * addWidth), 1)
+                        addWidth = l_math_max(l_math_floor((gridStepSizeW - gridSpacing) / 0x100 * addWidth), 1)
                         buttonWidth = buttonWidth + addWidth
+                    end
+
+                    if spaceWidth > 0 then
+                        btn:add_child(vb:space {
+                            width = spaceWidth,
+                        });
                     end
 
                     --recalc retrigger value, reset it to 0, when greater than tpl
@@ -3568,31 +3818,73 @@ local function drawNotesToGrid(allNotes)
                         end
                     end
 
-                    noteWidth = l_math_max(buttonWidth - 1, l_math_max(1, preferences.minSizeOfNoteButton.value + preferences.clickAreaSizeForScalingPx.value))
+                    noteWidth = l_math_max(buttonWidth - buttonSpace - 1, l_math_max(1, preferences.minSizeOfNoteButton.value + preferences.clickAreaSizeForScalingPx.value))
 
                     if not isScaleBtnHidden then
                         noteWidth = noteWidth - preferences.clickAreaSizeForScalingPx.value + 4
                     end
 
                     l_vbw["b" .. current_note_index] = nil
-                    --print(noteWidth, buttonWidth, gridStepSizeW)
-                    local btn = vb:button {
-                        id = "b" .. current_note_index,
-                        height = gridStepSizeH + 2,
-                        width = buttonWidth + 2,
-                        text = current_note_string,
-                        origin = {
-                            x = delayWidth + ((current_note_step - 1) * gridStepSizeW) - 1,
-                            y = (gridHeight - current_note_rowIndex) * gridStepSizeH - 1
-                        }
+                    local btn_body = vb:row {
+                        spacing = -2,
+                        vb:button {
+                            id = "b" .. current_note_index,
+                            height = gridStepSizeH,
+                            width = noteWidth,
+                            text = current_note_string,
+                            notifier = loadstring(current_note_param .. ",true)"),
+                            pressed = loadstring(current_note_param .. ",false)")
+                        },
                     }
 
-                    --set width / height again
-                    l_vbw["b" .. current_note_index].width = buttonWidth + 2
-                    l_vbw["b" .. current_note_index].height = gridStepSizeH + 2
+                    if not noteButtons[current_note_rowIndex] then
+                        noteButtons[current_note_rowIndex] = {}
+                    end
 
-                    l_table_insert(noteButtons, btn);
-                    l_vbw["pianorollColumns"]:add_child(btn);
+                    if not isScaleBtnHidden then
+                        l_vbw["bs" .. current_note_index] = nil
+                        btn_body:add_child(
+                                vb:row {
+                                    spacing = -3,
+                                    vb:space {
+                                        width = 1,
+                                    },
+                                    vb:button {
+                                        id = "bs" .. current_note_index,
+                                        height = gridStepSizeH,
+                                        width = preferences.clickAreaSizeForScalingPx.value,
+                                        notifier = loadstring(current_note_param .. ",true,true)"),
+                                        pressed = loadstring(current_note_param .. ",false,true)")
+                                    }
+                                }
+                        )
+                    end
+
+                    --shorten note button text, when its too large
+                    if l_vbw["b" .. current_note_index].width > noteWidth then
+                        current_note_string = l_string_gsub(current_note_string, '-', '')
+                        l_vbw["b" .. current_note_index].width = noteWidth
+                        l_vbw["b" .. current_note_index].text = current_note_string
+                        if l_vbw["b" .. current_note_index].width > noteWidth then
+                            l_vbw["b" .. current_note_index].width = noteWidth
+                            l_vbw["b" .. current_note_index].text = l_string_sub(current_note_string, 1, l_string_len(current_note_string) - 1)
+                            if l_vbw["b" .. current_note_index].width > noteWidth then
+                                l_vbw["b" .. current_note_index].text = ""
+                                l_vbw["b" .. current_note_index].width = noteWidth
+                            end
+                        end
+                    end
+
+                    --add button body
+                    btn:add_child(btn_body);
+
+                    --fix dialog resize
+                    if btn.width > (gridStepSizeW * gridWidth - (gridSpacing * (gridWidth))) + 1 then
+                        btn.width = (gridStepSizeW * gridWidth - (gridSpacing * (gridWidth))) + 1
+                    end
+
+                    l_table_insert(noteButtons[current_note_rowIndex], btn);
+                    l_vbw["row" .. current_note_rowIndex]:add_child(btn)
 
                     --set color
                     setNoteColor(noteData[current_note_index], false, isInSelection, current_note_ins)
@@ -3628,7 +3920,7 @@ local function drawNotesToGrid(allNotes)
                                         }
                                     }
                             );
-                            --l_table_insert(noteButtons[current_note_rowIndex], retrigger);
+                            l_table_insert(noteButtons[current_note_rowIndex], retrigger);
                             l_vbw["row" .. current_note_rowIndex]:add_child(retrigger)
                             n = n + 1
                         end
@@ -3649,13 +3941,8 @@ local function fillTimeline()
     local timestep = 0
     local lastbeat
     local timeslot
-    local start_i = 1
-
-    if lpb > 1 then
-        start_i = 1 - lpb
-    end
-
-    for i = start_i, stepsCount do
+    local timeslotsize = 1
+    for i = 1, stepsCount do
         local line = i + stepOffset
         local beat = math_ceil((line - lpb) / lpb) % 4 + 1
         local bar = calculateBarBeat(line, false, lpb)
@@ -3663,12 +3950,12 @@ local function fillTimeline()
         if lastbeat ~= beat then
             timestep = timestep + 1
             timeslot = vbw["timeline" .. timestep]
-            timeslot.origin = { (gridStepSizeW * (i - 1)) - 4, 0 }
+            timeslot.width = (gridStepSizeW - 4)
             if line % lpb == 1 then
                 if lpb == 2 and beat % lpb == 0 then
                     timeslot.text = ""
                 else
-                    timeslot.text = "│ " .. bar .. "." .. beat
+                    timeslot.text = "│"
                 end
             else
                 timeslot.text = ""
@@ -3692,6 +3979,16 @@ local function fillTimeline()
             end
             timeslot.visible = true
             lastbeat = beat
+            timeslotsize = 1
+        else
+            if line % lpb == 2 or (lpb == 2 and line % lpb == 0) then
+                timeslot.text = "│ " .. bar .. "." .. beat
+            end
+            if lpb == 2 and beat % lpb == 0 then
+                timeslot.text = ""
+            end
+            timeslotsize = timeslotsize + 1
+            timeslot.width = (gridStepSizeW - 4) * timeslotsize
         end
     end
     while vbw["timeline" .. timestep + 1] do
@@ -3731,7 +4028,7 @@ local function fillTimeline()
         vbw.blockloop.visible = false
         vbw.blockloopspc.width = 1
     end
-    refreshStates.refreshTimeline = false
+    refreshTimeline = false
 end
 
 --render ghost track by simply change the color of piano grid buttons
@@ -4256,7 +4553,7 @@ local function refreshDetectedChord()
     else
         vbw["chordprog"].text = chordprog
     end
-    refreshStates.refreshChordDetection = false
+    refreshChordDetection = false
 end
 
 --highlight each note on the current playback pos
@@ -4300,7 +4597,7 @@ local function highlightNotesOnStep(step, highlight)
         setKeyboardKeyColor(key, false, highlight)
         highlightNoteRow(key, highlight)
     end
-    refreshStates.refreshChordDetection = true
+    refreshChordDetection = true
 end
 
 --refresh playback pos indicator
@@ -4318,8 +4615,8 @@ local function refreshPlaybackPosIndicator()
         if preferences.followPlayCursor.value and song.transport.follow_player and (lastStepOn > gridWidth or lastStepOn < 0) then
             --follow play cursor, when enabled
             local v = stepSlider.value + (gridWidth * (lastStepOn / gridWidth)) - 1
-            if v >= stepSlider.max then
-                v = stepSlider.max - 1
+            if v > stepSlider.max then
+                v = stepSlider.max
             end
             if v < stepSlider.min then
                 v = stepSlider.min
@@ -4336,7 +4633,7 @@ local function refreshPlaybackPosIndicator()
     elseif (song.selected_pattern_index ~= seq or not song.transport.playing) then
         if #notesOnStep > 0 then
             notesOnStep = {}
-            refreshStates.refreshChordDetection = true
+            refreshChordDetection = true
         end
         if lastStepOn then
             vbw["s" .. tostring(lastStepOn)].color = colorStepOff
@@ -4403,116 +4700,6 @@ local function afterEditProcess()
     end
 end
 
---paint piano roll grid
-local function renderGridCanvas(context)
-    local gH = gridHeight + 12
-    local w = context.size.width / gridWidth
-    local h = context.size.height / gH
-    local lpb = song.transport.lpb
-
-    --fill color
-    context.fill_color = colorBaseGridColor
-    context:fill_rect(0, 0, context.size.width, context.size.height)
-
-    --row coloring
-    context.fill_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value)
-    for y = 0, gH do
-        local yPLusOffMod12 = (gH - y - 1) % 12
-        if not noteInScale(yPLusOffMod12) then
-            context:begin_path()
-            context:move_to(0, y * h)
-            context:line_to(w * gridWidth, y * h)
-            context:line_to(w * gridWidth, (y + 1) * h)
-            context:line_to(0, (y + 1) * h)
-            context:fill()
-        end
-    end
-
-    --base grid
-    context.stroke_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value + 0.2)
-    for y = 0, gH do
-        context:begin_path()
-        context:move_to(0, y * h)
-        context:line_to(w * gridWidth, y * h)
-        context:stroke()
-    end
-    for x = 0, gridWidth do
-        context:begin_path()
-        context:move_to(x * w, 0)
-        context:line_to(x * w, h * gH)
-        context:stroke()
-    end
-
-    --octave lines
-    context.stroke_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value + 0.5)
-    for y = 0, gH do
-        if
-        currentScaleOffset and (
-                (preferences.gridHLines.value == 2 and (gH - y) % 12 == 1) or
-                        (preferences.gridHLines.value == 3 and (gH - y - currentScaleOffset) % 12 == 0))
-        then
-            context:begin_path()
-            context:move_to(0, (y + 1) * h)
-            context:line_to(w * gridWidth, (y + 1) * h)
-            context:stroke()
-        end
-    end
-
-    --bar lines
-    for x = 0, gridWidth do
-        if (preferences.gridVLines.value == 2 and (x + stepOffset) % (lpb * 4) == 0) or
-                (preferences.gridVLines.value == 3 and (x + stepOffset) % lpb == 0)
-        then
-            context:begin_path()
-            context:move_to(x * w, 0)
-            context:line_to(x * w, h * gH)
-            context:stroke()
-        end
-    end
-
-    --beat lines
-    context.stroke_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value + 0.25)
-    for x = 0, gridWidth do
-        if (preferences.gridVLines.value == 2 and (x + stepOffset) % lpb == 0)
-        then
-            context:begin_path()
-            context:move_to(x * w, 0)
-            context:line_to(x * w, h * gH)
-            context:stroke()
-        end
-    end
-
-    --bar/beat coloring
-    context.fill_color = { 0, 0, 0, 100 * preferences.oddBarsShadingAmount.value }
-    for x = lpb * -8, gridWidth do
-        if (preferences.gridVLines.value == 2 and (x + stepOffset + (lpb * 4)) % (lpb * 8) == 0) or
-                (preferences.gridVLines.value == 3 and (x + stepOffset + lpb) % (lpb * 2) == 0)
-        then
-            context:begin_path()
-            context:move_to(x * w, 0)
-            if preferences.gridVLines.value == 3 then
-                context:line_to((x + lpb) * w, 0)
-                context:line_to((x + lpb) * w, h * gH)
-            else
-                context:line_to((x + (lpb * 4)) * w, 0)
-                context:line_to((x + (lpb * 4)) * w, h * gH)
-            end
-            context:line_to(x * w, h * gH)
-            context:fill()
-        end
-    end
-end
-
---update canvas, set new offsets
-local function updateCanvas()
-    if refreshStates.updateGridCanvas then
-        vbw["canvas"]:update()
-        refreshStates.updateGridCanvas = false
-    end
-    --offset y of canvas
-    vbw["canvas"].origin = { 0, ((noteOffset % 12) - 12) * (vbw["canvas"].height / (gridHeight + 12)) }
-end
-
 --reset pianoroll and enable notes
 local function fillPianoRoll(quickRefresh)
     local l_vbw = vbw
@@ -4533,10 +4720,6 @@ local function fillPianoRoll(quickRefresh)
     local noteIndexCache = {}
     local firstInit = false
 
-    --hide all elements, so renoise doesn't render it instant
-    l_vbw["pianoKeys"].visible = false
-    l_vbw["pianorollColumns"].visible = false
-
     --set auto ghost track
     if preferences.setLastEditedTrackAsGhost.value and lastTrackIndex and lastTrackIndex ~= l_song.selected_track_index and lastTrackIndex <= song.sequencer_track_count then
         l_vbw.ghosttracks.value = lastTrackIndex
@@ -4546,14 +4729,18 @@ local function fillPianoRoll(quickRefresh)
     lastTrackIndex = l_song.selected_track_index
 
     --disable line modifier block and force a quick refresh
-    if refreshStates.blockLineModifier then
+    if blockLineModifier then
         quickRefresh = true
-        refreshStates.blockLineModifier = false
+        blockLineModifier = false
     end
 
     --remove old notes
-    for _, el in pairs(noteButtons) do
-        l_vbw["pianorollColumns"]:remove_child(el)
+    for y = 1, gridHeight do
+        if noteButtons[y] then
+            for key in pairs(noteButtons[y]) do
+                l_vbw["row" .. y]:remove_child(noteButtons[y][key])
+            end
+        end
     end
 
     --reset vars
@@ -4566,7 +4753,7 @@ local function fillPianoRoll(quickRefresh)
         defaultColor = {}
         lastStepOn = nil
         lastEditPos = nil
-        refreshStates.refreshPianoRollNeeded = false
+        refreshPianoRollNeeded = false
         --show keyboard info bar
         l_vbw["key_state_panel"].visible = preferences.enableKeyInfo.value
         --set scale for piano roll
@@ -4575,16 +4762,20 @@ local function fillPianoRoll(quickRefresh)
 
     --check if stepoffset is inside the grid, also setup stepSlider if needed
     if steps > gridWidth then
-        stepSlider.max = steps - gridWidth + 1
-        if stepOffset >= stepSlider.max then
-            stepOffset = stepSlider.max - 1
+        stepSlider.max = steps - gridWidth
+        if stepOffset > stepSlider.max then
+            stepOffset = stepSlider.max
         end
         stepSlider.visible = true
     else
-        stepSlider.max = 1
+        stepSlider.max = 0
         stepSlider.visible = false
         stepOffset = 0
     end
+
+    --hide all elements, so renoise doesn't render it instant
+    l_vbw["pianoKeys"].visible = false
+    l_vbw["pianorollColumns"].visible = false
 
     --loop through columns
     for c = 1, columns do
@@ -4601,118 +4792,153 @@ local function fillPianoRoll(quickRefresh)
         local current_note_line
         local current_note_rowIndex
 
-        --loop through lines as steps
-        for line = 1, steps do
-            local s = line - stepOffset
-            local stepString
-            if line > stepOffset and line - stepOffset <= gridWidth then
-                stepString = tostring(s)
-            end
+        --skip muted columns
+        if not song.selected_track:column_is_muted(c) then
 
-            --only reset buttons on first column
-            if not quickRefresh and not firstInit and stepString then
-                local bar = calculateBarBeat(s + stepOffset, false, lpb)
-                local beat = calculateBarBeat(s + stepOffset, true, lpb)
-                local bb = (bar - 1) * 4 + (beat - 1)
+            --loop through lines as steps
+            for line = 1, steps do
+                local s = line - stepOffset
+                local stepString
+                if line > stepOffset and line - stepOffset <= gridWidth then
+                    stepString = tostring(s)
+                end
 
-                for y = 1, gridHeight do
-                    local ystring = tostring(y)
-                    local index = stepString .. "_" .. ystring
-                    --local ps = l_vbw["ps" .. index]
-                    local color = colorWhiteKey[bb % 8 + 1]
-                    local yPLusOffMod12 = (y + noffset) % 12
+                --only reset buttons on first column
+                if not quickRefresh and not firstInit and stepString then
+                    local bar = calculateBarBeat(s + stepOffset, false, lpb)
+                    local beat = calculateBarBeat(s + stepOffset, true, lpb)
+                    local bb = (bar - 1) * 4 + (beat - 1)
 
-                    if noteIndexCache[yPLusOffMod12] == nil then
-                        noteIndexCache[yPLusOffMod12] = noteInScale(yPLusOffMod12)
-                    end
-                    blackKey = not noteIndexCache[yPLusOffMod12]
-                    --color black notes
-                    if blackKey then
-                        color = colorBlackKey[bb % 8 + 1]
-                    end
-                    if s <= stepsCount then
-                        defaultColor["p" .. index] = color
-                        --refresh step indicator
-                        if y == 1 then
-                            l_vbw["s" .. stepString].active = true
-                            if s == song.transport.edit_pos.line - stepOffset then
-                                l_vbw["se" .. stepString].visible = true
-                            else
-                                l_vbw["se" .. stepString].visible = false
-                            end
-                            l_vbw["s" .. stepString].color = colorStepOff
+                    for y = 1, gridHeight do
+                        local ystring = tostring(y)
+                        local index = stepString .. "_" .. ystring
+                        local p = l_vbw["p" .. index]
+                        local ps = l_vbw["ps" .. index]
+                        local color = colorWhiteKey[bb % 8 + 1]
+                        local yPLusOffMod12 = (y + noffset) % 12
+                        p.active = true
+
+                        if s < stepsCount and (
+                                (preferences.gridVLines.value == 2 and (s + stepOffset) % (lpb * 4) == 0) or
+                                        (preferences.gridVLines.value == 3 and (s + stepOffset) % lpb == 0))
+                        then
+                            p.width = gridStepSizeW - 2
+                            ps.width = 2
+                        else
+                            p.width = gridStepSizeW - 1
+                            ps.width = 1
                         end
-                        --refresh keyboard
-                        if s == 1 then
-                            local idx = "k" .. ystring
-                            local key = l_vbw[idx]
-                            local isRootKey = false
-                            local outOfPentatnicScale = false
-                            local nIdx
-                            if preferences.scaleHighlightingType.value ~= 5 then
-                                nIdx = noteIndexInScale(yPLusOffMod12)
-                                if nIdx == 5 or nIdx == 11 then
-                                    outOfPentatnicScale = true
-                                end
-                                if currentScale == 2 then
-                                    if nIdx == 0 then
-                                        isRootKey = true
-                                    end
-                                elseif currentScale == 3 then
-                                    if nIdx == 9 then
-                                        isRootKey = true
-                                    end
-                                end
-                            elseif preferences.scaleHighlightingType.value == 5 and currentScale == 2 and noteIndexInScale(yPLusOffMod12) == 0 then
-                                isRootKey = true
-                            end
-                            if preferences.keyboardStyle.value == 2 then
-                                defaultColor[idx] = colorList
-                            elseif noteInScale(yPLusOffMod12, true) then
-                                defaultColor[idx] = colorKeyWhite
-                            else
-                                defaultColor[idx] = colorKeyBlack
-                            end
-                            if isRootKey then
-                                defaultColor[idx] = shadeColor(defaultColor[idx], preferences.rootKeyShadingAmount.value)
-                            elseif outOfPentatnicScale then
-                                defaultColor[idx] = alphablendColors(defaultColor[idx], colorNoteHighlight2, preferences.outOfPentatonicScaleHighlightingAmount.value)
-                            end
-                            if notesPlaying[y + noffset] then
-                                key.color = colorStepOn
-                            else
-                                key.color = defaultColor[idx]
-                            end
-                            --set root label
-                            if preferences.keyLabels.value == 4 or
-                                    (preferences.keyLabels.value == 2 and (
-                                            ((currentScale == 1 or (preferences.scaleHighlightingType.value == 5 and currentScale == 1)) and noteIndexInScale(yPLusOffMod12, true) == 0) or
-                                                    isRootKey))
-                                    or
-                                    (preferences.keyLabels.value == 3 and
-                                            noteInScale(yPLusOffMod12))
-                            then
-                                local note = notesTable[yPLusOffMod12 + 1]
-                                if string.len(note) == 1 then
-                                    note = note .. "-"
-                                end
-                                key.text = note .. tostring(l_math_floor((y + noffset) / 12))
-                                if preferences.keyboardStyle.value == 2 then
-                                    key.align = "left"
+
+                        if
+                        currentScaleOffset and (
+                                (preferences.gridHLines.value == 2 and (y + noteOffset) % 12 == 1) or
+                                        (preferences.gridHLines.value == 3 and (y + noteOffset - currentScaleOffset) % 12 == 0))
+                        then
+                            p.height = gridStepSizeH - 1
+                        else
+                            p.height = gridStepSizeH
+                        end
+
+                        if noteIndexCache[yPLusOffMod12] == nil then
+                            noteIndexCache[yPLusOffMod12] = noteInScale(yPLusOffMod12)
+                        end
+                        blackKey = not noteIndexCache[yPLusOffMod12]
+                        --color black notes
+                        if blackKey then
+                            color = colorBlackKey[bb % 8 + 1]
+                        end
+                        if s <= stepsCount then
+                            defaultColor["p" .. index] = color
+                            p.color = color
+                            --refresh step indicator
+                            if y == 1 then
+                                l_vbw["s" .. stepString].active = true
+                                if s == song.transport.edit_pos.line - stepOffset then
+                                    l_vbw["se" .. stepString].visible = true
                                 else
-                                    key.align = "right"
+                                    l_vbw["se" .. stepString].visible = false
                                 end
-                            else
-                                key.text = ""
+                                l_vbw["s" .. stepString].color = colorStepOff
                             end
-                            key.width = pianoKeyWidth
+                            --refresh keyboard
+                            if s == 1 then
+                                local idx = "k" .. ystring
+                                local key = l_vbw[idx]
+                                local isRootKey = false
+                                local outOfPentatnicScale = false
+                                local nIdx
+                                if preferences.scaleHighlightingType.value ~= 5 then
+                                    nIdx = noteIndexInScale(yPLusOffMod12)
+                                    if nIdx == 5 or nIdx == 11 then
+                                        outOfPentatnicScale = true
+                                    end
+                                    if currentScale == 2 then
+                                        if nIdx == 0 then
+                                            isRootKey = true
+                                        end
+                                    elseif currentScale == 3 then
+                                        if nIdx == 9 then
+                                            isRootKey = true
+                                        end
+                                    end
+                                elseif preferences.scaleHighlightingType.value == 5 and currentScale == 2 and noteIndexInScale(yPLusOffMod12) == 0 then
+                                    isRootKey = true
+                                end
+                                if preferences.keyboardStyle.value == 2 then
+                                    defaultColor[idx] = colorList
+                                elseif noteInScale(yPLusOffMod12, true) then
+                                    defaultColor[idx] = colorKeyWhite
+                                else
+                                    defaultColor[idx] = colorKeyBlack
+                                end
+                                if isRootKey then
+                                    defaultColor[idx] = shadeColor(defaultColor[idx], preferences.rootKeyShadingAmount.value)
+                                elseif outOfPentatnicScale then
+                                    defaultColor[idx] = alphablendColors(defaultColor[idx], colorNoteHighlight2, preferences.outOfPentatonicScaleHighlightingAmount.value)
+                                end
+                                if notesPlaying[y + noffset] then
+                                    key.color = colorStepOn
+                                else
+                                    key.color = defaultColor[idx]
+                                end
+                                --set root label
+                                if preferences.keyLabels.value == 4 or
+                                        (preferences.keyLabels.value == 2 and (
+                                                ((currentScale == 1 or (preferences.scaleHighlightingType.value == 5 and currentScale == 1)) and noteIndexInScale(yPLusOffMod12, true) == 0) or
+                                                        isRootKey))
+                                        or
+                                        (preferences.keyLabels.value == 3 and
+                                                noteInScale(yPLusOffMod12))
+                                then
+                                    local note = notesTable[yPLusOffMod12 + 1]
+                                    if string.len(note) == 1 then
+                                        note = note .. "-"
+                                    end
+                                    if preferences.themeHasWideFont.value then
+                                        if preferences.keyboardStyle.value == 2 then
+                                            key.text = note .. tostring(l_math_floor((y + noffset) / 12)) .. "     "
+                                        else
+                                            key.text = "     " .. note .. tostring(l_math_floor((y + noffset) / 12))
+                                        end
+                                    else
+                                        if preferences.keyboardStyle.value == 2 then
+                                            key.text = note .. tostring(l_math_floor((y + noffset) / 12)) .. "         "
+                                        else
+                                            key.text = "         " .. note .. tostring(l_math_floor((y + noffset) / 12))
+                                        end
+
+                                    end
+                                else
+                                    key.text = ""
+                                end
+                                key.width = pianoKeyWidth
+                                --reset key sub state button color
+                                l_vbw["ks" .. ystring].visible = false
+                                l_vbw["kss" .. ystring].visible = true
+                            end
                         end
                     end
                 end
-            end
-
-            --skip muted columns
-            if not song.selected_track:column_is_muted(c) then
                 --render notes
                 local note_column = lineValues[line]:note_column(c)
                 local note = note_column.note_value
@@ -4725,7 +4951,7 @@ local function fillPianoRoll(quickRefresh)
                 if note < 120 then
                     if currentInstrument == nil and note_column.instrument_value < 255 then
                         currentInstrument = note_column.instrument_value
-                        refreshStates.refreshControls = true
+                        refreshControls = true
                     end
                     if current_note ~= nil then
                         if usedInstruments[current_note_ins] then
@@ -4803,11 +5029,11 @@ local function fillPianoRoll(quickRefresh)
                     current_note_len = current_note_len + 1
                 end
             end
+
+            --first columns processed
+            firstInit = true
+
         end
-
-        --first columns processed
-        firstInit = true
-
         --pattern end, no note off, enable last note
         if current_note ~= nil then
             if usedInstruments[current_note_ins] then
@@ -4853,25 +5079,43 @@ local function fillPianoRoll(quickRefresh)
         drawNotesToGrid(newNotes)
     end
 
+    --show all with one call
+    l_vbw["pianoKeys"].visible = true
+    l_vbw["pianorollColumns"].visible = true
+
     --nothing else to do in quick refresh
     if quickRefresh then
-        --show all with one call
-        updateCanvas()
-        l_vbw["pianoKeys"].visible = true
-        l_vbw["pianorollColumns"].visible = true
         return
+    end
+
+    --hide non used elements of the piano roll grid
+    for y = 1, gridHeight do
+        temp = shadeColor(defaultColor["p1_" .. y], 0.4)
+        for i = steps + 1, gridWidth do
+            local p = l_vbw["p" .. i .. "_" .. y]
+            if y == 1 then
+                local s = l_vbw["s" .. i]
+                s.active = false
+                s.color = colorDefault
+                l_vbw["se" .. i].visible = false
+            end
+            p.color = temp
+            p.active = true
+            p.width = gridStepSizeW - 1
+            p.height = gridStepSizeH
+            l_vbw["ps" .. i .. "_" .. y].width = 1
+        end
     end
 
     --set current instrument, when no instrument is used
     if currentInstrument == nil then
         currentInstrument = l_song.selected_instrument_index - 1
-        refreshStates.refreshControls = true
+        refreshControls = true
     end
 
     --for automatic mode or empty patterns, set scale highlighting again, if needed
     if setScaleHighlighting(true) then
-        refreshStates.updateGridCanvas = true
-        refreshStates.refreshPianoRollNeeded = true
+        refreshPianoRollNeeded = true
     else
         --just refresh selection also values of controls, when enabled
         updateNoteSelection()
@@ -4895,12 +5139,7 @@ local function fillPianoRoll(quickRefresh)
     refreshPlaybackPosIndicator()
 
     --refresh histogram if needed
-    refreshStates.refreshHistogram = true
-
-    --show all with one call
-    updateCanvas()
-    l_vbw["pianoKeys"].visible = true
-    l_vbw["pianorollColumns"].visible = true
+    refreshHistogram = true
 end
 
 --set playback pos via playback pos indicator
@@ -4926,21 +5165,21 @@ local function obsPianoRefresh()
     --clear note selection
     noteSelection = {}
     --set refresh flags
-    refreshStates.refreshPianoRollNeeded = true
+    refreshPianoRollNeeded = true
 end
 
 --will be called when the visibility of columns will be changed
 local function obsColumnRefresh()
-    refreshStates.refreshControls = true
-    refreshStates.refreshPianoRollNeeded = true
-    refreshStates.refreshChordDetection = true
+    refreshControls = true
+    refreshPianoRollNeeded = true
+    refreshChordDetection = true
 end
 
 --will be called when something in the pattern will be changed
 local function lineNotifier()
     --when global flag is set, then piano roll refresh on specific events will be blocked
-    if not refreshStates.blockLineModifier then
-        refreshStates.refreshPianoRollNeeded = true
+    if not blockLineModifier then
+        refreshPianoRollNeeded = true
     end
 end
 
@@ -4961,7 +5200,7 @@ local function numberOfLinesNotifier()
             end
         end
     end
-    refreshStates.refreshTimeline = true
+    refreshTimeline = true
     obsPianoRefresh()
 end
 
@@ -4983,12 +5222,10 @@ local function appNewDoc()
     currentNoteEndVelocity = 255
     currentEditPos = 0
     lastValTools.chordGhostTrack = false
-    refreshStates.updateGridCanvas = true
     --set new observers
     song.transport.lpb_observable:add_notifier(function()
-        refreshStates.updateGridCanvas = true
-        refreshStates.refreshPianoRollNeeded = true
-        refreshStates.refreshTimeline = true
+        refreshPianoRollNeeded = true
+        refreshTimeline = true
     end)
     song.instruments_observable:add_notifier(obsColumnRefresh)
     song.selected_pattern_track_observable:add_notifier(obsPianoRefresh)
@@ -5001,9 +5238,8 @@ local function appNewDoc()
         end
         pasteCursor = {}
         stepSlider.value = 0
-        refreshStates.updateGridCanvas = true
-        refreshStates.refreshPianoRollNeeded = true
-        refreshStates.refreshTimeline = true
+        refreshPianoRollNeeded = true
+        refreshTimeline = true
     end)
     song.selected_pattern:add_line_notifier(lineNotifier)
     if not song.selected_pattern.number_of_lines_observable:has_notifier(numberOfLinesNotifier) then
@@ -5042,7 +5278,7 @@ local function appNewDoc()
         pasteCursor = {}
         currentInstrument = nil
         patternInstrument = nil
-        refreshStates.refreshControls = true
+        refreshControls = true
     end)
     song.selected_track.volume_column_visible_observable:add_notifier(obsColumnRefresh)
     song.selected_track.panning_column_visible_observable:add_notifier(obsColumnRefresh)
@@ -5061,7 +5297,7 @@ local function appNewDoc()
     --clear selection and refresh piano roll
     obsPianoRefresh()
     obsColumnRefresh()
-    refreshStates.refreshTimeline = true
+    refreshTimeline = true
 end
 
 --refresh histogram / apply values
@@ -5478,7 +5714,7 @@ local function showHistogram()
                                     text = "Apply",
                                     notifier = function()
                                         refreshHistogramWindow(true)
-                                        refreshStates.refreshPianoRollNeeded = true
+                                        refreshPianoRollNeeded = true
                                         initHistogram()
                                     end
                                 },
@@ -6026,6 +6262,22 @@ local function showPenSettingsDialog()
                     },
                     vbp:row {
                         vbp:checkbox {
+                            bind = preferences.forcePenMode,
+                        },
+                        vbp:text {
+                            text = "Enable pen mode by default",
+                        },
+                    },
+                    vbp:row {
+                        vbp:checkbox {
+                            bind = preferences.moveNoteInPenMode,
+                        },
+                        vbp:text {
+                            text = "Allow move, scale and duplication of notes in pen mode",
+                        },
+                    },
+                    vbp:row {
+                        vbp:checkbox {
                             bind = preferences.useChordStampingForNotePreview,
                         },
                         vbp:text {
@@ -6044,7 +6296,7 @@ local function showPenSettingsDialog()
                     height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
                     width = 100,
                     notifier = function()
-                        refreshStates.refreshPianoRollNeeded = true
+                        refreshPianoRollNeeded = true
                         dialogVars.penSettingsObj:close()
                         restoreFocus()
                     end
@@ -6092,7 +6344,7 @@ local function showPenSettingsDialog()
         dialogVars.penSettingsObj = app:show_custom_dialog("Pen settings - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
                 dialogVars.penSettingsContent, function(_, key)
                     if key.name == "esc" then
-                        refreshStates.refreshPianoRollNeeded = true
+                        refreshPianoRollNeeded = true
                         dialogVars.penSettingsObj:close()
                         restoreFocus()
                     end
@@ -6197,22 +6449,22 @@ local function handleKeyEvent(keyEvent)
     if key.name == "lalt" and key.state == "pressed" then
         modifier.keyAlt = true
         handled = true
-        refreshStates.refreshControls = true
+        refreshControls = true
     elseif key.name == "lalt" and key.state == "released" then
         modifier.keyAlt = false
         handled = true
-        refreshStates.refreshControls = true
+        refreshControls = true
     end
     if key.name == "lshift" and key.state == "pressed" then
         modifier.keyShift = true
         handled = true
-        refreshStates.refreshControls = true
+        refreshControls = true
     elseif key.name == "lshift" and key.state == "released" then
         modifier.keyShift = false
         handled = true
         --reset loop mini slider state
         xypadpos.loopslider = nil
-        refreshStates.refreshControls = true
+        refreshControls = true
     end
     if key.name == "rshift" and key.state == "pressed" then
         modifier.keyRShift = true
@@ -6275,6 +6527,15 @@ local function handleKeyEvent(keyEvent)
     end
     if key.name == "f1" then
         if key.state == "pressed" then
+            keyInfoText = "Select mode"
+            penMode = false
+            audioPreviewMode = false
+            refreshControls = true
+        end
+        handled = true
+    end
+    if key.name == "f2" then
+        if key.state == "pressed" then
             if modifier.keyControl then
                 keyInfoText = "Open Pen mode settings."
                 showPenSettingsDialog()
@@ -6282,17 +6543,8 @@ local function handleKeyEvent(keyEvent)
                 keyInfoText = "Pen mode"
                 penMode = true
                 audioPreviewMode = false
-                refreshStates.refreshControls = true
+                refreshControls = true
             end
-        end
-        handled = true
-    end
-    if key.name == "f2" then
-        if key.state == "pressed" then
-            keyInfoText = "Select mode"
-            penMode = false
-            audioPreviewMode = false
-            refreshStates.refreshControls = true
         end
         handled = true
     end
@@ -6301,7 +6553,7 @@ local function handleKeyEvent(keyEvent)
             keyInfoText = "Audio preview mode"
             penMode = false
             audioPreviewMode = true
-            refreshStates.refreshControls = true
+            refreshControls = true
         end
         handled = true
     end
@@ -6362,7 +6614,7 @@ local function handleKeyEvent(keyEvent)
             if #noteSelection > 0 then
                 currentNoteLength = tonumber(key.name)
                 changeSizeSelectedNotes(currentNoteLength)
-                refreshStates.refreshControls = true
+                refreshControls = true
             else
                 vbw.note_len.value = tonumber(key.name)
             end
@@ -6385,7 +6637,7 @@ local function handleKeyEvent(keyEvent)
                 end
                 currentNoteLength = math.max(math.floor(currentNoteLength / 2), 1)
             end
-            refreshStates.refreshControls = true
+            refreshControls = true
         end
         handled = true
     end
@@ -6487,7 +6739,7 @@ local function handleKeyEvent(keyEvent)
                 --was not possible then deselect
                 if not ret then
                     noteSelection = {}
-                    refreshStates.refreshPianoRollNeeded = true
+                    refreshPianoRollNeeded = true
                 else
                     keyInfoText = "Duplicate notes"
                     jumpToNoteInPattern("sel")
@@ -6571,7 +6823,7 @@ local function handleKeyEvent(keyEvent)
     if (key.name == "scrollup" or key.name == "scrolldown") then
         if key.state == "pressed" then
             local steps = preferences.scrollWheelSpeed.value
-            if key.name == "scrollup" then
+            if key.name == "scrolldown" then
                 steps = steps * -1
             end
             if (modifier.keyAlt or modifier.keyShift or modifier.keyRShift) and not modifier.keyControl then
@@ -6592,14 +6844,16 @@ local function handleKeyEvent(keyEvent)
                     end
                 else
                     keyInfoText = "Move through the grid"
-                    stepSlider.value = clamp(stepSlider.value + steps, stepSlider.min, stepSlider.max - 1)
+                    steps = steps * -1
+                    stepSlider.value = clamp(stepSlider.value + steps, stepSlider.min, stepSlider.max)
                 end
             elseif not modifier.keyAlt and modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
                 keyInfoText = "Move through the grid"
-                stepSlider.value = clamp(stepSlider.value + steps, stepSlider.min, stepSlider.max - 1)
+                steps = steps * -1
+                stepSlider.value = clamp(stepSlider.value + steps, stepSlider.min, stepSlider.max)
             elseif not modifier.keyAlt and not modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
                 keyInfoText = "Move through the grid"
-                noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max - 1)
+                noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max)
             end
         end
         handled = true
@@ -6611,7 +6865,7 @@ local function handleKeyEvent(keyEvent)
                 steps = steps * -1
             end
             keyInfoText = "Move through the grid"
-            noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max - 1)
+            noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max)
         end
         handled = true
     end
@@ -6643,7 +6897,7 @@ local function handleKeyEvent(keyEvent)
                     end
                 else
                     keyInfoText = "Move through the grid"
-                    noteSlider.value = clamp(noteSlider.value + transpose, noteSlider.min, noteSlider.max - 1)
+                    noteSlider.value = clamp(noteSlider.value + transpose, noteSlider.min, noteSlider.max)
                 end
             end
         end
@@ -6889,12 +7143,13 @@ local function midiInCallback(message)
 end
 
 --handle scroll wheel value boxes
-local function handleScrollWheel(event)
-    if event.direction == "up" then
+local function handleSrollWheel(number, id)
+    if number > 0 then
         handleKeyEvent({ name = "scrollup" })
-    elseif event.direction == "down" then
+    elseif number < 0 then
         handleKeyEvent({ name = "scrolldown" })
     end
+    vbw[id].value = 0
 end
 
 --just refresh selected notes, improves mouse actions
@@ -6905,10 +7160,17 @@ local function refreshSelectedNotes()
     local newNotes_length = 0
     local noteString
     local rowIndex
-    l_vbw["pianorollColumns"].visible = false
+
     for key = 1, #noteSelection do
-        if l_vbw["b" .. noteSelection[key].idx] then
-            l_vbw["b" .. noteSelection[key].idx].visible = false
+        if l_vbw["bc" .. noteSelection[key].idx] then
+            l_vbw["bc" .. noteSelection[key].idx].visible = false
+        end
+        for i = 1, 0xf do
+            if l_vbw["br" .. noteSelection[key].idx .. "_" .. i] then
+                l_vbw["br" .. noteSelection[key].idx .. "_" .. i].visible = false
+            else
+                break
+            end
         end
         rowIndex = noteValue2GridRowOffset(noteSelection[key].note, true)
         noteSelection[key].idx = tostring(noteSelection[key].step) .. "_" .. tostring(rowIndex) .. "_" .. tostring(noteSelection[key].column)
@@ -6934,46 +7196,75 @@ local function refreshSelectedNotes()
     if newNotes_length > 0 then
         drawNotesToGrid(newNotes)
     end
-    l_vbw["pianorollColumns"].visible = true
-    refreshStates.refreshPianoRollNeeded = true
+    refreshPianoRollNeeded = true
 end
 
---handle mouse events
-local function handleMouse(event)
-    local setCursor = "default"
-    local pianorollColumns = vbw["pianorollColumns"]
-    local x, y, c, type, forceScaling, val_x, val_y, quickRefresh, forceFullRefresh
-
-    --fix bug
-    if modifier.keyControl and event.button == "right" then
-        event.button = "left"
+--handle xy pad events
+local function handleXypad(val)
+    local quickRefresh
+    local forceFullRefresh
+    --reenabled disable elements
+    if #xypadpos.disabled > 0 then
+        for i = 1, #xypadpos.disabled do
+            local el = vbw[xypadpos.disabled[i]]
+            if el then
+                el.active = true
+            end
+        end
+        xypadpos.disabled = {}
     end
-    if modifier.keyControl and not event.button_flags["left"] and event.button_flags["right"] then
-        event.button_flags["left"] = true
-        event.button_flags["right"] = false
+    --snap back
+    if (val.x == snapBackVal.x or val.y == snapBackVal.y) then
+        if val.x == snapBackVal.x and val.y == snapBackVal.y and xypadpos.leftClick then
+            xypadpos.leftClick = false
+            drawRectangle(false)
+            --stop removemode
+            xypadpos.removemode = false
+            refreshControls = true
+            refreshChordDetection = true
+            --stop old notes
+            if xypadpos.previewmode then
+                for key in pairs(xypadpos.preview) do
+                    local note_data = xypadpos.preview[key]
+                    xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] = nil
+                    triggerNoteOfCurrentInstrument(note_data.note, false, false, note_data.vel, note_data.ins)
+                    local row = noteValue2GridRowOffset(note_data.note)
+                    if row ~= nil then
+                        setKeyboardKeyColor(row, false, false)
+                        highlightNoteRow(row, false)
+                    end
+                end
+            end
+        end
+        return
     end
-
-    --cursor per mode
-    if checkMode("pen") then
-        setCursor = "pencil"
-    elseif checkMode("preview") then
-        setCursor = "play"
-    end
-
-    --when in dragmode reset
-    if xypadpos.dragging and event.type == "up" and (event.button == "left" or event.button == "right") then
-        xypadpos.dragging = false
-        vbw["canvas_selection"].visible = false
-        --stop removemode
-        xypadpos.removemode = false
-        refreshStates.refreshControls = true
-        refreshStates.refreshChordDetection = true
+    if xypadpos.removemode then
+        if xypadpos.time < os.clock() - (xypadpos.pickuptiming * 10) and xypadpos.leftClick then
+            --check which notes are hit
+            for key in pairs(noteData) do
+                local note_data = noteData[key]
+                if posInNoteRange(val.x + stepOffset, note_data) and #noteSelection == 0
+                        and note_data.note == math.floor((val.y - 1.1) + noteOffset)
+                        and not noteInSelection(note_data) then
+                    updateNoteSelection(note_data, true, true)
+                    break
+                elseif noteInSelection(note_data) then
+                    blockLineModifier = true
+                    removeNoteInPattern(note_data.column, note_data.line, note_data.len)
+                    noteSelection = {}
+                    forceFullRefresh = true
+                    break
+                end
+            end
+        end
+    elseif xypadpos.previewmode then
+        local playNotes = {}
         --stop old notes
-        if xypadpos.previewmode then
-            for key in pairs(xypadpos.preview) do
-                local note_data = xypadpos.preview[key]
+        for key in pairs(xypadpos.preview) do
+            local note_data = xypadpos.preview[key]
+            if not posInNoteRange(val.x + stepOffset, note_data) then
                 xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] = nil
-                triggerNoteOfCurrentInstrument(note_data.note, false, false, note_data.vel, note_data.ins)
+                triggerNoteOfCurrentInstrument(note_data.note, false, note_data.vel, false, note_data.ins)
                 local row = noteValue2GridRowOffset(note_data.note)
                 if row ~= nil then
                     setKeyboardKeyColor(row, false, false)
@@ -6981,354 +7272,244 @@ local function handleMouse(event)
                 end
             end
         end
-    else
-
-        --calculate grid pos
-        val_x = (gridWidth / pianorollColumns.width * event.position.x) + 1
-        val_y = gridHeight - (gridHeight / pianorollColumns.height * event.position.y) + 1
-
-        if event.type == "drag" and (event.button_flags["left"] or event.button_flags["right"]) then
-            if event.button_flags["right"] and not event.button_flags["left"] then
-                if checkMode("pen") and not xypadpos.removemode then
-                    xypadpos.removemode = true
-                    updateNoteSelection(nil, true)
-                else
-                    xypadpos.previewmode = true
-                end
+        --play new notes
+        for key in pairs(noteData) do
+            local note_data = noteData[key]
+            if posInNoteRange(val.x + stepOffset, note_data) and xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] == nil then
+                xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] = note_data
+                table.insert(playNotes, note_data)
             end
-            if xypadpos.removemode then
-                --check which notes are hit
-                for key in pairs(noteData) do
-                    local note_data = noteData[key]
-                    if posInNoteRange(val_x + stepOffset, note_data) and #noteSelection == 0
-                            and note_data.note == math.floor((val_y - 1.1) + noteOffset)
-                            and not noteInSelection(note_data) then
-                        updateNoteSelection(note_data, true, true)
-                        break
-                    elseif noteInSelection(note_data) then
-                        refreshStates.blockLineModifier = true
-                        removeNoteInPattern(note_data.column, note_data.line, note_data.len)
-                        noteSelection = {}
-                        forceFullRefresh = true
-                        break
-                    end
+        end
+        --resort notes
+        table.sort(playNotes, sortFunc.sortLeftOneFirst)
+        --play notes, but first column first
+        for i = 1, #playNotes do
+            triggerNoteOfCurrentInstrument(playNotes[i].note, true, playNotes[i].vel, false, playNotes[i].ins)
+            local row = noteValue2GridRowOffset(playNotes[i].note)
+            if row ~= nil then
+                setKeyboardKeyColor(row, true, false)
+                highlightNoteRow(row, true)
+            end
+        end
+        --draw cursor
+        drawRectangle(true, val.x)
+    elseif xypadpos.notemode then
+        --mouse dragging and scaling
+        local max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
+        if xypadpos.time > os.clock() - xypadpos.pickuptiming then
+            xypadpos.x = val.x
+            xypadpos.y = val.y
+            if xypadpos.scalemode then
+                xypadpos.distanceblock = true
+            end
+        elseif xypadpos.distanceblock then
+            --some distance is needed
+            if math.max(math.abs(xypadpos.x - val.x), math.abs(xypadpos.y - val.y)) > 0.69 then
+                xypadpos.distanceblock = false
+            end
+        else
+            --prevent moving and scaling outside the grid
+            if val.x > max then
+                val.x = max
+            end
+            --when scale mode is active, scale notes
+            if xypadpos.scalemode then
+                if #noteSelection == 1 and xypadpos.resetscale then
+                    --when a new len will be drawn, then reset len to 1
+                    changeSizeSelectedNotes(1)
+                    --and remove delay
+                    changePropertiesOfSelectedNotes(nil, nil, 0, 0, nil, nil, nil, "removecut")
+                    --switch to scale mode, when note was resettet
+                    xypadpos.scaling = true
+                    xypadpos.resetscale = false
                 end
-                xypadpos.dragging = true
-                setCursor = "erase"
-            elseif xypadpos.previewmode then
-                local playNotes = {}
-                --stop old notes
-                for key in pairs(xypadpos.preview) do
-                    local note_data = xypadpos.preview[key]
-                    if not posInNoteRange(val_x + stepOffset, note_data) then
-                        xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] = nil
-                        triggerNoteOfCurrentInstrument(note_data.note, false, note_data.vel, false, note_data.ins)
-                        local row = noteValue2GridRowOffset(note_data.note)
-                        if row ~= nil then
-                            setKeyboardKeyColor(row, false, false)
-                            highlightNoteRow(row, false)
+                local v = 0
+                local note_data = noteSelection[xypadpos.selection_key]
+                if not note_data and noteSelection[1] then
+                    note_data = noteSelection[1]
+                end
+                if note_data then
+                    if modifier.keyAlt and isDelayColumnActive() then
+                        v = math.floor((val.x - (xypadpos.nx + note_data.len + (note_data.end_dly / 0x100))) * 0x100)
+                        --calculate snap
+                        local delay = (note_data.end_dly + v) % 0x100
+                        local len = math.floor((note_data.end_dly + v) / 0x100)
+                        local scalesnapsize = math.floor(0x100 / 100 * preferences.snapToGridSize.value)
+                        if delay > 0x100 - scalesnapsize then
+                            v = v - delay + 0x100
+                        elseif delay < scalesnapsize then
+                            v = v - delay
+                        end
+                        --no scaling when target len < 1, then no scaling
+                        if note_data.len + len < 1 then
+                            v = 0
+                        end
+                    else
+                        v = math.floor(math.floor((val.x - (xypadpos.nx + note_data.len)) * 0x100 - note_data.end_dly) / 0x100 + 0.5) * 0x100
+                        if note_data.len + math.floor((note_data.end_dly + v) / 0x100) < 1 then
+                            v = 0
                         end
                     end
                 end
-                --play new notes
-                for key in pairs(noteData) do
-                    local note_data = noteData[key]
-                    if posInNoteRange(val_x + stepOffset, note_data) and xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] == nil then
-                        xypadpos.preview[note_data.note .. "_" .. note_data.column .. "_" .. note_data.ins] = note_data
-                        table.insert(playNotes, note_data)
-                    end
-                end
-                --resort notes
-                table.sort(playNotes, sortFunc.sortLeftOneFirst)
-                --play notes, but first column first
-                for i = 1, #playNotes do
-                    triggerNoteOfCurrentInstrument(playNotes[i].note, true, playNotes[i].vel, false, playNotes[i].ins)
-                    local row = noteValue2GridRowOffset(playNotes[i].note)
-                    if row ~= nil then
-                        setKeyboardKeyColor(row, true, false)
-                        highlightNoteRow(row, true)
-                    end
-                end
-                --draw cursor
-                if not vbw["canvas_selection"].visible then
-                    vbw["canvas_selection"]:update()
-                    vbw["canvas_selection"].visible = true
-                end
-                vbw["canvas_selection"].origin = { x = event.position.x, y = 0 }
-                xypadpos.dragging = true
-                setCursor = "play"
-            elseif xypadpos.notemode then
-                if not xypadpos.dragging then
-                    xypadpos.dragging = true
-                    xypadpos.distanceblock = true
-                    xypadpos.x = val_x
-                    xypadpos.y = val_y
-                end
-
-                --disable distant block
-                if xypadpos.distanceblock then
-                    --some distance is needed
-                    if math.max(math.abs(xypadpos.x - val_x), math.abs(xypadpos.y - val_y)) > 0.69 then
-                        xypadpos.distanceblock = false
-                    end
-                end
-
-                --mouse dragging and scaling
-                local max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
-
-                --prevent moving and scaling outside the grid
-                if val_x > max then
-                    val_x = max
-                end
-                --when scale mode is active, scale notes
-                if xypadpos.scalemode and not xypadpos.distanceblock then
-                    if checkMode("pen") then
-                        setCursor = "resize_horizontal"
-                    end
-                    if #noteSelection == 1 and xypadpos.resetscale then
-                        --when a new len will be drawn, then reset len to 1
-                        changeSizeSelectedNotes(1)
-                        --and remove delay
-                        changePropertiesOfSelectedNotes(nil, nil, 0, 0, nil, nil, nil, "removecut")
-                        --switch to scale mode, when note was resettet
+                if v ~= 0 then
+                    blockLineModifier = true
+                    quickRefresh = true
+                    if changeSizeSelectedNotesByMicroSteps(v) then
                         xypadpos.scaling = true
                         xypadpos.resetscale = false
                     end
-                    local v = 0
-                    local note_data = noteSelection[xypadpos.selection_key]
-                    if not note_data and noteSelection[1] then
-                        note_data = noteSelection[1]
-                    end
-                    if note_data then
-                        if modifier.keyAlt and isDelayColumnActive() then
-                            v = math.floor((val_x - (xypadpos.nx + note_data.len + (note_data.end_dly / 0x100))) * 0x100)
-                            --calculate snap
-                            local delay = (note_data.end_dly + v) % 0x100
-                            local len = math.floor((note_data.end_dly + v) / 0x100)
-                            local scalesnapsize = math.floor(0x100 / 100 * preferences.snapToGridSize.value)
-                            if delay > 0x100 - scalesnapsize then
-                                v = v - delay + 0x100
-                            elseif delay < scalesnapsize then
-                                v = v - delay
-                            end
-                            --no scaling when target len < 1, then no scaling
-                            if note_data.len + len < 1 then
-                                v = 0
-                            end
-                        else
-                            v = math.floor(math.floor((val_x - (xypadpos.nx + note_data.len)) * 0x100 - note_data.end_dly) / 0x100 + 0.5) * 0x100
-                            if note_data.len + math.floor((note_data.end_dly + v) / 0x100) < 1 then
-                                v = 0
-                            end
-                        end
-                    end
-                    if v ~= 0 then
-                        refreshStates.blockLineModifier = true
-                        quickRefresh = true
-                        if changeSizeSelectedNotesByMicroSteps(v) then
-                            xypadpos.scaling = true
-                            xypadpos.resetscale = false
-                        end
-                    elseif not xypadpos.scaling then
-                        if math.floor(xypadpos.y) - math.floor(val_y + 0.5) > 0 then
-                            xypadpos.scalemode = false
-                        elseif math.floor(xypadpos.y) - math.floor(val_y - 0.5) < 0 then
-                            xypadpos.scalemode = false
-                        end
+                elseif not xypadpos.scaling then
+                    if math.floor(xypadpos.y) - math.floor(val.y + 0.5) > 0 then
+                        xypadpos.scalemode = false
+                    elseif math.floor(xypadpos.y) - math.floor(val.y - 0.5) < 0 then
+                        xypadpos.scalemode = false
                     end
                 end
-                --when move note is active, move notes
-                if not xypadpos.scalemode then
-                    setCursor = "move"
-                    if modifier.keyAlt and isDelayColumnActive(true) then
-                        local v = math.floor((val_x - xypadpos.x) * 0x100)
-                        if v ~= 0 then
-                            refreshStates.blockLineModifier = true
-                            quickRefresh = true
-                            v = moveSelectedNotesByMicroSteps(v, modifier.keyShift)
-                            if v ~= false then
-                                xypadpos.x = xypadpos.x + (v / 0x100)
-                            end
-                        end
-                    else
-                        xypadpos.x = math.floor(xypadpos.x)
-                        xypadpos.y = math.floor(xypadpos.y)
-                        if xypadpos.x - math.floor(val_x) > 0 and math.floor(val_x) ~= xypadpos.lastx then
-                            if xypadpos.duplicate then
-                                if modifier.keyControl and xypadpos.idx then
-                                    if noteInSelection(noteData[xypadpos.idx]) then
-                                        noteSelection = {}
-                                    end
-                                    table.insert(noteSelection, noteData[xypadpos.idx])
-                                    xypadpos.idx = nil
-                                end
-                                duplicateSelectedNotes(0)
-                                forceFullRefresh = true
-                                xypadpos.duplicate = false
-                            end
-                            for d = math.abs(xypadpos.x - math.floor(val_x)), 1, -1 do
-                                refreshStates.blockLineModifier = true
-                                quickRefresh = true
-                                if moveSelectedNotes(-d) then
-                                    xypadpos.x = xypadpos.x - d
-                                    break
-                                end
-                            end
-                            xypadpos.lastx = math.floor(val_x)
-                        elseif xypadpos.x - math.floor(val_x) < 0 and math.floor(val_x) ~= xypadpos.lastx then
-                            if xypadpos.duplicate then
-                                if modifier.keyControl and xypadpos.idx then
-                                    if noteInSelection(noteData[xypadpos.idx]) then
-                                        noteSelection = {}
-                                    end
-                                    table.insert(noteSelection, noteData[xypadpos.idx])
-                                    xypadpos.idx = nil
-                                end
-                                duplicateSelectedNotes(0)
-                                forceFullRefresh = true
-                                xypadpos.duplicate = false
-                            end
-                            for d = math.abs(xypadpos.x - math.floor(val_x)), 1, -1 do
-                                refreshStates.blockLineModifier = true
-                                quickRefresh = true
-                                if moveSelectedNotes(d) then
-                                    xypadpos.x = xypadpos.x + d
-                                    break
-                                end
-                            end
-                            xypadpos.lastx = math.floor(val_x)
-                        end
-                    end
-                    if math.floor(xypadpos.y) - math.floor(val_y + 0.1) > 0 then
-                        if xypadpos.duplicate then
-                            if modifier.keyControl and xypadpos.idx then
-                                if noteInSelection(noteData[xypadpos.idx]) then
-                                    noteSelection = {}
-                                end
-                                table.insert(noteSelection, noteData[xypadpos.idx])
-                                xypadpos.idx = nil
-                            end
-                            duplicateSelectedNotes(0)
-                            forceFullRefresh = true
-                            xypadpos.duplicate = false
-                        end
-                        for d = math.abs(math.floor(xypadpos.y) - math.floor(val_y + 0.1)), 1, -1 do
-                            refreshStates.blockLineModifier = true
-                            quickRefresh = true
-                            if transposeSelectedNotes(-d) then
-                                xypadpos.y = math.floor(xypadpos.y) - d
-                                break
-                            end
-                        end
-                    elseif math.floor(xypadpos.y) - math.floor(val_y - 0.1) < 0 then
-                        if xypadpos.duplicate then
-                            if modifier.keyControl and xypadpos.idx then
-                                if noteInSelection(noteData[xypadpos.idx]) then
-                                    noteSelection = {}
-                                end
-                                table.insert(noteSelection, noteData[xypadpos.idx])
-                                xypadpos.idx = nil
-                            end
-                            duplicateSelectedNotes(0)
-                            forceFullRefresh = true
-                            xypadpos.duplicate = false
-                        end
-                        for d = math.abs(math.floor(xypadpos.y) - math.floor(val_y - 0.1)), 1, -1 do
-                            refreshStates.blockLineModifier = true
-                            quickRefresh = true
-                            if transposeSelectedNotes(d) then
-                                xypadpos.y = math.floor(xypadpos.y) + d
-                                break
-                            end
-                        end
-                    end
-                    --y-scroll through, when note hits border
-                    if xypadpos.y > gridHeight and noteSlider.value > 0 then
-                        local delta = math.ceil(xypadpos.y - gridHeight)
-                        local newValue = clamp(noteSlider.value - delta, noteSlider.min, noteSlider.max - 1)
-                        xypadpos.y = xypadpos.y - (noteSlider.value - newValue)
-                        noteSlider.value = newValue
+            end
+            --when move note is active, move notes
+            if not xypadpos.scalemode then
+                --scroll through, when note hits border
+                if val.scroll then
+                    if val.y == 1 and noteSlider.value > 0 then
+                        noteSlider.value = clamp(noteSlider.value - 1, noteSlider.min, noteSlider.max)
+                        xypadpos.y = xypadpos.y + 1
                         forceFullRefresh = true
-                    elseif xypadpos.y < 1 and noteSlider.value < noteSlider.max then
-                        local delta = math.ceil(1 - xypadpos.y)
-                        local newValue = clamp(noteSlider.value + delta, noteSlider.min, noteSlider.max - 1)
-                        xypadpos.y = xypadpos.y - (noteSlider.value - newValue)
-                        noteSlider.value = newValue
+                    elseif val.y - 1 == gridHeight and noteSlider.value < noteSlider.max then
+                        noteSlider.value = clamp(noteSlider.value + 1, noteSlider.min, noteSlider.max)
+                        xypadpos.y = xypadpos.y - 1
                         forceFullRefresh = true
                     end
-                    --TODO x-scroll through, when note hits border
-                    --[[
-                    if val_x == 1 and stepSlider.value > 0 then
-                        stepSlider.value = clamp(stepSlider.value - 1, stepSlider.min, stepSlider.max - 1)
+                    if val.x == 1 and stepSlider.value > 0 then
+                        stepSlider.value = clamp(stepSlider.value - 1, stepSlider.min, stepSlider.max)
                         xypadpos.x = xypadpos.x + 1
                         xypadpos.lastx = xypadpos.lastx + 1
                         forceFullRefresh = true
-                    elseif val_x - 1 == gridWidth and stepSlider.value <= stepSlider.max - 1 then
-                        stepSlider.value = clamp(stepSlider.value + 1, stepSlider.min, stepSlider.max - 1)
+                    elseif val.x - 1 == gridWidth and stepSlider.value < stepSlider.max then
+                        stepSlider.value = clamp(stepSlider.value + 1, stepSlider.min, stepSlider.max)
                         xypadpos.x = xypadpos.x - 1
                         xypadpos.lastx = xypadpos.lastx - 1
                         forceFullRefresh = true
                     end
-                    ]]--
                 end
-            else
-                if xypadpos.x ~= math.floor(val_x) or xypadpos.y ~= math.floor(val_y) then
-                    xypadpos.x = math.floor(val_x)
-                    xypadpos.y = math.floor(val_y)
-                    if not vbw["canvas_selection"].visible then
-                        vbw["canvas_selection"].origin = { x = 0, y = 0 }
+                if modifier.keyAlt and isDelayColumnActive(true) then
+                    local v = math.floor((val.x - xypadpos.x) * 0x100)
+                    if v ~= 0 then
+                        blockLineModifier = true
+                        quickRefresh = true
+                        v = moveSelectedNotesByMicroSteps(v, modifier.keyShift)
+                        if v ~= false then
+                            xypadpos.x = xypadpos.x + (v / 0x100)
+                        end
                     end
-                    vbw["canvas_selection"]:update()
-                    vbw["canvas_selection"].visible = true
-                    selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, modifier.keyShift)
-                    xypadpos.dragging = true
-                end
-            end
-        else
-            if event.direction then
-                return handleScrollWheel(event)
-            end
-            if #event.hover_views > 0 then
-                local el = vbw[event.hover_views[1]['id']]
-                if event.hover_views[1]['id'] == 'canvas' then
-                    type = "g"
-                    x = math.floor(val_x)
-                    y = math.floor(val_y)
                 else
-                    type, x, y, c = string.match(event.hover_views[1]['id'], '^([bs]+)([0-9]+)_([0-9]+)_([0-9]+)$')
-                    if type and x and y and c then
-                        if type == "b" then
-                            type = "b"
-                            setCursor = "move"
-                            forceScaling = false
-                            if event.position['x'] >= el.origin.x + el.width - preferences.clickAreaSizeForScalingPx.value then
-                                setCursor = "resize_horizontal"
-                                forceScaling = true
+                    xypadpos.x = math.floor(xypadpos.x)
+                    xypadpos.y = math.floor(xypadpos.y)
+                    if xypadpos.x - math.floor(val.x) > 0 and math.floor(val.x) ~= xypadpos.lastx then
+                        if xypadpos.duplicate then
+                            if modifier.keyControl and xypadpos.idx then
+                                if noteInSelection(noteData[xypadpos.idx]) then
+                                    noteSelection = {}
+                                end
+                                table.insert(noteSelection, noteData[xypadpos.idx])
+                                xypadpos.idx = nil
                             end
+                            duplicateSelectedNotes(0)
+                            forceFullRefresh = true
+                            xypadpos.duplicate = false
+                        end
+                        for d = math.abs(xypadpos.x - math.floor(val.x)), 1, -1 do
+                            blockLineModifier = true
+                            quickRefresh = true
+                            if moveSelectedNotes(-d) then
+                                xypadpos.x = xypadpos.x - d
+                                break
+                            end
+                        end
+                        xypadpos.lastx = math.floor(val.x)
+                    elseif xypadpos.x - math.floor(val.x) < 0 and math.floor(val.x) ~= xypadpos.lastx then
+                        if xypadpos.duplicate then
+                            if modifier.keyControl and xypadpos.idx then
+                                if noteInSelection(noteData[xypadpos.idx]) then
+                                    noteSelection = {}
+                                end
+                                table.insert(noteSelection, noteData[xypadpos.idx])
+                                xypadpos.idx = nil
+                            end
+                            duplicateSelectedNotes(0)
+                            forceFullRefresh = true
+                            xypadpos.duplicate = false
+                        end
+                        for d = math.abs(xypadpos.x - math.floor(val.x)), 1, -1 do
+                            blockLineModifier = true
+                            quickRefresh = true
+                            if moveSelectedNotes(d) then
+                                xypadpos.x = xypadpos.x + d
+                                break
+                            end
+                        end
+                        xypadpos.lastx = math.floor(val.x)
+                    end
+                end
+                if math.floor(xypadpos.y) - math.floor(val.y + 0.1) > 0 then
+                    if xypadpos.duplicate then
+                        if modifier.keyControl and xypadpos.idx then
+                            if noteInSelection(noteData[xypadpos.idx]) then
+                                noteSelection = {}
+                            end
+                            table.insert(noteSelection, noteData[xypadpos.idx])
+                            xypadpos.idx = nil
+                        end
+                        duplicateSelectedNotes(0)
+                        forceFullRefresh = true
+                        xypadpos.duplicate = false
+                    end
+                    for d = math.abs(math.floor(xypadpos.y) - math.floor(val.y + 0.1)), 1, -1 do
+                        blockLineModifier = true
+                        quickRefresh = true
+                        if transposeSelectedNotes(-d) then
+                            xypadpos.y = math.floor(xypadpos.y) - d
+                            break
+                        end
+                    end
+                elseif math.floor(xypadpos.y) - math.floor(val.y - 0.1) < 0 then
+                    if xypadpos.duplicate then
+                        if modifier.keyControl and xypadpos.idx then
+                            if noteInSelection(noteData[xypadpos.idx]) then
+                                noteSelection = {}
+                            end
+                            table.insert(noteSelection, noteData[xypadpos.idx])
+                            xypadpos.idx = nil
+                        end
+                        duplicateSelectedNotes(0)
+                        forceFullRefresh = true
+                        xypadpos.duplicate = false
+                    end
+                    for d = math.abs(math.floor(xypadpos.y) - math.floor(val.y - 0.1)), 1, -1 do
+                        blockLineModifier = true
+                        quickRefresh = true
+                        if transposeSelectedNotes(d) then
+                            xypadpos.y = math.floor(xypadpos.y) + d
+                            break
                         end
                     end
                 end
             end
-
-            if type == "g" then
-                if event.type == "down" and event.button == "left" then
-                    pianoGridClick(x, y, false)
-                    pianoGridClick(x, y, true)
+        end
+    else
+        --only process rectangle selection, when left mouse button is holded
+        if xypadpos.leftClick then
+            if xypadpos.x ~= math.floor(val.x) or xypadpos.y ~= math.floor(val.y) then
+                xypadpos.x = math.floor(val.x)
+                xypadpos.y = math.floor(val.y)
+                if not preferences.mouseWarpingCompatibilityMode.value then
+                    drawRectangle(true, xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny)
                 end
-            elseif type == "b" then
-                if checkMode("pen") and event.type == "down" and event.button == "right" then
-                    event.type = "drag"
-                    handleMouse(event)
-                elseif event.type == "down" and event.button == "left" then
-                    noteClick(x, y, c, false, forceScaling)
-                    noteClick(x, y, c, true, forceScaling)
-                end
+                selectRectangle(xypadpos.x, xypadpos.y, xypadpos.nx, xypadpos.ny, modifier.keyShift)
             end
         end
     end
-    pianorollColumns.cursor = setCursor
     if forceFullRefresh then
-        refreshStates.blockLineModifier = false
+        blockLineModifier = false
         fillPianoRoll()
     elseif quickRefresh then
         refreshSelectedNotes()
@@ -7339,13 +7520,21 @@ end
 local function appIdleEvent()
     --only process when window is created and visible
     if windowObj and windowObj.visible then
+        --scroll via idle, more instant
+        if xypadpos.leftClick then
+            local val = vbw["xypad"].value
+            if val.y == 1 or val.y - 1 == gridHeight or val.x == 1 or val.x - 1 == gridWidth then
+                val.scroll = true
+                handleXypad(val)
+            end
+        end
         --refresh modifier states, when keys are pressed outside focus
         local keyState = app.key_modifier_states
         --swap alt and control?
         if preferences.swapCtrlAlt.value then
             if (keyState["alt"] == "pressed" and modifier.keyControl == false) or (keyState["alt"] == "released" and modifier.keyControl == true) then
                 modifier.keyControl = not modifier.keyControl
-                refreshStates.refreshControls = true
+                refreshControls = true
             end
             if (keyState["control"] == "pressed" and modifier.keyAlt == false) or (keyState["control"] == "released" and modifier.keyAlt == true) then
                 modifier.keyAlt = not modifier.keyAlt
@@ -7353,12 +7542,12 @@ local function appIdleEvent()
                 if modifier.keyAlt == false then
                     xypadpos.loopslider = nil
                 end
-                refreshStates.refreshControls = true
+                refreshControls = true
             end
         else
             if (keyState["alt"] == "pressed" and modifier.keyAlt == false) or (keyState["alt"] == "released" and modifier.keyAlt == true) then
                 modifier.keyAlt = not modifier.keyAlt
-                refreshStates.refreshControls = true
+                refreshControls = true
             end
             if (keyState["control"] == "pressed" and modifier.keyControl == false) or (keyState["control"] == "released" and modifier.keyControl == true) then
                 modifier.keyControl = not modifier.keyControl
@@ -7366,7 +7555,7 @@ local function appIdleEvent()
                 if modifier.keyControl == false then
                     xypadpos.loopslider = nil
                 end
-                refreshStates.refreshControls = true
+                refreshControls = true
             end
         end
 
@@ -7376,38 +7565,38 @@ local function appIdleEvent()
             if modifier.keyShift == false then
                 xypadpos.loopslider = nil
             end
-            refreshStates.refreshControls = true
+            refreshControls = true
         end
         --process eraser mode, when there is still a selection
         if xypadpos.leftClick == true and xypadpos.removemode == true and #noteSelection > 0 then
-            refreshStates.blockLineModifier = true
+            blockLineModifier = true
             removeNoteInPattern(noteSelection[1].column, noteSelection[1].line, noteSelection[1].len)
             noteSelection = {}
-            refreshStates.refreshPianoRollNeeded = true
+            refreshPianoRollNeeded = true
         end
         --process after edit features
         if afterEditProcessTime ~= nil and afterEditProcessTime < os.clock() - 0.1 then
             afterEditProcess()
         end
         --refresh control, when needed
-        if refreshStates.refreshControls then
+        if refreshControls then
             refreshNoteControls()
         end
         --refresh pianoroll, when needed
-        if refreshStates.refreshPianoRollNeeded then
+        if refreshPianoRollNeeded then
             fillPianoRoll()
         end
         --refresh timeline, when needed
-        if refreshStates.refreshTimeline then
+        if refreshTimeline then
             fillTimeline()
         end
         --refresh chord states
-        if refreshStates.refreshChordDetection and preferences.chordDetection.value then
+        if refreshChordDetection and preferences.chordDetection.value then
             refreshDetectedChord()
         end
         --if needed refresh histogram
-        if refreshStates.refreshHistogram then
-            refreshStates.refreshHistogram = false
+        if refreshHistogram then
+            refreshHistogram = false
             if dialogVars.histogramObj and dialogVars.histogramObj.visible then
                 refreshHistogramWindow()
             end
@@ -7432,8 +7621,8 @@ local function appIdleEvent()
         end
         if loopingrange ~= currentloopingrange then
             loopingrange = currentloopingrange
-            refreshStates.refreshTimeline = true
-            refreshStates.refreshControls = true
+            refreshTimeline = true
+            refreshControls = true
         end
         --instrument scale obs
         if preferences.scaleHighlightingType.value == 4 and currentInstrument and song.instruments[currentInstrument + 1] then
@@ -7441,7 +7630,7 @@ local function appIdleEvent()
                     tostring(song.instruments[currentInstrument + 1].trigger_options.scale_mode)
             if temp ~= instrumentScaleMode then
                 instrumentScaleMode = temp
-                refreshStates.refreshPianoRollNeeded = true
+                refreshPianoRollNeeded = true
             end
         end
         --midi in init handling
@@ -7468,11 +7657,12 @@ local function appIdleEvent()
             midiDevice = nil
         end
         --
-        if #lastTriggerNote > 0 then
+        if #lastTriggerNote > 0 and oscClient then
             local newLastTriggerNote = {}
             for i = 1, #lastTriggerNote do
                 if lastTriggerNote[i].time < os.clock() - (preferences.triggerTime.value / 1000) then
-                    song:trigger_instrument_note_off(lastTriggerNote[i].instrument_index, lastTriggerNote[i].track_index, lastTriggerNote[i].note)
+                    table.remove(lastTriggerNote[i].packet, 4) --remove velocity
+                    oscClient:send(renoise.Osc.Message("/renoise/trigger/note_off", lastTriggerNote[i].packet))
                 else
                     table.insert(newLastTriggerNote, lastTriggerNote[i])
                 end
@@ -7482,11 +7672,23 @@ local function appIdleEvent()
         --refresh after prefernces changes
         if dialogVars.preferencesWasShown and dialogVars.preferencesObj and not dialogVars.preferencesObj.visible then
             restoreFocus()
-            refreshStates.refreshControls = true
-            refreshStates.refreshPianoRollNeeded = true
+            if oscClient then
+                oscClient:close()
+                oscClient = nil
+            end
+            refreshControls = true
+            refreshPianoRollNeeded = true
+            --when invisible is enabled, no snapback needed
+            if vbw and vbw["xypad"] then
+                if not preferences.mouseWarpingCompatibilityMode.value then
+                    vbw["xypad"].snapback = snapBackVal
+                else
+                    vbw["xypad"].snapback = nil
+                end
+            end
             --apply new highlighting colors
             initColors()
-            refreshStates.refreshPianoRollNeeded = true
+            refreshPianoRollNeeded = true
             dialogVars.preferencesWasShown = false
         end
     else
@@ -7514,11 +7716,11 @@ local function switchToRelativeScale()
     if preferences.scaleHighlightingType.value == 3 then
         preferences.scaleHighlightingType.value = 2
         preferences.keyForSelectedScale.value = ((preferences.keyForSelectedScale.value + 2) % 12) + 1
-        refreshStates.refreshPianoRollNeeded = true
+        refreshPianoRollNeeded = true
     elseif preferences.scaleHighlightingType.value == 2 then
         preferences.scaleHighlightingType.value = 3
         preferences.keyForSelectedScale.value = ((preferences.keyForSelectedScale.value - 4) % 12) + 1
-        refreshStates.refreshPianoRollNeeded = true
+        refreshPianoRollNeeded = true
     end
 end
 
@@ -7545,8 +7747,7 @@ local function showSetScaleDialog()
                         items = scaleTypes,
                         bind = preferences.scaleHighlightingType,
                         notifier = function()
-                            refreshStates.updateGridCanvas = true
-                            refreshStates.refreshPianoRollNeeded = true
+                            refreshPianoRollNeeded = true
                         end
                     },
                     vbp:horizontal_aligner {
@@ -7566,8 +7767,7 @@ local function showSetScaleDialog()
                         items = notesTable,
                         bind = preferences.keyForSelectedScale,
                         notifier = function()
-                            refreshStates.updateGridCanvas = true
-                            refreshStates.refreshPianoRollNeeded = true
+                            refreshPianoRollNeeded = true
                         end
                     },
 
@@ -7582,8 +7782,7 @@ local function showSetScaleDialog()
                     height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
                     width = 100,
                     notifier = function()
-                        refreshStates.updateGridCanvas = true
-                        refreshStates.refreshPianoRollNeeded = true
+                        refreshPianoRollNeeded = true
                         dialogVars.setScaleObj:close()
                         restoreFocus()
                     end
@@ -7595,8 +7794,7 @@ local function showSetScaleDialog()
         dialogVars.setScaleObj = app:show_custom_dialog("Scale highlighting - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
                 dialogVars.setScaleContent, function(_, key)
                     if key.name == "esc" then
-                        refreshStates.updateGridCanvas = true
-                        refreshStates.refreshPianoRollNeeded = true
+                        refreshPianoRollNeeded = true
                         dialogVars.setScaleObj:close()
                         restoreFocus()
                     end
@@ -7659,7 +7857,7 @@ showPreferences = function()
                                     max = 256,
                                     bind = preferences.gridWidth,
                                     notifier = function()
-                                        refreshStates.rebuildWindowDialog = true
+                                        rebuildWindowDialog = true
                                     end
                                 },
                                 vbp:text { text = "x", align = "center", },
@@ -7669,7 +7867,7 @@ showPreferences = function()
                                     max = 64,
                                     bind = preferences.gridHeight,
                                     notifier = function()
-                                        refreshStates.rebuildWindowDialog = true
+                                        rebuildWindowDialog = true
                                     end
                                 },
                             },
@@ -7933,6 +8131,14 @@ showPreferences = function()
                                 tonumber = function(v)
                                     return tonumber(v)
                                 end
+                            },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.themeHasWideFont
+                            },
+                            vbp:text {
+                                text = "Current Renoise theme has a wide font",
                             },
                         },
                         vbp:space {
@@ -8360,7 +8566,7 @@ showPreferences = function()
                                 },
                                 bind = preferences.timelineEven,
                                 notifier = function()
-                                    refreshStates.refreshTimeline = true
+                                    refreshTimeline = true
                                 end
                             },
                         },
@@ -8379,7 +8585,7 @@ showPreferences = function()
                                 },
                                 bind = preferences.timelineOdd,
                                 notifier = function()
-                                    refreshStates.refreshTimeline = true
+                                    refreshTimeline = true
                                 end
                             },
                         },
@@ -8399,6 +8605,14 @@ showPreferences = function()
                             font = "bold",
                             style = "strong",
                             align = "center",
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.enableOSCClient
+                            },
+                            vbp:text {
+                                text = "Enable OSC client",
+                            },
                         },
                         vbp:row {
                             vbp:checkbox {
@@ -8465,6 +8679,19 @@ showPreferences = function()
                                 bind = preferences.triggerTime,
                             },
                         },
+                        vbp:text {
+                            text = "OSC connection string: [protocol]://[ip]:[port]",
+                        },
+                        vbp:textfield {
+                            bind = preferences.oscConnectionString,
+                            width = "100%",
+                        },
+                        vbp:text {
+                            text = "Please check in the Renoise preferences in the OSC\n" ..
+                                    "section that the OSC server has been activated and is\n" ..
+                                    "running with the same protocol (UDP, TCP) and port\n" ..
+                                    "settings as specified here."
+                        },
                         vbp:space {
                             height = 8,
                         },
@@ -8489,6 +8716,22 @@ showPreferences = function()
                                     "Per note pitch ascending"
                                 },
                                 bind = preferences.sortNewNotesMode,
+                            },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.forcePenMode,
+                            },
+                            vbp:text {
+                                text = "Enable pen mode by default",
+                            },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.moveNoteInPenMode,
+                            },
+                            vbp:text {
+                                text = "Allow move, scale and duplication of notes in pen mode",
                             },
                         },
                         vbp:row {
@@ -8662,6 +8905,18 @@ showPreferences = function()
                         vbp:horizontal_aligner {
                             mode = "justify",
                             vbp:text {
+                                text = "Max double click time (ms):",
+                            },
+                            vbp:valuebox {
+                                steps = { 1, 2 },
+                                min = 50,
+                                max = 2000,
+                                bind = preferences.dblClickTime,
+                            },
+                        },
+                        vbp:horizontal_aligner {
+                            mode = "justify",
+                            vbp:text {
                                 text = "Scroll wheel speed (lines):",
                             },
                             vbp:valuebox {
@@ -8694,6 +8949,22 @@ showPreferences = function()
                                     return tonumber(v)
                                 end
                             },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.mouseWarpingCompatibilityMode,
+                                notifier = function()
+                                    rebuildWindowDialog = true
+                                end,
+                                tooltip = "Disable select marker and other mouse related functions to prevent mouse jumping."
+                            },
+                            vbp:text {
+                                text = "Mouse warping compatibility mode",
+                            },
+                        },
+                        vbp:text {
+                            text = "IMPORTANT: To improve mouse control, please disable\nthe mouse warping option in the Renoise preferences\nin section GUI. This" ..
+                                    " will also fix mouse jumping,\nwhen you use the piano roll.\nIf you need mouse warping, you can enable the\nmouse warping compatibility mode."
                         },
                         vbp:space {
                             height = 8,
@@ -8860,167 +9131,167 @@ end
 
 --create main piano roll dialog
 local function createPianoRollDialog(gridWidth, gridHeight)
-    local playCursor = vb:stack {
-        width = gridStepSizeW * gridWidth,
-        height = gridStepSizeH,
-        autosize = false,
+    local vb_temp
+    local playCursor = vb:row {
+        margin = -gridMargin,
+        spacing = -gridSpacing,
     }
     for x = 1, gridWidth do
-        playCursor:add_child(vb:button {
-            id = "se" .. tostring(x),
-            height = gridStepSizeH - 3,
-            width = gridStepSizeW - 2,
-            color = colorStepOn,
-            active = false,
-            visible = false,
-            origin = {
-                x = ((x - 1) * gridStepSizeW) + 1,
-                y = 2
+        local temp = "setPlaybackPos(" .. tostring(x) .. ")"
+        vb_temp = vb:row {
+            vb:space {
+                width = 2
             },
-        })
-        playCursor:add_child(vb:button {
-            id = "s" .. tostring(x),
-            height = gridStepSizeH - 7,
-            width = gridStepSizeW - 2,
-            color = colorStepOff,
-            active = false,
-            notifier = loadstring("setPlaybackPos(" .. tostring(x) .. ")"),
-            origin = {
-                x = ((x - 1) * gridStepSizeW) + 1,
-                y = 4
+            vb:row {
+                spacing = -(gridStepSizeW - 4),
+                vb:button {
+                    id = "se" .. tostring(x),
+                    height = 13,
+                    width = gridStepSizeW - 4,
+                    color = colorStepOn,
+                    active = false,
+                    visible = false,
+                },
+                vb:column {
+                    vb:space {
+                        height = 2,
+                    },
+                    vb:button {
+                        id = "s" .. tostring(x),
+                        height = 9,
+                        width = gridStepSizeW - 4,
+                        color = colorStepOff,
+                        active = false,
+                        notifier = loadstring(temp),
+                    },
+                },
+                vb:space {
+                    height = 13,
+                },
             },
-        })
+            vb:space {
+                width = 2
+            },
+        }
+        playCursor:add_child(vb_temp)
     end
-    local pianorollColumns = vb:stack {
-        width = gridStepSizeW * gridWidth,
-        height = gridStepSizeH * gridHeight,
-        autosize = false,
-        vb:stack {
-            id = "pianorollColumns",
-            mouse_events = {
-                "enter", "exit", "move", "drag", "down", "up", "wheel"
-            },
-            mouse_handler = handleMouse,
-            cursor = "default",
-            autosize = false,
-            width = gridStepSizeW * gridWidth,
-            height = gridStepSizeH * gridHeight,
-            vb:canvas {
-                id = "canvas",
-                width = gridStepSizeW * gridWidth,
-                height = gridStepSizeH * (gridHeight + 12),
-                mode = "plain", -- we do fill the entire canvas
-                render = renderGridCanvas
-            },
-        },
-        vb:canvas {
-            id = "canvas_selection",
-            width = gridStepSizeW * gridWidth,
-            height = gridStepSizeH * gridHeight,
-            mode = "transparent", -- we do fill the entire canvas
-            visible = false,
-            render = function(context)
-                if xypadpos.previewmode then
-                    context.stroke_color = colorStepOn
-                    context:begin_path()
-                    context:move_to(0, 0)
-                    context:line_to(0, context.size.height)
-                    context.line_width = 4
-                    context:stroke()
-                else
-                    local w = context.size.width / gridWidth
-                    local h = context.size.height / gridHeight
-                    local rx = math.min(xypadpos.nx, xypadpos.x) - 1
-                    local rx2 = math.max(xypadpos.nx, xypadpos.x)
-                    local ry = gridHeight - math.max(xypadpos.ny, xypadpos.y)
-                    local ry2 = gridHeight - math.min(xypadpos.ny, xypadpos.y) + 1
-
-                    context.stroke_color = colorStepOn
-                    context:begin_path()
-                    context:move_to(rx * w, ry * h)
-                    context:line_to(rx2 * w, ry * h)
-                    context:line_to(rx2 * w, ry2 * h)
-                    context:line_to(rx * w, ry2 * h)
-                    context:line_to(rx * w, ry * h)
-                    context.line_width = 2
-                    context:stroke()
-                end
-            end
-        },
+    local pianorollColumns = vb:column {
+        margin = 0,
+        spacing = -1,
+        id = "pianorollColumns",
     }
 
+    for y = gridHeight, 1, -1 do
+        local grow = vb:column {
+            id = "row" .. tostring(y),
+            spacing = -(gridStepSizeH - gridSpacing + 2)
+        }
+        local row = vb:row {
+            margin = -gridMargin,
+            spacing = -gridSpacing,
+        }
+        for x = 1, gridWidth do
+            local temp = "pianoGridClick(" .. tostring(x) .. "," .. tostring(y) .. ",true)"
+            local temp2 = "pianoGridClick(" .. tostring(x) .. "," .. tostring(y) .. ",false)"
+            vb_temp = vb:row {
+                id = "ppp" .. tostring(x) .. "_" .. tostring(y),
+                vb:button {
+                    id = "p" .. tostring(x) .. "_" .. tostring(y),
+                    height = gridStepSizeH,
+                    width = gridStepSizeW - 1,
+                    color = colorWhiteKey[1],
+                    notifier = loadstring(temp),
+                    pressed = loadstring(temp2)
+                },
+                vb:space {
+                    id = "ps" .. tostring(x) .. "_" .. tostring(y),
+                    width = 1,
+                    height = gridStepSizeH,
+                    visible = true,
+                }
+            }
+            row:add_child(vb_temp)
+        end
+        grow:add_child(row)
+        pianorollColumns:add_child(grow)
+    end
+
     --horizontal scrollbar
-    stepSlider = vb:scrollbar {
-        width = gridStepSizeW * gridWidth,
+    stepSlider = vb:minislider {
+        width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)),
         height = math.max(16, gridStepSizeW / 2),
         min = 0,
-        max = 1,
-        background = "plain",
-        pagestep = 1,
+        max = 0,
         visible = false,
         notifier = function(number)
             number = math.floor(number)
             if number ~= stepOffset then
                 stepOffset = number
-                refreshStates.updateGridCanvas = true
-                refreshStates.refreshPianoRollNeeded = true
-                refreshStates.refreshTimeline = true
+                refreshPianoRollNeeded = true
+                refreshTimeline = true
             end
         end,
     }
 
     --vertical scrollbar
-    noteSlider = vb:scrollbar {
+    noteSlider = vb:minislider {
         width = math.max(16, gridStepSizeW / 2),
         height = "100%",
         min = 0,
-        max = 120 - gridHeight + 1,
-        background = "plain",
-        pagestep = 1,
+        max = 120 - gridHeight,
         notifier = function(number)
             number = math.floor(number)
             if number ~= noteOffset then
-                noteOffset = (noteSlider.max - 1) - number
-                refreshStates.refreshPianoRollNeeded = true
+                noteOffset = number
+                refreshPianoRollNeeded = true
             end
         end,
-        value = 0
+        value = noteOffset
     }
 
-    local whiteKeys = vb:stack {
-        id = "pianoKeys",
-        height = gridStepSizeH * gridHeight,
-        width = pianoKeyWidth,
-        mouse_events = {
-            "wheel"
-        },
-        mouse_handler = handleScrollWheel,
-        autosize = false
+    local whiteKeys = vb:column {
+        margin = 0,
+        spacing = -1,
+        id = "pianoKeys"
     }
     for y = gridHeight, 1, -1 do
         whiteKeys:add_child(
-                vb:button {
-                    id = "k" .. tostring(y),
-                    height = gridStepSizeH,
-                    width = pianoKeyWidth,
-                    color = { 255, 255, 255 },
-                    pressed = loadstring("keyClick(" .. y .. ",true)"),
-                    released = loadstring("keyClick(" .. y .. ",false)"),
-                    visible = true,
-                    origin = {
-                        x = -1,
-                        y = (gridStepSizeH * (gridHeight - y)) - 2
-                    }
+                vb:row {
+                    margin = -gridMargin,
+                    spacing = -gridSpacing,
+                    vb:button {
+                        id = "k" .. tostring(y),
+                        height = gridStepSizeH,
+                        width = pianoKeyWidth,
+                        color = { 255, 255, 255 },
+                        pressed = loadstring("keyClick(" .. y .. ",true)"),
+                        released = loadstring("keyClick(" .. y .. ",false)"),
+                        visible = true,
+                    },
+                    vb:space {
+                        width = 5,
+                    },
+                    vb:button {
+                        id = "ks" .. tostring(y),
+                        height = gridStepSizeH,
+                        width = 6,
+                        visible = false,
+                        active = false,
+                    },
+                    vb:space {
+                        id = "kss" .. tostring(y),
+                        width = 6,
+                        visible = false,
+                    },
                 }
         )
     end
 
-    local timeline = vb:stack {
-        width = gridStepSizeW * gridWidth,
-        height = gridStepSizeH + 2,
-        autosize = false,
+    local timeline = vb:row {
+        width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
+        spacing = -(gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6),
         vb:minislider {
-            width = gridStepSizeW * gridWidth,
+            width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
             height = gridStepSizeH + 2,
             min = 1,
             max = gridWidth,
@@ -9103,14 +9374,10 @@ local function createPianoRollDialog(gridWidth, gridHeight)
             end
         },
         vb:button {
-            width = (gridStepSizeW * gridWidth) + 2,
+            width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
             height = gridStepSizeH + 4,
             active = false,
             color = colorKeyBlack,
-            origin = {
-                x = -1,
-                y = 0
-            },
         },
         vb:column {
             vb:space {
@@ -9133,23 +9400,45 @@ local function createPianoRollDialog(gridWidth, gridHeight)
             },
         },
     }
+    timeline:add_child(vb:space {
+        width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 6,
+    })
+    local timeline_row = vb:row {}
     for i = 1, gridWidth do
         local temp = vb:text {
-            origin = {
-                x = 0,
-                y = 0
-            },
             id = "timeline" .. i,
             visible = false,
             height = gridStepSizeH + 4,
         }
-        timeline:add_child(temp)
+        timeline_row:add_child(temp)
+    end
+    timeline:add_child(timeline_row)
+
+    --another quirk, instead of using jsut one valuebox, i need a valuebox for each column
+    --its alot faster scrolling without stuttering, it seems a big valuebox slows down the rendering
+    local scrollwheelgrid = vb:row {
+        style = "plain",
+        spacing = -gridSpacing,
+    }
+    for i = 1, gridWidth do
+        local temp = vb:valuebox {
+            id = "sw" .. i,
+            width = gridStepSizeW,
+            height = (gridStepSizeH - 2.9) * (gridHeight + 1),
+            min = -1,
+            max = 1,
+            notifier = function(number)
+                handleSrollWheel(number, "sw" .. i)
+            end,
+        }
+        scrollwheelgrid:add_child(temp)
     end
 
     windowContent = vb:column {
         vb:horizontal_aligner {
             margin = 3,
-            width = "100%",
+            spacing = -1,
+            width = gridStepSizeW * (math.max(gridWidth, 64) + 5) - (gridSpacing * (math.max(gridWidth, 64) + 5)) + 2,
             mode = "justify",
             vb:row {
                 margin = 3,
@@ -9195,8 +9484,8 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         end
                         notesPlaying = {}
                         notesPlayingLine = {}
-                        refreshStates.refreshChordDetection = true
-                        refreshStates.refreshPianoRollNeeded = true
+                        refreshChordDetection = true
+                        refreshPianoRollNeeded = true
                     end
                 },
             },
@@ -9205,29 +9494,29 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                 spacing = -3,
                 style = "panel",
                 vb:button {
-                    bitmap = "Icons/SampleEd_DrawTool.bmp",
-                    width = 24,
-                    tooltip = "Pen mode (F1)\nALT click for pen settings.",
-                    id = "mode_pen",
-                    notifier = function()
-                        if modifier.keyAlt then
-                            showPenSettingsDialog()
-                        else
-                            penMode = true
-                            audioPreviewMode = false
-                            refreshStates.refreshControls = true
-                        end
-                    end,
-                },
-                vb:button {
                     bitmap = "Icons/AutomationList_Empty.bmp",
                     width = 24,
-                    tooltip = "Select mode (F2)",
+                    tooltip = "Select mode (F1)",
                     id = "mode_select",
                     notifier = function()
                         penMode = false
                         audioPreviewMode = false
-                        refreshStates.refreshControls = true
+                        refreshControls = true
+                    end,
+                },
+                vb:button {
+                    bitmap = "Icons/SampleEd_DrawTool.bmp",
+                    width = 24,
+                    tooltip = "Pen mode (F2)\nDouble click or ALT click for pen settings.",
+                    id = "mode_pen",
+                    notifier = function()
+                        if dbclkDetector("penmodeBtn") or modifier.keyAlt then
+                            showPenSettingsDialog()
+                        else
+                            penMode = true
+                            audioPreviewMode = false
+                            refreshControls = true
+                        end
                     end,
                 },
                 vb:button {
@@ -9238,7 +9527,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     notifier = function()
                         audioPreviewMode = true
                         penMode = false
-                        refreshStates.refreshControls = true
+                        refreshControls = true
                     end,
                 },
             },
@@ -9264,7 +9553,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                 if #noteSelection > 0 then
                                     changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, currentInstrument)
                                 else
-                                    refreshStates.refreshPianoRollNeeded = true
+                                    refreshPianoRollNeeded = true
                                 end
                             end
                         end
@@ -9310,7 +9599,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                             changeSizeSelectedNotes(number)
                         end
                         currentNoteLength = number
-                        refreshStates.refreshControls = true
+                        refreshControls = true
                         --fix for bad keyevents of key handler, bug
                         restoreFocus()
                     end,
@@ -9337,7 +9626,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                 scaleNoteSelection(0.5)
                             end
                             currentNoteLength = math.max(math.floor(currentNoteLength / 2), 1)
-                            refreshStates.refreshControls = true
+                            refreshControls = true
                         end,
                     },
                     vb:button {
@@ -9348,7 +9637,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                 scaleNoteSelection(2)
                             end
                             currentNoteLength = math.min(math.floor(currentNoteLength * 2), 512)
-                            refreshStates.refreshControls = true
+                            refreshControls = true
                         end,
                     },
                 },
@@ -9363,7 +9652,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         else
                             song.selected_track.volume_column_visible = true
                         end
-                        refreshStates.refreshPianoRollNeeded = true
+                        refreshPianoRollNeeded = true
                     end
                 },
                 vb:valuebox {
@@ -9392,10 +9681,10 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         else
                             currentNoteVelocity = number
                         end
-                        if #noteSelection > 0 and not refreshStates.refreshControls then
+                        if #noteSelection > 0 and not refreshControls then
                             changePropertiesOfSelectedNotes(currentNoteVelocity)
                         end
-                        refreshStates.refreshControls = true
+                        refreshControls = true
                         --fix for bad keyevents of key handler, bug
                         restoreFocus()
                     end,
@@ -9413,7 +9702,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                 changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity)
                             end
                         end
-                        refreshStates.refreshControls = true
+                        refreshControls = true
                     end,
                 },
                 vb:valuebox {
@@ -9442,10 +9731,10 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         else
                             currentNoteEndVelocity = number
                         end
-                        if #noteSelection > 0 and not refreshStates.refreshControls then
+                        if #noteSelection > 0 and not refreshControls then
                             changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity)
                         end
-                        refreshStates.refreshControls = true
+                        refreshControls = true
                         --fix for bad keyevents of key handler, bug
                         restoreFocus()
                     end,
@@ -9459,7 +9748,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         if #noteSelection > 0 then
                             changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity)
                         end
-                        refreshStates.refreshControls = true
+                        refreshControls = true
                     end,
                 },
                 vb:button {
@@ -9473,7 +9762,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         else
                             song.selected_track.panning_column_visible = true
                         end
-                        refreshStates.refreshPianoRollNeeded = true
+                        refreshPianoRollNeeded = true
                     end
                 },
                 vb:valuebox {
@@ -9502,10 +9791,10 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         else
                             currentNotePan = number
                         end
-                        if #noteSelection > 0 and not refreshStates.refreshControls then
+                        if #noteSelection > 0 and not refreshControls then
                             changePropertiesOfSelectedNotes(nil, nil, nil, nil, currentNotePan)
                         end
-                        refreshStates.refreshControls = true
+                        refreshControls = true
                         --fix for bad keyevents of key handler, bug
                         restoreFocus()
                     end,
@@ -9517,8 +9806,8 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     notifier = function()
                         currentNotePan = 255
                         changePropertiesOfSelectedNotes(nil, nil, nil, nil, currentNotePan)
-                        refreshStates.refreshControls = true
-                        refreshStates.refreshPianoRollNeeded = true
+                        refreshControls = true
+                        refreshPianoRollNeeded = true
                     end,
                 },
                 vb:button {
@@ -9532,7 +9821,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         else
                             song.selected_track.delay_column_visible = true
                         end
-                        refreshStates.refreshPianoRollNeeded = true
+                        refreshPianoRollNeeded = true
                     end,
                 },
                 vb:valuebox {
@@ -9557,10 +9846,10 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     end,
                     notifier = function(number)
                         currentNoteDelay = number
-                        if #noteSelection > 0 and not refreshStates.refreshControls then
+                        if #noteSelection > 0 and not refreshControls then
                             changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay)
                         end
-                        refreshStates.refreshControls = true
+                        refreshControls = true
                         --fix for bad keyevents of key handler, bug
                         restoreFocus()
                     end,
@@ -9576,8 +9865,8 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                             currentNoteEndDelay = 0
                             changePropertiesOfSelectedNotes(nil, nil, nil, currentNoteEndDelay)
                         end
-                        refreshStates.refreshControls = true
-                        refreshStates.refreshPianoRollNeeded = true
+                        refreshControls = true
+                        refreshPianoRollNeeded = true
                     end,
                 },
                 vb:valuebox {
@@ -9602,10 +9891,10 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     end,
                     notifier = function(number)
                         currentNoteEndDelay = number
-                        if #noteSelection > 0 and not refreshStates.refreshControls then
+                        if #noteSelection > 0 and not refreshControls then
                             changePropertiesOfSelectedNotes(nil, nil, nil, currentNoteEndDelay)
                         end
-                        refreshStates.refreshControls = true
+                        refreshControls = true
                         --fix for bad keyevents of key handler, bug
                         restoreFocus()
                     end,
@@ -9613,12 +9902,12 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                 vb:button {
                     id = "note_end_dly_clear",
                     text = "C",
-                    tooltip = "Clear note off delay",
+                    tooltip = "Clear note delay",
                     notifier = function()
                         currentNoteEndDelay = 0
                         changePropertiesOfSelectedNotes(nil, nil, nil, currentNoteEndDelay)
-                        refreshStates.refreshControls = true
-                        refreshStates.refreshPianoRollNeeded = true
+                        refreshControls = true
+                        refreshPianoRollNeeded = true
                     end,
                 },
                 vb:button {
@@ -9646,8 +9935,8 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     notifier = function(index)
                         if not currentGhostTrack or currentGhostTrack ~= index then
                             currentGhostTrack = index
-                            refreshStates.refreshControls = true
-                            refreshStates.refreshPianoRollNeeded = true
+                            refreshControls = true
+                            refreshPianoRollNeeded = true
                         end
                     end,
                 },
@@ -9672,8 +9961,8 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                             else
                                 preferences.mirroringGhostTrack.value = not preferences.mirroringGhostTrack.value
                             end
-                            refreshStates.refreshPianoRollNeeded = true
-                            refreshStates.refreshControls = true
+                            refreshPianoRollNeeded = true
+                            refreshControls = true
                         end
                     },
                 },
@@ -9682,37 +9971,43 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         vb:row {
             vb:column {
                 vb:row {
+                    noteSlider,
                     vb:column {
                         vb:column {
                             spacing = -1,
                             vb:row {
+                                spacing = -pianoKeyWidth,
+                                width = pianoKeyWidth,
                                 margin = -1,
+                                vb:space {
+                                    width = pianoKeyWidth + 1,
+                                },
                                 vb:button {
                                     id = "trackcolor",
                                     height = gridStepSizeH + 3,
                                     color = { 44, 77, 66 },
                                     active = true,
-                                    width = pianoKeyWidth + noteSlider.width,
+                                    width = pianoKeyWidth,
                                     notifier = function()
                                         switchGhostTrack()
                                     end
                                 }
                             },
                             vb:row {
-                                spacing = -3,
+                                spacing = -4,
                                 vb:button {
                                     id = "mute",
                                     text = "M",
                                     tooltip = "Mute/Unmute current track",
                                     height = gridStepSizeH,
-                                    width = (pianoKeyWidth + noteSlider.width) / 2 + 1,
+                                    width = pianoKeyWidth / 2 + 2,
                                     notifier = function()
                                         if song.selected_track.mute_state == 3 or song.selected_track.mute_state == 2 then
                                             song.selected_track:unmute()
                                         else
                                             song.selected_track:mute()
                                         end
-                                        refreshStates.refreshControls = true
+                                        refreshControls = true
                                     end
                                 },
                                 vb:button {
@@ -9720,48 +10015,72 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                     text = "S",
                                     height = gridStepSizeH,
                                     tooltip = "Solo/Unsolo current track",
-                                    width = (pianoKeyWidth + noteSlider.width) / 2 + 1,
+                                    width = pianoKeyWidth / 2 + 2,
                                     notifier = function()
                                         song.selected_track:solo()
-                                        refreshStates.refreshControls = true
+                                        refreshControls = true
                                     end
                                 },
                             },
                         },
-                        vb:column {
-                            spacing = -1,
-                            vb:row {
-                                noteSlider,
+                        vb:row {
+                            spacing = -pianoKeyWidth + 1,
+                            vb:valuebox {
+                                id = "swk",
+                                width = pianoKeyWidth,
+                                height = (gridStepSizeH - 2.9) * (gridHeight + 1),
+                                min = -1,
+                                max = 1,
+                                notifier = function(number)
+                                    handleSrollWheel(number, "swk")
+                                end,
+                            },
+                            vb:column {
+                                spacing = -1,
                                 whiteKeys,
-                            },
-                            vb:space {
-                                height = 2
-                            },
-                            vb:row {
-                                margin = -1,
-                                vb:button {
-                                    id = "currentscale",
-                                    text = "",
-                                    width = pianoKeyWidth + noteSlider.width,
-                                    height = gridStepSizeH + 5,
-                                    tooltip = "Scale highlighting\nIf you hold down the Ctrl key while clicking, you switch to relative minor or major.",
-                                    notifier = function()
-                                        if modifier.keyControl then
-                                            switchToRelativeScale()
-                                        else
-                                            showSetScaleDialog()
-                                        end
-                                    end
+                                vb:space {
+                                    height = 2
                                 },
+                                vb:row {
+                                    margin = -1,
+                                    vb:button {
+                                        id = "currentscale",
+                                        text = "",
+                                        width = pianoKeyWidth,
+                                        height = gridStepSizeH + 3,
+                                        tooltip = "Scale highlighting\nIf you hold down the Ctrl key while clicking, you switch to relative minor or major.",
+                                        notifier = function()
+                                            if modifier.keyControl then
+                                                switchToRelativeScale()
+                                            else
+                                                showSetScaleDialog()
+                                            end
+                                        end
+                                    },
+                                }
                             }
-                        }
+                        },
                     },
                 },
             },
             vb:column {
-                playCursor,
                 vb:column {
-                    timeline,
+                    vb:space {
+                        height = 3,
+                    },
+                    playCursor,
+                    vb:space {
+                        height = 1,
+                    },
+                },
+                vb:column {
+                    vb:row {
+                        spacing = -5,
+                        vb:space {
+                            width = 1,
+                        },
+                        timeline,
+                    },
                     vb:row {
                         spacing = -(gridStepSizeW * gridWidth - (gridSpacing * (gridWidth))),
                         vb:row {
@@ -9769,6 +10088,19 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                             vb:space {
                                 width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)),
                             },
+                            vb:row {
+                                scrollwheelgrid,
+                            },
+                        },
+                        vb:xypad {
+                            id = "xypad",
+                            width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)),
+                            height = (gridStepSizeH - 3) * gridHeight,
+                            min = { x = 1, y = 1 },
+                            max = { x = gridWidth + 1, y = gridHeight + 1 },
+                            notifier = function(val)
+                                handleXypad(val)
+                            end
                         },
                         vb:column {
                             spacing = -1,
@@ -9778,28 +10110,20 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                             },
                             vb:row {
                                 style = "panel",
-                                width = gridStepSizeW * gridWidth,
-                                vb:stack {
-                                    width = gridStepSizeW * gridWidth,
-                                    height = gridStepSizeH + 4,
-                                    autosize = false,
-                                    vb:column {
-                                        width = gridStepSizeW * gridWidth,
-                                        id = "key_state_panel",
-                                        visible = false,
-                                        origin = {
-                                            x = 2,
-                                            y = 0
-                                        },
-                                        vb:text {
-                                            id = "key_state",
-                                            text = "",
-                                            font = "bold",
-                                            style = "strong",
-                                        },
-                                    },
+                                spacing = -(gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2),
+                                vb:bitmap {
+                                    width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2,
+                                    height = gridStepSizeH + 1,
+                                    bitmap = "Icons/SwitchOff.bmp",
+                                    mode = "transparent",
+                                    notifier = function()
+                                        --nothing
+                                    end
+                                },
+                                vb:row {
+                                    width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2,
                                     vb:horizontal_aligner {
-                                        width = gridStepSizeW * gridWidth,
+                                        width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2,
                                         mode = "right",
                                         spacing = -2,
                                         vb:row {
@@ -9916,7 +10240,81 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                         },
                                     },
                                 },
+                                vb:column {
+                                    width = gridStepSizeW * gridWidth - (gridSpacing * (gridWidth)) + 2,
+                                    id = "key_state_panel",
+                                    visible = false,
+                                    vb:text {
+                                        id = "key_state",
+                                        text = "",
+                                        font = "bold",
+                                        style = "strong",
+                                    },
+                                },
                             }
+                        },
+                        vb:row {
+                            id = "sel",
+                            visible = false,
+                            spacing = -3,
+                            margin = -gridMargin,
+                            vb:space {
+                                id = "selleftspace",
+                                width = 1,
+                                height = 1,
+                            },
+                            vb:column {
+                                vb:space {
+                                    id = "seltopspace1",
+                                    height = 1,
+                                    width = 1,
+                                },
+                                vb:button {
+                                    id = "selleft",
+                                    width = 5,
+                                    height = 1,
+                                    active = false,
+                                    color = colorStepOn,
+                                },
+                            },
+                            vb:column {
+                                vb:space {
+                                    id = "seltopspace",
+                                    height = 1,
+                                },
+                                vb:button {
+                                    id = "seltop",
+                                    active = false,
+                                    width = gridStepSizeW * 2 - gridSpacing * 2,
+                                    height = 5,
+                                    color = colorStepOn,
+                                },
+                                vb:space {
+                                    id = "selheightspace",
+                                    height = gridStepSizeH * 2,
+                                },
+                                vb:button {
+                                    id = "selbottom",
+                                    active = false,
+                                    width = gridStepSizeW * 2 - gridSpacing * 2,
+                                    height = 5,
+                                    color = colorStepOn,
+                                },
+                            },
+                            vb:column {
+                                vb:space {
+                                    id = "seltopspace2",
+                                    height = 1,
+                                    width = 1,
+                                },
+                                vb:button {
+                                    id = "selright",
+                                    width = 5,
+                                    height = 1,
+                                    active = false,
+                                    color = colorStepOn,
+                                },
+                            },
                         },
                     },
                 },
@@ -9924,7 +10322,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         },
         vb:row {
             vb:space {
-                width = gridStepSizeW * 5 - 4
+                width = math.max(16, gridStepSizeW / 2) + (gridStepSizeW * 3)
             },
             stepSlider,
         },
@@ -9961,10 +10359,33 @@ local function main_function(hidden)
         --reset note playing
         notesPlaying = {}
         notesPlayingLine = {}
-        --pen mode is default
-        penMode = true
+        --when needed set enable penmode
+        penMode = preferences.forcePenMode.value
         --create main dialog
-        if not windowContent or refreshStates.rebuildWindowDialog then
+        if not windowContent or rebuildWindowDialog then
+            --check if mouse warping is enabled
+            if not preferences.mouseWarpingCompatibilityMode.value then
+                local f = io.open("../../../Config.xml", "r")
+                if f then
+                    local configcontent = f:read("*all")
+                    f:close()
+                    if not string.match(configcontent, '\<WarpCursorOnDrag\>false\<\/WarpCursorOnDrag\>') then
+                        local res = app:show_prompt(
+                                "Mouse warping - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
+                                "Attention! You currently have mouse warping active in the Renoise settings.\n" ..
+                                        "This causes the mouse cursor to jump into a corner when moving notes in the piano\n" ..
+                                        "roll or by simply clicking. You can either use the mouse warping compatibility mode\n" ..
+                                        "or disable mouse warping in the Renoise settings under GUI / Global.",
+                                { 'Enable Mouse warping compatibility mode', 'Ignore' }
+                        )
+                        if res == 'Enable Mouse warping compatibility mode' then
+                            preferences.mouseWarpingCompatibilityMode.value = true
+                            app:show_message("Mouse warping compatibility mode enabled.")
+                        end
+                    end
+                    configcontent = nil
+                end
+            end
             --init colors
             initColors()
             --setup grid settings
@@ -9986,19 +10407,27 @@ local function main_function(hidden)
             vbw = vb.views
             createPianoRollDialog(gridWidth, gridHeight)
         end
+        --when invisible is enabled, no snapback needed
+        if not preferences.mouseWarpingCompatibilityMode.value then
+            vbw["xypad"].snapback = snapBackVal
+        end
         --fill new created pianoroll, timeline and refresh controls
         refreshNoteControls()
         fillTimeline()
         fillPianoRoll()
         --center note view
         if lowestNote ~= nil and preferences.centerViewOnOpen.value then
-            noteOffset = math.floor(((lowestNote + highestNote) / 2) - (gridHeight / 2))
+            local nOffset = math.floor(((lowestNote + highestNote) / 2) - (gridHeight / 2))
+            if nOffset < 0 then
+                nOffset = 0
+            elseif nOffset > noteSlider.max then
+                nOffset = noteSlider.max
+            end
+            noteSlider.value = nOffset
+            noteOffset = nOffset
         end
-        noteSlider.value = clamp(noteSlider.max - 1 - noteOffset, noteSlider.min, noteSlider.max - 1)
-
-        refreshStates.refreshPianoRollNeeded = true
         --reset rebuild flag
-        refreshStates.rebuildWindowDialog = false
+        rebuildWindowDialog = false
         --show dialog
         windowObj = app:show_custom_dialog("Simple Pianoroll v" .. manifest:property("Version").value, windowContent, function(_, key)
             local handled
@@ -10020,7 +10449,7 @@ local function main_function(hidden)
         end
     else
         --refresh pianoroll
-        refreshStates.refreshPianoRollNeeded = true
+        refreshPianoRollNeeded = true
         restoreFocus()
     end
 end
