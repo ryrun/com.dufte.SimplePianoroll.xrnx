@@ -10516,9 +10516,8 @@ tool:add_menu_entry {
 tool:add_menu_entry {
     name = "Pattern Editor:Edit with Histogram ...",
     invoke = function()
-        if not vb then
-            main_function(true)
-        end
+        --init piano roll, refresh noteData if needed
+        main_function(true)
         updateNoteSelection("renoise_selection", true)
         showHistogram()
     end
