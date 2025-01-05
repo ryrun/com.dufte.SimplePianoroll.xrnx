@@ -5523,8 +5523,7 @@ local function showHistogram()
                     },
                     vbp:text {
                         align = "center",
-                        text = "Please note that muted notes for volume changes\n" ..
-                            "and generally notes with column effects will be ignored."
+                        text = "Please note that only NoteOn events will be processed, and muted notes\nfor volume changes, as well as notes with column effects, will be ignored."
                     }
                 }
             },
