@@ -1368,6 +1368,10 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly, end_dly)
     local number_of_lines = song.selected_pattern.number_of_lines
     local lineLen = line + len
     local column, validSpace, maxColumns, lV, lVnC
+    --check if lineLen outside limits, reduce by one, because we dont need a note off at the end
+    if lineLen == number_of_lines + 1 then
+        lineLen = lineLen - 1
+    end
     --note outside the grid?
     if line < 1 or lineLen - 1 > number_of_lines then
         return nil
