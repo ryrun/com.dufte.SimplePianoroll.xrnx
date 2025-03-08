@@ -10077,14 +10077,6 @@ local function main_function(hidden)
     end
 end
 
---add main function to context menu of pattern editor
-tool:add_menu_entry {
-    name = "Pattern Editor:Edit with Simple Pianoroll ...",
-    invoke = function()
-        main_function()
-    end
-}
-
 --add histogram to context menu of pattern editor
 tool:add_menu_entry {
     name = "Pattern Editor:Edit with Histogram ...",
@@ -10093,6 +10085,14 @@ tool:add_menu_entry {
         main_function(true)
         updateNoteSelection("renoise_selection", true)
         showHistogram()
+    end
+}
+
+--add main function to context menu of pattern editor
+tool:add_menu_entry {
+    name = "Pattern Editor:Edit with Simple Pianoroll ...",
+    invoke = function()
+        main_function()
     end
 }
 
