@@ -485,6 +485,7 @@ local xypadpos = {
     time = 0, --click time
     lastx = 0,
     lastval = nil,
+    wasnewnote = false,
     notemode = false,      --when note mode is active
     previewmode = false,   --is scale mode active?
     scalemode = false,     --is scale mode active?
@@ -3101,6 +3102,7 @@ function pianoGridClick(x, y, released)
             refreshStates.refreshChordDetection = true
         elseif checkMode("pen") then
             xypadpos.scalemode = true
+            xypadpos.wasnewnote = true
             if preferences.resetNoteSizeOnNoteDraw.value then
                 xypadpos.resetscale = true
             else
@@ -6982,7 +6984,7 @@ local function handleMouse(event)
     local pianorollColumns = vbw["pianorollColumns"]
     local x, y, c, type, forceScaling, val_x, val_y, quickRefresh, forceFullRefresh
 
-    --fix bug
+    --change macos specific mouse handling with control key
     if modifier.keyControl and event.button == "right" then
         event.button = "left"
     end
@@ -7001,6 +7003,7 @@ local function handleMouse(event)
     --when in dragmode reset
     if xypadpos.dragging and event.type == "up" and (event.button == "left" or event.button == "right") then
         xypadpos.dragging = false
+        xypadpos.wasnewnote = false
         vbw["canvas_selection"].visible = false
         --stop removemode
         xypadpos.removemode = false
@@ -7019,6 +7022,9 @@ local function handleMouse(event)
                 end
             end
         end
+        --refresh cursor via just recall itself in a different type
+        event.type = "move"
+        return handleMouse(event)
     else
         --calculate grid pos
         val_x = (gridWidth / pianorollColumns.width * event.position.x) + 1
@@ -7118,60 +7124,65 @@ local function handleMouse(event)
                     val_x = max
                 end
                 --when scale mode is active, scale notes
-                if xypadpos.scalemode and not xypadpos.distanceblock then
-                    if checkMode("pen") then
+                if xypadpos.scalemode then
+                    if xypadpos.wasnewnote then
+                        setCursor = "pencil"
+                    else
                         setCursor = "resize_horizontal"
                     end
-                    if #noteSelection == 1 and xypadpos.resetscale then
-                        --when a new len will be drawn, then reset len to 1
-                        changeSizeSelectedNotes(1)
-                        --and remove delay
-                        changePropertiesOfSelectedNotes(nil, nil, 0, 0, nil, nil, nil, "removecut")
-                        --switch to scale mode, when note was resettet
-                        xypadpos.scaling = true
-                        xypadpos.resetscale = false
-                    end
-                    local v = 0
-                    local note_data = noteSelection[xypadpos.selection_key]
-                    if not note_data and noteSelection[1] then
-                        note_data = noteSelection[1]
-                    end
-                    if note_data then
-                        if modifier.keyAlt and isDelayColumnActive() then
-                            v = math.floor((val_x - (xypadpos.nx + note_data.len + (note_data.end_dly / 0x100))) * 0x100)
-                            --calculate snap
-                            local delay = (note_data.end_dly + v) % 0x100
-                            local len = math.floor((note_data.end_dly + v) / 0x100)
-                            local scalesnapsize = math.floor(0x100 / 100 * preferences.snapToGridSize.value)
-                            if delay > 0x100 - scalesnapsize then
-                                v = v - delay + 0x100
-                            elseif delay < scalesnapsize then
-                                v = v - delay
-                            end
-                            --no scaling when target len < 1, then no scaling
-                            if note_data.len + len < 1 then
-                                v = 0
-                            end
-                        else
-                            v = math.floor(math.floor((val_x - (xypadpos.nx + note_data.len)) * 0x100 - note_data
-                                .end_dly) / 0x100 + 0.5) * 0x100
-                            if note_data.len + math.floor((note_data.end_dly + v) / 0x100) < 1 then
-                                v = 0
-                            end
-                        end
-                    end
-                    if v ~= 0 then
-                        refreshStates.blockLineModifier = true
-                        quickRefresh = true
-                        if changeSizeSelectedNotesByMicroSteps(v) then
+                    if not xypadpos.distanceblock then
+                        if #noteSelection == 1 and xypadpos.resetscale then
+                            --when a new len will be drawn, then reset len to 1
+                            changeSizeSelectedNotes(1)
+                            --and remove delay
+                            changePropertiesOfSelectedNotes(nil, nil, 0, 0, nil, nil, nil, "removecut")
+                            --switch to scale mode, when note was resettet
                             xypadpos.scaling = true
                             xypadpos.resetscale = false
                         end
-                    elseif not xypadpos.scaling then
-                        if math.floor(xypadpos.y) - math.floor(val_y + 0.5) > 0 then
-                            xypadpos.scalemode = false
-                        elseif math.floor(xypadpos.y) - math.floor(val_y - 0.5) < 0 then
-                            xypadpos.scalemode = false
+                        local v = 0
+                        local note_data = noteSelection[xypadpos.selection_key]
+                        if not note_data and noteSelection[1] then
+                            note_data = noteSelection[1]
+                        end
+                        if note_data then
+                            if modifier.keyAlt and isDelayColumnActive() then
+                                v = math.floor((val_x - (xypadpos.nx + note_data.len + (note_data.end_dly / 0x100))) *
+                                    0x100)
+                                --calculate snap
+                                local delay = (note_data.end_dly + v) % 0x100
+                                local len = math.floor((note_data.end_dly + v) / 0x100)
+                                local scalesnapsize = math.floor(0x100 / 100 * preferences.snapToGridSize.value)
+                                if delay > 0x100 - scalesnapsize then
+                                    v = v - delay + 0x100
+                                elseif delay < scalesnapsize then
+                                    v = v - delay
+                                end
+                                --no scaling when target len < 1, then no scaling
+                                if note_data.len + len < 1 then
+                                    v = 0
+                                end
+                            else
+                                v = math.floor(math.floor((val_x - (xypadpos.nx + note_data.len)) * 0x100 - note_data
+                                    .end_dly) / 0x100 + 0.5) * 0x100
+                                if note_data.len + math.floor((note_data.end_dly + v) / 0x100) < 1 then
+                                    v = 0
+                                end
+                            end
+                        end
+                        if v ~= 0 then
+                            refreshStates.blockLineModifier = true
+                            quickRefresh = true
+                            if changeSizeSelectedNotesByMicroSteps(v) then
+                                xypadpos.scaling = true
+                                xypadpos.resetscale = false
+                            end
+                        elseif not xypadpos.scaling then
+                            if math.floor(xypadpos.y) - math.floor(val_y + 0.5) > 0 then
+                                xypadpos.scalemode = false
+                            elseif math.floor(xypadpos.y) - math.floor(val_y - 0.5) < 0 then
+                                xypadpos.scalemode = false
+                            end
                         end
                     end
                 end
