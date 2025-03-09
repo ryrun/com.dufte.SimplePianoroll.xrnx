@@ -3576,16 +3576,10 @@ local function drawNotesToGrid(allNotes)
                         end
                     end
 
-                    noteWidth = l_math_max(buttonWidth - 1,
-                        l_math_max(1, preferences.minSizeOfNoteButton.value + preferences.clickAreaSizeForScalingPx
-                            .value))
-
-                    if not isScaleBtnHidden then
-                        noteWidth = noteWidth - preferences.clickAreaSizeForScalingPx.value + 4
-                    end
+                    --recalc button width, so its not smaller than minSizeOfNoteButton
+                    buttonWidth = l_math_max(buttonWidth, l_math_max(1, preferences.minSizeOfNoteButton.value))
 
                     l_vbw["b" .. current_note_index] = nil
-                    --print(noteWidth, buttonWidth, gridStepSizeW)
                     local btn = vb:button {
                         id = "b" .. current_note_index,
                         height = gridStepSizeH + 2,
@@ -7169,7 +7163,6 @@ local function handleMouse(event)
             end
         end
     end
-    print(setCursor, event.type)
     pianorollColumns.cursor = setCursor
     if forceFullRefresh then
         refreshStates.blockLineModifier = false
