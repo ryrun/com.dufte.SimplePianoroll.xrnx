@@ -8933,31 +8933,27 @@ local function createPianoRollDialog(gridWidth, gridHeight)
             mode = "transparent", -- we do fill the entire canvas
             visible = false,
             render = function(context)
+                context.stroke_color = colorStepOn
+                context.line_width = xypadpos.previewmode and 4 or 2
+                context:begin_path()
                 if xypadpos.previewmode then
-                    context.stroke_color = colorStepOn
-                    context:begin_path()
+                    -- Draws a vertical line in preview mode
                     context:move_to(0, 0)
                     context:line_to(0, context.size.height)
-                    context.line_width = 4
-                    context:stroke()
                 else
-                    local w = context.size.width / gridWidth
-                    local h = context.size.height / gridHeight
-                    local rx = math.min(xypadpos.nx, xypadpos.x) - 1
-                    local rx2 = math.max(xypadpos.nx, xypadpos.x)
-                    local ry = gridHeight - math.max(xypadpos.ny, xypadpos.y)
-                    local ry2 = gridHeight - math.min(xypadpos.ny, xypadpos.y) + 1
-
-                    context.stroke_color = colorStepOn
-                    context:begin_path()
+                    -- Calculate grid dimensions
+                    local w, h = context.size.width / gridWidth, context.size.height / gridHeight
+                    local rx, rx2 = math.min(xypadpos.nx, xypadpos.x) - 1, math.max(xypadpos.nx, xypadpos.x)
+                    local ry, ry2 = gridHeight - math.max(xypadpos.ny, xypadpos.y),
+                        gridHeight - math.min(xypadpos.ny, xypadpos.y) + 1
+                    -- Draws a rectangle based on the current xypadpos coordinates
                     context:move_to(rx * w, ry * h)
                     context:line_to(rx2 * w, ry * h)
                     context:line_to(rx2 * w, ry2 * h)
                     context:line_to(rx * w, ry2 * h)
                     context:line_to(rx * w, ry * h)
-                    context.line_width = 2
-                    context:stroke()
                 end
+                context:stroke()
             end
         },
     }
