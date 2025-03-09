@@ -8863,54 +8863,64 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     local w = context.size.width / gridWidth
                     local h = context.size.height / gridHeight
                     local note, note_column, rowoffset
-
+                    -- Set the fill color for the ghost track visualization
                     context.fill_color = { 255, 255, 255, 100 }
                     context:begin_path()
-
                     for c = 1, columns do
-                        if not track:column_is_muted(c) then
-                            rowoffset = nil
-
-                            if stepOffset > 0 then
-                                for i = stepOffset + 1, 1, -1 do
-                                    note_column = lineValues[i]:note_column(c)
-                                    note = note_column.note_value
-                                    if note < 120 then
-                                        rowoffset = noteValue2GridRowOffset(note, mirrorMode)
-                                        break
-                                    elseif note == 120 then
-                                        break
-                                    end
-                                end
-                            end
-
-                            for s = 1, stepsCount do
-                                note_column = lineValues[s + stepOffset]:note_column(c)
+                        -- Skip muted columns
+                        if track:column_is_muted(c) then
+                            goto continue
+                        end
+                        rowoffset = nil
+                        -- Search for the first valid note in the offset range
+                        if stepOffset > 0 then
+                            for i = stepOffset, 1, -1 do
+                                note_column = lineValues[i]:note_column(c)
                                 note = note_column.note_value
-
                                 if note < 120 then
                                     rowoffset = noteValue2GridRowOffset(note, mirrorMode)
+                                    break
                                 elseif note == 120 then
-                                    rowoffset = nil
-                                end
-
-                                if rowoffset then
-                                    if mirrorMode then
-                                        for i = -108, 108, 12 do
-                                            context:move_to((s - 1) * w, (gridHeight - rowoffset + i) * h)
-                                            context:line_to(s * w, (gridHeight - rowoffset + i) * h)
-                                            context:line_to(s * w, (gridHeight - rowoffset + i + 1) * h)
-                                            context:line_to((s - 1) * w, (gridHeight - rowoffset + i + 1) * h)
-                                        end
-                                    else
-                                        context:move_to((s - 1) * w, (gridHeight - rowoffset) * h)
-                                        context:line_to(s * w, (gridHeight - rowoffset) * h)
-                                        context:line_to(s * w, (gridHeight - rowoffset + 1) * h)
-                                        context:line_to((s - 1) * w, (gridHeight - rowoffset + 1) * h)
-                                    end
+                                    break
                                 end
                             end
                         end
+                        -- Process each step within the allowed step count
+                        for s = 1, stepsCount do
+                            local lineIndex = s + stepOffset
+                            note_column = lineValues[lineIndex]:note_column(c)
+                            note = note_column.note_value
+                            -- Update row offset based on the current note value
+                            if note < 120 then
+                                rowoffset = noteValue2GridRowOffset(note, mirrorMode)
+                            elseif note == 120 then
+                                rowoffset = nil
+                            end
+
+                            -- If a valid row offset exists, draw the ghost notes
+                            if rowoffset then
+                                local y_base = (gridHeight - rowoffset) * h
+                                local x_start, x_end = (s - 1) * w, s * w
+
+                                if mirrorMode then
+                                    -- Mirror mode: Draw repeated notes across octaves
+                                    for i = -108, 108, 12 do
+                                        local y_offset = y_base + (i * h)
+                                        context:move_to(x_start, y_offset)
+                                        context:line_to(x_end, y_offset)
+                                        context:line_to(x_end, y_offset + h)
+                                        context:line_to(x_start, y_offset + h)
+                                    end
+                                else
+                                    -- Normal mode: Draw a single note
+                                    context:move_to(x_start, y_base)
+                                    context:line_to(x_end, y_base)
+                                    context:line_to(x_end, y_base + h)
+                                    context:line_to(x_start, y_base + h)
+                                end
+                            end
+                        end
+                        ::continue::
                     end
                     context:fill()
                 end
