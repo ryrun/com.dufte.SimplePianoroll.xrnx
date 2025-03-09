@@ -1854,7 +1854,9 @@ local function playPatternFromLine(line)
             line = 1
         end
     end
-    song.transport:start_at(line)
+    if line <= song.selected_pattern.number_of_lines then
+        song.transport:start_at(line)
+    end
 end
 
 --move selected notes
