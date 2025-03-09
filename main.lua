@@ -7154,11 +7154,14 @@ local function handleMouse(event)
                 if event.type == "down" and event.button == "left" then
                     pianoGridClick(x, y, false)
                     pianoGridClick(x, y, true)
+                elseif checkMode("pen") and event.type == "down" and event.button == "right" then
+                    event.type = "drag"
+                    return handleMouse(event)
                 end
             elseif type == "b" then
                 if checkMode("pen") and event.type == "down" and event.button == "right" then
                     event.type = "drag"
-                    handleMouse(event)
+                    return handleMouse(event)
                 elseif event.type == "down" and event.button == "left" then
                     noteClick(x, y, c, false, forceScaling)
                     noteClick(x, y, c, true, forceScaling)
@@ -7166,6 +7169,7 @@ local function handleMouse(event)
             end
         end
     end
+    print(setCursor, event.type)
     pianorollColumns.cursor = setCursor
     if forceFullRefresh then
         refreshStates.blockLineModifier = false
