@@ -3047,16 +3047,9 @@ function noteClick(x, y, c, released, forceScaling)
         return
     end
 
-    if checkMode("preview") then
-        triggerNoteOfCurrentInstrument(note_data.note, not released, note_data.vel, nil, note_data.ins)
-        if row ~= nil then
-            setKeyboardKeyColor(row, not released, false)
-            highlightNoteRow(row, not released)
-        end
-    end
-
     if released then
         if note_data ~= nil then
+            triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true, note_data.ins)
             if not checkMode("preview") then
                 --clear selection, when ctrl is not holded
                 if #noteSelection > 0 and modifier.keyControl and not forceScaling then
@@ -7001,7 +6994,7 @@ local function handleMouse(event)
     end
 
     --when in dragmode reset
-    if xypadpos.dragging and event.type == "up" and (event.button == "left" or event.button == "right") then
+    if xypadpos.dragging and event.type == "up" and (event.button == "left" or event.button == "right" or event.button == "middle") then
         xypadpos.dragging = false
         xypadpos.wasnewnote = false
         vbw["canvas_selection"].visible = false
@@ -7030,12 +7023,20 @@ local function handleMouse(event)
         val_x = (gridWidth / pianorollColumns.width * event.position.x) + 1
         val_y = gridHeight - (gridHeight / pianorollColumns.height * event.position.y) + 1
 
-        if event.type == "drag" and (event.button_flags["left"] or event.button_flags["right"]) then
-            if event.button_flags["right"] and not event.button_flags["left"] then
+        if event.type == "drag" and (event.button_flags["left"] or event.button_flags["right"] or event.button_flags["middle"]) then
+            if event.button_flags["right"] and
+                not event.button_flags["left"] and
+                not event.button_flags["middle"] then
                 if checkMode("pen") and not xypadpos.removemode then
                     xypadpos.removemode = true
                     updateNoteSelection(nil, true)
                 else
+                    xypadpos.previewmode = true
+                end
+            elseif event.button_flags["middle"] and
+                not event.button_flags["left"] and
+                not event.button_flags["right"] then
+                if checkMode("pen") and not xypadpos.previewmode then
                     xypadpos.previewmode = true
                 end
             end
