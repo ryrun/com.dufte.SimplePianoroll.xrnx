@@ -3577,6 +3577,11 @@ local function drawNotesToGrid(allNotes)
                     --recalc button width, so its not smaller than minSizeOfNoteButton
                     buttonWidth = l_math_max(buttonWidth, l_math_max(1, preferences.minSizeOfNoteButton.value))
 
+                    --remove button text, when button width is smaller than 18
+                    if buttonWidth < 18 then
+                        current_note_string = ""
+                    end
+
                     l_vbw["b" .. current_note_index] = nil
                     local btn = vb:button {
                         id = "b" .. current_note_index,
