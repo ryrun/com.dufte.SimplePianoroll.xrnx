@@ -1849,7 +1849,7 @@ local function playPatternFromLine(line)
     if line == nil then
         if song.transport.edit_pos.sequence == song.transport.loop_start.sequence
             and song.transport.loop_start.line < song.selected_pattern.number_of_lines + 1 then
-            line = song.transport.loop_start
+            line = song.transport.loop_start.line
         else
             line = 1
         end
