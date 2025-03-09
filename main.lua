@@ -158,7 +158,6 @@ local defaultPreferences = {
     previewMidiStuckWorkaround = false,
     limitPreviewBySelectionSize = true,
     disableAltClickNoteRemove = false,
-    disableNoteEraserMode = false,
     resetVolPanDlyControlOnClick = true,
     minSizeOfNoteButton = 10,
     setLastEditedTrackAsGhost = true,
@@ -258,7 +257,6 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     midiDevice = defaultPreferences.midiDevice,
     midiIn = defaultPreferences.midiIn,
     chordGunPreset = defaultPreferences.chordGunPreset,
-    disableNoteEraserMode = defaultPreferences.disableNoteEraserMode,
     enableAdditionalSampleToolsContextMenu = defaultPreferences.enableAdditionalSampleToolsContextMenu,
     useChordStampingForNotePreview = defaultPreferences.useChordStampingForNotePreview,
     chordPainterPresetTbl = 1, --default bank
@@ -8327,14 +8325,6 @@ showPreferences = function()
                             },
                             vbp:text {
                                 text = "Reset note size when note drawing",
-                            },
-                        },
-                        vbp:row {
-                            vbp:checkbox {
-                                bind = preferences.disableNoteEraserMode,
-                            },
-                            vbp:text {
-                                text = "Disable note eraser mode in pen mode",
                             },
                         },
                         vbp:row {
