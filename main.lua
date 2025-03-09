@@ -184,7 +184,6 @@ local defaultPreferences = {
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
-    colorGhostTrackNote = "#50616B",
     colorNoteHighlight = "#E8CC6E",
     colorNoteHighlight2 = "#C2B1E2",
     colorNoteMuted = "#ABBBC6",
@@ -269,7 +268,6 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
-    colorGhostTrackNote = defaultPreferences.colorGhostTrackNote,
     colorNoteHighlight = defaultPreferences.colorNoteHighlight,
     colorNoteHighlight2 = defaultPreferences.colorNoteHighlight2,
     colorNoteMuted = defaultPreferences.colorNoteMuted,
@@ -324,7 +322,6 @@ local pianoKeyWidth
 --colors
 local colorDefault = { 0, 0, 0 }
 local colorBaseGridColor
-local colorGhostTrackNote
 local colorList
 local colorNote
 local colorNoteHighlight
@@ -366,7 +363,8 @@ local refreshStates = {
     refreshTimeline = false,
     refreshChordDetection = false,
     refreshHistogram = false,
-    updateGridCanvas = true
+    updateGridCanvas = true,
+    updateGhostTrackCanvas = false
 }
 local afterEditProcessTime
 
@@ -510,8 +508,7 @@ local lastValTools = {
     lastRefValue = 0.04,
     lastBPM = 120,
     lastMode = nil,
-    lastGlobalPitch = nil,
-    chordGhostTrack = false
+    lastGlobalPitch = nil
 }
 
 --pen mode
@@ -926,8 +923,6 @@ local function initColors()
     colorBaseGridColor = convertStringToColorValue(preferences.colorBaseGridColor.value,
         defaultPreferences.colorBaseGridColor)
     colorNote = convertStringToColorValue(preferences.colorNote.value, defaultPreferences.colorNote)
-    colorGhostTrackNote = convertStringToColorValue(preferences.colorGhostTrackNote.value,
-        defaultPreferences.colorGhostTrackNote)
     colorNoteHighlight = convertStringToColorValue(preferences.colorNoteHighlight.value,
         defaultPreferences.colorNoteHighlight)
     colorNoteHighlight2 = convertStringToColorValue(preferences.colorNoteHighlight2.value,
@@ -1756,20 +1751,10 @@ local function refreshNoteControls()
     end
     vbw.chorddetection.visible = preferences.chordDetection.value
     --on current track, mirror mode = chord ghost track
-    if currentGhostTrack == song.selected_track_index then
-        vbw.ghosttrackmirror.bitmap = "Icons/Browser_RenoiseSongFile.bmp"
-        if lastValTools.chordGhostTrack then
-            vbw.ghosttrackmirror.color = colorStepOn
-        else
-            vbw.ghosttrackmirror.color = colorDefault
-        end
+    if preferences.mirroringGhostTrack.value then
+        vbw.ghosttrackmirror.color = colorStepOn
     else
-        vbw.ghosttrackmirror.bitmap = "Icons/Clone.bmp"
-        if preferences.mirroringGhostTrack.value then
-            vbw.ghosttrackmirror.color = colorStepOn
-        else
-            vbw.ghosttrackmirror.color = colorDefault
-        end
+        vbw.ghosttrackmirror.color = colorDefault
     end
     refreshStates.refreshControls = false
 end
@@ -3759,109 +3744,6 @@ local function fillTimeline()
     refreshStates.refreshTimeline = false
 end
 
---render ghost track by simply change the color of piano grid buttons
-local function ghostTrack(trackIndex)
-    local note, note_column, rowoffset, p, idx
-
-    --special chord ghost track, based on bass notes
-    if trackIndex == nil then
-        for i = 1, gridWidth do
-            if noteOnStep[i] then
-                note = nil
-                for j = 1, #noteOnStep[i] do
-                    if not note then
-                        note = noteOnStep[i][j]['note']
-                    elseif note > noteOnStep[i][j]['note'] then
-                        note = noteOnStep[i][j]['note']
-                    end
-                end
-                --check if note is in key
-                if noteInScale(note) then
-                    for oct = 0, 36, 12 do
-                        for off = -2, 11 do
-                            if (oct > 0 or oct == 0 and off >= 0) and noteInScale(note + oct + off) and off ~= 1 then
-                                rowoffset = noteValue2GridRowOffset(note + oct + off)
-                                if rowoffset then
-                                    idx = "p" .. i .. "_"
-                                    p = vbw[idx .. rowoffset]
-                                    if p then
-                                        if (off == 3 or off == 7)
-                                            or (off == 4 and not noteInScale(note + oct + off - 1))
-                                            or (off == 6 and not noteInScale(note + oct + off + 1))
-                                        then
-                                            p.color = alphablendColors(colorNoteHighlight, p.color, 0.8)
-                                        elseif off == 0 then
-                                            p.color = alphablendColors(colorNoteHighlight2, p.color, 0.7)
-                                        elseif off == 5 or off >= 8 or (off == 2 and not noteInScale(note + oct + off - 1)) then
-                                            p.color = colorGhostTrackNote
-                                        end
-                                        defaultColor[idx] = p.color
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    else
-        local track = song:track(trackIndex)
-        local columns = track.visible_note_columns
-        local steps = song.selected_pattern.number_of_lines
-        local stepsCount = math.min(steps, gridWidth)
-        local lineValues = song.selected_pattern:track(trackIndex).lines
-        local mirrorMode = preferences.mirroringGhostTrack.value
-
-        for c = 1, columns do
-            if not track:column_is_muted(c) then
-                rowoffset = nil
-
-                if stepOffset > 0 then
-                    for i = stepOffset + 1, 1, -1 do
-                        note_column = lineValues[i]:note_column(c)
-                        note = note_column.note_value
-                        if note < 120 then
-                            rowoffset = noteValue2GridRowOffset(note, mirrorMode)
-                            break
-                        elseif note == 120 then
-                            break
-                        end
-                    end
-                end
-
-                for s = 1, stepsCount do
-                    note_column = lineValues[s + stepOffset]:note_column(c)
-                    note = note_column.note_value
-
-                    if note < 120 then
-                        rowoffset = noteValue2GridRowOffset(note, mirrorMode)
-                    elseif note == 120 then
-                        rowoffset = nil
-                    end
-
-                    if rowoffset then
-                        idx = "p" .. s .. "_"
-                        p = vbw[idx .. rowoffset]
-                        if p then
-                            p.color = colorGhostTrackNote
-                            defaultColor[idx] = p.color
-                        end
-                        if mirrorMode then
-                            for i = -108, 108, 12 do
-                                p = vbw[idx .. (rowoffset + i)]
-                                if p then
-                                    p.color = colorGhostTrackNote
-                                    defaultColor[idx] = p.color
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-end
-
 --switch to current selected ghost if possible
 local function switchGhostTrack()
     if currentGhostTrack and currentGhostTrack ~= song.selected_track_index then
@@ -4429,108 +4311,15 @@ local function afterEditProcess()
     end
 end
 
---paint piano roll grid
-local function renderGridCanvas(context)
-    local gH = gridHeight + 12
-    local w = context.size.width / gridWidth
-    local h = context.size.height / gH
-    local lpb = song.transport.lpb
-
-    --fill color
-    context.fill_color = colorBaseGridColor
-    context:fill_rect(0, 0, context.size.width, context.size.height)
-
-    --row coloring
-    context.fill_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value)
-    for y = 0, gH do
-        local yPLusOffMod12 = (gH - y - 1) % 12
-        if not noteInScale(yPLusOffMod12) then
-            context:begin_path()
-            context:move_to(0, y * h)
-            context:line_to(w * gridWidth, y * h)
-            context:line_to(w * gridWidth, (y + 1) * h)
-            context:line_to(0, (y + 1) * h)
-            context:fill()
-        end
-    end
-
-    --base grid
-    context.stroke_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value + 0.2)
-    for y = 0, gH do
-        context:begin_path()
-        context:move_to(0, y * h)
-        context:line_to(w * gridWidth, y * h)
-        context:stroke()
-    end
-    for x = 0, gridWidth do
-        context:begin_path()
-        context:move_to(x * w, 0)
-        context:line_to(x * w, h * gH)
-        context:stroke()
-    end
-
-    --octave lines
-    context.stroke_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value + 0.5)
-    for y = 0, gH do
-        if
-            currentScaleOffset and (
-                (preferences.gridHLines.value == 2 and (gH - y) % 12 == 1) or
-                (preferences.gridHLines.value == 3 and (gH - y - currentScaleOffset) % 12 == 0))
-        then
-            context:begin_path()
-            context:move_to(0, (y + 1) * h)
-            context:line_to(w * gridWidth, (y + 1) * h)
-            context:stroke()
-        end
-    end
-
-    --bar lines
-    for x = 0, gridWidth do
-        if (preferences.gridVLines.value == 2 and (x + stepOffset) % (lpb * 4) == 0) or
-            (preferences.gridVLines.value == 3 and (x + stepOffset) % lpb == 0)
-        then
-            context:begin_path()
-            context:move_to(x * w, 0)
-            context:line_to(x * w, h * gH)
-            context:stroke()
-        end
-    end
-
-    --beat lines
-    context.stroke_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value + 0.25)
-    for x = 0, gridWidth do
-        if (preferences.gridVLines.value == 2 and (x + stepOffset) % lpb == 0)
-        then
-            context:begin_path()
-            context:move_to(x * w, 0)
-            context:line_to(x * w, h * gH)
-            context:stroke()
-        end
-    end
-
-    --bar/beat coloring
-    context.fill_color = { 0, 0, 0, 100 * preferences.oddBarsShadingAmount.value }
-    for x = lpb * -8, gridWidth do
-        if (preferences.gridVLines.value == 2 and (x + stepOffset + (lpb * 4)) % (lpb * 8) == 0) or
-            (preferences.gridVLines.value == 3 and (x + stepOffset + lpb) % (lpb * 2) == 0)
-        then
-            context:begin_path()
-            context:move_to(x * w, 0)
-            if preferences.gridVLines.value == 3 then
-                context:line_to((x + lpb) * w, 0)
-                context:line_to((x + lpb) * w, h * gH)
-            else
-                context:line_to((x + (lpb * 4)) * w, 0)
-                context:line_to((x + (lpb * 4)) * w, h * gH)
-            end
-            context:line_to(x * w, h * gH)
-            context:fill()
-        end
-    end
-end
-
 --update canvas, set new offsets
 local function updateCanvas()
+    if refreshStates.updateGhostTrackCanvas then
+        vbw["canvas_ghosttrack"]:update()
+        if not vbw["canvas_ghosttrack"].visible then
+            vbw["canvas_ghosttrack"].visible = true
+        end
+        refreshStates.updateGhostTrackCanvas = false
+    end
     if refreshStates.updateGridCanvas then
         vbw["canvas"]:update()
         refreshStates.updateGridCanvas = false
@@ -4566,6 +4355,7 @@ local function fillPianoRoll(quickRefresh)
     --set auto ghost track
     if preferences.setLastEditedTrackAsGhost.value and lastTrackIndex and lastTrackIndex ~= l_song.selected_track_index and lastTrackIndex <= song.sequencer_track_count then
         l_vbw.ghosttracks.value = lastTrackIndex
+        refreshStates.updateGhostTrackCanvas = true
     end
 
     --set track index
@@ -4907,15 +4697,15 @@ local function fillPianoRoll(quickRefresh)
     --render ghost notes, only when index is not the current track
     if currentGhostTrack and currentGhostTrack ~= l_song.selected_track_index then
         if l_song:track(currentGhostTrack).type == renoise.Track.TRACK_TYPE_SEQUENCER then
-            ghostTrack(currentGhostTrack)
+            refreshStates.updateGhostTrackCanvas = true
         elseif l_song:track(currentGhostTrack).type ~= renoise.Track.TRACK_TYPE_SEQUENCER then
             currentGhostTrack = l_song.selected_track_index
             vbw.ghosttracks.value = currentGhostTrack
+            vbw["canvas_ghosttrack"].visible = false
             showStatus("Current selected track cant be a ghost track.")
         end
-    elseif currentGhostTrack == l_song.selected_track_index and lastValTools.chordGhostTrack then
-        --chord ghost track
-        ghostTrack()
+    else
+        vbw["canvas_ghosttrack"].visible = false
     end
 
     --refresh playback pos indicator
@@ -5009,7 +4799,6 @@ local function appNewDoc()
     currentNoteVelocityPreview = 127
     currentNoteEndVelocity = 255
     currentEditPos = 0
-    lastValTools.chordGhostTrack = false
     refreshStates.updateGridCanvas = true
     --set new observers
     song.transport.lpb_observable:add_notifier(function()
@@ -7340,7 +7129,8 @@ local function handleMouse(event)
             end
             if #event.hover_views > 0 then
                 local el = vbw[event.hover_views[1]['id']]
-                if event.hover_views[1]['id'] == 'canvas' then
+                if event.hover_views[1]['id'] == 'canvas' or
+                    event.hover_views[1]['id'] == 'canvas_ghosttrack' then
                     type = "g"
                     x = math.floor(val_x)
                     y = math.floor(val_y)
@@ -8097,27 +7887,6 @@ showPreferences = function()
                                 vbp:button {
                                     id = "colorBaseGridColor",
                                     color = colorBaseGridColor,
-                                }, },
-                        },
-                        vbp:horizontal_aligner {
-                            mode = "justify",
-                            vbp:text {
-                                text = "Ghost track note:",
-                            },
-                            vbp:row {
-                                vbp:textfield {
-                                    id = "colorGhostTrackNoteField",
-                                    bind = preferences.colorGhostTrackNote,
-                                    notifier = function()
-                                        initColors()
-                                        vbwp.colorGhostTrackNote.color = colorGhostTrackNote
-                                        vbwp.colorGhostTrackNoteField.value = convertColorValueToString(
-                                            colorGhostTrackNote)
-                                    end
-                                },
-                                vbp:button {
-                                    id = "colorGhostTrackNote",
-                                    color = colorGhostTrackNote,
                                 }, },
                         },
                         vbp:horizontal_aligner {
@@ -8971,7 +8740,176 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                 width = gridStepSizeW * gridWidth,
                 height = gridStepSizeH * (gridHeight + 12),
                 mode = "plain", -- we do fill the entire canvas
-                render = renderGridCanvas
+                render = function(context)
+                    local gH = gridHeight + 12
+                    local w = context.size.width / gridWidth
+                    local h = context.size.height / gH
+                    local lpb = song.transport.lpb
+
+                    --fill color
+                    context.fill_color = colorBaseGridColor
+                    context:fill_rect(0, 0, context.size.width, context.size.height)
+
+                    --row coloring
+                    context.fill_color = shadeColor(colorBaseGridColor, preferences.outOfNoteScaleShadingAmount.value)
+                    for y = 0, gH do
+                        local yPLusOffMod12 = (gH - y - 1) % 12
+                        if not noteInScale(yPLusOffMod12) then
+                            context:begin_path()
+                            context:move_to(0, y * h)
+                            context:line_to(w * gridWidth, y * h)
+                            context:line_to(w * gridWidth, (y + 1) * h)
+                            context:line_to(0, (y + 1) * h)
+                            context:fill()
+                        end
+                    end
+
+                    --base grid
+                    context.stroke_color = shadeColor(colorBaseGridColor,
+                        preferences.outOfNoteScaleShadingAmount.value + 0.2)
+                    for y = 0, gH do
+                        context:begin_path()
+                        context:move_to(0, y * h)
+                        context:line_to(w * gridWidth, y * h)
+                        context:stroke()
+                    end
+                    for x = 0, gridWidth do
+                        context:begin_path()
+                        context:move_to(x * w, 0)
+                        context:line_to(x * w, h * gH)
+                        context:stroke()
+                    end
+
+                    --octave lines
+                    context.stroke_color = shadeColor(colorBaseGridColor,
+                        preferences.outOfNoteScaleShadingAmount.value + 0.5)
+                    for y = 0, gH do
+                        if
+                            currentScaleOffset and (
+                                (preferences.gridHLines.value == 2 and (gH - y) % 12 == 1) or
+                                (preferences.gridHLines.value == 3 and (gH - y - currentScaleOffset) % 12 == 0))
+                        then
+                            context:begin_path()
+                            context:move_to(0, (y + 1) * h)
+                            context:line_to(w * gridWidth, (y + 1) * h)
+                            context:stroke()
+                        end
+                    end
+
+                    --bar lines
+                    for x = 0, gridWidth do
+                        if (preferences.gridVLines.value == 2 and (x + stepOffset) % (lpb * 4) == 0) or
+                            (preferences.gridVLines.value == 3 and (x + stepOffset) % lpb == 0)
+                        then
+                            context:begin_path()
+                            context:move_to(x * w, 0)
+                            context:line_to(x * w, h * gH)
+                            context:stroke()
+                        end
+                    end
+
+                    --beat lines
+                    context.stroke_color = shadeColor(colorBaseGridColor,
+                        preferences.outOfNoteScaleShadingAmount.value + 0.25)
+                    for x = 0, gridWidth do
+                        if (preferences.gridVLines.value == 2 and (x + stepOffset) % lpb == 0)
+                        then
+                            context:begin_path()
+                            context:move_to(x * w, 0)
+                            context:line_to(x * w, h * gH)
+                            context:stroke()
+                        end
+                    end
+
+                    --bar/beat coloring
+                    context.fill_color = { 0, 0, 0, 100 * preferences.oddBarsShadingAmount.value }
+                    for x = lpb * -8, gridWidth do
+                        if (preferences.gridVLines.value == 2 and (x + stepOffset + (lpb * 4)) % (lpb * 8) == 0) or
+                            (preferences.gridVLines.value == 3 and (x + stepOffset + lpb) % (lpb * 2) == 0)
+                        then
+                            context:begin_path()
+                            context:move_to(x * w, 0)
+                            if preferences.gridVLines.value == 3 then
+                                context:line_to((x + lpb) * w, 0)
+                                context:line_to((x + lpb) * w, h * gH)
+                            else
+                                context:line_to((x + (lpb * 4)) * w, 0)
+                                context:line_to((x + (lpb * 4)) * w, h * gH)
+                            end
+                            context:line_to(x * w, h * gH)
+                            context:fill()
+                        end
+                    end
+                end
+            },
+            vb:canvas {
+                id = "canvas_ghosttrack",
+                width = gridStepSizeW * gridWidth,
+                height = gridStepSizeH * gridHeight,
+                mode = "transparent",
+                visible = false,
+                render = function(context)
+                    local trackIndex = currentGhostTrack
+                    local track = song:track(trackIndex)
+                    local columns = track.visible_note_columns
+                    local steps = song.selected_pattern.number_of_lines
+                    local stepsCount = math.min(steps, gridWidth)
+                    local lineValues = song.selected_pattern:track(trackIndex).lines
+                    local mirrorMode = preferences.mirroringGhostTrack.value
+                    local w = context.size.width / gridWidth
+                    local h = context.size.height / gridHeight
+                    local note, note_column, rowoffset
+
+                    context.fill_color = { 255, 255, 255, 100 }
+                    context:begin_path()
+
+                    for c = 1, columns do
+                        if not track:column_is_muted(c) then
+                            rowoffset = nil
+
+                            if stepOffset > 0 then
+                                for i = stepOffset + 1, 1, -1 do
+                                    note_column = lineValues[i]:note_column(c)
+                                    note = note_column.note_value
+                                    if note < 120 then
+                                        rowoffset = noteValue2GridRowOffset(note, mirrorMode)
+                                        break
+                                    elseif note == 120 then
+                                        break
+                                    end
+                                end
+                            end
+
+                            for s = 1, stepsCount do
+                                note_column = lineValues[s + stepOffset]:note_column(c)
+                                note = note_column.note_value
+
+                                if note < 120 then
+                                    rowoffset = noteValue2GridRowOffset(note, mirrorMode)
+                                elseif note == 120 then
+                                    rowoffset = nil
+                                end
+
+                                if rowoffset then
+                                    if mirrorMode then
+                                        for i = -108, 108, 12 do
+                                            context:move_to((s - 1) * w, (gridHeight - rowoffset + i) * h)
+                                            context:line_to(s * w, (gridHeight - rowoffset + i) * h)
+                                            context:line_to(s * w, (gridHeight - rowoffset + i + 1) * h)
+                                            context:line_to((s - 1) * w, (gridHeight - rowoffset + i + 1) * h)
+                                        end
+                                    else
+                                        context:move_to((s - 1) * w, (gridHeight - rowoffset) * h)
+                                        context:line_to(s * w, (gridHeight - rowoffset) * h)
+                                        context:line_to(s * w, (gridHeight - rowoffset + 1) * h)
+                                        context:line_to((s - 1) * w, (gridHeight - rowoffset + 1) * h)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    context:fill()
+                end
             },
         },
         vb:canvas {
@@ -9728,13 +9666,9 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         id = "ghosttrackmirror",
                         bitmap = "Icons/Clone.bmp",
                         width = 24,
-                        tooltip = "Mirror notes of the current ghost track or enable chord ghost track",
+                        tooltip = "Mirror notes of the current ghost track",
                         notifier = function()
-                            if currentGhostTrack == song.selected_track_index then
-                                lastValTools.chordGhostTrack = not lastValTools.chordGhostTrack
-                            else
-                                preferences.mirroringGhostTrack.value = not preferences.mirroringGhostTrack.value
-                            end
+                            preferences.mirroringGhostTrack.value = not preferences.mirroringGhostTrack.value
                             refreshStates.refreshPianoRollNeeded = true
                             refreshStates.refreshControls = true
                         end
