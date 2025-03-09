@@ -972,9 +972,7 @@ end
 --check mode
 local function checkMode(mode)
     if mode == "preview" then
-        if audioPreviewMode or
-            (modifier.keyControl and modifier.keyShift and not modifier.keyAlt)
-        then
+        if audioPreviewMode then
             return true
         end
     end
@@ -7144,21 +7142,29 @@ local function handleMouse(event)
                 end
             end
 
-            if type == "g" then
-                if event.type == "down" and event.button == "left" then
-                    pianoGridClick(x, y, false)
-                    pianoGridClick(x, y, true)
-                elseif checkMode("pen") and event.type == "down" and event.button == "right" then
-                    event.type = "drag"
-                    return handleMouse(event)
-                end
-            elseif type == "b" then
-                if checkMode("pen") and event.type == "down" and event.button == "right" then
-                    event.type = "drag"
-                    return handleMouse(event)
-                elseif event.type == "down" and event.button == "left" then
-                    noteClick(x, y, c, false, forceScaling)
-                    noteClick(x, y, c, true, forceScaling)
+            if event.type == "down" and (
+                    (checkMode("pen") and event.button == "middle") or
+                    checkMode("preview")
+                ) then
+                event.type = "drag"
+                return handleMouse(event)
+            else
+                if type == "g" then
+                    if event.type == "down" and event.button == "left" then
+                        pianoGridClick(x, y, false)
+                        pianoGridClick(x, y, true)
+                    elseif checkMode("pen") and event.type == "down" and event.button == "right" then
+                        event.type = "drag"
+                        return handleMouse(event)
+                    end
+                elseif type == "b" then
+                    if checkMode("pen") and event.type == "down" and event.button == "right" then
+                        event.type = "drag"
+                        return handleMouse(event)
+                    elseif event.type == "down" and event.button == "left" then
+                        noteClick(x, y, c, false, forceScaling)
+                        noteClick(x, y, c, true, forceScaling)
+                    end
                 end
             end
         end
