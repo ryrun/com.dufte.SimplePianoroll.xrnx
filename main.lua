@@ -3698,36 +3698,39 @@ local function fillTimeline()
         vbw["timeline" .. timestep + 1].visible = false
         timestep = timestep + 1
     end
-    --set blockloop indicator, when enabled
-    local hideblockloop = false
-    if loopingrange == nil or (song.transport.loop_start_beats == 0 and song.transport.loop_end_beats == song.transport.song_length_beats) then
-        hideblockloop = true
+    -- Set block loop indicator visibility
+    local hide_block_loop = false
+    -- Check if the block loop is disabled
+    local transport = song.transport
+    if loopingrange == nil or (transport.loop_start_beats == 0 and transport.loop_end_beats == song.transport.song_length_beats) then
+        hide_block_loop = true
     else
-        --calculate width and start pos for block loop line indicator
-        local len = song.transport.loop_range[2].line - song.transport.loop_range[1].line
-        if song.transport.edit_pos.sequence >= song.transport.loop_start.sequence and song.transport.edit_pos.sequence < song.transport.loop_end.sequence then
-            len = song.selected_pattern.number_of_lines + 1 - song.transport.loop_range[1].line
+        -- Extract loop range values
+        local loop_start = transport.loop_range[1].line
+        local loop_end = transport.loop_range[2].line
+        local loop_length = loop_end - loop_start
+        -- Adjust loop length if the edit position is within the loop range
+        if transport.edit_pos.sequence >= transport.loop_start.sequence and transport.edit_pos.sequence < transport.loop_end.sequence then
+            loop_length = song.selected_pattern.number_of_lines + 1 - loop_start
         end
-        local pos = song.transport.loop_range[1].line
-        pos = pos - stepOffset
-        if pos < 1 then
-            len = len + (pos - 1)
-            pos = 1
-        end
-        if len + pos - 1 > gridWidth then
-            len = len + (gridWidth - len - pos + 1)
-        end
-        if len < 1 or pos > gridWidth then
-            hideblockloop = true
+        -- Adjust the start position based on stepOffset
+        local start_pos = math.max(loop_start - stepOffset, 1)
+        -- Ensure loop length does not exceed gridWidth
+        loop_length = math.max(math.min(loop_length, gridWidth - start_pos + 1), 0)
+        -- Check if the block loop indicator should be hidden
+        if loop_length < 1 or start_pos > gridWidth then
+            hide_block_loop = true
         else
-            vbw.blockloop.width = gridStepSizeW * len - (gridSpacing * (len - 1)) - 1
-            vbw.blockloopspc.width = math.max(gridStepSizeW * (pos - 1) - (gridSpacing * (pos - 1)) + 4, 4)
+            -- Update block loop UI elements
+            vbw.blockloop.width = gridStepSizeW * loop_length + 4
+            vbw.blockloopspc.visible = start_pos > 1
+            vbw.blockloopspc.width = vbw.blockloopspc.visible and (gridStepSizeW * (start_pos - 1)) or 1
             vbw.blockloop.color = colorLoopSelection
             vbw.blockloop.visible = true
         end
     end
-    --hide blockmode loop indicator
-    if hideblockloop and vbw.blockloop.visible then
+    -- Hide block loop indicator if needed
+    if hide_block_loop then
         vbw.blockloop.visible = false
         vbw.blockloopspc.width = 1
     end
