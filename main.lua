@@ -176,6 +176,7 @@ local defaultPreferences = {
     useTrackColorFor = 1,
     enableAdditionalSampleToolsContextMenu = false,
     resetNoteSizeOnNoteDraw = true,
+    enableInvisibleLasso = false,
     timelineEven = 2,
     timelineOdd = 3,
     restrictNotesToScale = false,
@@ -243,6 +244,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     autoEnableDelayWhenNeeded = defaultPreferences.autoEnableDelayWhenNeeded,
     snapToGridSize = defaultPreferences.snapToGridSize,
     resetNoteSizeOnNoteDraw = defaultPreferences.resetNoteSizeOnNoteDraw,
+    enableInvisibleLasso = defaultPreferences.enableInvisibleLasso,
     setVelPanDlyLenFromLastNote = defaultPreferences.setVelPanDlyLenFromLastNote,
     keyLabels = defaultPreferences.keyLabels,
     centerViewOnOpen = defaultPreferences.centerViewOnOpen,
@@ -472,13 +474,15 @@ local lastKeyPress
 
 --mouse handling vars
 local xypadpos = {
-    x = 0,    --click pos x
-    y = 0,    --click pos y
-    nx = 0,   --note x pos
-    ny = 0,   --note y pos
-    nc = 0,   --note column
-    nlen = 0, --note len
-    time = 0, --click time
+    x = 0,      --click pos x
+    y = 0,      --click pos y
+    lval_x = 0, --last val_x
+    lval_y = 0, --last val_y
+    nx = 0,     --note x pos
+    ny = 0,     --note y pos
+    nc = 0,     --note column
+    nlen = 0,   --note len
+    time = 0,   --click time
     lastx = 0,
     lastval = nil,
     wasnewnote = false,
@@ -498,7 +502,8 @@ local xypadpos = {
     disabled = {},
     preview = {},
     loopslider = nil,
-    dragging = false
+    dragging = false,
+    pointSet = {}
 }
 
 --some values to remember for additional tools, prevent upval limit error
@@ -6760,6 +6765,141 @@ local function refreshSelectedNotes()
     refreshStates.refreshPianoRollNeeded = true
 end
 
+--selection via invisible lasso
+local function handleInvisibleLasso(event, addToSelection)
+    local pianorollColumns = vbw["pianorollColumns"]
+    local newNoteSelection = {}
+    local n = 0
+
+    if event.type ~= "move" then
+        -- Reset point set when movement stops
+        xypadpos.pointSet = {}
+        return
+    end
+
+    local cval_x = math.floor((gridWidth / pianorollColumns.width * event.position.x) + 1)
+    local cval_y = math.floor(gridHeight - (gridHeight / pianorollColumns.height * event.position.y) + 1)
+
+    local currentTime = os.clock() * 1000 -- Get current time in milliseconds
+
+    if cval_x == xypadpos.lval_x and cval_y == xypadpos.lval_y then
+        return
+    end
+
+    -- Reset point set if the last point is older than 100ms
+    if #xypadpos.pointSet > 0 and currentTime - xypadpos.pointSet[#xypadpos.pointSet].time > 100 then
+        xypadpos.pointSet = {}
+    end
+
+    -- Check if the new point is unique
+    local found = false
+    for _, point in ipairs(xypadpos.pointSet) do
+        if point.x == cval_x and point.y == cval_y then
+            found = true
+            break
+        end
+    end
+
+    if not found then
+        -- Maintain a FIFO queue of max 500 points
+        if #xypadpos.pointSet > 500 then
+            table.remove(xypadpos.pointSet, 1)
+        end
+        table.insert(xypadpos.pointSet, { x = cval_x, y = cval_y, time = currentTime })
+    else
+        -- Check if the set forms a closed shape
+        if #xypadpos.pointSet >= 5 then
+            local min_x, max_x = math.huge, -math.huge
+            local min_y, max_y = math.huge, -math.huge
+
+            -- Find min/max values for x and y
+            for _, point in ipairs(xypadpos.pointSet) do
+                if point.x < min_x then min_x = point.x end
+                if point.x > max_x then max_x = point.x end
+                if point.y < min_y then min_y = point.y end
+                if point.y > max_y then max_y = point.y end
+            end
+
+            local width = max_x - min_x + 1
+            local height = max_y - min_y + 1
+            local isClosed = width >= 2 and height >= 2
+
+            -- Check if all points are adjacent (gapless)
+            if isClosed then
+                for i = 1, #xypadpos.pointSet - 1 do
+                    local dx = math.abs(xypadpos.pointSet[i + 1].x - xypadpos.pointSet[i].x)
+                    local dy = math.abs(xypadpos.pointSet[i + 1].y - xypadpos.pointSet[i].y)
+                    --allow a gap 2 between points
+                    if dx > 2 or dy > 2 then
+                        isClosed = false
+                        break
+                    end
+                end
+            end
+
+            if isClosed then
+                -- Check if notes fall within the selection
+                for _, note_data in pairs(noteData) do
+                    local noteStart, noteEnd, noteY = note_data.step, note_data.step + note_data.len - 1,
+                        note_data.note
+                    local noteInside = false
+
+                    for nx = noteStart, noteEnd do
+                        local intersections = 0
+                        local j = #xypadpos.pointSet
+                        for i = 1, #xypadpos.pointSet do
+                            local xi, yi = xypadpos.pointSet[i].x, xypadpos.pointSet[i].y
+                            local xj, yj = xypadpos.pointSet[j].x, xypadpos.pointSet[j].y
+
+                            local yi_note, yj_note = gridOffset2NoteValue(yi), gridOffset2NoteValue(yj)
+
+                            if ((yi_note > noteY) ~= (yj_note > noteY)) and
+                                (nx < (xj - xi) * (noteY - yi_note) / (yj_note - yi_note) + xi) then
+                                intersections = intersections + 1
+                            end
+                            j = i
+                        end
+                        if intersections % 2 == 1 then
+                            noteInside = true
+                            break
+                        end
+                    end
+
+                    if noteInside then
+                        local dummyNote
+                        for k, selectedNote in pairs(newNoteSelection) do
+                            if selectedNote.step == note_data.step and selectedNote.len == note_data.len and
+                                selectedNote.note == note_data.note then
+                                dummyNote = k
+                                break
+                            end
+                        end
+
+                        if dummyNote then
+                            if newNoteSelection[dummyNote].column < note_data.column then
+                                newNoteSelection[dummyNote] = note_data
+                            end
+                        else
+                            n = n + 1
+                            newNoteSelection[n] = note_data
+                        end
+                    end
+                end
+
+                --only select more than 1 notes as new selection, otherweise allow one new note to add to selection
+                if (n > 0 and addToSelection) or n > 1 then
+                    updateNoteSelection(newNoteSelection, not addToSelection)
+                end
+            end
+
+            xypadpos.pointSet = {}
+        end
+    end
+
+    xypadpos.lval_x = cval_x
+    xypadpos.lval_y = cval_y
+end
+
 --handle mouse events
 local function handleMouse(event)
     local setCursor = "default"
@@ -6790,7 +6930,6 @@ local function handleMouse(event)
         --stop removemode
         xypadpos.removemode = false
         xypadpos.scalemode = false
-        xypadpos.previewmode = false
         refreshStates.refreshControls = true
         refreshStates.refreshChordDetection = true
         --stop old notes
@@ -6805,6 +6944,7 @@ local function handleMouse(event)
                     highlightNoteRow(row, false)
                 end
             end
+            xypadpos.previewmode = false
         end
         --refresh cursor via just recall itself in a different type
         event.type = "move"
@@ -6813,6 +6953,11 @@ local function handleMouse(event)
         --calculate grid pos
         val_x = (gridWidth / pianorollColumns.width * event.position.x) + 1
         val_y = gridHeight - (gridHeight / pianorollColumns.height * event.position.y) + 1
+
+        --special note selection method via invisible lasso
+        if preferences.enableInvisibleLasso.value then
+            handleInvisibleLasso(event, modifier.keyShift)
+        end
 
         if event.type == "drag" and (event.button_flags["left"] or event.button_flags["right"] or event.button_flags["middle"]) then
             if event.button_flags["right"] and
@@ -8330,6 +8475,14 @@ showPreferences = function()
                                     "Per note pitch ascending"
                                 },
                                 bind = preferences.sortNewNotesMode,
+                            },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.enableInvisibleLasso,
+                            },
+                            vbp:text {
+                                text = "Enable Invisible Lasso selection",
                             },
                         },
                         vbp:row {
