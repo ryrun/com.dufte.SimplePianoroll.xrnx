@@ -6829,8 +6829,8 @@ local function handleInvisibleLasso(event, addToSelection)
                 for i = 1, #xypadpos.pointSet - 1 do
                     local dx = math.abs(xypadpos.pointSet[i + 1].x - xypadpos.pointSet[i].x)
                     local dy = math.abs(xypadpos.pointSet[i + 1].y - xypadpos.pointSet[i].y)
-                    --allow a gap 2 between points
-                    if dx > 2 or dy > 2 then
+                    --dont allow a gaps
+                    if dx > 1 or dy > 1 then
                         isClosed = false
                         break
                     end
