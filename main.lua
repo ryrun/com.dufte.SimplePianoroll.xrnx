@@ -6789,6 +6789,8 @@ local function handleMouse(event)
         vbw["canvas_selection"].visible = false
         --stop removemode
         xypadpos.removemode = false
+        xypadpos.scalemode = false
+        xypadpos.previewmode = false
         refreshStates.refreshControls = true
         refreshStates.refreshChordDetection = true
         --stop old notes
@@ -7154,6 +7156,7 @@ local function handleMouse(event)
                     (checkMode("pen") and event.button == "middle") or
                     checkMode("preview")
                 ) then
+                xypadpos.previewmode = true
                 event.type = "drag"
                 return handleMouse(event)
             else
