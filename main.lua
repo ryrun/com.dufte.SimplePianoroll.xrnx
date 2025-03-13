@@ -6774,6 +6774,8 @@ local function handleInvisibleLasso(event, addToSelection)
     if event.type ~= "move" then
         -- Reset point set when movement stops
         xypadpos.pointSet = {}
+        xypadpos.lval_x = -1
+        xypadpos.lval_y = -1
         return
     end
 
@@ -6787,7 +6789,7 @@ local function handleInvisibleLasso(event, addToSelection)
     end
 
     -- Reset point set if the last point is older than 100ms
-    if #xypadpos.pointSet > 0 and currentTime - xypadpos.pointSet[#xypadpos.pointSet].time > 100 then
+    if #xypadpos.pointSet > 0 and currentTime - xypadpos.pointSet[#xypadpos.pointSet].time > 500 then
         xypadpos.pointSet = {}
     end
 
@@ -6805,7 +6807,29 @@ local function handleInvisibleLasso(event, addToSelection)
         if #xypadpos.pointSet > 500 then
             table.remove(xypadpos.pointSet, 1)
         end
-        table.insert(xypadpos.pointSet, { x = cval_x, y = cval_y, time = currentTime })
+        local lastPoint = xypadpos.pointSet[#xypadpos.pointSet]
+
+        -- Create the new point
+        local newPoint = { x = cval_x, y = cval_y, time = currentTime }
+
+        -- If there is a previous point
+        if lastPoint then
+            local dx = newPoint.x - lastPoint.x
+            local dy = newPoint.y - lastPoint.y
+
+            -- Determine the number of interpolation steps based on the largest distance
+            local steps = math.max(math.abs(dx), math.abs(dy))
+            if steps > 1 then
+                -- Insert intermediate points
+                for i = 1, steps - 1 do
+                    local t = i / steps
+                    local interp_x = lastPoint.x + t * dx
+                    local interp_y = lastPoint.y + t * dy
+                    table.insert(xypadpos.pointSet, { x = interp_x, y = interp_y, time = currentTime })
+                end
+            end
+        end
+        table.insert(xypadpos.pointSet, newPoint)
     else
         -- Check if the set forms a closed shape
         if #xypadpos.pointSet >= 5 then
