@@ -2952,6 +2952,7 @@ local function selectRectangle(x, y, x2, y2, addToSelection)
             for k2 in pairs(newNoteSelection) do
                 if newNoteSelection[k2].step == note_data.step
                     and newNoteSelection[k2].len == note_data.len
+                    and newNoteSelection[k2].dly == note_data.dly
                     and newNoteSelection[k2].note == note_data.note then
                     dummyNote = k2
                     break
@@ -6892,7 +6893,9 @@ local function handleInvisibleLasso(event, addToSelection)
                     if noteInside then
                         local dummyNote
                         for k, selectedNote in pairs(newNoteSelection) do
-                            if selectedNote.step == note_data.step and selectedNote.len == note_data.len and
+                            if selectedNote.step == note_data.step and
+                                selectedNote.len == note_data.len and
+                                selectedNote.dly == note_data.dly and
                                 selectedNote.note == note_data.note then
                                 dummyNote = k
                                 break
