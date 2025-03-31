@@ -4785,6 +4785,7 @@ local function numberOfLinesNotifier()
         end
     end
     refreshStates.refreshTimeline = true
+    refreshStates.updateGridCanvas = true
     obsPianoRefresh()
 end
 
@@ -8931,6 +8932,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     local w = context.size.width / gridWidth
                     local h = context.size.height / gH
                     local lpb = song.transport.lpb
+                    local steps = song.selected_pattern.number_of_lines
 
                     --fill color
                     context.fill_color = colorBaseGridColor
@@ -9025,6 +9027,12 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                             context:line_to(x * w, h * gH)
                             context:fill()
                         end
+                    end
+
+                    --Darken sections in the grid that cannot be used
+                    if steps < gridWidth then
+                        context.fill_color = { 0, 0, 0, 125 }
+                        context:fill_rect(w * steps, 0, context.size.width, context.size.height)
                     end
                 end
             },
