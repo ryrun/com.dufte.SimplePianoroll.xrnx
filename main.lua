@@ -3668,6 +3668,17 @@ local function fillTimeline()
         start_i = 1 - lpb
     end
 
+    -- refresh visibility of step indicators
+    for i = 1, gridWidth do
+        if i <= steps then
+            vbw["s" .. i].visible = true
+        else
+            vbw["s" .. i].visible = false
+            vbw["se" .. i].visible = false
+        end
+    end
+
+    --refresh timeline
     for i = start_i, stepsCount do
         local line = i + stepOffset
         local beat = math_ceil((line - lpb) / lpb) % 4 + 1
