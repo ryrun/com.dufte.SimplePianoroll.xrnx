@@ -1,8 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <RenoiseScriptingTool doc_version="0">
   <ApiVersion>6.1</ApiVersion>
   <Id>com.duftetools.SimplePianoroll</Id>
-  <Version>4.3</Version>
+  <Version>4.4</Version>
   <Author>dufte (toimp)</Author>
   <Name>Simple Pianoroll</Name>
   <Category>Tools</Category>
