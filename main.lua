@@ -9419,17 +9419,24 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                 vb:button {
                     bitmap = "Icons/SampleEd_DrawTool.bmp",
                     width = 24,
-                    tooltip = "Pen mode (F1)\nALT click for pen settings.",
+                    tooltip = "Pen mode (F1)",
                     id = "mode_pen",
                     notifier = function()
-                        if modifier.keyAlt then
-                            showPenSettingsDialog()
-                        else
-                            penMode = true
-                            audioPreviewMode = false
-                            refreshStates.refreshControls = true
-                        end
+                        penMode = true
+                        audioPreviewMode = false
+                        refreshStates.refreshControls = true
                     end,
+                },
+                vb:button {
+                    text = "▾",
+                    width = 4,
+                    tooltip = "Pen mode settings.",
+                    notifier = function()
+                        showPenSettingsDialog()
+                    end,
+                },
+                vb:space {
+                    width = 10,
                 },
                 vb:button {
                     bitmap = "Icons/AutomationList_Empty.bmp",
@@ -9462,7 +9469,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     spacing = -3,
                     vb:popup {
                         id = "ins",
-                        width = 146,
+                        width = 126,
                         notifier = function(idx)
                             local val = string.match(
                                 vbw.ins.items[idx],
