@@ -3180,7 +3180,8 @@ function pianoGridClick(x, y, released)
                     end
                     --
                     setUndoDescription("Draw a note ...")
-                    if preferences.sortNewNotesMode.value == 2 then
+                    --new note on first column, only when only 1 note will being drawn
+                    if preferences.sortNewNotesMode.value == 2 and #chordPainter == 1 then
                         --save all notes on current line and remove them
                         for key in pairs(noteData) do
                             note_data = noteData[key]
