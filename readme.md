@@ -1,3 +1,5 @@
+> ⚠️ This README is currently outdated. Will be updated soon.
+
 <h1>Simple Pianoroll Tool for Renoise</h1>
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pianorollanim3.gif?raw=true" alt="Simple Pianoroll Tool for Renoise" />
@@ -371,7 +373,7 @@ So you don't need to hold <kbd>shift</kbd>.
 
 ## Inbuilt additional tools
 
-I've added some of my internal tools, which improved my workflow in Renoise alot. 
+I've added some of my internal tools, which improved my workflow in Renoise alot.
 I don't want to mantain more than one tool, so I've added them to this tool instead.
 The context menu ones are optional and disabled by default. You need to enable them in the piano roll settings (restart of Renoise is needed).
 
@@ -379,10 +381,10 @@ The context menu ones are optional and disabled by default. You need to enable t
 
 ### Sample Editor - Fit sample to beat sync ...
 
-This tool helps you to calculate the correct beat sync value for timestretching of loops and set it. It tries to detect 
-the correct BPM by the sample length in samples. Please note that the beat sync value also use your lines per beat song 
+This tool helps you to calculate the correct beat sync value for timestretching of loops and set it. It tries to detect
+the correct BPM by the sample length in samples. Please note that the beat sync value also use your lines per beat song
 parameter. So this parameter shouldn't be automated in your song.
-When you select a part of your sample (from snare to snare) to manually select a 4 bar loop, because the sample is longer, 
+When you select a part of your sample (from snare to snare) to manually select a 4 bar loop, because the sample is longer,
 it's using the selection length for calculation.
 It'll also extend the sample, when the calculated beat sync value is not a whole number.
 Float numbers for the beat sync parameter is currently not supported in Renoise.
@@ -403,7 +405,7 @@ This idea is inspired by a song from suunk. Here is a good interview about his t
 
 ### Sample Editor - Align sample selection to beat
 
-This tool helps you to align swoops or risers in your song. You set the selection cursor to a point of your riser sample, 
+This tool helps you to align swoops or risers in your song. You set the selection cursor to a point of your riser sample,
 where the crash would hit, and then you choose how many lines you would use for the "rising"-part fit in.
 So, when you choose 32 lines, the "tail" part of the riser should be played from line 33.
 This can also be used on reverse crash samples, when you want to have it exaclty 32 lines long for your song.
@@ -419,15 +421,15 @@ So, when you group your instruments and want to change the pitch of these in one
 
 ### Matrix view - Duplicate content
 
-I often want to duplicate a whole pattern. 
+I often want to duplicate a whole pattern.
 So a 64 pattern can be enlarged to a 128 pattern and the content will be duplicated.
 Just right-click on a pattern and choose "Duplicate content ...".
 
 ### Useful global keyboard shortcuts
 
-Some useful keyboard shortcuts for mixing and analysing. 
-These can be found under "Global \ Simple Pianoroll - Workflow Tools".  
-Supported plugins are currently limited. Other plugins can be added via feature requests. 
+Some useful keyboard shortcuts for mixing and analysing.
+These can be found under "Global \ Simple Pianoroll - Workflow Tools".
+Supported plugins are currently limited. Other plugins can be added via feature requests.
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/keyshortcuts.png?raw=true" width="400">
 
@@ -467,5 +469,5 @@ Supported plugins currently are:
 
 #### Upgrade filters of all instruments
 
-A small tool to upgrade old Renoise filters in instruments to the new one. 
+A small tool to upgrade old Renoise filters in instruments to the new one.
 Can also be used to enable anti aliasing in all samples.

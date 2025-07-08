@@ -5,7 +5,12 @@
   <Version>5.0</Version>
   <Author>dufte (toimp)</Author>
   <Name>Simple Pianoroll</Name>
-  <Category>Tools</Category>
+  <Category>Editing,Pattern</Category>
   <Description>Simple piano roll for Renoise</Description>
-  <Homepage>https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx</Homepage>
+  <Discussion
+    >https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx/63034</Discussion>
+  <Repository
+    >https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx</Repository>
+  <Documentation
+    >https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/readme.md</Documentation>
 </RenoiseScriptingTool>
