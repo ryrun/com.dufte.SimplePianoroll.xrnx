@@ -6120,6 +6120,7 @@ local function handleKeyEvent(keyEvent)
                 penMode = true
                 audioPreviewMode = false
                 refreshStates.refreshControls = true
+                vbw["pianorollColumns"].cursor = "pencil"
             end
         end
         handled = true
@@ -6130,6 +6131,7 @@ local function handleKeyEvent(keyEvent)
             penMode = false
             audioPreviewMode = false
             refreshStates.refreshControls = true
+            vbw["pianorollColumns"].cursor = "default"
         end
         handled = true
     end
@@ -6139,6 +6141,7 @@ local function handleKeyEvent(keyEvent)
             penMode = false
             audioPreviewMode = true
             refreshStates.refreshControls = true
+            vbw["pianorollColumns"].cursor = "play"
         end
         handled = true
     end
