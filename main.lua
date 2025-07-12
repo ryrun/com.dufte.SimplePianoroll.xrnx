@@ -124,8 +124,8 @@ local defaultPreferences = {
     gridMargin = 1,
     gridWidth = 64,
     gridHeight = 42,
-    gridHLines = 1,
-    gridVLines = 1,
+    gridHLines = 2,
+    gridVLines = 2,
     triggerTime = 250,
     keyInfoTime = 3,
     enableKeyInfo = true,
@@ -145,12 +145,12 @@ local defaultPreferences = {
     oddBarsShadingAmount = 0.10,
     oddBeatShadingAmount = 0.0,
     scaleBtnShadingAmount = 0.25,
-    rootKeyShadingAmount = 0.15,
-    outOfNoteScaleShadingAmount = 0.15,
-    outOfPentatonicScaleHighlightingAmount = 0.00,
+    rootKeyShadingAmount = 0.0,
+    outOfNoteScaleShadingAmount = 0.12,
+    outOfPentatonicScaleHighlightingAmount = 0.75,
     azertyMode = false,
     swapCtrlAlt = false,
-    scrollWheelSpeed = 2,
+    scrollWheelSpeed = 1,
     clickAreaSizeForScalingPx = 7,
     disableKeyHandler = false,
     shadingType = 1,
@@ -8822,6 +8822,8 @@ showPreferences = function()
                     notifier = function()
                         dialogVars.preferencesObj:close()
                         restoreFocus()
+                        refreshStates.refreshPianoRollNeeded = true
+                        refreshStates.updateGridCanvas = true
                     end
                 },
                 vbp:button {
@@ -10189,7 +10191,7 @@ local function main_function(hidden)
             gridSpacing = preferences.gridSpacing.value
             gridMargin = preferences.gridMargin.value
             gridWidth = preferences.gridWidth.value
-            pianoKeyWidth = preferences.gridStepSizeW.value * 3
+            pianoKeyWidth = gridStepSizeW * 4
             --limit gridHeight
             preferences.gridHeight.value = clamp(preferences.gridHeight.value, 16, 64)
             gridHeight = preferences.gridHeight.value
