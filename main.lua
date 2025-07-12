@@ -3478,9 +3478,6 @@ local function drawNotesToGrid(allNotes)
             --only process notes on steps and visibility, when there is a valid row
             if current_note_rowIndex >= 1 and current_note_rowIndex <= gridHeight then
                 --change note display len
-                if current_note_step < 1 then
-                    current_note_len = current_note_len + (current_note_step - 1)
-                end
                 if current_note_step > gridWidth then
                     current_note_len = 0
                 elseif current_note_step + current_note_len > gridWidth + 1 and current_note_step <= gridWidth then
@@ -7325,7 +7322,7 @@ local function handleMouse(event)
                     x = math.floor(val_x)
                     y = math.floor(val_y)
                 else
-                    type, x, y, c = string.match(event.hover_views[1]['id'], '^([bs]+)([0-9]+)_([0-9]+)_([0-9]+)$')
+                    type, x, y, c = string.match(event.hover_views[1]['id'], '^([bs]+)([-0-9]+)_([0-9]+)_([0-9]+)$')
                     if type and x and y and c then
                         if type == "b" then
                             type = "b"
