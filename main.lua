@@ -148,6 +148,7 @@ local defaultPreferences = {
     rootKeyShadingAmount = 0.0,
     outOfNoteScaleShadingAmount = 0.12,
     outOfPentatonicScaleHighlightingAmount = 0.75,
+    gridEmbossEffectAmount = 0,
     azertyMode = false,
     swapCtrlAlt = false,
     scrollWheelSpeed = 1,
@@ -232,6 +233,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     oddBeatShadingAmount = defaultPreferences.oddBeatShadingAmount,
     rootKeyShadingAmount = defaultPreferences.rootKeyShadingAmount,
     outOfNoteScaleShadingAmount = defaultPreferences.outOfNoteScaleShadingAmount,
+    gridEmbossEffectAmount = defaultPreferences.gridEmbossEffectAmount,
     restrictNotesToScale = defaultPreferences.restrictNotesToScale,
     azertyMode = defaultPreferences.azertyMode,
     swapCtrlAlt = defaultPreferences.swapCtrlAlt,
@@ -7899,6 +7901,24 @@ showPreferences = function()
                         vbp:horizontal_aligner {
                             mode = "justify",
                             vbp:text {
+                                text = "3d emboss effect amount:",
+                            },
+                            vbp:valuebox {
+                                steps = { 0.01, 0.1 },
+                                min = 0,
+                                max = 1,
+                                bind = preferences.gridEmbossEffectAmount,
+                                tostring = function(v)
+                                    return string.format("%.2f", v)
+                                end,
+                                tonumber = function(v)
+                                    return tonumber(v)
+                                end
+                            },
+                        },
+                        vbp:horizontal_aligner {
+                            mode = "justify",
+                            vbp:text {
                                 text = "Highlighting amount of non pentatonic keys:",
                             },
                             vbp:valuebox {
@@ -9000,6 +9020,23 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         context:move_to(x * w, 0)
                         context:line_to(x * w, h * gH)
                         context:stroke()
+                    end
+
+                    --simple 3d emboss effect
+                    if preferences.gridEmbossEffectAmount.value > 0 then
+                        context.stroke_color = { 255, 255, 255, 30 * preferences.gridEmbossEffectAmount.value }
+                        for x = 0, gridWidth do
+                            context:begin_path()
+                            context:move_to((x * w) + 1, 0)
+                            context:line_to((x * w) + 1, h * gH)
+                            context:stroke()
+                        end
+                        for y = 0, gH do
+                            context:begin_path()
+                            context:move_to(0, ((y + 1) * h) + 1)
+                            context:line_to(w * gridWidth, ((y + 1) * h) + 1)
+                            context:stroke()
+                        end
                     end
 
                     --octave lines
