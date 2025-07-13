@@ -4768,9 +4768,6 @@ local function obsColumnRefresh()
     refreshStates.refreshChordDetection = true
 end
 
-local function instrumentsRefresh()
-end
-
 --will be called when something in the pattern will be changed
 local function lineNotifier()
     --when global flag is set, then piano roll refresh on specific events will be blocked
