@@ -4768,6 +4768,9 @@ local function obsColumnRefresh()
     refreshStates.refreshChordDetection = true
 end
 
+local function instrumentsRefresh()
+end
+
 --will be called when something in the pattern will be changed
 local function lineNotifier()
     --when global flag is set, then piano roll refresh on specific events will be blocked
@@ -4823,7 +4826,7 @@ local function appNewDoc()
         refreshStates.refreshTimeline = true
     end)
     song.instruments_observable:add_notifier(function()
-        --set observers for instrument names and plugin device
+        --set observers for instrument names and plugin device for new instruments
         for i = 1, #song.instruments do
             if not song.instruments[i].name_observable:has_notifier(obsColumnRefresh) then
                 song.instruments[i].name_observable:add_notifier(obsColumnRefresh)
@@ -4834,6 +4837,16 @@ local function appNewDoc()
         end
         obsColumnRefresh()
     end)
+    --set observers for current instruments
+    for i = 1, #song.instruments do
+        if not song.instruments[i].name_observable:has_notifier(obsColumnRefresh) then
+            song.instruments[i].name_observable:add_notifier(obsColumnRefresh)
+        end
+        if not song.instruments[i].plugin_properties.plugin_device_observable:has_notifier(obsColumnRefresh) then
+            song.instruments[i].plugin_properties.plugin_device_observable:add_notifier(obsColumnRefresh)
+        end
+    end
+
     song.selected_pattern_track_observable:add_notifier(obsPianoRefresh)
     song.selected_pattern_observable:add_notifier(function()
         if not song.selected_pattern:has_line_notifier(lineNotifier) then
@@ -10180,7 +10193,6 @@ local function main_function(hidden)
     --only create pianoroll grid, when window is not created and not visible
     if not windowObj or not windowObj.visible then
         lastStepOn = nil
-        currentGhostTrack = nil
         --reset lowest / highest note for center view
         lowestNote = nil
         highestNote = nil
