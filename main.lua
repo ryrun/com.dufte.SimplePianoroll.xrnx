@@ -4846,7 +4846,6 @@ local function appNewDoc()
             song.instruments[i].plugin_properties.plugin_device_observable:add_notifier(obsColumnRefresh)
         end
     end
-
     song.selected_pattern_track_observable:add_notifier(obsPianoRefresh)
     song.selected_pattern_observable:add_notifier(function()
         if not song.selected_pattern:has_line_notifier(lineNotifier) then
