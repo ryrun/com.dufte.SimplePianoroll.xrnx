@@ -7901,7 +7901,7 @@ showPreferences = function()
                         vbp:horizontal_aligner {
                             mode = "justify",
                             vbp:text {
-                                text = "3d emboss effect amount:",
+                                text = "Emboss effect amount:",
                             },
                             vbp:valuebox {
                                 steps = { 0.01, 0.1 },
