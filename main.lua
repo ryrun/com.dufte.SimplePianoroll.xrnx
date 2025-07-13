@@ -4822,7 +4822,18 @@ local function appNewDoc()
         refreshStates.refreshPianoRollNeeded = true
         refreshStates.refreshTimeline = true
     end)
-    song.instruments_observable:add_notifier(obsColumnRefresh)
+    song.instruments_observable:add_notifier(function()
+        --set observers for instrument names and plugin device
+        for i = 1, #song.instruments do
+            if not song.instruments[i].name_observable:has_notifier(obsColumnRefresh) then
+                song.instruments[i].name_observable:add_notifier(obsColumnRefresh)
+            end
+            if not song.instruments[i].plugin_properties.plugin_device_observable:has_notifier(obsColumnRefresh) then
+                song.instruments[i].plugin_properties.plugin_device_observable:add_notifier(obsColumnRefresh)
+            end
+        end
+        obsColumnRefresh()
+    end)
     song.selected_pattern_track_observable:add_notifier(obsPianoRefresh)
     song.selected_pattern_observable:add_notifier(function()
         if not song.selected_pattern:has_line_notifier(lineNotifier) then
