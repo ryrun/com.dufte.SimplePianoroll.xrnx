@@ -1,4 +1,4 @@
-TARGET_DIR=~/Library/Preferences/Renoise/V3.5.0/Scripts/Tools/com.duftetools.SimplePianoroll.xrnx/
+TARGET_DIR=~/Library/Preferences/Renoise/V3.5.1/Scripts/Tools/com.duftetools.SimplePianoroll.xrnx/
 
 # Standard target to copy files
 install:
