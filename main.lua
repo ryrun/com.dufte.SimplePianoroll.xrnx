@@ -3612,7 +3612,6 @@ local function drawNotesToGrid(allNotes)
 
                     --display retrigger effect
                     if retriggerWidth > 0 then
-                        spaceWidth = l_math_max(spaceWidth, 4)
                         rTpl = l_song_transport.tpl - 1
                         if cutValue and cutValue > 0 and cutValue < l_song_transport.tpl and current_note_len == 1 then
                             rTpl = rTpl + (cutValue - 0xf)
@@ -3620,29 +3619,18 @@ local function drawNotesToGrid(allNotes)
                         n = 1
                         for spc = retriggerWidth, rTpl, retriggerWidth do
                             l_vbw["br" .. current_note_index .. "_" .. n] = nil
-                            local retrigger = vb:row {
+                            local retrigger = vb:button {
                                 id = "br" .. current_note_index .. "_" .. n,
-                                margin = -gridMargin,
-                                spacing = -gridSpacing,
+                                origin = {
+                                    x = btn.origin.x + (spc * 1.33),
+                                    y = btn.origin.y
+                                },
+                                height = gridStepSizeH + 2,
+                                width = 3,
+                                active = false,
                             }
-                            retrigger:add_child(vb:space {
-                                width = spaceWidth + (((gridStepSizeW - 3) / l_song_transport.tpl) * (spc + 1)),
-                            });
-                            retrigger:add_child(
-                                vb:row {
-                                    spacing = -2,
-                                    vb:space {
-                                        width = 1
-                                    },
-                                    vb:button {
-                                        height = gridStepSizeH,
-                                        width = 2,
-                                        active = false,
-                                    }
-                                }
-                            );
-                            --l_table_insert(noteButtons[current_note_rowIndex], retrigger);
-                            l_vbw["row" .. current_note_rowIndex]:add_child(retrigger)
+                            l_table_insert(noteButtons, retrigger);
+                            l_vbw["pianorollColumns"]:add_child(retrigger)
                             n = n + 1
                         end
                     end
@@ -6772,6 +6760,13 @@ local function refreshSelectedNotes()
         if l_vbw["b" .. noteSelection[key].idx] then
             l_vbw["b" .. noteSelection[key].idx].visible = false
         end
+        for i = 1, 0xf do
+            if l_vbw["br" .. noteSelection[key].idx .. "_" .. i] then
+                l_vbw["br" .. noteSelection[key].idx .. "_" .. i].visible = false
+            else
+                break
+            end
+        end
         rowIndex = noteValue2GridRowOffset(noteSelection[key].note, true)
         noteSelection[key].idx = tostring(noteSelection[key].step) ..
             "_" .. tostring(rowIndex) .. "_" .. tostring(noteSelection[key].column)
@@ -7344,16 +7339,17 @@ local function handleMouse(event)
                     x = math.floor(val_x)
                     y = math.floor(val_y)
                 else
-                    type, x, y, c = string.match(event.hover_views[1]['id'], '^([bs]+)([-0-9]+)_([0-9]+)_([0-9]+)$')
+                    type, x, y, c = string.match(event.hover_views[1]['id'],
+                        '^([br]+)([-0-9]+)_([0-9]+)_([0-9]+)[_]?[0-9]?[0-9]?$')
                     if type and x and y and c then
-                        if type == "b" then
-                            type = "b"
+                        if type == "b" or type == "br" then
                             setCursor = "move"
                             forceScaling = false
-                            if event.position['x'] >= el.origin.x + el.width - preferences.clickAreaSizeForScalingPx.value then
+                            if type == "b" and event.position['x'] >= el.origin.x + el.width - preferences.clickAreaSizeForScalingPx.value then
                                 setCursor = "resize_horizontal"
                                 forceScaling = true
                             end
+                            type = "b"
                         end
                     end
                 end
