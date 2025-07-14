@@ -6418,17 +6418,17 @@ local function handleKeyEvent(keyEvent)
     if (key.name == "scrollup" or key.name == "scrolldown") then
         if key.state == "pressed" then
             local steps = preferences.scrollWheelSpeed.value
-            if key.name == "scrolldown" then
+            if key.name == "scrollup" then
                 steps = steps * -1
             end
             if (modifier.keyAlt or modifier.keyShift or modifier.keyRShift) and not modifier.keyControl then
                 if #noteSelection > 0 and modifier.keyAlt and not modifier.keyShift and not modifier.keyControl then
-                    if steps > 0 then
+                    if steps < 0 then
                         keyInfoText = "Increase velocity of selected notes"
                     else
                         keyInfoText = "Decrease velocity of selected notes"
                     end
-                    changePropertiesOfSelectedNotes(steps, nil, nil, nil, nil, nil, nil, "add")
+                    changePropertiesOfSelectedNotes(-steps, nil, nil, nil, nil, nil, nil, "add")
                     --play new velocity
                     triggerNoteOfCurrentInstrument(noteSelection[1].note, nil, noteSelection[1].vel, true,
                         noteSelection[1].ins)
