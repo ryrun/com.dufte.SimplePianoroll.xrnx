@@ -6744,6 +6744,10 @@ local function handleScrollWheel(event)
         handleKeyEvent({ name = "scrollup" })
     elseif event.direction == "down" then
         handleKeyEvent({ name = "scrolldown" })
+    elseif event.direction == "left" then
+        handleKeyEvent({ name = "scrollup" })
+    elseif event.direction == "right" then
+        handleKeyEvent({ name = "scrolldown" })
     end
 end
 
