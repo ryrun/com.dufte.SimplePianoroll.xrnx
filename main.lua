@@ -6418,7 +6418,7 @@ local function handleKeyEvent(keyEvent)
     if (key.name == "scrollup" or key.name == "scrolldown") then
         if key.state == "pressed" then
             local steps = preferences.scrollWheelSpeed.value
-            if key.name == "scrollup" then
+            if key.name == "scrolldown" then
                 steps = steps * -1
             end
             if (modifier.keyAlt or modifier.keyShift or modifier.keyRShift) and not modifier.keyControl then
