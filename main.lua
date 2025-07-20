@@ -505,7 +505,9 @@ local xypadpos = {
     preview = {},
     loopslider = nil,
     dragging = false,
-    pointSet = {}
+    pointSet = {},
+    mouseCursor = nil,
+    keyboardCursor = nil
 }
 
 --some values to remember for additional tools, prevent upval limit error
@@ -1580,10 +1582,30 @@ local function removeSelectedNotes(cut)
     refreshStates.refreshPianoRollNeeded = true
 end
 
+--refresh mouse cursor in pianorollColumns
+local function updateCursor()
+    local pianorollColumns = vbw["pianorollColumns"]
+    local setCursor = nil
+
+    --cursor per mode
+    if checkMode("pen") then
+        setCursor = "pencil"
+    elseif checkMode("preview") then
+        setCursor = "play"
+    else
+        setCursor = "default"
+    end
+
+    if xypadpos.mouseCursor then
+        setCursor = xypadpos.mouseCursor
+    end
+
+    pianorollColumns.cursor = setCursor
+end
+
 --refresh all controls
 local function refreshNoteControls()
     local track = song.selected_track
-    local setCursor = "default"
 
     vbw.note_len.value = currentNoteLength
 
@@ -1759,6 +1781,7 @@ local function refreshNoteControls()
     else
         vbw.ghosttrackmirror.color = colorDefault
     end
+    updateCursor()
     refreshStates.refreshControls = false
 end
 
@@ -6127,7 +6150,6 @@ local function handleKeyEvent(keyEvent)
                 penMode = true
                 audioPreviewMode = false
                 refreshStates.refreshControls = true
-                vbw["pianorollColumns"].cursor = "pencil"
             end
         end
         handled = true
@@ -6138,7 +6160,6 @@ local function handleKeyEvent(keyEvent)
             penMode = false
             audioPreviewMode = false
             refreshStates.refreshControls = true
-            vbw["pianorollColumns"].cursor = "default"
         end
         handled = true
     end
@@ -6148,7 +6169,6 @@ local function handleKeyEvent(keyEvent)
             penMode = false
             audioPreviewMode = true
             refreshStates.refreshControls = true
-            vbw["pianorollColumns"].cursor = "play"
         end
         handled = true
     end
@@ -6963,9 +6983,11 @@ end
 
 --handle mouse events
 local function handleMouse(event)
-    local setCursor = "default"
     local pianorollColumns = vbw["pianorollColumns"]
     local x, y, c, type, forceScaling, val_x, val_y, quickRefresh, forceFullRefresh
+
+    --no special cursor
+    xypadpos.mouseCursor = nil
 
     --change macos specific mouse handling with control key
     if modifier.keyControl and event.button == "right" then
@@ -6974,13 +6996,6 @@ local function handleMouse(event)
     if modifier.keyControl and not event.button_flags["left"] and event.button_flags["right"] then
         event.button_flags["left"] = true
         event.button_flags["right"] = false
-    end
-
-    --cursor per mode
-    if checkMode("pen") then
-        setCursor = "pencil"
-    elseif checkMode("preview") then
-        setCursor = "play"
     end
 
     --when in dragmode reset
@@ -7055,7 +7070,7 @@ local function handleMouse(event)
                     end
                 end
                 xypadpos.dragging = true
-                setCursor = "erase"
+                xypadpos.mouseCursor = "erase"
             elseif xypadpos.previewmode then
                 local playNotes = {}
                 --stop old notes
@@ -7097,7 +7112,7 @@ local function handleMouse(event)
                 end
                 vbw["canvas_selection"].origin = { x = event.position.x, y = 0 }
                 xypadpos.dragging = true
-                setCursor = "play"
+                xypadpos.mouseCursor = "play"
             elseif xypadpos.notemode then
                 if not xypadpos.dragging then
                     xypadpos.dragging = true
@@ -7124,9 +7139,9 @@ local function handleMouse(event)
                 --when scale mode is active, scale notes
                 if xypadpos.scalemode then
                     if xypadpos.wasnewnote then
-                        setCursor = "pencil"
+                        xypadpos.mouseCursor = "pencil"
                     else
-                        setCursor = "resize_horizontal"
+                        xypadpos.mouseCursor = "resize_horizontal"
                     end
                     if not xypadpos.distanceblock then
                         if #noteSelection == 1 and xypadpos.resetscale then
@@ -7186,7 +7201,7 @@ local function handleMouse(event)
                 end
                 --when move note is active, move notes
                 if not xypadpos.scalemode then
-                    setCursor = "move"
+                    xypadpos.mouseCursor = "move"
                     if modifier.keyAlt and isDelayColumnActive(true) then
                         local v = math.floor((val_x - xypadpos.x) * 0x100)
                         if v ~= 0 then
@@ -7347,10 +7362,10 @@ local function handleMouse(event)
                         '^([br]+)([-0-9]+)_([0-9]+)_([0-9]+)[_]?[0-9]?[0-9]?$')
                     if type and x and y and c then
                         if type == "b" or type == "br" then
-                            setCursor = "move"
+                            xypadpos.mouseCursor = "move"
                             forceScaling = false
                             if type == "b" and event.position['x'] >= el.origin.x + el.width - preferences.clickAreaSizeForScalingPx.value then
-                                setCursor = "resize_horizontal"
+                                xypadpos.mouseCursor = "resize_horizontal"
                                 forceScaling = true
                             end
                             type = "b"
@@ -7387,7 +7402,7 @@ local function handleMouse(event)
             end
         end
     end
-    pianorollColumns.cursor = setCursor
+    updateCursor()
     if forceFullRefresh then
         refreshStates.blockLineModifier = false
         fillPianoRoll()
