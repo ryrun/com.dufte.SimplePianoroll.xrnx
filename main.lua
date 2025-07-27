@@ -1764,6 +1764,12 @@ local function refreshNoteControls()
         end
     end
     --
+    if preferences.notePreview.value then
+        vbw.notepreview.color = colorStepOn
+    else
+        vbw.notepreview.color = colorDefault
+    end
+    --
     if track.solo_state then
         vbw.solo.color = colorStepOn
     else
@@ -9989,13 +9995,13 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                 }
                             },
                             vb:row {
-                                spacing = -3,
+                                spacing = -1,
                                 vb:button {
                                     id = "mute",
                                     text = "M",
                                     tooltip = "Mute/Unmute current track",
                                     height = gridStepSizeH,
-                                    width = (pianoKeyWidth + noteSlider.width) / 2 + 1,
+                                    width = (pianoKeyWidth + noteSlider.width) / 3 + 1,
                                     notifier = function()
                                         if song.selected_track.mute_state == 3 or song.selected_track.mute_state == 2 then
                                             song.selected_track:unmute()
@@ -10010,9 +10016,20 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                     text = "S",
                                     height = gridStepSizeH,
                                     tooltip = "Solo/Unsolo current track",
-                                    width = (pianoKeyWidth + noteSlider.width) / 2 + 1,
+                                    width = (pianoKeyWidth + noteSlider.width) / 3 + 1,
                                     notifier = function()
                                         song.selected_track:solo()
+                                        refreshStates.refreshControls = true
+                                    end
+                                },
+                                vb:button {
+                                    id = "notepreview",
+                                    bitmap = "Icons/Browser_AudioFile.bmp",
+                                    height = gridStepSizeH + 3,
+                                    tooltip = "Enable/Disable note preview",
+                                    width = (pianoKeyWidth + noteSlider.width) / 3 + 1,
+                                    notifier = function()
+                                        preferences.notePreview.value = not preferences.notePreview.value
                                         refreshStates.refreshControls = true
                                     end
                                 },
