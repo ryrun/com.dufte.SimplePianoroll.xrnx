@@ -1793,7 +1793,7 @@ end
 
 local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, newOrChanged, instrument)
     --special handling of preview notes, on new notes or changed notes (transpose)
-    if newOrChanged then
+    if newOrChanged and (pressed == true or pressed == nil) then
         if not preferences.notePreview.value then
             return
         end
