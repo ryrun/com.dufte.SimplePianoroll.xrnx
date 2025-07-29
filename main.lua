@@ -1805,6 +1805,10 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
     if instrument == nil then
         instrument = currentInstrument
     end
+    --valid instrument?
+    if not song.instruments[instrument + 1] then
+        return
+    end
     --ghost note are not possible with the new api
     if instrument == 255 then
         if patternInstrument ~= nil and patternInstrument ~= 255 then
