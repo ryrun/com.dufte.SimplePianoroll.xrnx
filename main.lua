@@ -366,7 +366,8 @@ local refreshStates = {
     refreshChordDetection = false,
     refreshHistogram = false,
     updateGridCanvas = true,
-    updateGhostTrackCanvas = false
+    updateGhostTrackCanvas = false,
+    refreshAfterPreferencesClose = false
 }
 local afterEditProcessTime
 
@@ -7464,6 +7465,12 @@ local function appIdleEvent()
             end
             refreshStates.refreshControls = true
         end
+        --refresh when preferences is closed
+        if dialogVars.preferencesObj and not dialogVars.preferencesObj.visible and refreshStates.refreshAfterPreferencesClose then
+            refreshStates.refreshAfterPreferencesClose = false
+            refreshStates.refreshPianoRollNeeded = true
+            refreshStates.updateGridCanvas = true
+        end
         --process eraser mode, when there is still a selection
         if xypadpos.leftClick == true and xypadpos.removemode == true and #noteSelection > 0 then
             refreshStates.blockLineModifier = true
@@ -8887,8 +8894,6 @@ showPreferences = function()
                     notifier = function()
                         dialogVars.preferencesObj:close()
                         restoreFocus()
-                        refreshStates.refreshPianoRollNeeded = true
-                        refreshStates.updateGridCanvas = true
                     end
                 },
                 vbp:button {
@@ -8952,6 +8957,7 @@ showPreferences = function()
     else
         dialogVars.preferencesObj:show()
     end
+    refreshStates.refreshAfterPreferencesClose = true
 end
 
 --create main piano roll dialog
