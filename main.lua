@@ -1717,7 +1717,7 @@ local function refreshNoteControls()
         if currentInstrument == 255 then
             vbw.ins.value = 1
         elseif currentInstrument + 2 > #instruments then
-            currentInstrument = nil
+            vbw.ins.value = song.selected_instrument_index + 1
         else
             vbw.ins.value = currentInstrument + 2
         end
