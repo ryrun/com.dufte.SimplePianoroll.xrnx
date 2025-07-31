@@ -3705,12 +3705,12 @@ local function fillTimeline()
                 x = ((i - 1) * gridStepSizeWScaled),
                 y = 2
             }
-            vbw["se" .. i].width = math.max(gridStepSizeWScaled - 2, gridStepSizeWScaled)
+            vbw["se" .. i].width = math.max(gridStepSizeWScaled - 2, gridStepSizeWScaled, 6)
             vbw["s" .. i].origin = {
                 x = ((i - 1) * gridStepSizeWScaled),
                 y = 4
             }
-            vbw["s" .. i].width = math.max(gridStepSizeWScaled - 2, gridStepSizeWScaled)
+            vbw["s" .. i].width = math.max(gridStepSizeWScaled - 2, gridStepSizeWScaled, 6)
             vbw["s" .. i].visible = true
         else
             vbw["s" .. i].visible = false
