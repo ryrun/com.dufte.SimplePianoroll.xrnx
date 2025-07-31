@@ -124,6 +124,7 @@ local defaultPreferences = {
     gridMargin = 1,
     gridWidth = 64,
     gridHeight = 42,
+    gridXZoom = 1,
     gridHLines = 2,
     gridVLines = 2,
     triggerTime = 250,
@@ -210,6 +211,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     gridHeight = defaultPreferences.gridHeight,
     gridHLines = defaultPreferences.gridHLines,
     gridVLines = defaultPreferences.gridVLines,
+    gridXZoom = defaultPreferences.gridXZoom,
     minSizeOfNoteButton = defaultPreferences.minSizeOfNoteButton,
     triggerTime = defaultPreferences.triggerTime,
     noNotePreviewDuringSongPlayback = defaultPreferences.noNotePreviewDuringSongPlayback,
@@ -3377,7 +3379,6 @@ local function drawNotesToGrid(allNotes)
     local current_note_end_dly
     local current_note_ins
     local noteoff
-    local noteWidth
     local buttonWidth
     local spaceWidth
     local retriggerWidth
@@ -3386,6 +3387,8 @@ local function drawNotesToGrid(allNotes)
     local cutValue
     local rTpl
     local n
+    local gW = gridWidth * preferences.gridXZoom.value
+    local gridStepSizeWScaled = gridStepSizeW / preferences.gridXZoom.value
 
     --resort, left ones first, higest column
     if allNotes_length > 1 then
@@ -3514,14 +3517,14 @@ local function drawNotesToGrid(allNotes)
             --only process notes on steps and visibility, when there is a valid row
             if current_note_rowIndex >= 1 and current_note_rowIndex <= gridHeight then
                 --change note display len
-                if current_note_step > gridWidth then
+                if current_note_step > gW then
                     current_note_len = 0
-                elseif current_note_step + current_note_len > gridWidth + 1 and current_note_step <= gridWidth then
-                    current_note_len = current_note_len - (current_note_step + current_note_len - gridWidth - 1)
+                elseif current_note_step + current_note_len > gW + 1 and current_note_step <= gW then
+                    current_note_len = current_note_len - (current_note_step + current_note_len - gW - 1)
                     isScaleBtnHidden = true
                 end
-                if current_note_len > gridWidth then
-                    current_note_len = gridWidth
+                if current_note_len > gW then
+                    current_note_len = gW
                 end
 
                 --display note button, note len is greater 0 and when the row is visible
@@ -3564,7 +3567,7 @@ local function drawNotesToGrid(allNotes)
                         end
                     end
 
-                    buttonWidth = (gridStepSizeW * current_note_len)
+                    buttonWidth = (gridStepSizeWScaled * current_note_len)
 
                     if delayWidth > 0 then
                         delayWidth = delayWidth - 416
@@ -3579,7 +3582,7 @@ local function drawNotesToGrid(allNotes)
                         cutValue = cutValue - 192
                         if cutValue < l_song_transport.tpl then
                             buttonWidth = buttonWidth -
-                                (gridStepSizeW / 100 * (100 / l_song_transport.tpl * (l_song_transport.tpl - cutValue)))
+                                (gridStepSizeWScaled / 100 * (100 / l_song_transport.tpl * (l_song_transport.tpl - cutValue)))
                         end
                     end
 
@@ -3593,7 +3596,7 @@ local function drawNotesToGrid(allNotes)
                     end
 
                     if delayWidth > 0 and stepOffset < current_note_line then
-                        delayWidth = l_math_max(l_math_floor(gridStepSizeW / 0x100 * delayWidth), 1)
+                        delayWidth = l_math_max(l_math_floor(gridStepSizeWScaled / 0x100 * delayWidth), 1)
                         spaceWidth = spaceWidth + delayWidth
                         buttonWidth = buttonWidth - delayWidth
                         if current_note_step < 2 then
@@ -3601,8 +3604,8 @@ local function drawNotesToGrid(allNotes)
                         end
                     end
 
-                    if addWidth > 0 and (current_note_step + current_note_len) - 1 < gridWidth then
-                        addWidth = l_math_max(l_math_floor(gridStepSizeW / 0x100 * addWidth), 1)
+                    if addWidth > 0 and (current_note_step + current_note_len) - 1 < gW then
+                        addWidth = l_math_max(l_math_floor(gridStepSizeWScaled / 0x100 * addWidth), 1)
                         buttonWidth = buttonWidth + addWidth
                     end
 
@@ -3629,7 +3632,7 @@ local function drawNotesToGrid(allNotes)
                         width = buttonWidth + 2,
                         text = current_note_string,
                         origin = {
-                            x = delayWidth + ((current_note_step - 1) * gridStepSizeW) - 1,
+                            x = delayWidth + ((current_note_step - 1) * gridStepSizeWScaled) - 1,
                             y = (gridHeight - current_note_rowIndex) * gridStepSizeH - 1
                         }
                     }
@@ -4370,7 +4373,8 @@ local function fillPianoRoll(quickRefresh)
     local lpb = l_song.transport.lpb
     local lineValues = l_song.selected_pattern_track.lines
     local columns = track.visible_note_columns
-    local stepsCount = math.min(steps, gridWidth)
+    local gW = gridWidth * preferences.gridXZoom.value
+    local stepsCount = math.min(steps, gW)
     local noffset = noteOffset - 1
     local blackKey
     local temp
@@ -4422,8 +4426,8 @@ local function fillPianoRoll(quickRefresh)
     end
 
     --check if stepoffset is inside the grid, also setup stepSlider if needed
-    if steps > gridWidth then
-        stepSlider.max = steps - gridWidth + 1
+    if steps > gW then
+        stepSlider.max = steps - gW + 1
         if stepOffset >= stepSlider.max then
             stepOffset = stepSlider.max - 1
         end
@@ -4453,7 +4457,7 @@ local function fillPianoRoll(quickRefresh)
         for line = 1, steps do
             local s = line - stepOffset
             local stepString
-            if line > stepOffset and line - stepOffset <= gridWidth then
+            if line > stepOffset and line - stepOffset <= gW then
                 stepString = tostring(s)
             end
 
@@ -6989,6 +6993,7 @@ end
 local function handleMouse(event)
     local pianorollColumns = vbw["pianorollColumns"]
     local x, y, c, type, forceScaling, val_x, val_y, quickRefresh, forceFullRefresh
+    local gridWidthScaled = gridWidth * preferences.gridXZoom.value
 
     --no special cursor
     xypadpos.mouseCursor = nil
@@ -7031,7 +7036,7 @@ local function handleMouse(event)
         return handleMouse(event)
     else
         --calculate grid pos
-        val_x = (gridWidth / pianorollColumns.width * event.position.x) + 1
+        val_x = (gridWidthScaled / pianorollColumns.width * event.position.x) + 1
         val_y = gridHeight - (gridHeight / pianorollColumns.height * event.position.y) + 1
 
         --special note selection method via invisible lasso
@@ -7134,7 +7139,7 @@ local function handleMouse(event)
                 end
 
                 --mouse dragging and scaling
-                local max = math.min(song.selected_pattern.number_of_lines, gridWidth) + 1
+                local max = math.min(song.selected_pattern.number_of_lines, gridWidthScaled) + 1
 
                 --prevent moving and scaling outside the grid
                 if val_x > max then
@@ -7773,6 +7778,23 @@ showPreferences = function()
                         },
                         vbp:text {
                             text = "Grid size settings takes effect,\nwhen the piano roll will be reopened.",
+                        },
+                        vbp:horizontal_aligner {
+                            mode = "justify",
+                            vbp:text {
+                                text = "Grid X-Zoom:",
+                            },
+                            vbp:valuebox {
+                                min = 1,
+                                max = 2,
+                                bind = preferences.gridXZoom,
+                                tostring = function(v)
+                                    return string.format("%i x", v)
+                                end,
+                                tonumber = function(v)
+                                    return tonumber(v)
+                                end
+                            },
                         },
                         vbp:horizontal_aligner {
                             mode = "justify",
@@ -9015,10 +9037,12 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                 mode = "plain", -- we do fill the entire canvas
                 render = function(context)
                     local gH = gridHeight + 12
-                    local w = context.size.width / gridWidth
+                    local gW = gridWidth * preferences.gridXZoom.value
+                    local w = context.size.width / gW
                     local h = context.size.height / gH
                     local lpb = song.transport.lpb
                     local steps = song.selected_pattern.number_of_lines
+                    local gridWidthWithZoom = gridWidth
 
                     --fill color
                     context.fill_color = colorBaseGridColor
@@ -9031,8 +9055,8 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         if not noteInScale(yPLusOffMod12) then
                             context:begin_path()
                             context:move_to(0, y * h)
-                            context:line_to(w * gridWidth, y * h)
-                            context:line_to(w * gridWidth, (y + 1) * h)
+                            context:line_to(w * gW, y * h)
+                            context:line_to(w * gW, (y + 1) * h)
                             context:line_to(0, (y + 1) * h)
                             context:fill()
                         end
@@ -9044,10 +9068,10 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     for y = 0, gH do
                         context:begin_path()
                         context:move_to(0, y * h)
-                        context:line_to(w * gridWidth, y * h)
+                        context:line_to(w * gW, y * h)
                         context:stroke()
                     end
-                    for x = 0, gridWidth do
+                    for x = 0, gW do
                         context:begin_path()
                         context:move_to(x * w, 0)
                         context:line_to(x * w, h * gH)
@@ -9057,7 +9081,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     --simple 3d emboss effect
                     if preferences.gridEmbossEffectAmount.value > 0 then
                         context.stroke_color = { 255, 255, 255, 30 * preferences.gridEmbossEffectAmount.value }
-                        for x = 0, gridWidth do
+                        for x = 0, gW do
                             context:begin_path()
                             context:move_to((x * w) + 1, 0)
                             context:line_to((x * w) + 1, h * gH)
@@ -9066,7 +9090,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         for y = 0, gH do
                             context:begin_path()
                             context:move_to(0, ((y + 1) * h) + 1)
-                            context:line_to(w * gridWidth, ((y + 1) * h) + 1)
+                            context:line_to(w * gW, ((y + 1) * h) + 1)
                             context:stroke()
                         end
                     end
@@ -9082,13 +9106,13 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         then
                             context:begin_path()
                             context:move_to(0, (y + 1) * h)
-                            context:line_to(w * gridWidth, (y + 1) * h)
+                            context:line_to(w * gW, (y + 1) * h)
                             context:stroke()
                         end
                     end
 
                     --bar lines
-                    for x = 0, gridWidth do
+                    for x = 0, gW do
                         if (preferences.gridVLines.value == 2 and (x + stepOffset) % (lpb * 4) == 0) or
                             (preferences.gridVLines.value == 3 and (x + stepOffset) % lpb == 0)
                         then
@@ -9102,7 +9126,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     --beat lines
                     context.stroke_color = shadeColor(colorBaseGridColor,
                         preferences.outOfNoteScaleShadingAmount.value + 0.25)
-                    for x = 0, gridWidth do
+                    for x = 0, gW do
                         if (preferences.gridVLines.value == 2 and (x + stepOffset) % lpb == 0)
                         then
                             context:begin_path()
@@ -9114,7 +9138,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
 
                     --bar/beat coloring
                     context.fill_color = { 0, 0, 0, 100 * preferences.oddBarsShadingAmount.value }
-                    for x = lpb * -8, gridWidth do
+                    for x = lpb * -8, gW do
                         if (preferences.gridVLines.value == 2 and (x + stepOffset + (lpb * 4)) % (lpb * 8) == 0) or
                             (preferences.gridVLines.value == 3 and (x + stepOffset + lpb) % (lpb * 2) == 0)
                         then
@@ -9133,7 +9157,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     end
 
                     --Darken sections in the grid that cannot be used
-                    if steps < gridWidth then
+                    if steps < gW then
                         context.fill_color = { 0, 0, 0, 125 }
                         context:fill_rect(w * steps, 0, context.size.width, context.size.height)
                     end
