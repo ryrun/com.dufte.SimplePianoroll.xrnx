@@ -125,7 +125,9 @@ local defaultPreferences = {
     gridWidth = 64,
     gridHeight = 42,
     gridXZoom = 1,
+    gridXZoomMin = 0.1,
     gridXZoomMax = 3,
+    sliderResolution = 1024.0,
     gridHLines = 2,
     gridVLines = 2,
     triggerTime = 250,
@@ -4445,10 +4447,8 @@ local function fillPianoRoll(quickRefresh)
         if stepOffset >= stepSlider.max then
             stepOffset = stepSlider.max - 1
         end
-        stepSlider.visible = true
     else
         stepSlider.max = 1
-        stepSlider.visible = false
         stepOffset = 0
     end
 
@@ -4841,6 +4841,8 @@ local function appNewDoc()
     end
 
     song = renoise.song()
+    --reset zoom state
+    preferences.gridXZoom.value = 1
     --reset vars
     lastTrackIndex = nil
     currentNoteVelocity = 255
@@ -6794,11 +6796,14 @@ local function handleScrollWheel(event)
 end
 
 local function handleScrollWheelGridZoom(event)
+    rprint(event)
     if event.direction == "down" then
-        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value + 0.05, 1, defaultPreferences.gridXZoomMax)
+        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value + 0.05, defaultPreferences.gridXZoomMin,
+            defaultPreferences.gridXZoomMax)
         refreshStates.refreshAfterPreferencesClose = true
     elseif event.direction == "up" then
-        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value - 0.05, 1, defaultPreferences.gridXZoomMax)
+        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value - 0.05, defaultPreferences.gridXZoomMin,
+            defaultPreferences.gridXZoomMax)
         refreshStates.refreshAfterPreferencesClose = true
     end
 end
@@ -7803,25 +7808,6 @@ showPreferences = function()
                         },
                         vbp:text {
                             text = "Grid size settings takes effect,\nwhen the piano roll will be reopened.",
-                        },
-                        vbp:horizontal_aligner {
-                            mode = "justify",
-                            vbp:text {
-                                text = "Grid X-Zoom:",
-                            },
-                            vbp:valuebox {
-                                width = "25%",
-                                min = 1,
-                                steps = { 0.01, 0.1 },
-                                max = defaultPreferences.gridXZoomMax,
-                                bind = preferences.gridXZoom,
-                                tostring = function(v)
-                                    return string.format("%.2fx", v)
-                                end,
-                                tonumber = function(v)
-                                    return tonumber(v)
-                                end
-                            },
                         },
                         vbp:horizontal_aligner {
                             mode = "justify",
@@ -9187,14 +9173,15 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                 mode = "transparent",
                 visible = false,
                 render = function(context)
+                    local gW = math.ceil(gridWidth * preferences.gridXZoom.value)
                     local trackIndex = currentGhostTrack
                     local track = song:track(trackIndex)
                     local columns = track.visible_note_columns
                     local steps = song.selected_pattern.number_of_lines
-                    local stepsCount = math.min(steps, gridWidth)
+                    local stepsCount = math.min(steps, gW)
                     local lineValues = song.selected_pattern:track(trackIndex).lines
                     local mirrorMode = preferences.mirroringGhostTrack.value
-                    local w = context.size.width / gridWidth
+                    local w = context.size.width / gW
                     local h = context.size.height / gridHeight
                     local note, note_column, rowoffset
                     -- check if track is empty
@@ -9304,7 +9291,6 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         max = 1,
         background = "plain",
         pagestep = 1,
-        visible = false,
         notifier = function(number)
             number = math.floor(number)
             if number ~= stepOffset then
@@ -9367,17 +9353,16 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         height = gridStepSizeH + 2,
         autosize = false,
         mouse_events = {
-            "wheel"
+            "wheel", "move"
         },
         mouse_handler = handleScrollWheelGridZoom,
         vb:minislider {
             width = gridStepSizeW * gridWidth,
             height = gridStepSizeH + 2,
             min = 1,
-            max = gridWidth,
+            max = defaultPreferences.sliderResolution,
             value = 1,
             default = 1.1234567,
-            tooltip = "Hold ctrl key to set a loop range with your mouse.\nDouble click to remove the loop range.\nUse shift key to move the loop range.",
             notifier = function(n)
                 local transport = song.transport
                 --reset loop on double click
@@ -9385,6 +9370,10 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     if transport.loop_pattern == true then
                         transport.loop_pattern = false
                     else
+                        if preferences.gridXZoom.value ~= 1 then
+                            preferences.gridXZoom.value = 1
+                            refreshStates.refreshAfterPreferencesClose = true
+                        end
                         xypadpos.loopslider = nil
                         transport.loop_block_enabled = false
                         if transport.loop_sequence_start > 0 then
@@ -9392,7 +9381,9 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         end
                     end
                 else
-                    local looppos = math.floor(n + 0.4) + stepOffset
+                    local nScaled = math.ceil(n / defaultPreferences.sliderResolution * preferences.gridWidth.value *
+                        preferences.gridXZoom.value)
+                    local looppos = math.floor(nScaled + 0.4) + stepOffset
                     local newloopset = false
                     if modifier.keyControl and not modifier.keyShift then
                         --first start, set new loop range
@@ -9439,7 +9430,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     else
                         --no control key is holded, so reset loop slider state
                         xypadpos.loopslider = nil
-                        jumpToNoteInPattern(math.floor(n + 0.5) + stepOffset)
+                        jumpToNoteInPattern(math.floor(nScaled + 0.5) + stepOffset)
                     end
                     if newloopset then
                         --when new end loop is before current playback pos, restart from loop start
@@ -9485,7 +9476,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
             },
         },
     }
-    for i = 1, gridWidth do
+    for i = 1, math.ceil(gridWidth * defaultPreferences.gridXZoomMax) do
         local temp = vb:text {
             origin = {
                 x = 0,
@@ -10045,7 +10036,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                 margin = -1,
                                 vb:button {
                                     id = "trackcolor",
-                                    height = gridStepSizeH + 3,
+                                    height = (gridStepSizeH * 2) + 3,
                                     color = { 44, 77, 66 },
                                     active = true,
                                     width = pianoKeyWidth + noteSlider.width,
@@ -10127,6 +10118,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
             },
             vb:column {
                 playCursor,
+                stepSlider,
                 vb:column {
                     timeline,
                     vb:row {
@@ -10288,13 +10280,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     },
                 },
             },
-        },
-        vb:row {
-            vb:space {
-                width = gridStepSizeW * 5 - 4
-            },
-            stepSlider,
-        },
+        }
     }
 end
 
@@ -10331,6 +10317,8 @@ local function main_function(hidden)
         penMode = true
         --create main dialog
         if not windowContent or refreshStates.rebuildWindowDialog then
+            --reset zoom state
+            preferences.gridXZoom.value = 1
             --init colors
             initColors()
             --setup grid settings
