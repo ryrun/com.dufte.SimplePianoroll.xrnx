@@ -3388,8 +3388,8 @@ local function drawNotesToGrid(allNotes)
     local cutValue
     local rTpl
     local n
-    local gW = gridWidth * preferences.gridXZoom.value
-    local gridStepSizeWScaled = gridStepSizeW / preferences.gridXZoom.value
+    local gW = math.ceil(gridWidth * preferences.gridXZoom.value)
+    local gridStepSizeWScaled = gridStepSizeW / (gW / gridWidth)
 
     --resort, left ones first, higest column
     if allNotes_length > 1 then
@@ -3682,8 +3682,8 @@ end
 local function fillTimeline()
     local lpb = song.transport.lpb
     local steps = song.selected_pattern.number_of_lines
-    local gW = gridWidth * preferences.gridXZoom.value
-    local gridStepSizeWScaled = gridStepSizeW / preferences.gridXZoom.value
+    local gW = math.ceil(gridWidth * preferences.gridXZoom.value)
+    local gridStepSizeWScaled = gridStepSizeW / (gW / gridWidth)
     local stepsCount = math.min(steps, gW)
     local math_ceil = math.ceil
     --setup timeline
@@ -3697,15 +3697,15 @@ local function fillTimeline()
     end
 
     -- refresh visibility of step indicators
-    for i = 1, gW do
+    for i = 1, gridWidth * defaultPreferences.gridXZoomMax do
         if i <= steps then
             vbw["se" .. i].origin = {
-                x = ((i - 1) * gridStepSizeWScaled) + 1,
+                x = ((i - 1) * gridStepSizeWScaled),
                 y = 2
             }
             vbw["se" .. i].width = math.max(gridStepSizeWScaled - 2, gridStepSizeWScaled)
             vbw["s" .. i].origin = {
-                x = ((i - 1) * gridStepSizeWScaled) + 1,
+                x = ((i - 1) * gridStepSizeWScaled),
                 y = 4
             }
             vbw["s" .. i].width = math.max(gridStepSizeWScaled - 2, gridStepSizeWScaled)
@@ -4270,7 +4270,7 @@ end
 local function refreshPlaybackPosIndicator()
     local line = song.transport.playback_pos.line
     local seq = song.sequencer:pattern(song.transport.playback_pos.sequence)
-    local gW = gridWidth * preferences.gridXZoom.value
+    local gW = math.ceil(gridWidth * preferences.gridXZoom.value)
     if song.selected_pattern_index == seq and lastStepOn ~= line and song.transport.playing then
         if lastStepOn then
             vbw["s" .. tostring(lastStepOn)].color = colorStepOff
@@ -4387,7 +4387,7 @@ local function fillPianoRoll(quickRefresh)
     local lpb = l_song.transport.lpb
     local lineValues = l_song.selected_pattern_track.lines
     local columns = track.visible_note_columns
-    local gW = gridWidth * preferences.gridXZoom.value
+    local gW = math.ceil(gridWidth * preferences.gridXZoom.value)
     local stepsCount = math.min(steps, gW)
     local noffset = noteOffset - 1
     local blackKey
@@ -7007,7 +7007,7 @@ end
 local function handleMouse(event)
     local pianorollColumns = vbw["pianorollColumns"]
     local x, y, c, type, forceScaling, val_x, val_y, quickRefresh, forceFullRefresh
-    local gridWidthScaled = gridWidth * preferences.gridXZoom.value
+    local gridWidthScaled = math.ceil(gridWidth * preferences.gridXZoom.value)
 
     --no special cursor
     xypadpos.mouseCursor = nil
@@ -7801,10 +7801,11 @@ showPreferences = function()
                             },
                             vbp:valuebox {
                                 min = 1,
+                                steps = { 0.1, 0.1 },
                                 max = defaultPreferences.gridXZoomMax,
                                 bind = preferences.gridXZoom,
                                 tostring = function(v)
-                                    return string.format("%i x", v)
+                                    return string.format("%.1f x", v)
                                 end,
                                 tonumber = function(v)
                                     return tonumber(v)
@@ -9042,7 +9043,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                 mode = "plain", -- we do fill the entire canvas
                 render = function(context)
                     local gH = gridHeight + 12
-                    local gW = gridWidth * preferences.gridXZoom.value
+                    local gW = math.ceil(gridWidth * preferences.gridXZoom.value)
                     local w = context.size.width / gW
                     local h = context.size.height / gH
                     local lpb = song.transport.lpb
@@ -9267,7 +9268,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     context:line_to(0, context.size.height)
                 else
                     -- Calculate grid dimensions
-                    local gW = gridWidth * preferences.gridXZoom.value
+                    local gW = math.ceil(gridWidth * preferences.gridXZoom.value)
                     local w, h = context.size.width / gW, context.size.height / gridHeight
                     local rx, rx2 = math.min(xypadpos.nx, xypadpos.x) - 1, math.max(xypadpos.nx, xypadpos.x)
                     local ry, ry2 = gridHeight - math.max(xypadpos.ny, xypadpos.y),
