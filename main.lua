@@ -125,6 +125,7 @@ local defaultPreferences = {
     gridWidth = 64,
     gridHeight = 42,
     gridXZoom = 1,
+    gridXZoomMax = 2,
     gridHLines = 2,
     gridVLines = 2,
     triggerTime = 250,
@@ -3681,7 +3682,9 @@ end
 local function fillTimeline()
     local lpb = song.transport.lpb
     local steps = song.selected_pattern.number_of_lines
-    local stepsCount = math.min(steps, gridWidth)
+    local gW = gridWidth * preferences.gridXZoom.value
+    local gridStepSizeWScaled = gridStepSizeW / preferences.gridXZoom.value
+    local stepsCount = math.min(steps, gW)
     local math_ceil = math.ceil
     --setup timeline
     local timestep = 0
@@ -3694,8 +3697,18 @@ local function fillTimeline()
     end
 
     -- refresh visibility of step indicators
-    for i = 1, gridWidth do
+    for i = 1, gW do
         if i <= steps then
+            vbw["se" .. i].origin = {
+                x = ((i - 1) * gridStepSizeWScaled) + 1,
+                y = 2
+            }
+            vbw["se" .. i].width = math.max(gridStepSizeWScaled - 2, gridStepSizeWScaled)
+            vbw["s" .. i].origin = {
+                x = ((i - 1) * gridStepSizeWScaled) + 1,
+                y = 4
+            }
+            vbw["s" .. i].width = math.max(gridStepSizeWScaled - 2, gridStepSizeWScaled)
             vbw["s" .. i].visible = true
         else
             vbw["s" .. i].visible = false
@@ -3712,7 +3725,7 @@ local function fillTimeline()
         if lastbeat ~= beat then
             timestep = timestep + 1
             timeslot = vbw["timeline" .. timestep]
-            timeslot.origin = { (gridStepSizeW * (i - 1)) - 4, 0 }
+            timeslot.origin = { (gridStepSizeWScaled * (i - 1)) - 4, 0 }
             if line % lpb == 1 then
                 if lpb == 2 and beat % lpb == 0 then
                     timeslot.text = ""
@@ -3765,15 +3778,15 @@ local function fillTimeline()
         -- Adjust the start position based on stepOffset
         local start_pos = math.max(loop_start - stepOffset, 1)
         -- Ensure loop length does not exceed gridWidth
-        loop_length = math.max(math.min(loop_length, gridWidth - start_pos + 1), 0)
+        loop_length = math.max(math.min(loop_length, gW - start_pos + 1), 0)
         -- Check if the block loop indicator should be hidden
-        if loop_length < 1 or start_pos > gridWidth then
+        if loop_length < 1 or start_pos > gW then
             hide_block_loop = true
         else
             -- Update block loop UI elements
-            vbw.blockloop.width = gridStepSizeW * loop_length + 4
+            vbw.blockloop.width = gridStepSizeWScaled * loop_length + 4
             vbw.blockloopspc.visible = start_pos > 1
-            vbw.blockloopspc.width = vbw.blockloopspc.visible and (gridStepSizeW * (start_pos - 1)) or 1
+            vbw.blockloopspc.width = vbw.blockloopspc.visible and (gridStepSizeWScaled * (start_pos - 1)) or 1
             vbw.blockloop.color = colorLoopSelection
             vbw.blockloop.visible = true
         end
@@ -4257,6 +4270,7 @@ end
 local function refreshPlaybackPosIndicator()
     local line = song.transport.playback_pos.line
     local seq = song.sequencer:pattern(song.transport.playback_pos.sequence)
+    local gW = gridWidth * preferences.gridXZoom.value
     if song.selected_pattern_index == seq and lastStepOn ~= line and song.transport.playing then
         if lastStepOn then
             vbw["s" .. tostring(lastStepOn)].color = colorStepOff
@@ -4265,9 +4279,9 @@ local function refreshPlaybackPosIndicator()
         end
         lastStepOn = line - stepOffset
 
-        if preferences.followPlayCursor.value and song.transport.follow_player and (lastStepOn > gridWidth or lastStepOn < 0) then
+        if preferences.followPlayCursor.value and song.transport.follow_player and (lastStepOn > gW or lastStepOn < 0) then
             --follow play cursor, when enabled
-            local v = stepSlider.value + (gridWidth * (lastStepOn / gridWidth)) - 1
+            local v = stepSlider.value + (gW * (lastStepOn / gW)) - 1
             if v >= stepSlider.max then
                 v = stepSlider.max - 1
             end
@@ -4276,7 +4290,7 @@ local function refreshPlaybackPosIndicator()
             end
             lastStepOn = nil
             stepSlider.value = v
-        elseif lastStepOn > 0 and lastStepOn <= gridWidth then
+        elseif lastStepOn > 0 and lastStepOn <= gW then
             --highlight when inside the grid
             vbw["s" .. tostring(lastStepOn)].color = colorStepOn
             highlightNotesOnStep(lastStepOn, true)
@@ -7468,6 +7482,7 @@ local function appIdleEvent()
             refreshStates.refreshAfterPreferencesClose = false
             refreshStates.refreshPianoRollNeeded = true
             refreshStates.updateGridCanvas = true
+            refreshStates.refreshTimeline = true
         end
         --process eraser mode, when there is still a selection
         if xypadpos.leftClick == true and xypadpos.removemode == true and #noteSelection > 0 then
@@ -7786,7 +7801,7 @@ showPreferences = function()
                             },
                             vbp:valuebox {
                                 min = 1,
-                                max = 2,
+                                max = defaultPreferences.gridXZoomMax,
                                 bind = preferences.gridXZoom,
                                 tostring = function(v)
                                     return string.format("%i x", v)
@@ -8990,30 +9005,20 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         height = gridStepSizeH,
         autosize = false,
     }
-    for x = 1, gridWidth * 4 do
+    for x = 1, gridWidth * defaultPreferences.gridXZoomMax do
         playCursor:add_child(vb:button {
             id = "se" .. tostring(x),
             height = gridStepSizeH - 3,
-            width = gridStepSizeW - 2,
             color = colorStepOn,
             active = false,
             visible = false,
-            origin = {
-                x = ((x - 1) * gridStepSizeW) + 1,
-                y = 2
-            },
         })
         playCursor:add_child(vb:button {
             id = "s" .. tostring(x),
             height = gridStepSizeH - 7,
-            width = gridStepSizeW - 2,
             color = colorStepOff,
             active = false,
             notifier = loadstring("setPlaybackPos(" .. tostring(x) .. ")"),
-            origin = {
-                x = ((x - 1) * gridStepSizeW) + 1,
-                y = 4
-            },
         })
     end
     local pianorollColumns = vb:stack {
@@ -9262,7 +9267,8 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     context:line_to(0, context.size.height)
                 else
                     -- Calculate grid dimensions
-                    local w, h = context.size.width / gridWidth, context.size.height / gridHeight
+                    local gW = gridWidth * preferences.gridXZoom.value
+                    local w, h = context.size.width / gW, context.size.height / gridHeight
                     local rx, rx2 = math.min(xypadpos.nx, xypadpos.x) - 1, math.max(xypadpos.nx, xypadpos.x)
                     local ry, ry2 = gridHeight - math.max(xypadpos.ny, xypadpos.y),
                         gridHeight - math.min(xypadpos.ny, xypadpos.y) + 1
