@@ -6797,22 +6797,16 @@ end
 
 local function handleScrollWheelGridZoom(event)
     local steps = song.selected_pattern.number_of_lines
+    local dynMaxZoom = math.min(math.max(gridWidth, steps) / gridWidth, defaultPreferences.gridXZoomMax)
     local amount = 0.05
     if event.direction == "down" then
-        local newZoom = preferences.gridXZoom.value + amount
-        --fix floatingpoint issue
-        if math.abs(newZoom - 1) < 1e-6 then
-            newZoom = 1
-        end
-        --check if the new gridWidth will be larger than the pattern length or default gridWidth
-        if math.ceil(newZoom * gridWidth) <= math.max(gridWidth, steps) then
-            preferences.gridXZoom.value = clamp(newZoom, defaultPreferences.gridXZoomMin,
-                defaultPreferences.gridXZoomMax)
-            refreshStates.refreshAfterPreferencesClose = true
-        end
+        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value + amount, defaultPreferences.gridXZoomMin,
+            dynMaxZoom)
+        refreshStates.refreshAfterPreferencesClose = true
+        --end
     elseif event.direction == "up" then
         preferences.gridXZoom.value = clamp(preferences.gridXZoom.value - amount, defaultPreferences.gridXZoomMin,
-            defaultPreferences.gridXZoomMax)
+            dynMaxZoom)
         refreshStates.refreshAfterPreferencesClose = true
     end
     --set new max for stepslider
