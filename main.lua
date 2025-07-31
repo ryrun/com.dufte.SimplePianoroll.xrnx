@@ -8990,7 +8990,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         height = gridStepSizeH,
         autosize = false,
     }
-    for x = 1, gridWidth do
+    for x = 1, gridWidth * 4 do
         playCursor:add_child(vb:button {
             id = "se" .. tostring(x),
             height = gridStepSizeH - 3,
