@@ -125,7 +125,7 @@ local defaultPreferences = {
     gridWidth = 64,
     gridHeight = 42,
     gridXZoom = 1,
-    gridXZoomMin = 0.1,
+    gridXZoomMin = 0.2,
     gridXZoomMax = 3,
     sliderResolution = 1024.0,
     gridHLines = 2,
@@ -6799,12 +6799,14 @@ local function handleScrollWheelGridZoom(event)
     local steps = song.selected_pattern.number_of_lines
     local amount = 0.05
     if event.direction == "down" then
+        local newZoom = preferences.gridXZoom.value + amount
+        --fix floatingpoint issue
+        if math.abs(newZoom - 1) < 1e-6 then
+            newZoom = 1
+        end
         --check if the new gridWidth will be larger than the pattern length or default gridWidth
-        if math.ceil((preferences.gridXZoom.value + amount) * gridWidth) > math.max(gridWidth, steps) then
-            preferences.gridXZoom.value = 1
-            refreshStates.refreshAfterPreferencesClose = true
-        else
-            preferences.gridXZoom.value = clamp(preferences.gridXZoom.value + amount, defaultPreferences.gridXZoomMin,
+        if math.ceil(newZoom * gridWidth) <= math.max(gridWidth, steps) then
+            preferences.gridXZoom.value = clamp(newZoom, defaultPreferences.gridXZoomMin,
                 defaultPreferences.gridXZoomMax)
             refreshStates.refreshAfterPreferencesClose = true
         end
@@ -6816,10 +6818,12 @@ local function handleScrollWheelGridZoom(event)
     --set new max for stepslider
     if refreshStates.refreshAfterPreferencesClose then
         local gW = math.ceil(preferences.gridXZoom.value * gridWidth)
+        local oldMax = stepSlider.max
+        local n = event.position.x / vbw.timelinemousecontrol.width * stepSlider.max
         if steps > gW then
             stepSlider.max = steps - gW + 1
-            stepSlider.value = math.floor(stepSlider.max / vbw.timelinemousecontrol.width * event.position.x)
         end
+        stepSlider.value = math.floor((n / oldMax * stepSlider.max) + 0.5) - 1
     end
 end
 
