@@ -6796,15 +6796,33 @@ local function handleScrollWheel(event)
 end
 
 local function handleScrollWheelGridZoom(event)
-    rprint(event)
+    local amount = 0.05
     if event.direction == "down" then
-        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value + 0.05, defaultPreferences.gridXZoomMin,
-            defaultPreferences.gridXZoomMax)
-        refreshStates.refreshAfterPreferencesClose = true
+        --check if the new gridWidth will be larger than the pattern length or default gridWidth
+        if math.ceil((preferences.gridXZoom.value + amount) * gridWidth) > gridWidth then
+            preferences.gridXZoom.value = 1
+            refreshStates.refreshAfterPreferencesClose = true
+        else
+            preferences.gridXZoom.value = clamp(preferences.gridXZoom.value + amount, defaultPreferences.gridXZoomMin,
+                defaultPreferences.gridXZoomMax)
+            refreshStates.refreshAfterPreferencesClose = true
+        end
     elseif event.direction == "up" then
-        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value - 0.05, defaultPreferences.gridXZoomMin,
+        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value - amount, defaultPreferences.gridXZoomMin,
             defaultPreferences.gridXZoomMax)
         refreshStates.refreshAfterPreferencesClose = true
+    end
+    --set new max for stepslider
+    if refreshStates.refreshAfterPreferencesClose then
+        local gW = math.ceil(preferences.gridXZoom.value * gridWidth)
+        local steps = song.selected_pattern.number_of_lines
+        if steps > gW then
+            stepSlider.max = steps - gW + 1
+            if stepOffset >= stepSlider.max then
+                stepOffset = stepSlider.max - 1
+            end
+            stepSlider.value = math.floor(stepSlider.max / vbw.timelinemousecontrol.width * event.position.x)
+        end
     end
 end
 
@@ -9349,6 +9367,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
     end
 
     local timeline = vb:stack {
+        id = "timelinemousecontrol",
         width = gridStepSizeW * gridWidth,
         height = gridStepSizeH + 2,
         autosize = false,
@@ -9370,14 +9389,15 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     if transport.loop_pattern == true then
                         transport.loop_pattern = false
                     else
-                        if preferences.gridXZoom.value ~= 1 then
+                        if not vbw.blockloop.visible and preferences.gridXZoom.value ~= 1 then
                             preferences.gridXZoom.value = 1
                             refreshStates.refreshAfterPreferencesClose = true
-                        end
-                        xypadpos.loopslider = nil
-                        transport.loop_block_enabled = false
-                        if transport.loop_sequence_start > 0 then
-                            transport.loop_sequence_range = {}
+                        else
+                            xypadpos.loopslider = nil
+                            transport.loop_block_enabled = false
+                            if transport.loop_sequence_start > 0 then
+                                transport.loop_sequence_range = {}
+                            end
                         end
                     end
                 else
