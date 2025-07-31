@@ -125,7 +125,7 @@ local defaultPreferences = {
     gridWidth = 64,
     gridHeight = 42,
     gridXZoom = 1,
-    gridXZoomMax = 2,
+    gridXZoomMax = 2.5,
     gridHLines = 2,
     gridVLines = 2,
     triggerTime = 250,
@@ -6793,6 +6793,16 @@ local function handleScrollWheel(event)
     end
 end
 
+local function handleScrollWheelGridZoom(event)
+    if event.direction == "down" then
+        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value + 0.1, 1, defaultPreferences.gridXZoomMax)
+        refreshStates.refreshAfterPreferencesClose = true
+    elseif event.direction == "up" then
+        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value - 0.1, 1, defaultPreferences.gridXZoomMax)
+        refreshStates.refreshAfterPreferencesClose = true
+    end
+end
+
 --just refresh selected notes, improves mouse actions
 local function refreshSelectedNotes()
     local l_vbw = vbw
@@ -7478,7 +7488,7 @@ local function appIdleEvent()
             refreshStates.refreshControls = true
         end
         --refresh when preferences is closed
-        if dialogVars.preferencesObj and not dialogVars.preferencesObj.visible and refreshStates.refreshAfterPreferencesClose then
+        if (not dialogVars.preferencesObj or (dialogVars.preferencesObj and not dialogVars.preferencesObj.visible)) and refreshStates.refreshAfterPreferencesClose then
             refreshStates.refreshAfterPreferencesClose = false
             refreshStates.refreshPianoRollNeeded = true
             refreshStates.updateGridCanvas = true
@@ -7805,7 +7815,7 @@ showPreferences = function()
                                 max = defaultPreferences.gridXZoomMax,
                                 bind = preferences.gridXZoom,
                                 tostring = function(v)
-                                    return string.format("%.1f x", v)
+                                    return string.format("%.1fx", v)
                                 end,
                                 tonumber = function(v)
                                     return tonumber(v)
@@ -9355,6 +9365,10 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         width = gridStepSizeW * gridWidth,
         height = gridStepSizeH + 2,
         autosize = false,
+        mouse_events = {
+            "wheel"
+        },
+        mouse_handler = handleScrollWheelGridZoom,
         vb:minislider {
             width = gridStepSizeW * gridWidth,
             height = gridStepSizeH + 2,
