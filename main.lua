@@ -125,7 +125,7 @@ local defaultPreferences = {
     gridWidth = 64,
     gridHeight = 42,
     gridXZoom = 1,
-    gridXZoomMax = 2.5,
+    gridXZoomMax = 3,
     gridHLines = 2,
     gridVLines = 2,
     triggerTime = 250,
@@ -3697,7 +3697,7 @@ local function fillTimeline()
     end
 
     -- refresh visibility of step indicators
-    for i = 1, gridWidth * defaultPreferences.gridXZoomMax do
+    for i = 1, gridWidth * math.ceil(defaultPreferences.gridXZoomMax) do
         if i <= steps then
             vbw["se" .. i].origin = {
                 x = ((i - 1) * gridStepSizeWScaled),
@@ -6795,10 +6795,10 @@ end
 
 local function handleScrollWheelGridZoom(event)
     if event.direction == "down" then
-        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value + 0.1, 1, defaultPreferences.gridXZoomMax)
+        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value + 0.05, 1, defaultPreferences.gridXZoomMax)
         refreshStates.refreshAfterPreferencesClose = true
     elseif event.direction == "up" then
-        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value - 0.1, 1, defaultPreferences.gridXZoomMax)
+        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value - 0.05, 1, defaultPreferences.gridXZoomMax)
         refreshStates.refreshAfterPreferencesClose = true
     end
 end
@@ -7810,12 +7810,13 @@ showPreferences = function()
                                 text = "Grid X-Zoom:",
                             },
                             vbp:valuebox {
+                                width = "25%",
                                 min = 1,
-                                steps = { 0.1, 0.1 },
+                                steps = { 0.01, 0.1 },
                                 max = defaultPreferences.gridXZoomMax,
                                 bind = preferences.gridXZoom,
                                 tostring = function(v)
-                                    return string.format("%.1fx", v)
+                                    return string.format("%.2fx", v)
                                 end,
                                 tonumber = function(v)
                                     return tonumber(v)
@@ -9016,7 +9017,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         height = gridStepSizeH,
         autosize = false,
     }
-    for x = 1, gridWidth * defaultPreferences.gridXZoomMax do
+    for x = 1, gridWidth * math.ceil(defaultPreferences.gridXZoomMax) do
         playCursor:add_child(vb:button {
             id = "se" .. tostring(x),
             height = gridStepSizeH - 3,
