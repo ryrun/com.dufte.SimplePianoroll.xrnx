@@ -6818,7 +6818,7 @@ local function handleScrollWheelGridZoom(event)
         if steps > gW then
             stepSlider.max = steps - gW + 1
         end
-        stepSlider.value = math.floor((n / oldMax * stepSlider.max) + 0.5) - 1
+        stepSlider.value = clamp(math.floor((n / oldMax * stepSlider.max) + 0.5) - 1, stepSlider.min, stepSlider.max)
     end
 end
 
