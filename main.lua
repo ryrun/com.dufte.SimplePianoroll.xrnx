@@ -6819,8 +6819,12 @@ local function handleTimelineMouse(event)
         if transport.loop_pattern == true then
             transport.loop_pattern = false
         else
-            if not vbw.blockloop.visible and preferences.gridXZoom.value ~= 1 then
-                preferences.gridXZoom.value = 1
+            if not vbw.blockloop.visible then
+                if preferences.gridXZoom.value ~= 1 then
+                    preferences.gridXZoom.value = 1
+                else
+                    preferences.gridXZoom.value = dynMaxZoom
+                end
                 refreshStates.refreshAfterPreferencesClose = true
             else
                 xypadpos.loopslider = nil
