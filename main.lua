@@ -3545,7 +3545,7 @@ local function drawNotesToGrid(allNotes)
                             cutValue = current_note_vel
                             --wenn note is cut and outside, dont render it
                             if stepOffset >= current_note_line then
-                                return
+                                goto continue
                             end
                         elseif current_note_vel >= 416 and current_note_vel <= 431 then
                             delayWidth = current_note_vel
@@ -3673,6 +3673,7 @@ local function drawNotesToGrid(allNotes)
                     end
                 end
             end
+            ::continue::
         end
     end
 end
@@ -6818,7 +6819,7 @@ local function handleScrollWheelGridZoom(event)
         if steps > gW then
             stepSlider.max = steps - gW + 1
         end
-        stepSlider.value = clamp(newStepOffset, stepSlider.min, stepSlider.max)
+        stepSlider.value = clamp(newStepOffset, stepSlider.min, stepSlider.max - 1)
     end
 end
 
