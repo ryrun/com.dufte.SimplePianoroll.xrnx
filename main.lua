@@ -4902,6 +4902,7 @@ local function appNewDoc()
             song.selected_pattern.number_of_lines_observable:add_notifier(numberOfLinesNotifier)
         end
         pasteCursor = {}
+        currentGhostTrack = nil
         stepSlider.value = 0
         refreshStates.updateGridCanvas = true
         refreshStates.refreshPianoRollNeeded = true
@@ -4942,6 +4943,7 @@ local function appNewDoc()
             end
         end
         pasteCursor = {}
+        currentGhostTrack = nil
         currentInstrument = nil
         patternInstrument = nil
         refreshStates.refreshControls = true
