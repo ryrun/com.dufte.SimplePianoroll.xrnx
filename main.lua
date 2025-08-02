@@ -7414,9 +7414,14 @@ local function handleMouse(event)
                         '^([br]+)([-0-9]+)_([0-9]+)_([0-9]+)[_]?[0-9]?[0-9]?$')
                     if type and x and y and c then
                         if type == "b" or type == "br" then
+                            local index = tostring(x) .. "_" .. tostring(y) .. "_" .. tostring(c)
+                            local note_data = noteData[index]
                             xypadpos.mouseCursor = "move"
                             forceScaling = false
-                            if type == "b" and event.position['x'] >= el.origin.x + el.width - preferences.clickAreaSizeForScalingPx.value then
+                            if type == "b"
+                                and note_data.step + note_data.len - 1 <= gridWidthScaled
+                                and event.position['x'] >= el.origin.x + el.width - preferences.clickAreaSizeForScalingPx.value
+                            then
                                 xypadpos.mouseCursor = "resize_horizontal"
                                 forceScaling = true
                             end
