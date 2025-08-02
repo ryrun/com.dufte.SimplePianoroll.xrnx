@@ -133,6 +133,7 @@ local defaultPreferences = {
     triggerTime = 250,
     keyInfoTime = 3,
     enableKeyInfo = true,
+    forceSelectMode = false,
     notePreview = true,
     snapToGridSize = 20,
     applyVelocityColorShading = true,
@@ -231,6 +232,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     keyboardStyle = defaultPreferences.keyboardStyle,
     keyInfoTime = defaultPreferences.keyInfoTime,
     enableKeyInfo = defaultPreferences.enableKeyInfo,
+    forceSelectMode = defaultPreferences.forceSelectMode,
     resetVolPanDlyControlOnClick = defaultPreferences.resetVolPanDlyControlOnClick,
     scaleHighlightingType = defaultPreferences.scaleHighlightingType,
     keyForSelectedScale = defaultPreferences.keyForSelectedScale,
@@ -8651,6 +8653,14 @@ showPreferences = function()
                         },
                         vbp:row {
                             vbp:checkbox {
+                                bind = preferences.forceSelectMode,
+                            },
+                            vbp:text {
+                                text = "Enable select mode by default",
+                            },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
                                 bind = preferences.enableInvisibleLasso,
                             },
                             vbp:text {
@@ -10340,7 +10350,7 @@ local function main_function(hidden)
         notesPlaying = {}
         notesPlayingLine = {}
         --pen mode is default
-        penMode = true
+        penMode = not preferences.forceSelectMode.value
         --create main dialog
         if not windowContent or refreshStates.rebuildWindowDialog then
             --reset zoom state
