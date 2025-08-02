@@ -10346,6 +10346,8 @@ local function main_function(hidden)
         lowestNote = nil
         highestNote = nil
         currentInstrument = nil
+        --reset ghost track
+        currentGhostTrack = nil
         --reset note selection
         noteSelection = {}
         --reset note playing
