@@ -6808,12 +6808,29 @@ local function handleScrollWheel(event)
     end
 end
 
-local function handleScrollWheelGridZoom(event)
+--handle scrollwheel on timeline for zooming
+local function handleTimelineMouse(event)
+    local transport = song.transport
     local steps = song.selected_pattern.number_of_lines
     local dynMaxZoom = math.min(math.max(gridWidth, steps) / gridWidth, defaultPreferences.gridXZoomMax)
     local amount = 0.05
     local oldgW = math.ceil(preferences.gridXZoom.value * gridWidth)
-    if event.direction == "down" then
+    if event.type == "double" then
+        if transport.loop_pattern == true then
+            transport.loop_pattern = false
+        else
+            if not vbw.blockloop.visible and preferences.gridXZoom.value ~= 1 then
+                preferences.gridXZoom.value = 1
+                refreshStates.refreshAfterPreferencesClose = true
+            else
+                xypadpos.loopslider = nil
+                transport.loop_block_enabled = false
+                if transport.loop_sequence_start > 0 then
+                    transport.loop_sequence_range = {}
+                end
+            end
+        end
+    elseif event.direction == "down" then
         preferences.gridXZoom.value = clamp(preferences.gridXZoom.value + amount, defaultPreferences.gridXZoomMin,
             dynMaxZoom)
         refreshStates.refreshAfterPreferencesClose = true
@@ -9388,95 +9405,76 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         height = gridStepSizeH + 2,
         autosize = false,
         mouse_events = {
-            "wheel", "move"
+            "wheel", "move", "double"
         },
-        mouse_handler = handleScrollWheelGridZoom,
+        mouse_handler = handleTimelineMouse,
         vb:minislider {
             width = gridStepSizeW * gridWidth,
             height = gridStepSizeH + 2,
             min = 1,
             max = defaultPreferences.sliderResolution,
             value = 1,
-            default = 1.1234567,
             notifier = function(n)
                 local transport = song.transport
-                --reset loop on double click
-                if n == 1.1234567 then
-                    if transport.loop_pattern == true then
-                        transport.loop_pattern = false
-                    else
-                        if not vbw.blockloop.visible and preferences.gridXZoom.value ~= 1 then
-                            preferences.gridXZoom.value = 1
-                            refreshStates.refreshAfterPreferencesClose = true
-                        else
-                            xypadpos.loopslider = nil
-                            transport.loop_block_enabled = false
-                            if transport.loop_sequence_start > 0 then
-                                transport.loop_sequence_range = {}
+                local nScaled = math.ceil(n / defaultPreferences.sliderResolution * preferences.gridWidth.value *
+                    preferences.gridXZoom.value)
+                local looppos = math.floor(nScaled + 0.4) + stepOffset
+                local newloopset = false
+                if modifier.keyControl and not modifier.keyShift then
+                    --first start, set new loop range
+                    if xypadpos.loopslider == nil then
+                        xypadpos.loopslider = looppos
+                    elseif looppos >= xypadpos.loopslider and looppos <= song.selected_pattern.number_of_lines then
+                        --set loop range
+                        song.transport.loop_range = {
+                            renoise.SongPos(transport.edit_pos.sequence, xypadpos.loopslider),
+                            renoise.SongPos(transport.edit_pos.sequence, looppos + 1)
+                        }
+                        newloopset = true
+                    elseif looppos < xypadpos.loopslider then
+                        --set loop range
+                        song.transport.loop_range = {
+                            renoise.SongPos(transport.edit_pos.sequence, looppos),
+                            renoise.SongPos(transport.edit_pos.sequence, xypadpos.loopslider + 1)
+                        }
+                        newloopset = true
+                    end
+                elseif modifier.keyShift and not modifier.keyControl then
+                    --only when a looprange is set
+                    if loopingrange then
+                        local x = transport.loop_start.line
+                        local len = transport.loop_end.line - transport.loop_start.line
+                        if transport.loop_start.sequence ~= transport.loop_end.sequence then
+                            len = song.selected_pattern.number_of_lines + 1 - transport.loop_start.line
+                        end
+
+                        --move loop selection
+                        if (xypadpos.loopslider == nil and looppos >= x and looppos < x + len) or xypadpos.loopslider then
+                            if xypadpos.loopslider == nil then
+                                xypadpos.loopslider = looppos - x
                             end
+                            local newlooppos = math.min(song.selected_pattern.number_of_lines - len + 1,
+                                math.max(looppos - xypadpos.loopslider, 1))
+                            song.transport.loop_range = {
+                                renoise.SongPos(transport.edit_pos.sequence, newlooppos),
+                                renoise.SongPos(transport.edit_pos.sequence, newlooppos + len)
+                            }
+                            newloopset = true
                         end
                     end
                 else
-                    local nScaled = math.ceil(n / defaultPreferences.sliderResolution * preferences.gridWidth.value *
-                        preferences.gridXZoom.value)
-                    local looppos = math.floor(nScaled + 0.4) + stepOffset
-                    local newloopset = false
-                    if modifier.keyControl and not modifier.keyShift then
-                        --first start, set new loop range
-                        if xypadpos.loopslider == nil then
-                            xypadpos.loopslider = looppos
-                        elseif looppos >= xypadpos.loopslider and looppos <= song.selected_pattern.number_of_lines then
-                            --set loop range
-                            song.transport.loop_range = {
-                                renoise.SongPos(transport.edit_pos.sequence, xypadpos.loopslider),
-                                renoise.SongPos(transport.edit_pos.sequence, looppos + 1)
-                            }
-                            newloopset = true
-                        elseif looppos < xypadpos.loopslider then
-                            --set loop range
-                            song.transport.loop_range = {
-                                renoise.SongPos(transport.edit_pos.sequence, looppos),
-                                renoise.SongPos(transport.edit_pos.sequence, xypadpos.loopslider + 1)
-                            }
-                            newloopset = true
-                        end
-                    elseif modifier.keyShift and not modifier.keyControl then
-                        --only when a looprange is set
-                        if loopingrange then
-                            local x = transport.loop_start.line
-                            local len = transport.loop_end.line - transport.loop_start.line
-                            if transport.loop_start.sequence ~= transport.loop_end.sequence then
-                                len = song.selected_pattern.number_of_lines + 1 - transport.loop_start.line
-                            end
-
-                            --move loop selection
-                            if (xypadpos.loopslider == nil and looppos >= x and looppos < x + len) or xypadpos.loopslider then
-                                if xypadpos.loopslider == nil then
-                                    xypadpos.loopslider = looppos - x
-                                end
-                                local newlooppos = math.min(song.selected_pattern.number_of_lines - len + 1,
-                                    math.max(looppos - xypadpos.loopslider, 1))
-                                song.transport.loop_range = {
-                                    renoise.SongPos(transport.edit_pos.sequence, newlooppos),
-                                    renoise.SongPos(transport.edit_pos.sequence, newlooppos + len)
-                                }
-                                newloopset = true
-                            end
-                        end
-                    else
-                        --no control key is holded, so reset loop slider state
-                        xypadpos.loopslider = nil
-                        jumpToNoteInPattern(math.floor(nScaled + 0.5) + stepOffset)
-                    end
-                    if newloopset then
-                        --when new end loop is before current playback pos, restart from loop start
-                        if song.transport.playing
-                            and song.transport.playback_pos.sequence == song.transport.loop_start.sequence
-                            and song.transport.playback_pos.sequence == song.transport.loop_end.sequence
-                            and song.transport.playback_pos.line >= song.transport.loop_end.line
-                        then
-                            playPatternFromLine()
-                        end
+                    --no control key is holded, so reset loop slider state
+                    xypadpos.loopslider = nil
+                    jumpToNoteInPattern(math.floor(nScaled + 0.5) + stepOffset)
+                end
+                if newloopset then
+                    --when new end loop is before current playback pos, restart from loop start
+                    if song.transport.playing
+                        and song.transport.playback_pos.sequence == song.transport.loop_start.sequence
+                        and song.transport.playback_pos.sequence == song.transport.loop_end.sequence
+                        and song.transport.playback_pos.line >= song.transport.loop_end.line
+                    then
+                        playPatternFromLine()
                     end
                 end
             end
