@@ -3367,7 +3367,6 @@ local function drawNotesToGrid(allNotes)
     local l_table_insert = table.insert
     local allNotes_length = #allNotes
     local isInSelection
-    local isScaleBtnHidden
     local column
     local current_note_line
     local current_note_step
@@ -3418,7 +3417,6 @@ local function drawNotesToGrid(allNotes)
 
     for j = 1, allNotes_length do
         isInSelection = false
-        isScaleBtnHidden = false
 
         column = allNotes[j][1]
         current_note_line = allNotes[j][2]
@@ -3524,7 +3522,6 @@ local function drawNotesToGrid(allNotes)
                     current_note_len = 0
                 elseif current_note_step + current_note_len > gW + 1 and current_note_step <= gW then
                     current_note_len = current_note_len - (current_note_step + current_note_len - gW - 1)
-                    isScaleBtnHidden = true
                 end
                 if current_note_len > gW then
                     current_note_len = gW
