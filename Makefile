@@ -14,6 +14,7 @@ package:
 
 # Watch target to monitor changes in main.lua
 watch:
+	@make install
 	@echo "\033[1m==> Watching for changes in main.lua...\033[0m"
 	fswatch -o ./main.lua | xargs -n1 -I{} make install
 
