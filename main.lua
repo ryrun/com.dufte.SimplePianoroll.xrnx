@@ -4370,6 +4370,18 @@ end
 
 --update canvas, set new offsets
 local function updateCanvas()
+    if refreshStates.updateGhostTrackCanvas then
+        if not currentGhostTrack or song.selected_pattern:track(currentGhostTrack).is_empty then
+            vbw["canvas_ghosttrack"].visible = false
+        else
+            vbw["canvas_ghosttrack"]:update()
+            if not vbw["canvas_ghosttrack"].visible then
+                vbw["canvas_ghosttrack"].visible = true
+            end
+            refreshStates.updateGhostTrackCanvas = false
+        end
+        refreshStates.updateGhostTrackCanvas = false
+    end
     if refreshStates.updateGridCanvas then
         vbw["canvas"]:update()
         refreshStates.updateGridCanvas = false
@@ -7545,14 +7557,6 @@ local function appIdleEvent()
         --refresh chord states
         if refreshStates.refreshChordDetection and preferences.chordDetection.value then
             refreshDetectedChord()
-        end
-        --if needed refresh ghost track canvas
-        if refreshStates.updateGhostTrackCanvas then
-            vbw["canvas_ghosttrack"]:update()
-            if not vbw["canvas_ghosttrack"].visible then
-                vbw["canvas_ghosttrack"].visible = true
-            end
-            refreshStates.updateGhostTrackCanvas = false
         end
         --if needed refresh histogram
         if refreshStates.refreshHistogram then
