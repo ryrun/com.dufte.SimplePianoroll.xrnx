@@ -6085,18 +6085,22 @@ local function handleKeyEvent(keyEvent)
     if key.name == "lcontrol" and key.state == "pressed" then
         modifier.keyControl = true
         handled = true
+        refreshStates.refreshControls = true
     elseif key.name == "lcontrol" and key.state == "released" then
         modifier.keyControl = false
         --reset loop mini slider state
         xypadpos.loopslider = nil
         handled = true
+        refreshStates.refreshControls = true
     end
     if key.name == "rcontrol" and key.state == "pressed" then
         modifier.keyRControl = true
         handled = true
+        refreshStates.refreshControls = true
     elseif key.name == "rcontrol" and key.state == "released" then
         modifier.keyRControl = false
         handled = true
+        refreshStates.refreshControls = true
     end
     if key.name == "lalt" and key.state == "pressed" then
         modifier.keyAlt = true
