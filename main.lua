@@ -118,6 +118,7 @@ local chordsTable = {
 
 --default values, can be used to reset to default
 local defaultPreferences = {
+    noteValueMax = 120,
     gridStepSizeW = 16,
     gridStepSizeH = 15,
     gridSpacing = 4,
@@ -595,6 +596,11 @@ local function clamp(value, lowerBound, upperBound)
         lowerBound, upperBound = upperBound, lowerBound
     end
     return math.max(lowerBound, math.min(upperBound, value))
+end
+
+--set scrollbar value
+local function setScrollbarValue(val, scrollbar)
+    scrollbar.value = clamp(val, scrollbar.min, scrollbar.max - scrollbar.pagestep)
 end
 
 --calc distance
@@ -6508,7 +6514,7 @@ local function handleKeyEvent(keyEvent)
                 stepSlider.value = clamp(stepSlider.value + steps, stepSlider.min, stepSlider.max - 1)
             elseif not modifier.keyAlt and not modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
                 keyInfoText = "Move through the grid"
-                noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max - 1)
+                setScrollbarValue(noteSlider.value + steps, noteSlider)
             end
         end
         handled = true
@@ -6520,7 +6526,7 @@ local function handleKeyEvent(keyEvent)
                 steps = steps * -1
             end
             keyInfoText = "Move through the grid"
-            noteSlider.value = clamp(noteSlider.value + steps, noteSlider.min, noteSlider.max - 1)
+            setScrollbarValue(noteSlider.value + steps, noteSlider)
         end
         handled = true
     end
@@ -6554,7 +6560,7 @@ local function handleKeyEvent(keyEvent)
                     end
                 else
                     keyInfoText = "Move through the grid"
-                    noteSlider.value = clamp(noteSlider.value + transpose, noteSlider.min, noteSlider.max - 1)
+                    setScrollbarValue(noteSlider.value + transpose, noteSlider)
                 end
             end
         end
@@ -7399,15 +7405,13 @@ local function handleMouse(event)
                     --y-scroll through, when note hits border
                     if xypadpos.y > gridHeight and noteSlider.value > 0 then
                         local delta = math.ceil(xypadpos.y - gridHeight)
-                        local newValue = clamp(noteSlider.value - delta, noteSlider.min, noteSlider.max - 1)
-                        xypadpos.y = xypadpos.y - (noteSlider.value - newValue)
-                        noteSlider.value = newValue
+                        xypadpos.y = xypadpos.y - delta
+                        setScrollbarValue(noteSlider.value - delta, noteSlider)
                         forceFullRefresh = true
                     elseif xypadpos.y < 1 and noteSlider.value < noteSlider.max then
                         local delta = math.ceil(1 - xypadpos.y)
-                        local newValue = clamp(noteSlider.value + delta, noteSlider.min, noteSlider.max - 1)
-                        xypadpos.y = xypadpos.y - (noteSlider.value - newValue)
-                        noteSlider.value = newValue
+                        xypadpos.y = xypadpos.y + delta
+                        setScrollbarValue(noteSlider.value + delta, noteSlider)
                         forceFullRefresh = true
                     end
                     --TODO x-scroll through, when note hits border
@@ -9366,13 +9370,13 @@ local function createPianoRollDialog(gridWidth, gridHeight)
         width = math.max(16, gridStepSizeW / 2),
         height = "100%",
         min = 0,
-        max = 120 - gridHeight + 1,
+        max = defaultPreferences.noteValueMax,
         background = "plain",
-        pagestep = 1,
+        pagestep = gridHeight,
         notifier = function(number)
             number = math.floor(number)
             if number ~= noteOffset then
-                noteOffset = (noteSlider.max - 1) - number
+                noteOffset = defaultPreferences.noteValueMax - number - gridHeight
                 refreshStates.refreshPianoRollNeeded = true
             end
         end,
@@ -10392,7 +10396,7 @@ local function main_function(hidden)
         if lowestNote ~= nil and preferences.centerViewOnOpen.value then
             noteOffset = math.floor(((lowestNote + highestNote) / 2) - (gridHeight / 2))
         end
-        noteSlider.value = clamp(noteSlider.max - 1 - noteOffset, noteSlider.min, noteSlider.max - 1)
+        setScrollbarValue(noteSlider.max - noteSlider.pagestep - noteOffset, noteSlider)
 
         refreshStates.refreshPianoRollNeeded = true
         --reset rebuild flag
