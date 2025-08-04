@@ -598,9 +598,19 @@ local function clamp(value, lowerBound, upperBound)
     return math.max(lowerBound, math.min(upperBound, value))
 end
 
---set scrollbar value
+--scrollbar helpers
 local function setScrollbarValue(val, scrollbar)
     scrollbar.value = clamp(val, scrollbar.min, scrollbar.max - scrollbar.pagestep)
+end
+local function setScrollbarMax(max, pagestep, scrollbar)
+    if max < pagestep then
+        scrollbar.pagestep = 1
+        scrollbar.max = 1
+    else
+        scrollbar.pagestep = 1
+        scrollbar.max = max
+        scrollbar.pagestep = pagestep
+    end
 end
 
 --calc distance
@@ -4291,14 +4301,8 @@ local function refreshPlaybackPosIndicator()
         if preferences.followPlayCursor.value and song.transport.follow_player and (lastStepOn > gW or lastStepOn < 0) then
             --follow play cursor, when enabled
             local v = stepSlider.value + (gW * (lastStepOn / gW)) - 1
-            if v >= stepSlider.max then
-                v = stepSlider.max - 1
-            end
-            if v < stepSlider.min then
-                v = stepSlider.min
-            end
             lastStepOn = nil
-            stepSlider.value = v
+            setScrollbarValue(v, stepSlider)
         elseif lastStepOn > 0 and lastStepOn <= gW then
             --highlight when inside the grid
             vbw["s" .. tostring(lastStepOn)].color = colorStepOn
@@ -4462,12 +4466,12 @@ local function fillPianoRoll(quickRefresh)
 
     --check if stepoffset is inside the grid, also setup stepSlider if needed
     if steps > gW then
-        stepSlider.max = steps - gW + 1
-        if stepOffset >= stepSlider.max then
-            stepOffset = stepSlider.max - 1
+        setScrollbarMax(steps, gW, stepSlider)
+        if stepOffset >= stepSlider.max - stepSlider.pagestep then
+            setScrollbarValue(9999, stepSlider)
         end
     else
-        stepSlider.max = 1
+        setScrollbarMax(1, 1, stepSlider)
         stepOffset = 0
     end
 
@@ -6507,11 +6511,11 @@ local function handleKeyEvent(keyEvent)
                     end
                 else
                     keyInfoText = "Move through the grid"
-                    stepSlider.value = clamp(stepSlider.value + steps, stepSlider.min, stepSlider.max - 1)
+                    setScrollbarValue(stepSlider.value + steps, stepSlider)
                 end
             elseif not modifier.keyAlt and modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
                 keyInfoText = "Move through the grid"
-                stepSlider.value = clamp(stepSlider.value + steps, stepSlider.min, stepSlider.max - 1)
+                setScrollbarValue(stepSlider.value + steps, stepSlider)
             elseif not modifier.keyAlt and not modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
                 keyInfoText = "Move through the grid"
                 setScrollbarValue(noteSlider.value + steps, noteSlider)
@@ -6624,9 +6628,9 @@ local function handleKeyEvent(keyEvent)
                             song.transport.edit_pos = npos
                             if npos.line > gridWidth + stepOffset or npos.line <= stepOffset then
                                 if npos.line - gridWidth >= stepSlider.min then
-                                    stepSlider.value = npos.line - gridWidth
+                                    setScrollbarValue(npos.line - gridWidth, stepSlider)
                                 elseif npos.line <= stepOffset then
-                                    stepSlider.value = npos.line - 1
+                                    setScrollbarValue(npos.line - 1, stepSlider)
                                 end
                             end
                         end
@@ -6861,10 +6865,8 @@ local function handleTimelineMouse(event)
         local oldHoverDisplayIndex = math.floor(mouseRel * oldgW)
         local cellIndex = stepOffset + oldHoverDisplayIndex
         local newStepOffset = cellIndex - math.floor(mouseRel * gW)
-        if steps > gW then
-            stepSlider.max = steps - gW + 1
-        end
-        stepSlider.value = clamp(newStepOffset, stepSlider.min, stepSlider.max - 1)
+        setScrollbarMax(steps, gW, stepSlider)
+        setScrollbarValue(newStepOffset, stepSlider)
     end
 end
 
