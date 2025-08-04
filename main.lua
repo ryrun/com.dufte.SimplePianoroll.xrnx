@@ -148,7 +148,7 @@ local defaultPreferences = {
     noNotePreviewDuringSongPlayback = false,
     highlightEntireLineOfPlayingNote = false,
     rowHighlightingAmount = 0.15,
-    oddBarsShadingAmount = 0.10,
+    oddBarsShadingAmount = 0.15,
     oddBeatShadingAmount = 0.0,
     scaleBtnShadingAmount = 0.25,
     rootKeyShadingAmount = 0.0,
@@ -9004,7 +9004,9 @@ showPreferences = function()
                     notifier = function()
                         if app:show_prompt("Reset to default", "Are you sure you want to reset all settings to their default values?", { "Yes", "No" }) == "Yes" then
                             for key in pairs(defaultPreferences) do
-                                preferences[key].value = defaultPreferences[key]
+                                if preferences[key] then
+                                    preferences[key].value = defaultPreferences[key]
+                                end
                             end
                             app:show_message("All preferences was set to default values.")
                         end
