@@ -9540,8 +9540,6 @@ local function createPianoRollDialog(gridWidth, gridHeight)
     windowContent = vb:column {
         vb:horizontal_aligner {
             margin = 3,
-            width = "100%",
-            mode = "justify",
             vb:row {
                 margin = 3,
                 spacing = -3,
