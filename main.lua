@@ -1774,6 +1774,7 @@ local function refreshNoteControls()
     end
 
     --set color indicator to current track color and name
+    vbw.trackcolor.visible = false
     vbw.trackcolor.color = track.color
     vbw.trackcolor.tooltip = track.name .. "\n(Switch to ghost track)"
     vbw.trackcolor.text = track.name
@@ -1787,6 +1788,7 @@ local function refreshNoteControls()
             break
         end
     end
+    vbw.trackcolor.visible = true
     --
     if preferences.notePreview.value then
         vbw.notepreview.color = colorStepOn
