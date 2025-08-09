@@ -6934,115 +6934,125 @@ local function handleInvisibleLasso(event, addToSelection)
     local newNoteSelection = {}
     local n = 0
 
+    -- Stop tracking when the mouse stops moving
     if event.type ~= "move" then
-        -- Reset point set when movement stops
         xypadpos.pointSet = {}
         xypadpos.lval_x = -1
         xypadpos.lval_y = -1
         return
     end
 
+    -- Convert mouse position to integer grid coordinates
     local cval_x = math.floor((gridWidth / pianorollColumns.width * event.position.x) + 1)
     local cval_y = math.floor(gridHeight - (gridHeight / pianorollColumns.height * event.position.y) + 1)
 
-    local currentTime = os.clock() * 1000 -- Get current time in milliseconds
+    local now_ms = os.clock() * 1000
 
+    -- Ignore if the cursor stayed within the same grid cell
     if cval_x == xypadpos.lval_x and cval_y == xypadpos.lval_y then
         return
     end
 
-    -- Reset point set if the last point is older than 100ms
-    if #xypadpos.pointSet > 0 and currentTime - xypadpos.pointSet[#xypadpos.pointSet].time > 500 then
-        xypadpos.pointSet = {}
-    end
-
-    -- Check if the new point is unique
-    local found = false
-    for _, point in ipairs(xypadpos.pointSet) do
-        if point.x == cval_x and point.y == cval_y then
-            found = true
-            break
+    -- If there was a long pause, start a fresh stroke
+    if #xypadpos.pointSet > 0 then
+        local last_time = xypadpos.pointSet[#xypadpos.pointSet].time or now_ms
+        if (now_ms - last_time) > 500 then
+            xypadpos.pointSet = {}
         end
     end
 
-    if not found then
-        -- Maintain a FIFO queue of max 500 points
+    -- Small inliner: push a point (FIFO-bounded, unique consecutive points)
+    local function push_point(ix, iy)
+        -- Bound the FIFO to keep self-intersection checks fast
         if #xypadpos.pointSet > 500 then
             table.remove(xypadpos.pointSet, 1)
         end
-        local lastPoint = xypadpos.pointSet[#xypadpos.pointSet]
-
-        -- Create the new point
-        local newPoint = { x = cval_x, y = cval_y, time = currentTime }
-
-        -- If there is a previous point
-        if lastPoint then
-            local dx = newPoint.x - lastPoint.x
-            local dy = newPoint.y - lastPoint.y
-
-            -- Determine the number of interpolation steps based on the largest distance
-            local steps = math.max(math.abs(dx), math.abs(dy))
-            if steps > 1 then
-                -- Insert intermediate points
-                for i = 1, steps - 1 do
-                    local t = i / steps
-                    local interp_x = lastPoint.x + t * dx
-                    local interp_y = lastPoint.y + t * dy
-                    table.insert(xypadpos.pointSet, { x = interp_x, y = interp_y, time = currentTime })
-                end
-            end
+        -- Avoid duplicates when the cursor hovers on the same cell
+        local lp = xypadpos.pointSet[#xypadpos.pointSet]
+        if not lp or lp.x ~= ix or lp.y ~= iy then
+            table.insert(xypadpos.pointSet, { x = ix, y = iy, time = now_ms })
         end
-        table.insert(xypadpos.pointSet, newPoint)
-    else
-        -- Check if the set forms a closed shape
-        if #xypadpos.pointSet >= 5 then
-            local min_x, max_x = math.huge, -math.huge
-            local min_y, max_y = math.huge, -math.huge
+    end
 
-            -- Find min/max values for x and y
-            for _, point in ipairs(xypadpos.pointSet) do
-                if point.x < min_x then min_x = point.x end
-                if point.x > max_x then max_x = point.x end
-                if point.y < min_y then min_y = point.y end
-                if point.y > max_y then max_y = point.y end
+    -- Draw integer-connected samples between last and current cell (Bresenham-like)
+    local last = xypadpos.pointSet[#xypadpos.pointSet]
+    if not last then
+        -- First point of the stroke
+        push_point(cval_x, cval_y)
+    else
+        local x0, y0 = last.x, last.y
+        local x1, y1 = cval_x, cval_y
+        local dx = math.abs(x1 - x0)
+        local dy = -math.abs(y1 - y0)
+        local sx = (x0 < x1) and 1 or -1
+        local sy = (y0 < y1) and 1 or -1
+        local err = dx + dy
+        local x, y = x0, y0
+
+        -- Step along the grid until we reach the current cell
+        while not (x == x1 and y == y1) do
+            local e2 = 2 * err
+            if e2 >= dy then
+                err = err + dy; x = x + sx
+            end
+            if e2 <= dx then
+                err = err + dx; y = y + sy
             end
 
-            local width = max_x - min_x + 1
-            local height = max_y - min_y + 1
-            local isClosed = width >= 2 and height >= 2
+            -- Record current raster cell
+            push_point(x, y)
 
-            -- Check if all points are adjacent (gapless)
-            if isClosed then
-                for i = 1, #xypadpos.pointSet - 1 do
-                    local dx = math.abs(xypadpos.pointSet[i + 1].x - xypadpos.pointSet[i].x)
-                    local dy = math.abs(xypadpos.pointSet[i + 1].y - xypadpos.pointSet[i].y)
-                    --dont allow a gaps
-                    if dx > 1 or dy > 1 then
-                        isClosed = false
-                        break
-                    end
+            -- === Loop detection: isolate the most recently closed loop ===
+            -- Because we move on a 4-connected grid, a loop is detected when the
+            -- newly added point equals any earlier point (not one of the last two).
+            local loop_start_index = nil
+            for k = 1, #xypadpos.pointSet - 2 do
+                local p = xypadpos.pointSet[k]
+                if p.x == x and p.y == y then
+                    loop_start_index = k
+                    break
                 end
             end
 
-            if isClosed then
-                -- Check if notes fall within the selection
+            if loop_start_index ~= nil then
+                -- Build loop polygon from the intersection point to the end of the path
+                local loop = {}
+                for k = loop_start_index, #xypadpos.pointSet do
+                    loop[#loop + 1] = { x = xypadpos.pointSet[k].x, y = xypadpos.pointSet[k].y }
+                end
+                -- Explicitly close the polygon by repeating the first vertex
+                loop[#loop + 1] = { x = loop[1].x, y = loop[1].y }
+
+                -- Use ONLY this loop polygon for hit-testing
+                local poly = loop
+
+                -- === Ray casting against notes (even–odd rule) ===
                 for _, note_data in pairs(noteData) do
-                    local noteStart, noteEnd, noteY = note_data.step, note_data.step + note_data.len - 1,
-                        note_data.note
+                    local noteStart  = note_data.step
+                    local noteEnd    = note_data.step + note_data.len - 1
+                    local noteY      = note_data.note
                     local noteInside = false
 
+                    -- Sweep along the note's time span to test inclusion
                     for nx = noteStart, noteEnd do
                         local intersections = 0
-                        local j = #xypadpos.pointSet
-                        for i = 1, #xypadpos.pointSet do
-                            local xi, yi = xypadpos.pointSet[i].x, xypadpos.pointSet[i].y
-                            local xj, yj = xypadpos.pointSet[j].x, xypadpos.pointSet[j].y
+                        local j = #poly
+                        for i = 1, #poly do
+                            local xi, yi = poly[i].x, poly[i].y
+                            local xj, yj = poly[j].x, poly[j].y
 
-                            local yi_note, yj_note = gridOffset2NoteValue(yi), gridOffset2NoteValue(yj)
+                            local yi_note = gridOffset2NoteValue(yi)
+                            local yj_note = gridOffset2NoteValue(yj)
 
-                            if ((yi_note > noteY) ~= (yj_note > noteY)) and
-                                (nx < (xj - xi) * (noteY - yi_note) / (yj_note - yi_note) + xi) then
-                                intersections = intersections + 1
+                            -- Standard even–odd test: edge crosses the horizontal ray at noteY
+                            if ((yi_note > noteY) ~= (yj_note > noteY)) then
+                                local denom = (yj_note - yi_note)
+                                if denom ~= 0 then
+                                    local x_int = (xj - xi) * (noteY - yi_note) / denom + xi
+                                    if nx < x_int then
+                                        intersections = intersections + 1
+                                    end
+                                end
                             end
                             j = i
                         end
@@ -7053,20 +7063,20 @@ local function handleInvisibleLasso(event, addToSelection)
                     end
 
                     if noteInside then
-                        local dummyNote
+                        -- Merge duplicates according to your original criteria
+                        local dup_idx = nil
                         for k, selectedNote in pairs(newNoteSelection) do
                             if selectedNote.step == note_data.step and
                                 selectedNote.len == note_data.len and
                                 selectedNote.dly == note_data.dly and
                                 selectedNote.note == note_data.note then
-                                dummyNote = k
+                                dup_idx = k
                                 break
                             end
                         end
-
-                        if dummyNote then
-                            if newNoteSelection[dummyNote].column < note_data.column then
-                                newNoteSelection[dummyNote] = note_data
+                        if dup_idx then
+                            if newNoteSelection[dup_idx].column < note_data.column then
+                                newNoteSelection[dup_idx] = note_data
                             end
                         else
                             n = n + 1
@@ -7075,16 +7085,19 @@ local function handleInvisibleLasso(event, addToSelection)
                     end
                 end
 
-                --only select more than 1 notes as new selection, otherweise allow one new note to add to selection
+                -- Apply selection: either add single notes in add-mode or multiple notes
                 if (n > 0 and addToSelection) or n > 1 then
                     updateNoteSelection(newNoteSelection, not addToSelection)
                 end
-            end
 
-            xypadpos.pointSet = {}
+                -- After processing a loop, clear the stroke so only the latest loop counts
+                xypadpos.pointSet = {}
+                break -- Exit the raster-walk loop; this move has been consumed
+            end
         end
     end
 
+    -- Remember last grid position
     xypadpos.lval_x = cval_x
     xypadpos.lval_y = cval_y
 end
