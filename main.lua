@@ -3800,7 +3800,11 @@ local function fillTimeline()
             loop_length = song.selected_pattern.number_of_lines + 1 - loop_start
         end
         -- Adjust the start position based on stepOffset
-        local start_pos = math.max(loop_start - stepOffset, 1)
+        local start_pos = loop_start - stepOffset
+        if start_pos < 1 then
+            loop_length = loop_length + (start_pos - 1)
+            start_pos = 1
+        end
         -- Ensure loop length does not exceed gridWidth
         loop_length = math.max(math.min(loop_length, gW - start_pos + 1), 0)
         -- Check if the block loop indicator should be hidden
