@@ -1829,10 +1829,13 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
     end
     --when no instrument is set, use the current selected one
     if instrument == nil then
+        if currentInstrument == nil then
+            currentInstrument = song.selected_instrument_index - 1
+        end
         instrument = currentInstrument
     end
     --valid instrument?
-    if not song.instruments[instrument + 1] then
+    if not song.instruments[instrument + 1] and instrument ~= 255 then
         return
     end
     --ghost note are not possible with the new api
