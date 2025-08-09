@@ -9121,7 +9121,6 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     local h = context.size.height / gH
                     local lpb = song.transport.lpb
                     local steps = song.selected_pattern.number_of_lines
-                    local gridWidthWithZoom = gridWidth
 
                     --fill color
                     context.fill_color = colorBaseGridColor
@@ -9150,6 +9149,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                         context:line_to(w * gW, y * h)
                         context:stroke()
                     end
+
                     for x = 0, gW do
                         context:begin_path()
                         context:move_to(x * w, 0)
