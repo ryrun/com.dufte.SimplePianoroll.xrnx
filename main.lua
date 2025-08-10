@@ -1762,6 +1762,12 @@ local function refreshNoteControls()
         vbw.mode_audiopreview.color = colorDefault
     end
 
+    if vbw.toolpanel.visible then
+        vbw.toolpanelbtn.color = colorStepOn
+    else
+        vbw.toolpanelbtn.color = colorDefault
+    end
+
     if loopingrange then
         vbw.loopbutton.color = colorStepOn
     else
@@ -6054,6 +6060,62 @@ local function azertyMode(key)
     return key
 end
 
+--function to execute specific tool actions
+local function executeToolAction(action)
+    if action == "invert_selection" then
+        if #noteSelection > 0 then
+            showStatus("Inverted note selection.")
+            local newSelection = {}
+            for k in pairs(noteData) do
+                if not noteInSelection(noteData[k]) then
+                    table.insert(newSelection, noteData[k])
+                end
+            end
+            updateNoteSelection(newSelection, true)
+            return true
+        end
+    elseif action == "scale_selected_notes" then
+        if #noteSelection > 0 then
+            scaleNoteSelection(2)
+        end
+        currentNoteLength = math.min(math.floor(currentNoteLength * 2), 256)
+        refreshStates.refreshControls = true
+        return true
+    elseif action == "shrink_selected_notes" then
+        if #noteSelection > 0 then
+            scaleNoteSelection(0.5)
+        end
+        currentNoteLength = math.max(math.floor(currentNoteLength / 2), 1)
+        refreshStates.refreshControls = true
+        return true
+    elseif action == "select_all" then
+        updateNoteSelection("all", true)
+        return true
+    elseif action == "random_deselection" then
+        if #noteSelection > 0 then
+            showStatus("Randomly deselect some of the selected notes.")
+            table.sort(noteSelection, sortFunc.sortLeftOneFirst)
+            local newSelection = {}
+            local skip = 0
+            local removed = 0
+            math.randomseed(os.clock() * 100000000000)
+            for i = 1, #noteSelection do
+                if skip == 2 or (math.random(0, 1) == 1 and removed < 2) then
+                    table.insert(newSelection, noteSelection[i])
+                    skip = 0
+                    removed = removed + 1
+                else
+                    skip = skip + 1
+                    removed = 0
+                end
+            end
+            updateNoteSelection(newSelection, true)
+            return true
+        end
+    end
+    return false
+end
+
 --function for all keyboard shortcuts
 local function handleKeyEvent(keyEvent)
     local handled = false
@@ -6234,41 +6296,16 @@ local function handleKeyEvent(keyEvent)
     end
     if key.name == "r" and key.modifiers == "shift + control" then
         if key.state == "pressed" then
-            if #noteSelection > 0 then
-                showStatus("Randomly deselect halve of the selected notes.")
-                keyInfoText = "Randomly deselect halve of the selected notes"
-                table.sort(noteSelection, sortFunc.sortLeftOneFirst)
-                local newSelection = {}
-                local skip = 0
-                local removed = 0
-                math.randomseed(os.clock() * 100000000000)
-                for i = 1, #noteSelection do
-                    if skip == 2 or (math.random(0, 1) == 1 and removed < 2) then
-                        table.insert(newSelection, noteSelection[i])
-                        skip = 0
-                        removed = removed + 1
-                    else
-                        skip = skip + 1
-                        removed = 0
-                    end
-                end
-                updateNoteSelection(newSelection, true)
+            if executeToolAction("random_deselection") then
+                keyInfoText = "Randomly deselect some of the selected notes"
             end
         end
         handled = true
     end
     if key.name == "i" and key.modifiers == "shift" then
         if key.state == "pressed" then
-            if #noteSelection > 0 then
-                showStatus("Inverted note selection.")
+            if executeToolAction("invert_selection") then
                 keyInfoText = "Invert note selection"
-                local newSelection = {}
-                for k in pairs(noteData) do
-                    if not noteInSelection(noteData[k]) then
-                        table.insert(newSelection, noteData[k])
-                    end
-                end
-                updateNoteSelection(newSelection, true)
             end
         end
         handled = true
@@ -6300,19 +6337,14 @@ local function handleKeyEvent(keyEvent)
     if key.name == "0" then
         if key.state == "pressed" then
             if key.modifiers == "control" then
-                if #noteSelection > 0 then
-                    scaleNoteSelection(2)
-                    keyInfoText = "Grow note selection"
+                if executeToolAction("scale_selected_notes") then
+                    keyInfoText = "Scale selected notes"
                 end
-                currentNoteLength = math.min(math.floor(currentNoteLength * 2), 256)
             elseif key.modifiers == "shift + control" then
-                if #noteSelection > 0 then
-                    scaleNoteSelection(0.5)
-                    keyInfoText = "Shrink note selection"
+                if executeToolAction("shrink_selected_notes") then
+                    keyInfoText = "Shrink selected notes"
                 end
-                currentNoteLength = math.max(math.floor(currentNoteLength / 2), 1)
             end
-            refreshStates.refreshControls = true
         end
         handled = true
     end
@@ -6489,9 +6521,10 @@ local function handleKeyEvent(keyEvent)
     end
     if key.name == "a" and key.modifiers == "control" then
         if key.state == "pressed" then
-            updateNoteSelection("all", true)
-            keyInfoText = "Select all notes"
-            showStatus(#noteSelection .. " notes selected.", true)
+            if executeToolAction("select_all") then
+                keyInfoText = "Select all notes"
+                showStatus(#noteSelection .. " notes selected.", true)
+            end
         end
         handled = true
     end
@@ -9086,7 +9119,7 @@ showPreferences = function()
 end
 
 --create main piano roll dialog
-local function createPianoRollDialog(gridWidth, gridHeight)
+local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridStepSizeH)
     local playCursor = vb:stack {
         width = gridStepSizeW * gridWidth,
         height = gridStepSizeH,
@@ -9562,7 +9595,7 @@ local function createPianoRollDialog(gridWidth, gridHeight)
     end
 
     windowContent = vb:column {
-        vb:horizontal_aligner {
+        vb:row {
             margin = 3,
             vb:row {
                 margin = 3,
@@ -10333,13 +10366,25 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                                             margin = 1,
                                             vb:vertical_aligner {
                                                 mode = "center",
-                                                vb:button {
-                                                    bitmap = "Icons/Options.bmp",
-                                                    width = 24,
-                                                    tooltip = "Preferences ...",
-                                                    notifier = function()
-                                                        showPreferences()
-                                                    end,
+                                                vb:row {
+                                                    vb:button {
+                                                        id = "toolpanelbtn",
+                                                        bitmap = "Icons/Restore.bmp",
+                                                        width = 24,
+                                                        tooltip = "Show/Hide tool panel ...",
+                                                        notifier = function()
+                                                            vbw.toolpanel.visible = not vbw.toolpanel.visible
+                                                            refreshStates.refreshControls = true
+                                                        end,
+                                                    },
+                                                    vb:button {
+                                                        bitmap = "Icons/Options.bmp",
+                                                        width = 24,
+                                                        tooltip = "Preferences ...",
+                                                        notifier = function()
+                                                            showPreferences()
+                                                        end,
+                                                    },
                                                 },
                                             },
                                         },
@@ -10350,6 +10395,77 @@ local function createPianoRollDialog(gridWidth, gridHeight)
                     },
                 },
             },
+            vb:column {
+                id = "toolpanel",
+                visible = false,
+                margin = 1,
+                spacing = 16,
+                width = 120,
+                vbp:column {
+                    style = "group",
+                    width = "100%",
+                    spacing = 2,
+                    vbp:text {
+                        text = "Selection",
+                        width = "100%",
+                        font = "bold",
+                        style = "strong",
+                        align = "center",
+                    },
+                    vb:button {
+                        text = "All",
+                        width = "100%",
+                        tooltip = "Select all notes ...",
+                        notifier = function()
+                            executeToolAction("select_all")
+                        end,
+                    },
+                    vb:button {
+                        text = "Invert",
+                        width = "100%",
+                        tooltip = "Invert note selection ...",
+                        notifier = function()
+                            executeToolAction("invert_selection")
+                        end,
+                    },
+                    vb:button {
+                        text = "Random deselect",
+                        width = "100%",
+                        tooltip = "Randomly deselect some of the selected notes ...",
+                        notifier = function()
+                            executeToolAction("random_deselection")
+                        end,
+                    },
+                },
+                vbp:column {
+                    style = "group",
+                    width = "100%",
+                    spacing = 2,
+                    vbp:text {
+                        text = "Notes",
+                        width = "100%",
+                        font = "bold",
+                        style = "strong",
+                        align = "center",
+                    },
+                    vb:button {
+                        text = "Scale * 2",
+                        width = "100%",
+                        tooltip = "Scale selected notes ...",
+                        notifier = function()
+                            executeToolAction("scale_selected_notes")
+                        end,
+                    },
+                    vb:button {
+                        text = "Scale / 2",
+                        width = "100%",
+                        tooltip = "Shrink selected notes ...",
+                        notifier = function()
+                            executeToolAction("shrink_selected_notes")
+                        end,
+                    },
+                },
+            }
         }
     }
 end
@@ -10410,7 +10526,7 @@ local function main_function(hidden)
             noteButtons = {}
             vb = renoise.ViewBuilder()
             vbw = vb.views
-            createPianoRollDialog(gridWidth, gridHeight)
+            createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridStepSizeH)
         end
         --fill new created pianoroll, timeline and refresh controls
         refreshNoteControls()
