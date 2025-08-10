@@ -696,6 +696,22 @@ local function getSingularPlural(val, singular, plural, addVal)
     return b .. plural
 end
 
+--convert note positon data into microsteps
+local function getMicroStepValue(line, dly, len, end_dly)
+    local v = line * 0x100
+    if type(dly) == "number" then
+        v = v + dly
+    end
+    if type(len) == "number" then
+        local l = (len - 1 + line) * 0x100
+        if type(end_dly) == "number" then
+            l = l + end_dly
+        end
+        return l - v
+    end
+    return v
+end
+
 --find nearest values
 local function findNearestMicroStepValue(currentval, add, array)
     local v
@@ -2024,7 +2040,9 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
     local steps
     local len
     local delay
+    local delta
     local lo, hi = math.huge, -math.huge
+    local removeAll = false
     --when nothing is selected, then nothing is to do
     if #noteSelection == 0 or (microsteps == "reverse" and #noteSelection < 2) then
         return false
@@ -2032,7 +2050,13 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
     if microsteps == "reverse" then
         table.sort(noteSelection, sortFunc.sortRightOneFirst)
         for i = 1, #noteSelection do
-            local s, L = noteSelection[i].pos, noteSelection[i].len
+            local s = getMicroStepValue(noteSelection[i].line, noteSelection[i].dly)
+            local L = getMicroStepValue(
+                noteSelection[i].line,
+                noteSelection[i].dly,
+                noteSelection[i].len,
+                noteSelection[i].end_dly
+            )
             if s < lo then lo = s end
             local e = s + (L or 0)
             if e > hi then hi = e end
@@ -2074,6 +2098,8 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
             return false
         end
         setUndoDescription("Reverse notes ...")
+        --set flag to remove all notes before processing
+        removeAll = true
     else
         setUndoDescription("Move notes ...")
     end
@@ -2083,14 +2109,34 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
         wasFollowPlayer = song.transport.follow_player
         song.transport.follow_player = false
     end
+    --remove all notes before processing
+    if removeAll then
+        for key = 1, #noteSelection do
+            removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
+        end
+    end
     --go through selection
     for key = 1, #noteSelection do
         --remove note
-        removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
+        if not removeAll then
+            removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
+        end
+        if microsteps == "reverse" then
+            local s = getMicroStepValue(noteSelection[key].line, noteSelection[key].dly)
+            local L = getMicroStepValue(
+                noteSelection[key].line,
+                noteSelection[key].dly,
+                noteSelection[key].len,
+                noteSelection[key].end_dly
+            )
+            delta = (lo + hi) - (2 * s + L)
+        else
+            delta = microsteps
+        end
         --calculate step and delay difference
-        delay = microsteps % 0x100
-        steps = math.floor((noteSelection[key].dly + microsteps) / 0x100)
-        len = math.floor((noteSelection[key].end_dly + microsteps) / 0x100)
+        delay = delta % 0x100
+        steps = math.floor((noteSelection[key].dly + delta) / 0x100)
+        len = math.floor((noteSelection[key].end_dly + delta) / 0x100)
         --prepare len difference for new delay values
         len = len - steps
         --search for column
@@ -2125,11 +2171,11 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
         end
     end
     jumpToNoteInPattern("sel")
-    return microsteps
+    return delta
 end
 
 --transpose each selected notes
-local function transposeSelectedNotes(transpose, keepscale)
+local function transposeSelectedNotes(transpose, keepscale, nopreview)
     local lineValues = song.selected_pattern_track.lines
     local ret = true
     local lo, hi = math.huge, -math.huge
@@ -2205,8 +2251,10 @@ local function transposeSelectedNotes(transpose, keepscale)
         note_column.note_value = noteSelection[key].note
     end
     --trigger notes after transpose
-    for key = 1, #noteSelection do
-        triggerNoteOfCurrentInstrument(noteSelection[key].note, nil, nil, true, noteSelection[key].ins)
+    if nopreview == nil or nopreview == false then
+        for key = 1, #noteSelection do
+            triggerNoteOfCurrentInstrument(noteSelection[key].note, nil, nil, true, noteSelection[key].ins)
+        end
     end
     jumpToNoteInPattern("sel")
     return ret
@@ -6233,7 +6281,7 @@ local function executeToolAction(action, allWhenNothingSelected)
         end
     elseif action == "pitchflip_selected_notes" then
         if #noteSelection > 0 then
-            if transposeSelectedNotes("flip") then
+            if transposeSelectedNotes("flip", nil, true) then
                 showStatus(#noteSelection .. " notes were pitch flipped.")
                 return true
             end
