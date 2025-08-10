@@ -544,6 +544,16 @@ local midiDevice
 
 --default sort functions
 local sortFunc = {
+    sortNoteLeftOneFirst = function(a, b)
+        local x, y
+        x = a.note
+        y = b.note
+        if x == y then
+            x = a.line + a.dly / 0x100
+            y = b.line + b.dly / 0x100
+        end
+        return x < y
+    end,
     sortLeftOneFirst = function(a, b)
         local x, y
         x = a.line + a.dly / 0x100
@@ -2393,6 +2403,129 @@ local function scaleNoteSelection(times)
             return false
         end
     end
+    refreshStates.refreshPianoRollNeeded = true
+    return true
+end
+
+--glue selected notes
+local function glueSelectedNotes()
+    -- helper: check if two notes can be glued
+    local function canGlue(a, b)
+        -- notes must be immediately adjacent in lines and have no transition delays
+        -- and must share same pitch, instrument and pan to avoid ambiguous merges
+        return (a.line + a.len) == b.line
+            and (a.note == b.note)
+            and (a.ins == b.ins)
+            and (a.pan == b.pan)
+    end
+
+    if not noteSelection or #noteSelection == 0 then
+        showStatus("Nothing selected to glue.")
+        return false
+    end
+
+    setUndoDescription("Glue notes ...")
+
+    -- ensure processing order is left-to-right
+    table.sort(noteSelection, sortFunc.sortNoteLeftOneFirst)
+
+    local newSelection = {}
+    local used = {} -- marks indices already merged into a glued note
+
+    local i = 1
+    while i <= #noteSelection do
+        if used[i] then
+            i = i + 1
+        else
+            local base = noteSelection[i]
+            local glued_len = base.len
+            local last_idx = i
+
+            -- attempt to extend 'base' forward while next notes can glue
+            local j = i + 1
+            while j <= #noteSelection do
+                local nextn = noteSelection[j]
+                if not used[j] and canGlue(noteSelection[last_idx], nextn) then
+                    -- extend: keep start params from the first, and carry end params from the latest
+                    glued_len = glued_len + nextn.len
+                    last_idx = j
+                    used[j] = true
+                    j = j + 1
+                else
+                    -- stop chain when next can't glue
+                    break
+                end
+            end
+
+            if last_idx ~= i then
+                -- We found a chain i..last_idx worth gluing
+                for r = last_idx, i, -1 do
+                    removeNoteInPattern(
+                        noteSelection[r].column,
+                        noteSelection[r].line,
+                        noteSelection[r].len
+                    )
+                end
+
+                -- build final note data:
+                local first         = base
+                local last          = noteSelection[last_idx]
+
+                -- find a valid column for the glued note (prefer free space)
+                local target_column = returnColumnWhenEnoughSpaceForNote(
+                    first.line,
+                    glued_len,
+                    first.dly,
+                    last.end_dly
+                )
+                if not target_column then
+                    showStatus("Not enough space to glue notes here.")
+                    return false
+                end
+
+                local glued = {
+                    -- carry over identity & start params from first note
+                    line    = first.line,
+                    note    = first.note,
+                    vel     = first.vel,
+                    dly     = first.dly,
+                    pan     = first.pan,
+                    ins     = first.ins,
+                    column  = target_column,
+                    end_vel = first.end_vel,
+                    -- carry over end params from last note
+                    end_dly = last.end_dly,
+                    len     = glued_len,
+                }
+
+                -- add glued note
+                glued.noteoff = addNoteToPattern(
+                    glued.column,
+                    glued.line,
+                    glued.len,
+                    glued.note,
+                    glued.vel,
+                    glued.end_vel,
+                    glued.pan,
+                    glued.dly,
+                    glued.end_dly,
+                    glued.ins
+                )
+
+                table.insert(newSelection, glued)
+                used[i] = true
+                -- advance i to first index after the glued chain
+                i = last_idx + 1
+            else
+                -- nothing to glue for this note, keep it
+                table.insert(newSelection, base)
+                used[i] = true
+                i = i + 1
+            end
+        end
+    end
+
+    noteSelection = newSelection
     refreshStates.refreshPianoRollNeeded = true
     return true
 end
@@ -6264,6 +6397,18 @@ local function executeToolAction(action, allWhenNothingSelected)
                 end
             end
             updateNoteSelection(newSelection, true)
+            return true
+        end
+    elseif action == "glue_selected_notes" then
+        if #noteSelection > 0 then
+            local ret = glueSelectedNotes()
+            --was not possible then deselect
+            if not ret then
+                updateNoteSelection(nil, true)
+                return false
+            else
+                showStatus(#noteSelection .. " notes glued.")
+            end
             return true
         end
     elseif action == "chop_selected_notes" then
@@ -10891,13 +11036,25 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                     executeToolAction("pitchflip_selected_notes", true)
                                 end,
                             },
-                            vb:button {
-                                text = "Chop",
+                            vb:horizontal_aligner {
                                 width = "100%",
-                                tooltip = "Chop selected or all notes ...",
-                                notifier = function()
-                                    executeToolAction("chop_selected_notes", true)
-                                end,
+                                mode = "justify",
+                                vb:button {
+                                    text = "Chop",
+                                    width = "50%",
+                                    tooltip = "Chop selected or all notes ...",
+                                    notifier = function()
+                                        executeToolAction("chop_selected_notes", true)
+                                    end,
+                                },
+                                vb:button {
+                                    text = "Glue",
+                                    width = "50%",
+                                    tooltip = "Glue selected or all notes ...",
+                                    notifier = function()
+                                        executeToolAction("glue_selected_notes", true)
+                                    end,
+                                },
                             },
                             vb:button {
                                 text = "Flatten",
