@@ -10579,14 +10579,6 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                             width = "100%",
                             mode = "justify",
                             vb:button {
-                                text = "+1 Oct",
-                                width = "50%",
-                                tooltip = "Transpose selected or all notes up one octave ...",
-                                notifier = function()
-                                    executeToolAction("octup_selected_notes", true)
-                                end,
-                            },
-                            vb:button {
                                 text = "-1 Oct",
                                 width = "50%",
                                 tooltip = "Transpose selected or all notes down one octave ...",
@@ -10594,24 +10586,32 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                     executeToolAction("octdown_selected_notes", true)
                                 end,
                             },
+                            vb:button {
+                                text = "+1 Oct",
+                                width = "50%",
+                                tooltip = "Transpose selected or all notes up one octave ...",
+                                notifier = function()
+                                    executeToolAction("octup_selected_notes", true)
+                                end,
+                            },
                         },
                         vb:horizontal_aligner {
                             width = "100%",
                             mode = "justify",
-                            vb:button {
-                                text = "+1 in Scl",
-                                width = "50%",
-                                tooltip = "Transpose selected or all notes up one semitone in scale ...",
-                                notifier = function()
-                                    executeToolAction("semiinscaleup_selected_notes", true)
-                                end,
-                            },
                             vb:button {
                                 text = "-1 in Scl",
                                 width = "50%",
                                 tooltip = "Transpose selected or all notes down one semitone in scale ...",
                                 notifier = function()
                                     executeToolAction("semiinscaledown_selected_notes", true)
+                                end,
+                            },
+                            vb:button {
+                                text = "+1 in Scl",
+                                width = "50%",
+                                tooltip = "Transpose selected or all notes up one semitone in scale ...",
+                                notifier = function()
+                                    executeToolAction("semiinscaleup_selected_notes", true)
                                 end,
                             },
                         },
