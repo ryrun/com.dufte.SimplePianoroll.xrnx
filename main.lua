@@ -6089,17 +6089,42 @@ local function executeToolAction(action, allWhenNothingSelected)
             updateNoteSelection(newSelection, true)
             return true
         end
+    elseif action == "chop_selected_notes" then
+        if #noteSelection > 0 then
+            local ret = chopSelectedNotes()
+            --was not possible then deselect
+            if not ret then
+                updateNoteSelection(nil, true)
+                return false
+            else
+                showStatus((#noteSelection / 2) .. " notes chopped.")
+            end
+            return true
+        end
     elseif action == "duplicate_selected_notes" then
         if #noteSelection > 0 then
             local ret = duplicateSelectedNotes()
             --was not possible then deselect
             if not ret then
-                noteSelection = {}
-                refreshStates.refreshPianoRollNeeded = true
+                updateNoteSelection(nil, true)
+                return false
             else
                 jumpToNoteInPattern("sel")
                 showStatus(#noteSelection .. " notes duplicated.")
             end
+            return true
+        end
+    elseif action == "semiinscaledown_selected_notes" then
+        if #noteSelection > 0 then
+            transposeSelectedNotes(-1, true)
+            showStatus(#noteSelection .. " notes was transposed one semitone down in scale.")
+            return true
+        end
+    elseif action == "semiinscaleup_selected_notes" then
+        if #noteSelection > 0 then
+            transposeSelectedNotes(1, true)
+            showStatus(#noteSelection .. " notes was transposed one semitone up in scale.")
+            return true
         end
     elseif action == "octdown_selected_notes" then
         if #noteSelection > 0 then
@@ -6398,21 +6423,8 @@ local function handleKeyEvent(keyEvent)
     end
     if key.name == "u" and key.modifiers == "control" then
         if key.state == "pressed" then
-            if #noteSelection == 0 then
-                for k in pairs(noteData) do
-                    local note_data = noteData[k]
-                    table.insert(noteSelection, note_data)
-                end
-            end
-            if #noteSelection > 0 then
-                local ret = chopSelectedNotes()
-                --was not possible then deselect
-                if not ret then
-                    updateNoteSelection(nil, true)
-                else
-                    showStatus((#noteSelection / 2) .. " notes chopped.")
-                    keyInfoText = "Chop selected notes"
-                end
+            if executeToolAction("chop_selected_notes", true) then
+                keyInfoText = "Chop selected notes"
             end
         end
         handled = true
@@ -10557,12 +10569,40 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                 end,
                             },
                         },
+                        vb:horizontal_aligner {
+                            width = "100%",
+                            mode = "justify",
+                            vb:button {
+                                text = "+1 in Scl",
+                                width = "50%",
+                                tooltip = "Transpose selected or all notes up one semitone in scale ...",
+                                notifier = function()
+                                    executeToolAction("semiinscaleup_selected_notes", true)
+                                end,
+                            },
+                            vb:button {
+                                text = "-1 in Scl",
+                                width = "50%",
+                                tooltip = "Transpose selected or all notes down one semitone in scale ...",
+                                notifier = function()
+                                    executeToolAction("semiinscaledown_selected_notes", true)
+                                end,
+                            },
+                        },
                         vb:button {
                             text = "Duplicate",
                             width = "100%",
                             tooltip = "Duplicate selected or all notes ...",
                             notifier = function()
                                 executeToolAction("duplicate_selected_notes", true)
+                            end,
+                        },
+                        vb:button {
+                            text = "Chop",
+                            width = "100%",
+                            tooltip = "Chop selected or all notes ...",
+                            notifier = function()
+                                executeToolAction("chop_selected_notes", true)
                             end,
                         },
                         vb:button {
@@ -10587,6 +10627,14 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                             tooltip = "Shrink selected or all notes ...",
                             notifier = function()
                                 executeToolAction("shrink_selected_notes", true)
+                            end,
+                        },
+                        vb:button {
+                            text = "Histogram",
+                            width = "100%",
+                            tooltip = "Show histogram tool ...",
+                            notifier = function()
+                                showHistogram()
                             end,
                         },
                     },
