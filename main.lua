@@ -10616,7 +10616,6 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                 vb:column {
                     style = "panel",
                     margin = 4,
-                    spacing = 16,
                     width = 130,
                     vb:text {
                         text = "⚙️ Tool panel",
@@ -10625,279 +10624,286 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                         align = "center",
                         width = "100%",
                     },
-                    vbp:column {
-                        style = "group",
-                        width = "100%",
-                        spacing = 2,
-                        vbp:text {
-                            text = "Renoise",
-                            width = "100%",
-                            font = "bold",
-                            style = "strong",
-                            align = "center",
-                        },
-                        vb:horizontal_aligner {
-                            width = "100%",
-                            mode = "justify",
-                            vb:button {
-                                text = "↺ Undo",
-                                width = "50%",
-                                tooltip = "Undo last performed Renoise action ...",
-                                notifier = function()
-                                    executeToolAction("undo")
-                                end,
-                            },
-                            vb:button {
-                                text = "↻ Redo",
-                                width = "50%",
-                                tooltip = "Redo last performed Renoise action ...",
-                                notifier = function()
-                                    executeToolAction("redo")
-                                end,
-                            },
-                        },
+                    vb:space {
+                        height = 4,
                     },
-                    vbp:column {
-                        style = "group",
+                    vb:column {
+                        spacing = 16,
                         width = "100%",
-                        spacing = 2,
-                        vbp:text {
-                            text = "Piano roll clipboard",
+                        vb:column {
+                            style = "group",
                             width = "100%",
-                            font = "bold",
-                            style = "strong",
-                            align = "center",
-                        },
-                        vb:horizontal_aligner {
-                            width = "100%",
-                            mode = "justify",
-                            vb:button {
-                                text = "Cut",
-                                width = "33%",
-                                tooltip = "Cut all or selected notes ...",
-                                notifier = function()
-                                    executeToolAction("cut_selected_notes", true)
-                                end,
+                            spacing = 2,
+                            vb:text {
+                                text = "Renoise",
+                                width = "100%",
+                                font = "bold",
+                                style = "strong",
+                                align = "center",
                             },
-                            vb:button {
-                                text = "Copy",
-                                width = "33%",
-                                tooltip = "Copy all or selected notes ...",
-                                notifier = function()
-                                    executeToolAction("copy_selected_notes", true)
-                                end,
-                            },
-                            vb:button {
-                                text = "Paste",
-                                width = "33%",
-                                tooltip = "Paste notes from piano roll clipboard ...",
-                                notifier = function()
-                                    executeToolAction("paste")
-                                end,
+                            vb:horizontal_aligner {
+                                width = "100%",
+                                mode = "justify",
+                                vb:button {
+                                    text = "↺ Undo",
+                                    width = "50%",
+                                    tooltip = "Undo last performed Renoise action ...",
+                                    notifier = function()
+                                        executeToolAction("undo")
+                                    end,
+                                },
+                                vb:button {
+                                    text = "↻ Redo",
+                                    width = "50%",
+                                    tooltip = "Redo last performed Renoise action ...",
+                                    notifier = function()
+                                        executeToolAction("redo")
+                                    end,
+                                },
                             },
                         },
-                    },
-                    vbp:column {
-                        style = "group",
-                        width = "100%",
-                        spacing = 2,
-                        vbp:text {
-                            text = "Selection",
+                        vb:column {
+                            style = "group",
                             width = "100%",
-                            font = "bold",
-                            style = "strong",
-                            align = "center",
-                        },
-                        vb:horizontal_aligner {
-                            width = "100%",
-                            mode = "justify",
-                            vb:button {
-                                text = "All",
-                                width = "50%",
-                                tooltip = "Select all notes ...",
-                                notifier = function()
-                                    executeToolAction("select_all")
-                                end,
+                            spacing = 2,
+                            vb:text {
+                                text = "Piano roll clipboard",
+                                width = "100%",
+                                font = "bold",
+                                style = "strong",
+                                align = "center",
                             },
-                            vb:button {
-                                text = "None",
-                                width = "50%",
-                                tooltip = "Deselect all notes ...",
-                                notifier = function()
-                                    executeToolAction("select_none")
-                                end,
-                            },
-                        },
-                        vb:button {
-                            text = "Invert",
-                            width = "100%",
-                            tooltip = "Invert note selection ...",
-                            notifier = function()
-                                executeToolAction("invert_selection")
-                            end,
-                        },
-                        vb:button {
-                            text = "Select topmost notes",
-                            width = "100%",
-                            tooltip = "Select all topmost notes ...",
-                            notifier = function()
-                                executeToolAction("select_topmost")
-                            end,
-                        },
-                        vb:button {
-                            text = "Odd deselect",
-                            width = "100%",
-                            tooltip = "Deselect odd notes in selection ...",
-                            notifier = function()
-                                executeToolAction("odddeselect_selection")
-                            end,
-                        },
-                        vb:button {
-                            text = "Even deselect",
-                            width = "100%",
-                            tooltip = "Deselect odd notes in selection ...",
-                            notifier = function()
-                                executeToolAction("evendeselect_selection")
-                            end,
-                        },
-                        vb:button {
-                            text = "Random deselect",
-                            width = "100%",
-                            tooltip = "Randomly deselect some of the selected notes ...",
-                            notifier = function()
-                                executeToolAction("random_deselection")
-                            end,
-                        },
-                    },
-                    vbp:column {
-                        style = "group",
-                        width = "100%",
-                        spacing = 2,
-                        vbp:text {
-                            text = "Notes",
-                            width = "100%",
-                            font = "bold",
-                            style = "strong",
-                            align = "center",
-                        },
-                        vb:horizontal_aligner {
-                            width = "100%",
-                            mode = "justify",
-                            vb:button {
-                                text = "-1 Oct",
-                                width = "50%",
-                                tooltip = "Transpose selected or all notes down one octave ...",
-                                notifier = function()
-                                    executeToolAction("octdown_selected_notes", true)
-                                end,
-                            },
-                            vb:button {
-                                text = "+1 Oct",
-                                width = "50%",
-                                tooltip = "Transpose selected or all notes up one octave ...",
-                                notifier = function()
-                                    executeToolAction("octup_selected_notes", true)
-                                end,
+                            vb:horizontal_aligner {
+                                width = "100%",
+                                mode = "justify",
+                                vb:button {
+                                    text = "Cut",
+                                    width = "33%",
+                                    tooltip = "Cut all or selected notes ...",
+                                    notifier = function()
+                                        executeToolAction("cut_selected_notes", true)
+                                    end,
+                                },
+                                vb:button {
+                                    text = "Copy",
+                                    width = "33%",
+                                    tooltip = "Copy all or selected notes ...",
+                                    notifier = function()
+                                        executeToolAction("copy_selected_notes", true)
+                                    end,
+                                },
+                                vb:button {
+                                    text = "Paste",
+                                    width = "33%",
+                                    tooltip = "Paste notes from piano roll clipboard ...",
+                                    notifier = function()
+                                        executeToolAction("paste")
+                                    end,
+                                },
                             },
                         },
-                        vb:horizontal_aligner {
+                        vb:column {
+                            style = "group",
                             width = "100%",
-                            mode = "justify",
-                            vb:button {
-                                text = "-1 in Scl",
-                                width = "50%",
-                                tooltip = "Transpose selected or all notes down one semitone in scale ...",
-                                notifier = function()
-                                    executeToolAction("semiinscaledown_selected_notes", true)
-                                end,
+                            spacing = 2,
+                            vb:text {
+                                text = "Selection",
+                                width = "100%",
+                                font = "bold",
+                                style = "strong",
+                                align = "center",
+                            },
+                            vb:horizontal_aligner {
+                                width = "100%",
+                                mode = "justify",
+                                vb:button {
+                                    text = "All",
+                                    width = "50%",
+                                    tooltip = "Select all notes ...",
+                                    notifier = function()
+                                        executeToolAction("select_all")
+                                    end,
+                                },
+                                vb:button {
+                                    text = "None",
+                                    width = "50%",
+                                    tooltip = "Deselect all notes ...",
+                                    notifier = function()
+                                        executeToolAction("select_none")
+                                    end,
+                                },
                             },
                             vb:button {
-                                text = "+1 in Scl",
-                                width = "50%",
-                                tooltip = "Transpose selected or all notes up one semitone in scale ...",
+                                text = "Invert",
+                                width = "100%",
+                                tooltip = "Invert note selection ...",
                                 notifier = function()
-                                    executeToolAction("semiinscaleup_selected_notes", true)
-                                end,
-                            },
-                        },
-                        vb:horizontal_aligner {
-                            width = "100%",
-                            mode = "justify",
-                            vb:button {
-                                text = "Scale : 2",
-                                width = "50%",
-                                tooltip = "Shrink selected or all notes ...",
-                                notifier = function()
-                                    executeToolAction("shrink_selected_notes", true)
-                                end,
-                            },
-                            vb:button {
-                                text = "Scale * 2",
-                                width = "50%",
-                                tooltip = "Scale selected or all notes ...",
-                                notifier = function()
-                                    executeToolAction("scale_selected_notes", true)
-                                end,
-                            },
-                        },
-                        vb:button {
-                            text = "Duplicate",
-                            width = "100%",
-                            tooltip = "Duplicate selected or all notes ...",
-                            notifier = function()
-                                executeToolAction("duplicate_selected_notes", true)
-                            end,
-                        },
-                        vb:button {
-                            text = "Reverse",
-                            width = "100%",
-                            tooltip = "Reverse selected or all notes ...",
-                            notifier = function()
-                                executeToolAction("reverse_selected_notes", true)
-                            end,
-                        },
-                        vb:button {
-                            text = "Pitch flip",
-                            width = "100%",
-                            tooltip = "Pitch flip selected or all notes ...",
-                            notifier = function()
-                                executeToolAction("pitchflip_selected_notes", true)
-                            end,
-                        },
-                        vb:button {
-                            text = "Chop",
-                            width = "100%",
-                            tooltip = "Chop selected or all notes ...",
-                            notifier = function()
-                                executeToolAction("chop_selected_notes", true)
-                            end,
-                        },
-                        vb:button {
-                            text = "Flatten",
-                            width = "100%",
-                            tooltip = "Flatten selected or all notes ...",
-                            notifier = function()
-                                executeToolAction("flatten_selected_notes", true)
-                            end,
-                        },
-                        vb:button {
-                            text = "Monophy",
-                            width = "100%",
-                            tooltip = "Keep only the topmost notes ...",
-                            notifier = function()
-                                if executeToolAction("select_topmost") then
                                     executeToolAction("invert_selection")
-                                    executeToolAction("delete")
-                                end
-                            end,
+                                end,
+                            },
+                            vb:button {
+                                text = "Select topmost notes",
+                                width = "100%",
+                                tooltip = "Select all topmost notes ...",
+                                notifier = function()
+                                    executeToolAction("select_topmost")
+                                end,
+                            },
+                            vb:button {
+                                text = "Odd deselect",
+                                width = "100%",
+                                tooltip = "Deselect odd notes in selection ...",
+                                notifier = function()
+                                    executeToolAction("odddeselect_selection")
+                                end,
+                            },
+                            vb:button {
+                                text = "Even deselect",
+                                width = "100%",
+                                tooltip = "Deselect odd notes in selection ...",
+                                notifier = function()
+                                    executeToolAction("evendeselect_selection")
+                                end,
+                            },
+                            vb:button {
+                                text = "Random deselect",
+                                width = "100%",
+                                tooltip = "Randomly deselect some of the selected notes ...",
+                                notifier = function()
+                                    executeToolAction("random_deselection")
+                                end,
+                            },
                         },
-                        vb:button {
-                            text = "Histogram",
+                        vb:column {
+                            style = "group",
                             width = "100%",
-                            tooltip = "Show histogram tool ...",
-                            notifier = function()
-                                executeToolAction("histogram", true)
-                            end,
+                            spacing = 2,
+                            vb:text {
+                                text = "Notes",
+                                width = "100%",
+                                font = "bold",
+                                style = "strong",
+                                align = "center",
+                            },
+                            vb:horizontal_aligner {
+                                width = "100%",
+                                mode = "justify",
+                                vb:button {
+                                    text = "-1 Oct",
+                                    width = "50%",
+                                    tooltip = "Transpose selected or all notes down one octave ...",
+                                    notifier = function()
+                                        executeToolAction("octdown_selected_notes", true)
+                                    end,
+                                },
+                                vb:button {
+                                    text = "+1 Oct",
+                                    width = "50%",
+                                    tooltip = "Transpose selected or all notes up one octave ...",
+                                    notifier = function()
+                                        executeToolAction("octup_selected_notes", true)
+                                    end,
+                                },
+                            },
+                            vb:horizontal_aligner {
+                                width = "100%",
+                                mode = "justify",
+                                vb:button {
+                                    text = "-1 in Scl",
+                                    width = "50%",
+                                    tooltip = "Transpose selected or all notes down one semitone in scale ...",
+                                    notifier = function()
+                                        executeToolAction("semiinscaledown_selected_notes", true)
+                                    end,
+                                },
+                                vb:button {
+                                    text = "+1 in Scl",
+                                    width = "50%",
+                                    tooltip = "Transpose selected or all notes up one semitone in scale ...",
+                                    notifier = function()
+                                        executeToolAction("semiinscaleup_selected_notes", true)
+                                    end,
+                                },
+                            },
+                            vb:horizontal_aligner {
+                                width = "100%",
+                                mode = "justify",
+                                vb:button {
+                                    text = "Scale : 2",
+                                    width = "50%",
+                                    tooltip = "Shrink selected or all notes ...",
+                                    notifier = function()
+                                        executeToolAction("shrink_selected_notes", true)
+                                    end,
+                                },
+                                vb:button {
+                                    text = "Scale * 2",
+                                    width = "50%",
+                                    tooltip = "Scale selected or all notes ...",
+                                    notifier = function()
+                                        executeToolAction("scale_selected_notes", true)
+                                    end,
+                                },
+                            },
+                            vb:button {
+                                text = "Duplicate",
+                                width = "100%",
+                                tooltip = "Duplicate selected or all notes ...",
+                                notifier = function()
+                                    executeToolAction("duplicate_selected_notes", true)
+                                end,
+                            },
+                            vb:button {
+                                text = "Reverse",
+                                width = "100%",
+                                tooltip = "Reverse selected or all notes ...",
+                                notifier = function()
+                                    executeToolAction("reverse_selected_notes", true)
+                                end,
+                            },
+                            vb:button {
+                                text = "Pitch flip",
+                                width = "100%",
+                                tooltip = "Pitch flip selected or all notes ...",
+                                notifier = function()
+                                    executeToolAction("pitchflip_selected_notes", true)
+                                end,
+                            },
+                            vb:button {
+                                text = "Chop",
+                                width = "100%",
+                                tooltip = "Chop selected or all notes ...",
+                                notifier = function()
+                                    executeToolAction("chop_selected_notes", true)
+                                end,
+                            },
+                            vb:button {
+                                text = "Flatten",
+                                width = "100%",
+                                tooltip = "Flatten selected or all notes ...",
+                                notifier = function()
+                                    executeToolAction("flatten_selected_notes", true)
+                                end,
+                            },
+                            vb:button {
+                                text = "Monophy",
+                                width = "100%",
+                                tooltip = "Keep only the topmost notes ...",
+                                notifier = function()
+                                    if executeToolAction("select_topmost") then
+                                        executeToolAction("invert_selection")
+                                        executeToolAction("delete")
+                                    end
+                                end,
+                            },
+                            vb:button {
+                                text = "Histogram",
+                                width = "100%",
+                                tooltip = "Show histogram tool ...",
+                                notifier = function()
+                                    executeToolAction("histogram", true)
+                                end,
+                            },
                         },
                     },
                 }
