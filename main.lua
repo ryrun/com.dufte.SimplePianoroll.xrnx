@@ -2115,17 +2115,26 @@ end
 local function transposeSelectedNotes(transpose, keepscale)
     local lineValues = song.selected_pattern_track.lines
     local ret = true
-    --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
-    if transpose > 0 then
-        --higher one notes first
-        table.sort(noteSelection, function(a, b)
-            return a.note > b.note
-        end)
-    else
-        --lower one notes first
-        table.sort(noteSelection, function(a, b)
-            return a.note < b.note
-        end)
+    local lo, hi = math.huge, -math.huge
+    --resort note selection table or check for highest and lowest note
+    if transpose == "flip" then
+        for i = 1, #noteSelection do
+            local n = noteSelection[i].note
+            if n < lo then lo = n end
+            if n > hi then hi = n end
+        end
+    elseif type(transpose) == "number" then
+        if transpose > 0 then
+            --higher one notes first
+            table.sort(noteSelection, function(a, b)
+                return a.note > b.note
+            end)
+        else
+            --lower one notes first
+            table.sort(noteSelection, function(a, b)
+                return a.note < b.note
+            end)
+        end
     end
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
@@ -2134,21 +2143,33 @@ local function transposeSelectedNotes(transpose, keepscale)
         song.transport.follow_player = false
     end
     --
-    setUndoDescription("Transpose notes ...")
+    if transpose == "flip" then
+        if lo == hi then
+            return false
+        end
+        setUndoDescription("Pitch flip notes ...")
+    else
+        setUndoDescription("Transpose notes ...")
+    end
     --go through selection
     for key = 1, #noteSelection do
         local transposeVal = transpose
         --transpose
         local note_column = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column)
-        --when in scale transposing is active move note further, when needed
-        if keepscale and not noteInScale(noteSelection[key].note + transposeVal) then
-            if transposeVal > 0 then
-                transposeVal = transposeVal + 1
-            else
-                transposeVal = transposeVal - 1
+        --flip jut flip the note
+        if transpose == "flip" then
+            transposeVal = hi - noteSelection[key].note + lo
+        else
+            --when in scale transposing is active move note further, when needed
+            if keepscale and not noteInScale(noteSelection[key].note + transposeVal) then
+                if transposeVal > 0 then
+                    transposeVal = transposeVal + 1
+                else
+                    transposeVal = transposeVal - 1
+                end
             end
+            transposeVal = noteSelection[key].note + transposeVal
         end
-        transposeVal = noteSelection[key].note + transposeVal
         --outside the not range skip the whole tansposing
         if transposeVal < 0 then
             ret = false
@@ -6186,34 +6207,41 @@ local function executeToolAction(action, allWhenNothingSelected)
             end
             return true
         end
+    elseif action == "pitchflip_selected_notes" then
+        if #noteSelection > 0 then
+            if transposeSelectedNotes("flip") then
+                showStatus(#noteSelection .. " notes were pitch flipped.")
+                return true
+            end
+        end
     elseif action == "semiinscaledown_selected_notes" then
         if #noteSelection > 0 then
             transposeSelectedNotes(-1, true)
-            showStatus(#noteSelection .. " notes was transposed one semitone down in scale.")
+            showStatus(#noteSelection .. " notes were transposed one semitone down in scale.")
             return true
         end
     elseif action == "semiinscaleup_selected_notes" then
         if #noteSelection > 0 then
             transposeSelectedNotes(1, true)
-            showStatus(#noteSelection .. " notes was transposed one semitone up in scale.")
+            showStatus(#noteSelection .. " notes were transposed one semitone up in scale.")
             return true
         end
     elseif action == "octdown_selected_notes" then
         if #noteSelection > 0 then
             transposeSelectedNotes(-12)
-            showStatus(#noteSelection .. " notes was transposed one octave down.")
+            showStatus(#noteSelection .. " notes were transposed one octave down.")
             return true
         end
     elseif action == "octup_selected_notes" then
         if #noteSelection > 0 then
             transposeSelectedNotes(12)
-            showStatus(#noteSelection .. " notes was transposed one octave up.")
+            showStatus(#noteSelection .. " notes were transposed one octave up.")
             return true
         end
     elseif action == "flatten_selected_notes" then
         if #noteSelection > 0 then
             changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, nil, nil, "matchingnotes")
-            showStatus(#noteSelection .. " notes was flattened.")
+            showStatus(#noteSelection .. " notes were flattened.")
             return true
         end
     elseif action == "scale_selected_notes" then
@@ -10709,6 +10737,14 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                             tooltip = "Duplicate selected or all notes ...",
                             notifier = function()
                                 executeToolAction("duplicate_selected_notes", true)
+                            end,
+                        },
+                        vb:button {
+                            text = "Pitch flip",
+                            width = "100%",
+                            tooltip = "Pitch flip selected or all notes ...",
+                            notifier = function()
+                                executeToolAction("pitchflip_selected_notes", true)
                             end,
                         },
                         vb:button {
