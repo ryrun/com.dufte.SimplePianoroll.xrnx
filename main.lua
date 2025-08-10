@@ -10696,7 +10696,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                             width = "100%",
                             mode = "justify",
                             vb:button {
-                                text = "Scale / 2",
+                                text = "Scale : 2",
                                 width = "50%",
                                 tooltip = "Shrink selected or all notes ...",
                                 notifier = function()
