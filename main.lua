@@ -10731,6 +10731,26 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                 end,
                             },
                         },
+                        vb:horizontal_aligner {
+                            width = "100%",
+                            mode = "justify",
+                            vb:button {
+                                text = "Scale : 2",
+                                width = "50%",
+                                tooltip = "Shrink selected or all notes ...",
+                                notifier = function()
+                                    executeToolAction("shrink_selected_notes", true)
+                                end,
+                            },
+                            vb:button {
+                                text = "Scale * 2",
+                                width = "50%",
+                                tooltip = "Scale selected or all notes ...",
+                                notifier = function()
+                                    executeToolAction("scale_selected_notes", true)
+                                end,
+                            },
+                        },
                         vb:button {
                             text = "Duplicate",
                             width = "100%",
@@ -10773,26 +10793,6 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                     executeToolAction("delete")
                                 end
                             end,
-                        },
-                        vb:horizontal_aligner {
-                            width = "100%",
-                            mode = "justify",
-                            vb:button {
-                                text = "Scale : 2",
-                                width = "50%",
-                                tooltip = "Shrink selected or all notes ...",
-                                notifier = function()
-                                    executeToolAction("shrink_selected_notes", true)
-                                end,
-                            },
-                            vb:button {
-                                text = "Scale * 2",
-                                width = "50%",
-                                tooltip = "Scale selected or all notes ...",
-                                notifier = function()
-                                    executeToolAction("scale_selected_notes", true)
-                                end,
-                            },
                         },
                         vb:button {
                             text = "Histogram",
