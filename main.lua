@@ -2153,12 +2153,6 @@ local function transposeSelectedNotes(transpose, keepscale)
             end)
         end
     end
-    --disable edit mode and following to prevent side effects
-    song.transport.edit_mode = false
-    if song.transport.follow_player then
-        wasFollowPlayer = song.transport.follow_player
-        song.transport.follow_player = false
-    end
     --
     if transpose == "flip" then
         if lo == hi then
@@ -2167,6 +2161,12 @@ local function transposeSelectedNotes(transpose, keepscale)
         setUndoDescription("Pitch flip notes ...")
     else
         setUndoDescription("Transpose notes ...")
+    end
+    --disable edit mode and following to prevent side effects
+    song.transport.edit_mode = false
+    if song.transport.follow_player then
+        wasFollowPlayer = song.transport.follow_player
+        song.transport.follow_player = false
     end
     --go through selection
     for key = 1, #noteSelection do
