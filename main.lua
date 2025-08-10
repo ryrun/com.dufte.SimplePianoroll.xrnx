@@ -6277,22 +6277,23 @@ local function executeToolAction(action, allWhenNothingSelected)
     elseif action == "select_all" then
         updateNoteSelection("all", true)
         return true
-    elseif action == "random_deselection" then
+    elseif action == "select_all" then
+        updateNoteSelection("all", true)
+        return true
+    elseif action == "odddeselect_selection" or action == "evendeselect_selection" then
         if #noteSelection > 0 then
-            showStatus("Randomly deselect some of the selected notes.")
+            if action == "odddeselect_selection" then
+                showStatus("Deselect odd notes of the current selection.")
+            else
+                showStatus("Deselect even notes of the current selection.")
+            end
             table.sort(noteSelection, sortFunc.sortLeftOneFirst)
             local newSelection = {}
-            local skip = 0
-            local removed = 0
-            math.randomseed(os.clock() * 100000000000)
             for i = 1, #noteSelection do
-                if skip == 2 or (math.random(0, 1) == 1 and removed < 2) then
+                if (i % 2 == 0 and action == "odddeselect_selection")
+                    or (i % 2 == 1 and action == "evendeselect_selection")
+                then
                     table.insert(newSelection, noteSelection[i])
-                    skip = 0
-                    removed = removed + 1
-                else
-                    skip = skip + 1
-                    removed = 0
                 end
             end
             updateNoteSelection(newSelection, true)
@@ -10677,6 +10678,22 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                             tooltip = "Select all topmost notes ...",
                             notifier = function()
                                 executeToolAction("select_topmost")
+                            end,
+                        },
+                        vb:button {
+                            text = "Odd deselect",
+                            width = "100%",
+                            tooltip = "Deselect odd notes in selection ...",
+                            notifier = function()
+                                executeToolAction("odddeselect_selection")
+                            end,
+                        },
+                        vb:button {
+                            text = "Even deselect",
+                            width = "100%",
+                            tooltip = "Deselect odd notes in selection ...",
+                            notifier = function()
+                                executeToolAction("evendeselect_selection")
                             end,
                         },
                         vb:button {
