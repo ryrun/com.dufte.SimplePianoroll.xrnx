@@ -10716,7 +10716,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                 },
                             },
                             vb:button {
-                                text = "Paste with Instrument",
+                                text = "Paste with Cur. Inst.",
                                 width = "100%",
                                 tooltip = "Paste notes from piano roll clipboard with current instrument ...",
                                 notifier = function()
