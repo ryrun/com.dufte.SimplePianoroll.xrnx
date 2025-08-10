@@ -157,6 +157,7 @@ local defaultPreferences = {
     gridEmbossEffectAmount = 0,
     azertyMode = false,
     swapCtrlAlt = false,
+    showToolPanel = false,
     scrollWheelSpeed = 1,
     clickAreaSizeForScalingPx = 7,
     disableKeyHandler = false,
@@ -245,6 +246,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     restrictNotesToScale = defaultPreferences.restrictNotesToScale,
     azertyMode = defaultPreferences.azertyMode,
     swapCtrlAlt = defaultPreferences.swapCtrlAlt,
+    showToolPanel = defaultPreferences.showToolPanel,
     scrollWheelSpeed = defaultPreferences.scrollWheelSpeed,
     clickAreaSizeForScalingPx = defaultPreferences.clickAreaSizeForScalingPx,
     disableKeyHandler = defaultPreferences.disableKeyHandler,
@@ -10435,21 +10437,23 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                                 mode = "center",
                                                 vb:row {
                                                     vb:button {
-                                                        id = "toolpanelbtn",
-                                                        bitmap = "Icons/Restore.bmp",
-                                                        width = 24,
-                                                        tooltip = "Show/Hide tool panel ...",
-                                                        notifier = function()
-                                                            vbw.toolpanel.visible = not vbw.toolpanel.visible
-                                                            refreshStates.refreshControls = true
-                                                        end,
-                                                    },
-                                                    vb:button {
                                                         bitmap = "Icons/Options.bmp",
                                                         width = 24,
                                                         tooltip = "Preferences ...",
                                                         notifier = function()
                                                             showPreferences()
+                                                        end,
+                                                    },
+                                                    vb:button {
+                                                        id = "toolpanelbtn",
+                                                        bitmap = "Icons/Restore.bmp",
+                                                        width = 24,
+                                                        tooltip = "Show/Hide tool panel ...",
+                                                        notifier = function()
+                                                            preferences.showToolPanel.value =
+                                                                not preferences.showToolPanel.value
+                                                            vbw.toolpanel.visible = preferences.showToolPanel.value
+                                                            refreshStates.refreshControls = true
                                                         end,
                                                     },
                                                 },
@@ -10464,7 +10468,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
             },
             vb:row {
                 id = "toolpanel",
-                visible = false,
+                visible = preferences.showToolPanel.value,
                 vb:space {
                     width = 2,
                 },
