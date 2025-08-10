@@ -6088,6 +6088,9 @@ local function executeToolAction(action)
         currentNoteLength = math.max(math.floor(currentNoteLength / 2), 1)
         refreshStates.refreshControls = true
         return true
+    elseif action == "select_none" then
+        updateNoteSelection(nil, true)
+        return true
     elseif action == "select_all" then
         updateNoteSelection("all", true)
         return true
@@ -10395,77 +10398,97 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                     },
                 },
             },
-            vb:column {
+            vb:row {
                 id = "toolpanel",
                 visible = false,
-                margin = 1,
-                spacing = 16,
-                width = 120,
-                vbp:column {
-                    style = "group",
-                    width = "100%",
-                    spacing = 2,
-                    vbp:text {
-                        text = "Selection",
-                        width = "100%",
-                        font = "bold",
+                vb:space {
+                    width = 2,
+                },
+                vb:column {
+                    style = "panel",
+                    margin = 4,
+                    spacing = 8,
+                    width = 120,
+                    vb:text {
+                        text = "⚙️ Tool panel",
                         style = "strong",
                         align = "center",
-                    },
-                    vb:button {
-                        text = "All",
                         width = "100%",
-                        tooltip = "Select all notes ...",
-                        notifier = function()
-                            executeToolAction("select_all")
-                        end,
                     },
-                    vb:button {
-                        text = "Invert",
+                    vbp:column {
+                        style = "group",
                         width = "100%",
-                        tooltip = "Invert note selection ...",
-                        notifier = function()
-                            executeToolAction("invert_selection")
-                        end,
+                        spacing = 2,
+                        vbp:text {
+                            text = "Selection",
+                            width = "100%",
+                            font = "bold",
+                            style = "strong",
+                            align = "center",
+                        },
+                        vb:button {
+                            text = "All",
+                            width = "100%",
+                            tooltip = "Select all notes ...",
+                            notifier = function()
+                                executeToolAction("select_all")
+                            end,
+                        },
+                        vb:button {
+                            text = "None",
+                            width = "100%",
+                            tooltip = "Deselect all notes ...",
+                            notifier = function()
+                                executeToolAction("select_none")
+                            end,
+                        },
+                        vb:button {
+                            text = "Invert",
+                            width = "100%",
+                            tooltip = "Invert note selection ...",
+                            notifier = function()
+                                executeToolAction("invert_selection")
+                            end,
+                        },
+                        vb:button {
+                            text = "Random deselect",
+                            width = "100%",
+                            tooltip = "Randomly deselect some of the selected notes ...",
+                            notifier = function()
+                                executeToolAction("random_deselection")
+                            end,
+                        },
                     },
-                    vb:button {
-                        text = "Random deselect",
+                    vbp:column {
+                        style = "group",
                         width = "100%",
-                        tooltip = "Randomly deselect some of the selected notes ...",
-                        notifier = function()
-                            executeToolAction("random_deselection")
-                        end,
+                        spacing = 2,
+                        vbp:text {
+                            text = "Notes",
+                            width = "100%",
+                            font = "bold",
+                            style = "strong",
+                            align = "center",
+                        },
+                        vb:button {
+                            text = "Scale * 2",
+                            width = "100%",
+                            tooltip = "Scale selected notes ...",
+                            notifier = function()
+                                executeToolAction("scale_selected_notes")
+                            end,
+                        },
+                        vb:button {
+                            text = "Scale / 2",
+                            width = "100%",
+                            tooltip = "Shrink selected notes ...",
+                            notifier = function()
+                                executeToolAction("shrink_selected_notes")
+                            end,
+                        },
                     },
-                },
-                vbp:column {
-                    style = "group",
-                    width = "100%",
-                    spacing = 2,
-                    vbp:text {
-                        text = "Notes",
-                        width = "100%",
-                        font = "bold",
-                        style = "strong",
-                        align = "center",
-                    },
-                    vb:button {
-                        text = "Scale * 2",
-                        width = "100%",
-                        tooltip = "Scale selected notes ...",
-                        notifier = function()
-                            executeToolAction("scale_selected_notes")
-                        end,
-                    },
-                    vb:button {
-                        text = "Scale / 2",
-                        width = "100%",
-                        tooltip = "Shrink selected notes ...",
-                        notifier = function()
-                            executeToolAction("shrink_selected_notes")
-                        end,
-                    },
-                },
-            }
+                }
+            },
         }
     }
 end
