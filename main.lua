@@ -6235,6 +6235,11 @@ local function executeToolAction(action, allWhenNothingSelected)
             showStatus(#noteSelection .. " notes copied.")
             return true
         end
+    elseif action == "histogram" then
+        if #noteSelection > 0 then
+            showHistogram()
+            return true
+        end
     elseif action == "invert_selection" then
         if #noteSelection > 0 then
             showStatus("Inverted note selection.")
@@ -6655,11 +6660,9 @@ local function handleKeyEvent(keyEvent, mouseXPosition)
     end
     if key.name == "h" and key.modifiers == "alt" then
         if key.state == "pressed" then
-            keyInfoText = "Open histogram ..."
-            if #noteSelection == 0 then
-                updateNoteSelection("all", true)
+            if executeToolAction("histogram", true) then
+                keyInfoText = "Open histogram ..."
             end
-            showHistogram()
         end
         handled = true
     end
@@ -10290,10 +10293,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                     tooltip = "Histogram (Alt+H)",
                     width = 24,
                     notifier = function()
-                        if #noteSelection == 0 then
-                            updateNoteSelection("all", true)
-                        end
-                        showHistogram()
+                        executeToolAction("histogram", true)
                     end,
                 },
             },
@@ -10896,7 +10896,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                             width = "100%",
                             tooltip = "Show histogram tool ...",
                             notifier = function()
-                                showHistogram()
+                                executeToolAction("histogram", true)
                             end,
                         },
                     },
