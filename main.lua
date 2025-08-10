@@ -2025,37 +2025,41 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
     local len
     local delay
     --when nothing is selected, then nothing is to do
-    if #noteSelection == 0 then
+    if #noteSelection == 0 or (microsteps == "reverse" and #noteSelection < 2) then
         return false
     end
     --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
-    if #noteSelection > 1 then
-        if microsteps < 0 or snapSpecialGrid then
-            --left one notes first
-            table.sort(noteSelection, sortFunc.sortLeftOneFirst)
-        else
-            --right one notes first
-            table.sort(noteSelection, sortFunc.sortRightOneFirst)
+    if microsteps == "reverse" then
+        table.sort(noteSelection, sortFunc.sortRightOneFirst)
+    else
+        if #noteSelection > 1 then
+            if microsteps < 0 or snapSpecialGrid then
+                --left one notes first
+                table.sort(noteSelection, sortFunc.sortLeftOneFirst)
+            else
+                --right one notes first
+                table.sort(noteSelection, sortFunc.sortRightOneFirst)
+            end
         end
-    end
 
-    --try to snap microsteps to a special grid
-    if snapSpecialGrid then
-        microsteps = findNearestMicroStepValue(noteSelection[1].dly, microsteps, { 0, 0x55, 0x80, 0xaa })
-    end
+        --try to snap microsteps to a special grid
+        if snapSpecialGrid then
+            microsteps = findNearestMicroStepValue(noteSelection[1].dly, microsteps, { 0, 0x55, 0x80, 0xaa })
+        end
 
-    --reduce microsteps when there is not enough space
-    if microsteps < 0 then
-        microsteps = -math.min(math.abs(microsteps), noteSelection[1].dly + ((noteSelection[1].line - 1) * 0x100))
-    elseif microsteps > 0 then
-        microsteps = math.min(microsteps, song.selected_pattern.number_of_lines * 0x100 -
-            ((noteSelection[1].line + noteSelection[1].len - 1) * 0x100 +
-                noteSelection[1].end_dly))
-    end
+        --reduce microsteps when there is not enough space
+        if microsteps < 0 then
+            microsteps = -math.min(math.abs(microsteps), noteSelection[1].dly + ((noteSelection[1].line - 1) * 0x100))
+        elseif microsteps > 0 then
+            microsteps = math.min(microsteps, song.selected_pattern.number_of_lines * 0x100 -
+                ((noteSelection[1].line + noteSelection[1].len - 1) * 0x100 +
+                    noteSelection[1].end_dly))
+        end
 
-    --no movement necessary?
-    if math.floor(microsteps) == 0 then
-        return false
+        --no movement necessary?
+        if math.floor(microsteps) == 0 then
+            return false
+        end
     end
 
     --disable edit mode and following to prevent side effects
@@ -2065,7 +2069,11 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
         song.transport.follow_player = false
     end
     --
-    setUndoDescription("Move notes ...")
+    if microsteps == "reverse" then
+        setUndoDescription("Reverse notes ...")
+    else
+        setUndoDescription("Move notes ...")
+    end
     --go through selection
     for key = 1, #noteSelection do
         --remove note
@@ -10543,7 +10551,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                 vb:column {
                     style = "panel",
                     margin = 4,
-                    spacing = 8,
+                    spacing = 16,
                     width = 130,
                     vb:text {
                         text = "⚙️ Tool panel",
