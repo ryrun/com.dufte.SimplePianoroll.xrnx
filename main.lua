@@ -2261,10 +2261,11 @@ local function transposeSelectedNotes(transpose, keepscale, nopreview)
 end
 
 --paste notes from clipboard
-local function pasteNotesFromClipboard()
+local function pasteNotesFromClipboard(overwriteInstrument)
     local column
     local noteoffset = 0
     local lineoffset = 0
+    local instrument = nil
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     if song.transport.follow_player then
@@ -2297,6 +2298,11 @@ local function pasteNotesFromClipboard()
     table.sort(clipboard, sortFunc.sortFirstColumnFirst)
     --go through clipboard
     for key in pairs(clipboard) do
+        -- allow overwrite instrument for pasted notes
+        instrument = clipboard[key].ins
+        if overwriteInstrument then
+            instrument = overwriteInstrument
+        end
         --search for valid column
         column = returnColumnWhenEnoughSpaceForNote(
             clipboard[key].line + lineoffset,
@@ -2323,7 +2329,7 @@ local function pasteNotesFromClipboard()
             clipboard[key].pan,
             clipboard[key].dly,
             clipboard[key].end_dly,
-            clipboard[key].ins
+            instrument
         )
         --add pasted note to selection
         table.insert(noteSelection, clipboard[key])
@@ -6193,6 +6199,14 @@ local function executeToolAction(action, allWhenNothingSelected)
         if #clipboard > 0 then
             showStatus(#clipboard .. " notes pasted.")
             pasteNotesFromClipboard()
+            jumpToNoteInPattern("sel")
+            return true
+        end
+        return false
+    elseif action == "paste_with_current_instrument" then
+        if #clipboard > 0 then
+            showStatus(#clipboard .. " notes with current instrument pasted.")
+            pasteNotesFromClipboard(currentInstrument)
             jumpToNoteInPattern("sel")
             return true
         end
@@ -10700,6 +10714,14 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                         executeToolAction("paste")
                                     end,
                                 },
+                            },
+                            vb:button {
+                                text = "Paste with Instrument",
+                                width = "100%",
+                                tooltip = "Paste notes from piano roll clipboard with current instrument ...",
+                                notifier = function()
+                                    executeToolAction("paste_with_current_instrument")
+                                end,
                             },
                         },
                         vb:column {
