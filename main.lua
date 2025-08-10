@@ -2024,14 +2024,21 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
     local steps
     local len
     local delay
+    local lo, hi = math.huge, -math.huge
     --when nothing is selected, then nothing is to do
     if #noteSelection == 0 or (microsteps == "reverse" and #noteSelection < 2) then
         return false
     end
-    --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
     if microsteps == "reverse" then
         table.sort(noteSelection, sortFunc.sortRightOneFirst)
+        for i = 1, #noteSelection do
+            local s, L = noteSelection[i].pos, noteSelection[i].len
+            if s < lo then lo = s end
+            local e = s + (L or 0)
+            if e > hi then hi = e end
+        end
     else
+        --resort note selection table, so when one note in selection cant be moved, the whole move will be ignored
         if #noteSelection > 1 then
             if microsteps < 0 or snapSpecialGrid then
                 --left one notes first
@@ -2061,18 +2068,20 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
             return false
         end
     end
-
+    --
+    if microsteps == "reverse" then
+        if lo == hi then
+            return false
+        end
+        setUndoDescription("Reverse notes ...")
+    else
+        setUndoDescription("Move notes ...")
+    end
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     if song.transport.follow_player then
         wasFollowPlayer = song.transport.follow_player
         song.transport.follow_player = false
-    end
-    --
-    if microsteps == "reverse" then
-        setUndoDescription("Reverse notes ...")
-    else
-        setUndoDescription("Move notes ...")
     end
     --go through selection
     for key = 1, #noteSelection do
@@ -6214,6 +6223,13 @@ local function executeToolAction(action, allWhenNothingSelected)
                 showStatus(#noteSelection .. " notes duplicated.")
             end
             return true
+        end
+    elseif action == "reverse_selected_notes" then
+        if #noteSelection > 0 then
+            if moveSelectedNotesByMicroSteps("reverse") then
+                showStatus(#noteSelection .. " notes were reversed.")
+                return true
+            end
         end
     elseif action == "pitchflip_selected_notes" then
         if #noteSelection > 0 then
@@ -10782,6 +10798,14 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                             tooltip = "Duplicate selected or all notes ...",
                             notifier = function()
                                 executeToolAction("duplicate_selected_notes", true)
+                            end,
+                        },
+                        vb:button {
+                            text = "Reverse",
+                            width = "100%",
+                            tooltip = "Reverse selected or all notes ...",
+                            notifier = function()
+                                executeToolAction("reverse_selected_notes", true)
                             end,
                         },
                         vb:button {
