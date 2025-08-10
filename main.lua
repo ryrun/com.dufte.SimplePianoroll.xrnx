@@ -6189,8 +6189,56 @@ local function executeToolAction(action, allWhenNothingSelected)
     return false
 end
 
+--handle scrollwheel on timeline for zooming
+local function handleTimelineMouse(event)
+    local transport = song.transport
+    local steps = song.selected_pattern.number_of_lines
+    local dynMaxZoom = math.min(math.max(gridWidth, steps) / gridWidth, defaultPreferences.gridXZoomMax)
+    local amount = 0.05
+    local oldgW = math.ceil(preferences.gridXZoom.value * gridWidth)
+    if event.type == "double" then
+        if transport.loop_pattern == true then
+            transport.loop_pattern = false
+        else
+            if not vbw.blockloop.visible then
+                if preferences.gridXZoom.value ~= 1 then
+                    preferences.gridXZoom.value = 1
+                else
+                    preferences.gridXZoom.value = dynMaxZoom
+                end
+                refreshStates.refreshAfterPreferencesClose = true
+            else
+                xypadpos.loopslider = nil
+                transport.loop_block_enabled = false
+                if transport.loop_sequence_start > 0 then
+                    transport.loop_sequence_range = {}
+                end
+            end
+        end
+    elseif event.direction == "down" or (type(event.direction) == "number" and event.direction > 0) then
+        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value + amount, defaultPreferences.gridXZoomMin,
+            dynMaxZoom)
+        refreshStates.refreshAfterPreferencesClose = true
+        --end
+    elseif event.direction == "up" or (type(event.direction) == "number" and event.direction < 0) then
+        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value - amount, defaultPreferences.gridXZoomMin,
+            dynMaxZoom)
+        refreshStates.refreshAfterPreferencesClose = true
+    end
+    --set new max for stepslider
+    if refreshStates.refreshAfterPreferencesClose then
+        local gW = math.ceil(preferences.gridXZoom.value * gridWidth)
+        local mouseRel = event.position.x / vbw.timelinemousecontrol.width
+        local oldHoverDisplayIndex = math.floor(mouseRel * oldgW)
+        local cellIndex = stepOffset + oldHoverDisplayIndex
+        local newStepOffset = cellIndex - math.floor(mouseRel * gW)
+        setScrollbarMax(steps, gW, stepSlider)
+        setScrollbarValue(newStepOffset, stepSlider)
+    end
+end
+
 --function for all keyboard shortcuts
-local function handleKeyEvent(keyEvent)
+local function handleKeyEvent(keyEvent, mouseXPosition)
     local handled = false
     local keyInfoText
     local isModifierKey = false
@@ -6601,8 +6649,20 @@ local function handleKeyEvent(keyEvent)
                     setScrollbarValue(stepSlider.value + steps, stepSlider)
                 end
             elseif not modifier.keyAlt and modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
-                keyInfoText = "Move through the grid"
-                setScrollbarValue(stepSlider.value + steps, stepSlider)
+                --got mouse x position so special we will zoom
+                if mouseXPosition then
+                    --fake scroll event on timeline for zoom
+                    handleTimelineMouse({
+                        direction = steps,
+                        position = {
+                            x = mouseXPosition,
+                            y = 0
+                        }
+                    })
+                else
+                    keyInfoText = "Move through the grid"
+                    setScrollbarValue(stepSlider.value + steps, stepSlider)
+                end
             elseif not modifier.keyAlt and not modifier.keyControl and not modifier.keyShift and not modifier.keyRShift then
                 keyInfoText = "Move through the grid"
                 setScrollbarValue(noteSlider.value + steps, noteSlider)
@@ -6898,62 +6958,24 @@ end
 
 --handle scroll wheel value boxes
 local function handleScrollWheel(event)
-    if event.direction == "up" then
-        handleKeyEvent({ name = "scrollup" })
-    elseif event.direction == "down" then
-        handleKeyEvent({ name = "scrolldown" })
-    elseif event.direction == "left" then
-        handleKeyEvent({ name = "scrollup" })
-    elseif event.direction == "right" then
-        handleKeyEvent({ name = "scrolldown" })
-    end
-end
-
---handle scrollwheel on timeline for zooming
-local function handleTimelineMouse(event)
-    local transport = song.transport
-    local steps = song.selected_pattern.number_of_lines
-    local dynMaxZoom = math.min(math.max(gridWidth, steps) / gridWidth, defaultPreferences.gridXZoomMax)
-    local amount = 0.05
-    local oldgW = math.ceil(preferences.gridXZoom.value * gridWidth)
-    if event.type == "double" then
-        if transport.loop_pattern == true then
-            transport.loop_pattern = false
-        else
-            if not vbw.blockloop.visible then
-                if preferences.gridXZoom.value ~= 1 then
-                    preferences.gridXZoom.value = 1
-                else
-                    preferences.gridXZoom.value = dynMaxZoom
-                end
-                refreshStates.refreshAfterPreferencesClose = true
-            else
-                xypadpos.loopslider = nil
-                transport.loop_block_enabled = false
-                if transport.loop_sequence_start > 0 then
-                    transport.loop_sequence_range = {}
-                end
+    local mouseXPosition
+    --when a scroll event has occurred on canvas also send x position of the mouse to key handler for zooming
+    if #event.hover_views > 0 then
+        for _, hoverView in ipairs(event.hover_views) do
+            if hoverView.id == "canvas" then
+                mouseXPosition = event.position.x
+                break
             end
         end
-    elseif event.direction == "down" then
-        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value + amount, defaultPreferences.gridXZoomMin,
-            dynMaxZoom)
-        refreshStates.refreshAfterPreferencesClose = true
-        --end
-    elseif event.direction == "up" then
-        preferences.gridXZoom.value = clamp(preferences.gridXZoom.value - amount, defaultPreferences.gridXZoomMin,
-            dynMaxZoom)
-        refreshStates.refreshAfterPreferencesClose = true
     end
-    --set new max for stepslider
-    if refreshStates.refreshAfterPreferencesClose then
-        local gW = math.ceil(preferences.gridXZoom.value * gridWidth)
-        local mouseRel = event.position.x / vbw.timelinemousecontrol.width
-        local oldHoverDisplayIndex = math.floor(mouseRel * oldgW)
-        local cellIndex = stepOffset + oldHoverDisplayIndex
-        local newStepOffset = cellIndex - math.floor(mouseRel * gW)
-        setScrollbarMax(steps, gW, stepSlider)
-        setScrollbarValue(newStepOffset, stepSlider)
+    if event.direction == "up" then
+        handleKeyEvent({ name = "scrollup" }, mouseXPosition)
+    elseif event.direction == "down" then
+        handleKeyEvent({ name = "scrolldown" }, mouseXPosition)
+    elseif event.direction == "left" then
+        handleKeyEvent({ name = "scrollup" }, mouseXPosition)
+    elseif event.direction == "right" then
+        handleKeyEvent({ name = "scrolldown" }, mouseXPosition)
     end
 end
 
