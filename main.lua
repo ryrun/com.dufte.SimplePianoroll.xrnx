@@ -1160,6 +1160,25 @@ local function updateNoteSelection(note_data, clear, noNoteReadOut)
             for k in pairs(noteData) do
                 table.insert(newNotes, noteData[k])
             end
+        elseif note_data == "topmost" then
+            --search for the topmost notes and select them
+            for k in pairs(noteData) do
+                local isTopMost = true
+                for k2 in pairs(noteData) do
+                    if
+                        k ~= k2
+                        and noteData[k2].note > noteData[k].note
+                        and not (noteData[k].line + noteData[k].len - 1 < noteData[k2].line
+                            or noteData[k2].line + noteData[k2].len - 1 < noteData[k].line)
+                    then
+                        isTopMost = false
+                        break
+                    end
+                end
+                if isTopMost then
+                    table.insert(newNotes, noteData[k])
+                end
+            end
         elseif note_data == "renoise_selection" then
             for k in pairs(noteData) do
                 --check if note is in renoise selection
@@ -6079,6 +6098,11 @@ local function executeToolAction(action, allWhenNothingSelected)
         if #noteSelection > 0 then
             updateNoteSelection(nil, true)
         end
+    elseif action == "delete" then
+        if #noteSelection > 0 then
+            showStatus(#noteSelection .. " notes deleted.")
+            removeSelectedNotes()
+        end
     elseif action == "paste" then
         if #clipboard > 0 then
             showStatus(#clipboard .. " notes pasted.")
@@ -6206,6 +6230,11 @@ local function executeToolAction(action, allWhenNothingSelected)
         currentNoteLength = math.max(math.floor(currentNoteLength / 2), 1)
         refreshStates.refreshControls = true
         return true
+    elseif action == "select_topmost" then
+        updateNoteSelection("topmost", true)
+        if #noteSelection > 0 then
+            return true
+        end
     elseif action == "select_none" then
         updateNoteSelection(nil, true)
         return true
@@ -6414,10 +6443,8 @@ local function handleKeyEvent(keyEvent, mouseXPosition)
 
     if key.name == "del" or key.name == "back" then
         if key.state == "pressed" then
-            keyInfoText = "Delete selected notes"
-            if #noteSelection > 0 then
-                showStatus(#noteSelection .. " notes deleted.")
-                removeSelectedNotes()
+            if executeToolAction("delete") then
+                keyInfoText = "Delete selected notes"
             end
         end
         handled = true
@@ -10459,7 +10486,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                                     },
                                                     vb:button {
                                                         id = "toolpanelbtn",
-                                                        bitmap = "Icons/Restore.bmp",
+                                                        text = "⚙️",
                                                         width = 24,
                                                         tooltip = "Show/Hide tool panel ...",
                                                         notifier = function()
@@ -10609,6 +10636,14 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                             end,
                         },
                         vb:button {
+                            text = "Select topmost notes",
+                            width = "100%",
+                            tooltip = "Select all topmost notes ...",
+                            notifier = function()
+                                executeToolAction("select_topmost")
+                            end,
+                        },
+                        vb:button {
                             text = "Random deselect",
                             width = "100%",
                             tooltip = "Randomly deselect some of the selected notes ...",
@@ -10690,6 +10725,17 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                             tooltip = "Flatten selected or all notes ...",
                             notifier = function()
                                 executeToolAction("flatten_selected_notes", true)
+                            end,
+                        },
+                        vb:button {
+                            text = "Monophy",
+                            width = "100%",
+                            tooltip = "Keep only the topmost notes ...",
+                            notifier = function()
+                                if executeToolAction("select_topmost") then
+                                    executeToolAction("invert_selection")
+                                    executeToolAction("delete")
+                                end
                             end,
                         },
                         vb:horizontal_aligner {
