@@ -6061,8 +6061,23 @@ local function azertyMode(key)
 end
 
 --function to execute specific tool actions
-local function executeToolAction(action)
-    if action == "invert_selection" then
+local function executeToolAction(action, allWhenNothingSelected)
+    if allWhenNothingSelected == true and #noteSelection == 0 then
+        updateNoteSelection("all", true)
+    end
+    if action == "undo" then
+        song:undo()
+        --after undo selection could be messed up, so deselect all
+        if #noteSelection > 0 then
+            updateNoteSelection(nil, true)
+        end
+    elseif action == "redo" then
+        song:redo()
+        --after redo selection could be messed up, so deselect all
+        if #noteSelection > 0 then
+            updateNoteSelection(nil, true)
+        end
+    elseif action == "invert_selection" then
         if #noteSelection > 0 then
             showStatus("Inverted note selection.")
             local newSelection = {}
@@ -6072,6 +6087,36 @@ local function executeToolAction(action)
                 end
             end
             updateNoteSelection(newSelection, true)
+            return true
+        end
+    elseif action == "duplicate_selected_notes" then
+        if #noteSelection > 0 then
+            local ret = duplicateSelectedNotes()
+            --was not possible then deselect
+            if not ret then
+                noteSelection = {}
+                refreshStates.refreshPianoRollNeeded = true
+            else
+                jumpToNoteInPattern("sel")
+                showStatus(#noteSelection .. " notes duplicated.")
+            end
+        end
+    elseif action == "octdown_selected_notes" then
+        if #noteSelection > 0 then
+            transposeSelectedNotes(-12)
+            showStatus(#noteSelection .. " notes was transposed one octave down.")
+            return true
+        end
+    elseif action == "octup_selected_notes" then
+        if #noteSelection > 0 then
+            transposeSelectedNotes(12)
+            showStatus(#noteSelection .. " notes was transposed one octave up.")
+            return true
+        end
+    elseif action == "flatten_selected_notes" then
+        if #noteSelection > 0 then
+            changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, nil, nil, "matchingnotes")
+            showStatus(#noteSelection .. " notes was flattened.")
             return true
         end
     elseif action == "scale_selected_notes" then
@@ -6407,10 +6452,8 @@ local function handleKeyEvent(keyEvent)
     end
     if key.name == "n" and key.modifiers == "alt" then
         if key.state == "pressed" then
-            if #noteSelection > 0 then
-                changePropertiesOfSelectedNotes(nil, nil, nil, nil, nil, nil, nil, "matchingnotes")
-                keyInfoText = "Match notes"
-                showStatus(#noteSelection .. " notes was matched.")
+            if executeToolAction("flatten_selected_notes") then
+                keyInfoText = "Flatten notes"
             end
         end
         handled = true
@@ -6440,21 +6483,8 @@ local function handleKeyEvent(keyEvent)
     end
     if (key.name == "b" or key.name == "d") and key.modifiers == "control" then
         if key.state == "pressed" then
-            if #noteSelection == 0 then
-                --step through all current notes and add them to noteSelection, TODO select all notes, not only the visible ones
-                updateNoteSelection("all", true)
-            end
-            if #noteSelection > 0 then
-                local ret = duplicateSelectedNotes()
-                --was not possible then deselect
-                if not ret then
-                    noteSelection = {}
-                    refreshStates.refreshPianoRollNeeded = true
-                else
-                    keyInfoText = "Duplicate notes"
-                    jumpToNoteInPattern("sel")
-                    showStatus(#noteSelection .. " notes duplicated.")
-                end
+            if executeToolAction("duplicate_selected_notes", true) then
+                keyInfoText = "Duplicate notes"
             end
         end
         handled = true
@@ -10411,9 +10441,42 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                     width = 120,
                     vb:text {
                         text = "⚙️ Tool panel",
+                        font = "bold",
                         style = "strong",
                         align = "center",
                         width = "100%",
+                    },
+                    vbp:column {
+                        style = "group",
+                        width = "100%",
+                        spacing = 2,
+                        vbp:text {
+                            text = "Renoise",
+                            width = "100%",
+                            font = "bold",
+                            style = "strong",
+                            align = "center",
+                        },
+                        vb:horizontal_aligner {
+                            width = "100%",
+                            mode = "justify",
+                            vb:button {
+                                text = "↺ Undo",
+                                width = "50%",
+                                tooltip = "Undo last performed Renoise action ...",
+                                notifier = function()
+                                    executeToolAction("undo")
+                                end,
+                            },
+                            vb:button {
+                                text = "↻ Redo",
+                                width = "50%",
+                                tooltip = "Redo last performed Renoise action ...",
+                                notifier = function()
+                                    executeToolAction("redo")
+                                end,
+                            },
+                        },
                     },
                     vbp:column {
                         style = "group",
@@ -10426,21 +10489,25 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                             style = "strong",
                             align = "center",
                         },
-                        vb:button {
-                            text = "All",
+                        vb:horizontal_aligner {
                             width = "100%",
-                            tooltip = "Select all notes ...",
-                            notifier = function()
-                                executeToolAction("select_all")
-                            end,
-                        },
-                        vb:button {
-                            text = "None",
-                            width = "100%",
-                            tooltip = "Deselect all notes ...",
-                            notifier = function()
-                                executeToolAction("select_none")
-                            end,
+                            mode = "justify",
+                            vb:button {
+                                text = "All",
+                                width = "50%",
+                                tooltip = "Select all notes ...",
+                                notifier = function()
+                                    executeToolAction("select_all")
+                                end,
+                            },
+                            vb:button {
+                                text = "None",
+                                width = "50%",
+                                tooltip = "Deselect all notes ...",
+                                notifier = function()
+                                    executeToolAction("select_none")
+                                end,
+                            },
                         },
                         vb:button {
                             text = "Invert",
@@ -10470,20 +10537,56 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                             style = "strong",
                             align = "center",
                         },
+                        vb:horizontal_aligner {
+                            width = "100%",
+                            mode = "justify",
+                            vb:button {
+                                text = "+1 Oct",
+                                width = "50%",
+                                tooltip = "Transpose selected or all notes up one octave ...",
+                                notifier = function()
+                                    executeToolAction("octup_selected_notes", true)
+                                end,
+                            },
+                            vb:button {
+                                text = "-1 Oct",
+                                width = "50%",
+                                tooltip = "Transpose selected or all notes down one octave ...",
+                                notifier = function()
+                                    executeToolAction("octdown_selected_notes", true)
+                                end,
+                            },
+                        },
+                        vb:button {
+                            text = "Duplicate",
+                            width = "100%",
+                            tooltip = "Duplicate selected or all notes ...",
+                            notifier = function()
+                                executeToolAction("duplicate_selected_notes", true)
+                            end,
+                        },
+                        vb:button {
+                            text = "Flatten",
+                            width = "100%",
+                            tooltip = "Flatten selected or all notes ...",
+                            notifier = function()
+                                executeToolAction("flatten_selected_notes", true)
+                            end,
+                        },
                         vb:button {
                             text = "Scale * 2",
                             width = "100%",
-                            tooltip = "Scale selected notes ...",
+                            tooltip = "Scale selected or all notes ...",
                             notifier = function()
-                                executeToolAction("scale_selected_notes")
+                                executeToolAction("scale_selected_notes", true)
                             end,
                         },
                         vb:button {
                             text = "Scale / 2",
                             width = "100%",
-                            tooltip = "Shrink selected notes ...",
+                            tooltip = "Shrink selected or all notes ...",
                             notifier = function()
-                                executeToolAction("shrink_selected_notes")
+                                executeToolAction("shrink_selected_notes", true)
                             end,
                         },
                     },
