@@ -6079,6 +6079,52 @@ local function executeToolAction(action, allWhenNothingSelected)
         if #noteSelection > 0 then
             updateNoteSelection(nil, true)
         end
+    elseif action == "paste" then
+        if #clipboard > 0 then
+            showStatus(#clipboard .. " notes pasted.")
+            pasteNotesFromClipboard()
+            jumpToNoteInPattern("sel")
+            return true
+        end
+        return false
+    elseif action == "cut_selected_notes" then
+        if #noteSelection > 0 then
+            clipboard = {}
+            for k in pairs(noteSelection) do
+                local note_data = noteSelection[k]
+                table.insert(clipboard, note_data)
+            end
+            --set paste cursor, to the first note
+            table.sort(clipboard, sortFunc.sortLeftOneFirst)
+            pasteCursor = { clipboard[1].line, clipboard[1].note }
+            --set status
+            showStatus(#noteSelection .. " notes cut.")
+            --remove selected notes
+            removeSelectedNotes(true)
+            return true
+        end
+    elseif action == "copy_selected_notes" then
+        if #noteSelection > 0 then
+            clipboard = {}
+            for k in pairs(noteSelection) do
+                local note_data = noteSelection[k]
+                table.insert(clipboard, note_data)
+            end
+            --set paste cursor
+            table.sort(clipboard, function(a, b)
+                return a.line > b.line
+            end)
+            pasteCursor = { clipboard[1].line + clipboard[1].len, 0 }
+            table.sort(clipboard, function(a, b)
+                if a.line == b.line then
+                    return a.note < b.note
+                end
+                return a.line < b.line
+            end)
+            pasteCursor = { pasteCursor[1], clipboard[1].note }
+            showStatus(#noteSelection .. " notes copied.")
+            return true
+        end
     elseif action == "invert_selection" then
         if #noteSelection > 0 then
             showStatus("Inverted note selection.")
@@ -6552,47 +6598,17 @@ local function handleKeyEvent(keyEvent, mouseXPosition)
         handled = true
     end
     if key.name == "c" and key.modifiers == "control" then
-        keyInfoText = "Copy selected notes"
         if key.state == "pressed" and not key.repeated then
-            if #noteSelection > 0 then
-                clipboard = {}
-                for k in pairs(noteSelection) do
-                    local note_data = noteSelection[k]
-                    table.insert(clipboard, note_data)
-                end
-                --set paste cursor
-                table.sort(clipboard, function(a, b)
-                    return a.line > b.line
-                end)
-                pasteCursor = { clipboard[1].line + clipboard[1].len, 0 }
-                table.sort(clipboard, function(a, b)
-                    if a.line == b.line then
-                        return a.note < b.note
-                    end
-                    return a.line < b.line
-                end)
-                pasteCursor = { pasteCursor[1], clipboard[1].note }
-                showStatus(#noteSelection .. " notes copied.", true)
+            if executeToolAction("copy_selected_notes", true) then
+                keyInfoText = "Copy selected notes"
             end
         end
         handled = true
     end
     if key.name == "x" and key.modifiers == "control" then
-        keyInfoText = "Cut selected notes"
         if key.state == "pressed" and not key.repeated then
-            if #noteSelection > 0 then
-                clipboard = {}
-                for k in pairs(noteSelection) do
-                    local note_data = noteSelection[k]
-                    table.insert(clipboard, note_data)
-                end
-                --set paste cursor, to the first note
-                table.sort(clipboard, sortFunc.sortLeftOneFirst)
-                pasteCursor = { clipboard[1].line, clipboard[1].note }
-                --set status
-                showStatus(#noteSelection .. " notes cut.", true)
-                --remove selected notes
-                removeSelectedNotes(true)
+            if executeToolAction("cut_selected_notes", true) then
+                keyInfoText = "Cut selected notes"
             end
         end
         handled = true
@@ -6604,12 +6620,9 @@ local function handleKeyEvent(keyEvent, mouseXPosition)
         end
     end
     if key.name == "v" and key.modifiers == "control" then
-        keyInfoText = "Paste notes"
-        if #clipboard > 0 then
-            if key.state == "pressed" then
-                showStatus(#clipboard .. " notes pasted.", true)
-                pasteNotesFromClipboard()
-                jumpToNoteInPattern("sel")
+        if key.state == "pressed" then
+            if executeToolAction("paste") then
+                keyInfoText = "Paste notes"
             end
         end
         handled = true
@@ -10476,7 +10489,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                     style = "panel",
                     margin = 4,
                     spacing = 8,
-                    width = 120,
+                    width = 130,
                     vb:text {
                         text = "⚙️ Tool panel",
                         font = "bold",
@@ -10512,6 +10525,46 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                 tooltip = "Redo last performed Renoise action ...",
                                 notifier = function()
                                     executeToolAction("redo")
+                                end,
+                            },
+                        },
+                    },
+                    vbp:column {
+                        style = "group",
+                        width = "100%",
+                        spacing = 2,
+                        vbp:text {
+                            text = "Piano roll clipboard",
+                            width = "100%",
+                            font = "bold",
+                            style = "strong",
+                            align = "center",
+                        },
+                        vb:horizontal_aligner {
+                            width = "100%",
+                            mode = "justify",
+                            vb:button {
+                                text = "Cut",
+                                width = "33%",
+                                tooltip = "Cut all or selected notes ...",
+                                notifier = function()
+                                    executeToolAction("cut_selected_notes", true)
+                                end,
+                            },
+                            vb:button {
+                                text = "Copy",
+                                width = "33%",
+                                tooltip = "Copy all or selected notes ...",
+                                notifier = function()
+                                    executeToolAction("copy_selected_notes", true)
+                                end,
+                            },
+                            vb:button {
+                                text = "Paste",
+                                width = "33%",
+                                tooltip = "Paste notes from piano roll clipboard ...",
+                                notifier = function()
+                                    executeToolAction("paste")
                                 end,
                             },
                         },
@@ -10639,21 +10692,25 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                 executeToolAction("flatten_selected_notes", true)
                             end,
                         },
-                        vb:button {
-                            text = "Scale * 2",
+                        vb:horizontal_aligner {
                             width = "100%",
-                            tooltip = "Scale selected or all notes ...",
-                            notifier = function()
-                                executeToolAction("scale_selected_notes", true)
-                            end,
-                        },
-                        vb:button {
-                            text = "Scale / 2",
-                            width = "100%",
-                            tooltip = "Shrink selected or all notes ...",
-                            notifier = function()
-                                executeToolAction("shrink_selected_notes", true)
-                            end,
+                            mode = "justify",
+                            vb:button {
+                                text = "Scale / 2",
+                                width = "50%",
+                                tooltip = "Shrink selected or all notes ...",
+                                notifier = function()
+                                    executeToolAction("shrink_selected_notes", true)
+                                end,
+                            },
+                            vb:button {
+                                text = "Scale * 2",
+                                width = "50%",
+                                tooltip = "Scale selected or all notes ...",
+                                notifier = function()
+                                    executeToolAction("scale_selected_notes", true)
+                                end,
+                            },
                         },
                         vb:button {
                             text = "Histogram",
