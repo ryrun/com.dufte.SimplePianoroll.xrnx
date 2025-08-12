@@ -2662,12 +2662,12 @@ local function changeSizeSelectedNotesByMicroSteps(microsteps)
     local state = true
     local len
     local delay
-
     --no scaling necessary?
-    if math.floor(microsteps) == 0 then
+    if type(microsteps) == "number" and math.floor(microsteps) == 0 then
         return false
     end
-
+    --first notes first
+    table.sort(noteSelection, sortFunc.sortLeftOneFirst)
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     if song.transport.follow_player then
@@ -2675,14 +2675,31 @@ local function changeSizeSelectedNotesByMicroSteps(microsteps)
         song.transport.follow_player = false
     end
     --
-    setUndoDescription("Change note lengths ...")
+    if microsteps == "legato" then
+        setUndoDescription("Make notes legato ...")
+    else
+        setUndoDescription("Change note lengths ...")
+    end
     --go through selection
     for key = 1, #noteSelection do
+        --calculate step and delay difference
+        if microsteps == "legato" then
+            --find next note
+            for next = 1, #noteSelection do
+                if noteSelection[key].line < noteSelection[next].line then
+                    delay = (noteSelection[next].dly + noteSelection[key].end_dly) % 0x100
+                    len = (noteSelection[next].line - noteSelection[key].line) - noteSelection[key].len
+                    goto process
+                end
+            end
+            goto continue
+        else
+            delay = (noteSelection[key].end_dly + microsteps) % 0x100
+            len = math.floor((noteSelection[key].end_dly + microsteps) / 0x100)
+        end
+        ::process::
         --remove note
         removeNoteInPattern(noteSelection[key].column, noteSelection[key].line, noteSelection[key].len)
-        --calculate step and delay difference
-        delay = (noteSelection[key].end_dly + microsteps) % 0x100
-        len = math.floor((noteSelection[key].end_dly + microsteps) / 0x100)
         --prepare len difference for new delay values
         if noteSelection[key].len + len < 1 then
             len = 0
@@ -2729,6 +2746,7 @@ local function changeSizeSelectedNotesByMicroSteps(microsteps)
             state = false
             break
         end
+        ::continue::
     end
     if #noteSelection == 1 and preferences.setVelPanDlyLenFromLastNote.value then
         currentNoteLength = noteSelection[1].len
@@ -6472,6 +6490,12 @@ local function executeToolAction(action, allWhenNothingSelected)
         if #noteSelection > 0 then
             transposeSelectedNotes(12)
             showStatus(#noteSelection .. " notes were transposed one octave up.")
+            return true
+        end
+    elseif action == "legato_selected_notes" then
+        if #noteSelection > 0 then
+            changeSizeSelectedNotesByMicroSteps("legato")
+            showStatus(#noteSelection .. " notes were set to legato.")
             return true
         end
     elseif action == "flatten_selected_notes" then
@@ -11055,6 +11079,14 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                         executeToolAction("glue_selected_notes", true)
                                     end,
                                 },
+                            },
+                            vb:button {
+                                text = "Legato",
+                                width = "100%",
+                                tooltip = "Legato selected or all notes ...",
+                                notifier = function()
+                                    executeToolAction("legato_selected_notes", true)
+                                end,
                             },
                             vb:button {
                                 text = "Flatten",
