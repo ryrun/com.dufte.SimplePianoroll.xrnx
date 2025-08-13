@@ -304,6 +304,8 @@ local dialogVars = {
     setScaleContent = nil,
     histogramObj = nil,
     histogramContent = nil,
+    arpObj = nil,
+    arpContent = nil,
     penSettingsObj = nil,
     penSettingsContent = nil,
     preferencesObj = nil,
@@ -6297,6 +6299,120 @@ local function showPenSettingsDialog()
     end
 end
 
+--arp window
+local function showArp()
+    if dialogVars.arpContent == nil then
+        dialogVars.arpContent = vbp:column {
+            spacing = -8,
+            vbp:row {
+                uniform = true,
+                margin = 5,
+                spacing = 5,
+                vbp:column {
+                    style = "group",
+                    margin = 5,
+                    uniform = true,
+                    spacing = 4,
+                    width = 250,
+                    vbp:text {
+                        text = "Arpeggio",
+                        font = "big",
+                        style = "strong",
+                    },
+                    vbp:horizontal_aligner {
+                        id = "arp_pattern",
+                        mode = "justify",
+                        vbp:text {
+                            text = "Pattern:",
+                            width = "50%"
+                        },
+                        vbp:popup {
+                            width = "50%",
+                            items = {
+                                "Up",
+                                "Down",
+                                "Up Down",
+                                "Down Up",
+                                "Piano1",
+                                "Piano2",
+                                "Alberti"
+                            },
+                            bind = preferences.sortNewNotesMode,
+                        },
+                    },
+                    vbp:horizontal_aligner {
+                        mode = "justify",
+                        vbp:text {
+                            text = "Note length:",
+                            width = "50%"
+                        },
+                        vbp:horizontal_aligner {
+                            width = "50%",
+                            mode = "justify",
+                            vb:valuebox {
+                                id = "arp_notelen",
+                                tooltip = "Note length",
+                                steps = { 1, 2 },
+                                min = 1,
+                                max = 512,
+                                value = currentNoteLength,
+                                tonumber = function(string)
+                                    local lpb = song.transport.lpb
+                                    if string == "bar" then
+                                        return lpb * 4
+                                    elseif string == "beat" then
+                                        return lpb
+                                    end
+                                    return tonumber(string)
+                                end,
+                                tostring = function(number)
+                                    return tostring(number)
+                                end
+                            },
+                            vbp:button {
+                                text = "Apply",
+                                notifier = function()
+                                    --
+                                end
+                            },
+                        },
+                    },
+                },
+            },
+            vbp:horizontal_aligner {
+                mode = "center",
+                margin = vbc.DEFAULT_DIALOG_MARGIN,
+                spacing = vbc.DEFAULT_CONTROL_SPACING,
+                vbp:button {
+                    text = "Ok",
+                    height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
+                    width = 100,
+                    notifier = function()
+                        refreshStates.refreshPianoRollNeeded = true
+                        dialogVars.arpObj:close()
+                        restoreFocus()
+                    end
+                },
+            },
+        }
+    end
+    if not dialogVars.arpObj or not dialogVars.arpObj.visible then
+        --
+        dialogVars.arpObj = app:show_custom_dialog(
+            "Arpeggio - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
+            dialogVars.arpContent, function(_, key)
+                if key.name == "esc" then
+                    refreshStates.refreshPianoRollNeeded = true
+                    dialogVars.arpObjContent:close()
+                    restoreFocus()
+                end
+                return key
+            end)
+    else
+        dialogVars.arpObj:show()
+    end
+end
+
 --convert some keys to qwerty layout
 local function azertyMode(key)
     key = table.copy(key)
@@ -6398,6 +6514,11 @@ local function executeToolAction(action, allWhenNothingSelected)
             end)
             pasteCursor = { pasteCursor[1], clipboard[1].note }
             showStatus(#noteSelection .. " notes copied.")
+            return true
+        end
+    elseif action == "arpeggio" then
+        if #noteSelection > 0 then
+            showArp()
             return true
         end
     elseif action == "histogram" then
@@ -11105,6 +11226,14 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                         executeToolAction("invert_selection")
                                         executeToolAction("delete")
                                     end
+                                end,
+                            },
+                            vb:button {
+                                text = "Arpeggio",
+                                width = "100%",
+                                tooltip = "Show arpeggio tool ...",
+                                notifier = function()
+                                    executeToolAction("arpeggio", true)
                                 end,
                             },
                             vb:button {
