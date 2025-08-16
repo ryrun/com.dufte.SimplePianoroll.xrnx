@@ -3105,6 +3105,138 @@ local function highlightNoteRow(row, highlighted)
     end
 end
 
+--simple arp function
+local function quickArp(mode, len)
+    local heldNotes = {}
+    local finalArp = {}
+    local noteLen = len
+    local arpMode = mode
+    local from = nil
+    local to = nil
+    local idx
+    --set undo desc
+    setUndoDescription("Arpeggio notes ...")
+    --change special up/down arpmodes
+    if mode == 3 then
+        arpMode = 1
+    elseif mode == 4 then
+        arpMode = 2
+    elseif mode == 5 then
+        arpMode = 1
+    end
+    --sort left from bottom to top
+    table.sort(noteSelection, sortFunc.sortLeftOneFirstFromLowToTop)
+    for _, note in ipairs(noteSelection) do
+        if not from or note.line < from then
+            from = note.line
+        end
+        if not to or note.line + note.len - 1 > to then
+            to = note.line + note.len - 1
+        end
+    end
+    --
+    for i = from, to, noteLen do
+        local newHeldNotes = {}
+        --which notes
+        for _, note in ipairs(noteSelection) do
+            if note.line <= i and note.line + note.len - 1 >= i then
+                table.insert(newHeldNotes, note)
+            end
+        end
+        --check if any note in heldNotes are in newHeldNotes
+        local resetArp = true
+        for _, note in ipairs(heldNotes) do
+            for _, nnote in ipairs(newHeldNotes) do
+                if note.idx == nnote.idx then
+                    resetArp = false
+                    break
+                end
+            end
+            if not resetArp then
+                break
+            end
+        end
+        if resetArp then
+            idx = 0
+            if mode == 3 then
+                arpMode = 1
+            elseif mode == 4 then
+                arpMode = 2
+            end
+        end
+        heldNotes = newHeldNotes
+        --fill arp table
+        if arpMode == 1 then
+            table.insert(finalArp, heldNotes[(idx % #heldNotes) + 1].note)
+        elseif arpMode == 2 then
+            table.insert(finalArp,
+                heldNotes[((#heldNotes - idx - 1) % #heldNotes) + 1].note)
+        end
+        --special up/down handling
+        if idx % #heldNotes >= #heldNotes - 1 and (mode == 3 or mode == 4) then
+            if arpMode == 1 then
+                arpMode = 2
+            else
+                arpMode = 1
+            end
+            idx = idx + 1
+        elseif idx % #heldNotes >= #heldNotes - 1 and mode == 5 then
+            idx = idx - 2
+        end
+        --
+        idx = idx + 1
+    end
+    --remove selected notes
+    for _, note in ipairs(noteSelection) do
+        removeNoteInPattern(note.column, note.line, note.len)
+    end
+    noteSelection = {}
+    --draw arp
+    for _, note in ipairs(finalArp) do
+        --search for valid column
+        local column = returnColumnWhenEnoughSpaceForNote(
+            from,
+            noteLen,
+            0,
+            0
+        )
+        if not column then
+            showStatus("Not enough space for arp.")
+            return false
+        end
+        local note_data = {
+            line = from,
+            note = note,
+            vel = heldNotes[1].vel,
+            end_vel = 255,
+            dly = 0,
+            end_dly = 0,
+            pan = heldNotes[1].pan,
+            len = noteLen,
+            noteoff = false,
+            column = column,
+            ins = heldNotes[1].ins
+        }
+        note_data.noteoff = addNoteToPattern(
+            note_data.column,
+            note_data.line,
+            note_data.len,
+            note_data.note,
+            note_data.vel,
+            note_data.end_vel,
+            note_data.pan,
+            note_data.dly,
+            note_data.end_dly,
+            note_data.ins
+        )
+        --add to selection
+        table.insert(noteSelection, note_data)
+        from = from + noteLen
+    end
+    --refresh piano roll
+    refreshStates.refreshPianoRollNeeded = true
+end
+
 --step sequencing like in other daws
 local function stepSequencing(pos, steps)
     local refresh = false
@@ -6302,219 +6434,6 @@ local function showPenSettingsDialog()
     end
 end
 
---arp window
-local function showArp()
-    if dialogVars.arpContent == nil then
-        dialogVars.arpContent = vbp:column {
-            spacing = -8,
-            vbp:row {
-                uniform = true,
-                margin = 5,
-                spacing = 5,
-                vbp:column {
-                    style = "group",
-                    margin = 5,
-                    uniform = true,
-                    spacing = 4,
-                    width = 250,
-                    vbp:text {
-                        text = "Arpeggio",
-                        font = "big",
-                        style = "strong",
-                    },
-                    vbp:horizontal_aligner {
-                        id = "arp_pattern",
-                        mode = "justify",
-                        vbp:text {
-                            text = "Pattern:",
-                            width = "50%"
-                        },
-                        vbp:popup {
-                            id = "arp_mode",
-                            width = "50%",
-                            items = {
-                                "Up",
-                                "Down",
-                                "Up Down",
-                                "Down Up",
-                                "Piano1",
-                                "Piano2",
-                                "Alberti"
-                            },
-                        },
-                    },
-                    vbp:horizontal_aligner {
-                        mode = "justify",
-                        vbp:text {
-                            text = "Note length:",
-                            width = "50%"
-                        },
-                        vbp:horizontal_aligner {
-                            width = "50%",
-                            mode = "justify",
-                            vbp:valuebox {
-                                id = "arp_notelen",
-                                tooltip = "Note length",
-                                steps = { 1, 2 },
-                                min = 1,
-                                max = 512,
-                                value = 2,
-                                tonumber = function(string)
-                                    local lpb = song.transport.lpb
-                                    if string == "bar" then
-                                        return lpb * 4
-                                    elseif string == "beat" then
-                                        return lpb
-                                    end
-                                    return tonumber(string)
-                                end,
-                                tostring = function(number)
-                                    return tostring(number)
-                                end
-                            },
-                            vbp:button {
-                                text = "Apply",
-                                notifier = function()
-                                    local heldNotes = {}
-                                    local finalArp = {}
-                                    local noteLen = vbwp.arp_notelen.value
-                                    local from = nil
-                                    local to = nil
-                                    local idx = 0
-                                    --sort left from bottom to top
-                                    table.sort(noteSelection, sortFunc.sortLeftOneFirstFromLowToTop)
-                                    for _, note in ipairs(noteSelection) do
-                                        if not from or note.line < from then
-                                            from = note.line
-                                        end
-                                        if not to or note.line + note.len - 1 > to then
-                                            to = note.line + note.len - 1
-                                        end
-                                    end
-                                    --
-                                    for i = from, to, noteLen do
-                                        local newHeldNotes = {}
-                                        --which notes
-                                        for _, note in ipairs(noteSelection) do
-                                            if note.line <= i and note.line + note.len - 1 >= i then
-                                                table.insert(newHeldNotes, note)
-                                            end
-                                        end
-                                        --check if any note in heldNotes are in newHeldNotes
-                                        local resetArp = true
-                                        for _, note in ipairs(heldNotes) do
-                                            for _, nnote in ipairs(newHeldNotes) do
-                                                if note.idx == nnote.idx then
-                                                    resetArp = false
-                                                    break
-                                                end
-                                            end
-                                            if not resetArp then
-                                                break
-                                            end
-                                        end
-                                        if resetArp then
-                                            idx = 0
-                                        end
-                                        heldNotes = newHeldNotes
-                                        --fill arp table
-                                        table.insert(finalArp, heldNotes[(idx % #heldNotes) + 1].note)
-                                        --
-                                        if vbwp.arp_mode.value == 1 then
-                                            idx = idx + 1
-                                        elseif vbwp.arp_mode.value == 2 then
-                                            idx = idx - 1
-                                        end
-                                    end
-                                    --remove selected notes
-                                    for _, note in ipairs(noteSelection) do
-                                        removeNoteInPattern(note.column, note.line, note.len)
-                                    end
-                                    noteSelection = {}
-                                    --draw arp
-                                    for _, note in ipairs(finalArp) do
-                                        --search for valid column
-                                        local column = returnColumnWhenEnoughSpaceForNote(
-                                            from,
-                                            noteLen,
-                                            0,
-                                            0
-                                        )
-                                        if not column then
-                                            showStatus("Not enough space for arp.")
-                                            return false
-                                        end
-                                        local note_data = {
-                                            line = from,
-                                            note = note,
-                                            vel = heldNotes[1].vel,
-                                            end_vel = 0,
-                                            dly = 0,
-                                            end_dly = 0,
-                                            pan = 0,
-                                            len = noteLen,
-                                            noteoff = false,
-                                            column = column,
-                                            ins = heldNotes[1].ins
-                                        }
-                                        note_data.noteoff = addNoteToPattern(
-                                            note_data.column,
-                                            note_data.line,
-                                            note_data.len,
-                                            note_data.note,
-                                            note_data.vel,
-                                            note_data.end_vel,
-                                            note_data.pan,
-                                            note_data.dly,
-                                            note_data.end_dly,
-                                            note_data.ins
-                                        )
-                                        --add to selection
-                                        table.insert(noteSelection, note_data)
-                                        from = from + noteLen
-                                    end
-                                    --refresh piano roll
-                                    refreshStates.refreshPianoRollNeeded = true
-                                end
-                            },
-                        },
-                    },
-                },
-            },
-            vbp:horizontal_aligner {
-                mode = "center",
-                margin = vbc.DEFAULT_DIALOG_MARGIN,
-                spacing = vbc.DEFAULT_CONTROL_SPACING,
-                vbp:button {
-                    text = "Ok",
-                    height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
-                    width = 100,
-                    notifier = function()
-                        refreshStates.refreshPianoRollNeeded = true
-                        dialogVars.arpObj:close()
-                        restoreFocus()
-                    end
-                },
-            },
-        }
-    end
-    if not dialogVars.arpObj or not dialogVars.arpObj.visible then
-        --
-        dialogVars.arpObj = app:show_custom_dialog(
-            "Quick Arp - " .. "Simple Pianoroll v" .. manifest:property("Version").value,
-            dialogVars.arpContent, function(_, key)
-                if key.name == "esc" then
-                    refreshStates.refreshPianoRollNeeded = true
-                    dialogVars.arpObjContent:close()
-                    restoreFocus()
-                end
-                return key
-            end)
-    else
-        dialogVars.arpObj:show()
-    end
-end
-
 --convert some keys to qwerty layout
 local function azertyMode(key)
     key = table.copy(key)
@@ -6543,7 +6462,7 @@ local function azertyMode(key)
 end
 
 --function to execute specific tool actions
-local function executeToolAction(action, allWhenNothingSelected)
+local function executeToolAction(action, allWhenNothingSelected, param1, param2)
     if allWhenNothingSelected == true and #noteSelection == 0 then
         updateNoteSelection("all", true)
     end
@@ -6620,7 +6539,7 @@ local function executeToolAction(action, allWhenNothingSelected)
         end
     elseif action == "arpeggio" then
         if #noteSelection > 0 then
-            showArp()
+            quickArp(param1, param2)
             return true
         end
     elseif action == "histogram" then
@@ -11331,20 +11250,48 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                 end,
                             },
                             vb:button {
-                                text = "Quick Arp",
-                                width = "100%",
-                                tooltip = "Show arpeggio tool ...",
-                                notifier = function()
-                                    executeToolAction("arpeggio", true)
-                                end,
-                            },
-                            vb:button {
                                 text = "Histogram",
                                 width = "100%",
                                 tooltip = "Show histogram tool ...",
                                 notifier = function()
                                     executeToolAction("histogram", true)
                                 end,
+                            },
+                        },
+                        vb:column {
+                            style = "group",
+                            width = "100%",
+                            spacing = 2,
+                            vb:text {
+                                text = "Quick Arp",
+                                width = "100%",
+                                font = "bold",
+                                style = "strong",
+                                align = "center",
+                            },
+                            vb:horizontal_aligner {
+                                width = "100%",
+                                mode = "justify",
+                                tooltip = "Arpeggio mode.",
+                                vb:popup {
+                                    id = "arp_mode",
+                                    width = "50%",
+                                    items = {
+                                        "Up",
+                                        "Down",
+                                        "Up-Down",
+                                        "Down-Up",
+                                        "Piano"
+                                    },
+                                },
+                                vb:button {
+                                    text = "Apply",
+                                    width = "50%",
+                                    tooltip = "Create an Arpeggio with the current note length for selected or all notes ...",
+                                    notifier = function()
+                                        executeToolAction("arpeggio", true, vbw.arp_mode.value, currentNoteLength)
+                                    end,
+                                },
                             },
                         },
                     },
