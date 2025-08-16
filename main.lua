@@ -6547,6 +6547,27 @@ local function executeToolAction(action, allWhenNothingSelected, param1, param2)
             showHistogram()
             return true
         end
+    elseif action == "random_deselection" then
+        if #noteSelection > 0 then
+            showStatus("Randomly deselect halve of the selected notes.")
+            table.sort(noteSelection, sortFunc.sortLeftOneFirst)
+            local newSelection = {}
+            local skip = 0
+            local removed = 0
+            math.randomseed(os.clock() * 100000000000)
+            for i = 1, #noteSelection do
+                if skip == 2 or (math.random(0, 1) == 1 and removed < 2) then
+                    table.insert(newSelection, noteSelection[i])
+                    skip = 0
+                    removed = removed + 1
+                else
+                    skip = skip + 1
+                    removed = 0
+                end
+            end
+            updateNoteSelection(newSelection, true)
+            return true
+        end
     elseif action == "invert_selection" then
         if #noteSelection > 0 then
             showStatus("Inverted note selection.")
