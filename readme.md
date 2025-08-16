@@ -62,12 +62,15 @@ Showing version 5.3 in action:
 
 ### Older ones
 v2.0:
+
 [<img src="https://img.youtube.com/vi/EZJcpnwaY1I/0.jpg" width="150">](https://www.youtube.com/watch?v=EZJcpnwaY1I)
 
 v0.7:
+
 [<img src="https://img.youtube.com/vi/zUIjN6Wwrgs/0.jpg" width="150">](https://www.youtube.com/watch?v=zUIjN6Wwrgs)
 
 v0.1:
+
 [<img src="https://img.youtube.com/vi/5qJCNvbco7M/0.jpg" width="150">](https://www.youtube.com/watch?v=5qJCNvbco7M)
 
 ## Thread on official Renoise forum
