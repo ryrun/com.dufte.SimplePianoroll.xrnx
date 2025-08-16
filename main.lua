@@ -2237,7 +2237,7 @@ local function transposeSelectedNotes(transpose, keepscale, nopreview)
         else
             --when in scale transposing is active move note further, when needed
             if keepscale and not noteInScale(noteSelection[key].note + transposeVal) then
-                if transposeVal > 0 then
+                if transposeVal >= 0 then
                     transposeVal = transposeVal + 1
                 else
                     transposeVal = transposeVal - 1
@@ -6631,13 +6631,19 @@ local function executeToolAction(action, allWhenNothingSelected, param1, param2)
     elseif action == "semiinscaledown_selected_notes" then
         if #noteSelection > 0 then
             transposeSelectedNotes(-1, true)
-            showStatus(#noteSelection .. " notes were transposed one semitone down in scale.")
+            showStatus(#noteSelection .. " notes were transposed one semitone down in Scale.")
             return true
         end
     elseif action == "semiinscaleup_selected_notes" then
         if #noteSelection > 0 then
             transposeSelectedNotes(1, true)
-            showStatus(#noteSelection .. " notes were transposed one semitone up in scale.")
+            showStatus(#noteSelection .. " notes were transposed one semitone up in Scale.")
+            return true
+        end
+    elseif action == "fittoscale_selected_notes" then
+        if #noteSelection > 0 then
+            transposeSelectedNotes(0, true, true)
+            showStatus(#noteSelection .. " notes were transposed to fit to Scale.")
             return true
         end
     elseif action == "octdown_selected_notes" then
@@ -11162,7 +11168,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                 vb:button {
                                     text = "-1 in Scl",
                                     width = "50%",
-                                    tooltip = "Transpose selected or all notes down one semitone in scale ...",
+                                    tooltip = "Transpose selected or all notes down one semitone in Scale ...",
                                     notifier = function()
                                         executeToolAction("semiinscaledown_selected_notes", true)
                                     end,
@@ -11170,11 +11176,19 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                 vb:button {
                                     text = "+1 in Scl",
                                     width = "50%",
-                                    tooltip = "Transpose selected or all notes up one semitone in scale ...",
+                                    tooltip = "Transpose selected or all notes up one semitone in Scale ...",
                                     notifier = function()
                                         executeToolAction("semiinscaleup_selected_notes", true)
                                     end,
                                 },
+                            },
+                            vb:button {
+                                text = "Fit to Scale",
+                                width = "100%",
+                                tooltip = "Fit selected or all notes to Scale ...",
+                                notifier = function()
+                                    executeToolAction("fittoscale_selected_notes", true)
+                                end,
                             },
                             vb:horizontal_aligner {
                                 width = "100%",
