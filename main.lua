@@ -304,8 +304,6 @@ local dialogVars = {
     setScaleContent = nil,
     histogramObj = nil,
     histogramContent = nil,
-    arpObj = nil,
-    arpContent = nil,
     penSettingsObj = nil,
     penSettingsContent = nil,
     preferencesObj = nil,
@@ -654,7 +652,6 @@ local function restoreFocus()
     --dont set focus on note control refresh
     if windowObj and windowObj.visible
         and (not dialogVars.histogramObj or not dialogVars.histogramObj.visible)
-        and (not dialogVars.arpObj or not dialogVars.arpObj.visible)
     then
         windowObj:show()
     end
