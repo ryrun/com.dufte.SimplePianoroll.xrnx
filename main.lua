@@ -11164,7 +11164,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                 vb:button {
                                     text = "Speed * 2",
                                     width = "50%",
-                                    tooltip = "Shrink selected or all notes ...",
+                                    tooltip = "Speed up selected or all notes ...",
                                     notifier = function()
                                         executeToolAction("shrink_selected_notes", true)
                                     end,
@@ -11172,7 +11172,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                 vb:button {
                                     text = "Speed : 2",
                                     width = "50%",
-                                    tooltip = "Scale selected or all notes ...",
+                                    tooltip = "Slow down selected or all notes ...",
                                     notifier = function()
                                         executeToolAction("scale_selected_notes", true)
                                     end,
@@ -11284,14 +11284,35 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                         "Piano"
                                     },
                                 },
-                                vb:button {
-                                    text = "Apply",
+                                vb:valuebox {
+                                    id = "arp_notelen",
+                                    tooltip = "Note length for the arp",
                                     width = "50%",
-                                    tooltip = "Create an Arpeggio with the current note length for selected or all notes ...",
-                                    notifier = function()
-                                        executeToolAction("arpeggio", true, vbw.arp_mode.value, currentNoteLength)
+                                    steps = { 1, 2 },
+                                    min = 1,
+                                    max = 512,
+                                    value = currentNoteLength,
+                                    tonumber = function(string)
+                                        local lpb = song.transport.lpb
+                                        if string == "bar" then
+                                            return lpb * 4
+                                        elseif string == "beat" then
+                                            return lpb
+                                        end
+                                        return tonumber(string)
                                     end,
+                                    tostring = function(number)
+                                        return tostring(number)
+                                    end
                                 },
+                            },
+                            vb:button {
+                                text = "Apply",
+                                width = "100%",
+                                tooltip = "Create an Arpeggio with the current note length for selected or all notes ...",
+                                notifier = function()
+                                    executeToolAction("arpeggio", true, vbw.arp_mode.value, vbw.arp_notelen.value)
+                                end,
                             },
                         },
                     },
