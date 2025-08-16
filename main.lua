@@ -11162,19 +11162,19 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                 width = "100%",
                                 mode = "justify",
                                 vb:button {
-                                    text = "Speed * 2",
-                                    width = "50%",
-                                    tooltip = "Speed up selected or all notes ...",
-                                    notifier = function()
-                                        executeToolAction("shrink_selected_notes", true)
-                                    end,
-                                },
-                                vb:button {
-                                    text = "Speed : 2",
+                                    text = "½ Speed",
                                     width = "50%",
                                     tooltip = "Slow down selected or all notes ...",
                                     notifier = function()
                                         executeToolAction("scale_selected_notes", true)
+                                    end,
+                                },
+                                vb:button {
+                                    text = "Speed ×2",
+                                    width = "50%",
+                                    tooltip = "Speed up selected or all notes ...",
+                                    notifier = function()
+                                        executeToolAction("shrink_selected_notes", true)
                                     end,
                                 },
                             },
