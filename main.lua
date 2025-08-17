@@ -3118,6 +3118,9 @@ local function quickArp(mode, len)
     local arpMode = mode
     local from = nil
     local to = nil
+    local lastPan = nil
+    local lastVel = nil
+    local lastIns = nil
     local idx
     --set undo desc
     setUndoDescription("Arpeggio notes ...")
@@ -3146,6 +3149,9 @@ local function quickArp(mode, len)
         for _, note in ipairs(noteSelection) do
             if note.line <= i and note.line + note.len - 1 >= i then
                 table.insert(newHeldNotes, note)
+                lastIns = note.ins
+                lastVel = note.vel
+                lastPan = note.pan
             end
         end
         --check if any note in heldNotes are in newHeldNotes
@@ -3220,15 +3226,15 @@ local function quickArp(mode, len)
             local note_data = {
                 line = from,
                 note = note,
-                vel = heldNotes[1].vel,
+                vel = lastVel,
                 end_vel = 255,
                 dly = 0,
                 end_dly = 0,
-                pan = heldNotes[1].pan,
+                pan = lastPan,
                 len = noteLen,
                 noteoff = false,
                 column = column,
-                ins = heldNotes[1].ins
+                ins = lastIns
             }
             note_data.noteoff = addNoteToPattern(
                 note_data.column,
