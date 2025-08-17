@@ -2664,6 +2664,8 @@ local function changeSizeSelectedNotesByMicroSteps(microsteps)
     local state = true
     local len
     local delay
+    local lpB = song.transport.lpb * 4.0
+    local pattern_length = song.selected_pattern.number_of_lines
     --no scaling necessary?
     if type(microsteps) == "number" and math.floor(microsteps) == 0 then
         return false
@@ -2694,7 +2696,13 @@ local function changeSizeSelectedNotesByMicroSteps(microsteps)
                     goto process
                 end
             end
-            goto continue
+            --no next note, scale it to the end of bar
+            delay = 0
+            len = math.ceil((noteSelection[key].line + noteSelection[key].len - 1) / lpB) * lpB
+            --prevent it goes above pattern length
+            len = math.min(len, pattern_length)
+            --calculate new len
+            len = len - noteSelection[key].line - noteSelection[key].len + 1
         else
             delay = (noteSelection[key].end_dly + microsteps) % 0x100
             len = math.floor((noteSelection[key].end_dly + microsteps) / 0x100)
