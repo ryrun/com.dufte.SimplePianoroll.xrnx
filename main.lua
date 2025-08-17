@@ -3162,26 +3162,31 @@ local function quickArp(mode, len)
             end
         end
         heldNotes = newHeldNotes
-        --fill arp table
-        if arpMode == 1 then
-            table.insert(finalArp, heldNotes[(idx % #heldNotes) + 1].note)
-        elseif arpMode == 2 then
-            table.insert(finalArp,
-                heldNotes[((#heldNotes - idx - 1) % #heldNotes) + 1].note)
-        end
-        --special up/down handling
-        if idx % #heldNotes >= #heldNotes - 1 and (mode == 3 or mode == 4) then
+        if #heldNotes == 0 then
+            --add a -1 to skip this line in future
+            table.insert(finalArp, -1)
+        else
+            --fill arp table
             if arpMode == 1 then
-                arpMode = 2
-            else
-                arpMode = 1
+                table.insert(finalArp, heldNotes[(idx % #heldNotes) + 1].note)
+            elseif arpMode == 2 then
+                table.insert(finalArp,
+                    heldNotes[((#heldNotes - idx - 1) % #heldNotes) + 1].note)
             end
+            --special up/down handling
+            if idx % #heldNotes >= #heldNotes - 1 and (mode == 3 or mode == 4) then
+                if arpMode == 1 then
+                    arpMode = 2
+                else
+                    arpMode = 1
+                end
+                idx = idx + 1
+            elseif idx % #heldNotes >= #heldNotes - 1 and mode == 5 then
+                idx = idx - 2
+            end
+            --
             idx = idx + 1
-        elseif idx % #heldNotes >= #heldNotes - 1 and mode == 5 then
-            idx = idx - 2
         end
-        --
-        idx = idx + 1
     end
     --remove selected notes
     for _, note in ipairs(noteSelection) do
@@ -3190,44 +3195,48 @@ local function quickArp(mode, len)
     noteSelection = {}
     --draw arp
     for _, note in ipairs(finalArp) do
-        --search for valid column
-        local column = returnColumnWhenEnoughSpaceForNote(
-            from,
-            noteLen,
-            0,
-            0
-        )
-        if not column then
-            showStatus("Not enough space for arp.")
-            return false
+        if note == -1 then
+            --no note data here, then there is a gap
+        else
+            --search for valid column
+            local column = returnColumnWhenEnoughSpaceForNote(
+                from,
+                noteLen,
+                0,
+                0
+            )
+            if not column then
+                showStatus("Not enough space for arp.")
+                return false
+            end
+            local note_data = {
+                line = from,
+                note = note,
+                vel = heldNotes[1].vel,
+                end_vel = 255,
+                dly = 0,
+                end_dly = 0,
+                pan = heldNotes[1].pan,
+                len = noteLen,
+                noteoff = false,
+                column = column,
+                ins = heldNotes[1].ins
+            }
+            note_data.noteoff = addNoteToPattern(
+                note_data.column,
+                note_data.line,
+                note_data.len,
+                note_data.note,
+                note_data.vel,
+                note_data.end_vel,
+                note_data.pan,
+                note_data.dly,
+                note_data.end_dly,
+                note_data.ins
+            )
+            --add to selection
+            table.insert(noteSelection, note_data)
         end
-        local note_data = {
-            line = from,
-            note = note,
-            vel = heldNotes[1].vel,
-            end_vel = 255,
-            dly = 0,
-            end_dly = 0,
-            pan = heldNotes[1].pan,
-            len = noteLen,
-            noteoff = false,
-            column = column,
-            ins = heldNotes[1].ins
-        }
-        note_data.noteoff = addNoteToPattern(
-            note_data.column,
-            note_data.line,
-            note_data.len,
-            note_data.note,
-            note_data.vel,
-            note_data.end_vel,
-            note_data.pan,
-            note_data.dly,
-            note_data.end_dly,
-            note_data.ins
-        )
-        --add to selection
-        table.insert(noteSelection, note_data)
         from = from + noteLen
     end
     --refresh piano roll
