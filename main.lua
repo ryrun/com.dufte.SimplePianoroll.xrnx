@@ -6486,7 +6486,30 @@ local function executeToolAction(action, allWhenNothingSelected, param1, param2)
     if allWhenNothingSelected == true and #noteSelection == 0 then
         updateNoteSelection("all", true)
     end
-    if action == "undo" then
+    if action == "select_track_sequence_slot" then
+        --select track and sequence via pattern matrix slot
+        if not song then
+            song = renoise.song()
+        end
+        for s = 1, #song.sequencer.pattern_sequence do
+            for t = 1, #song.tracks do
+                if song.sequencer:track_sequence_slot_is_selected(t, s) then
+                    --focus pattern editor
+                    app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_PATTERN_EDITOR
+                    --when current sequnce not the editing one, disable follow player, when playing
+                    if song.transport.playing and song.transport.follow_player and song.selected_sequence_index ~= s then
+                        wasFollowPlayer = song.transport.follow_player
+                        song.transport.follow_player = false
+                    end
+                    --switch to sequence and track
+                    song.selected_sequence_index = s
+                    song.selected_track_index = t
+                    --call default main_function
+                    return true
+                end
+            end
+        end
+    elseif action == "undo" then
         song:undo()
         --after undo selection could be messed up, so deselect all
         if #noteSelection > 0 then
@@ -6519,7 +6542,7 @@ local function executeToolAction(action, allWhenNothingSelected, param1, param2)
             return true
         end
         return false
-    elseif action == "cut_selected_notes" then
+    elseif action == "cut" then
         if #noteSelection > 0 then
             clipboard = {}
             for k in pairs(noteSelection) do
@@ -6535,7 +6558,7 @@ local function executeToolAction(action, allWhenNothingSelected, param1, param2)
             removeSelectedNotes(true)
             return true
         end
-    elseif action == "copy_selected_notes" then
+    elseif action == "copy" then
         if #noteSelection > 0 then
             clipboard = {}
             for k in pairs(noteSelection) do
@@ -7102,7 +7125,7 @@ local function handleKeyEvent(keyEvent, mouseXPosition)
     end
     if key.name == "c" and key.modifiers == "control" then
         if key.state == "pressed" and not key.repeated then
-            if executeToolAction("copy_selected_notes", true) then
+            if executeToolAction("copy", true) then
                 keyInfoText = "Copy selected notes"
             end
         end
@@ -7110,7 +7133,7 @@ local function handleKeyEvent(keyEvent, mouseXPosition)
     end
     if key.name == "x" and key.modifiers == "control" then
         if key.state == "pressed" and not key.repeated then
-            if executeToolAction("cut_selected_notes", true) then
+            if executeToolAction("cut", true) then
                 keyInfoText = "Cut selected notes"
             end
         end
@@ -11053,7 +11076,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                     width = "33%",
                                     tooltip = "Cut all or selected notes ...",
                                     notifier = function()
-                                        executeToolAction("cut_selected_notes", true)
+                                        executeToolAction("cut", true)
                                     end,
                                 },
                                 vb:button {
@@ -11061,7 +11084,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                     width = "33%",
                                     tooltip = "Copy all or selected notes ...",
                                     notifier = function()
-                                        executeToolAction("copy_selected_notes", true)
+                                        executeToolAction("copy", true)
                                     end,
                                 },
                                 vb:button {
@@ -11578,23 +11601,63 @@ tool:add_menu_entry {
 tool:add_menu_entry {
     name = "Pattern Matrix:Edit with Simple Pianoroll ...",
     invoke = function()
-        song = renoise.song()
-        for s = 1, #song.sequencer.pattern_sequence do
-            for t = 1, #song.tracks do
-                if song.sequencer:track_sequence_slot_is_selected(t, s) then
-                    --focus pattern editor
-                    app.window.active_middle_frame = renoise.ApplicationWindow.MIDDLE_FRAME_PATTERN_EDITOR
-                    --when current sequnce not the editing one, disable follow player, when playing
-                    if song.transport.playing and song.transport.follow_player and song.selected_sequence_index ~= s then
-                        wasFollowPlayer = song.transport.follow_player
-                        song.transport.follow_player = false
-                    end
-                    --switch to sequence and track
-                    song.selected_sequence_index = s
-                    song.selected_track_index = t
-                    --call default main_function
-                    return main_function()
-                end
+        if executeToolAction("select_track_sequence_slot") then
+            return main_function()
+        end
+    end
+}
+
+tool:add_menu_entry {
+    name = "Pattern Matrix:Simple Pianoroll:Cut Notes",
+    invoke = function()
+        if executeToolAction("select_track_sequence_slot") then
+            if not vb then
+                main_function(true)
+            end
+            executeToolAction("select_none")
+            executeToolAction("cut", true)
+        end
+    end
+}
+
+tool:add_menu_entry {
+    name = "Pattern Matrix:Simple Pianoroll:Copy Notes",
+    invoke = function()
+        if executeToolAction("select_track_sequence_slot") then
+            if not vb then
+                main_function(true)
+            end
+            executeToolAction("select_none")
+            executeToolAction("copy", true)
+        end
+    end
+}
+
+tool:add_menu_entry {
+    name = "Pattern Matrix:Simple Pianoroll:Paste Notes",
+    invoke = function()
+        if executeToolAction("select_track_sequence_slot") then
+            if not vb then
+                main_function(true)
+            end
+            if #clipboard > 0 then
+                pasteCursor = {}
+                executeToolAction("paste", true)
+            end
+        end
+    end
+}
+
+tool:add_menu_entry {
+    name = "Pattern Matrix:Simple Pianoroll:Paste Notes (Cur. Inst.)",
+    invoke = function()
+        if executeToolAction("select_track_sequence_slot") then
+            if not vb then
+                main_function(true)
+            end
+            if #clipboard > 0 then
+                pasteCursor = {}
+                executeToolAction("paste_with_current_instrument", true)
             end
         end
     end
