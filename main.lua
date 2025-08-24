@@ -11464,7 +11464,8 @@ local function main_function(hidden)
         fillPianoRoll()
         --center note view
         if lowestNote ~= nil and preferences.centerViewOnOpen.value then
-            noteOffset = math.floor(((lowestNote + highestNote) / 2) - (gridHeight / 2))
+            noteOffset = clamp(math.floor(((lowestNote + highestNote) / 2) - (gridHeight / 2)), 0,
+                noteSlider.max - noteSlider.pagestep)
         end
         setScrollbarValue(noteSlider.max - noteSlider.pagestep - noteOffset, noteSlider)
 
