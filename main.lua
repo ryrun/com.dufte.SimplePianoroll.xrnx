@@ -10982,7 +10982,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                                     },
                                                     vb:button {
                                                         id = "toolpanelbtn",
-                                                        text = "⚙️",
+                                                        bitmap = "Icons/Folder_tool.bmp",
                                                         width = 24,
                                                         tooltip = "Show/Hide tool panel ...",
                                                         notifier = function()
@@ -11013,7 +11013,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                     margin = 4,
                     width = 130,
                     vb:text {
-                        text = "⚙️ Tool panel",
+                        text = "Tool panel",
                         font = "bold",
                         style = "strong",
                         align = "center",
