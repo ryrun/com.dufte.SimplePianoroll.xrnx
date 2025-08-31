@@ -4137,14 +4137,10 @@ local function fillTimeline()
     local stepsCount = math.min(steps, gW)
     local math_ceil = math.ceil
     --setup timeline
-    local timestep = 0
+    local timestep = 1
     local lastbeat
     local timeslot
     local start_i = 1
-
-    if lpb > 1 then
-        start_i = 1 - lpb
-    end
 
     -- refresh visibility of step indicators
     for i = 1, gridWidth * math.ceil(defaultPreferences.gridXZoomMax) do
@@ -4168,23 +4164,37 @@ local function fillTimeline()
     end
 
     --refresh timeline
+    local showOdd = true
+    local showHalf = true
+    local timelineWidth = gridStepSizeWScaled * lpb
+
+    --when timeline slot too large, hide odd markers
+    if timelineWidth < 32 then
+        showOdd = false
+        timelineWidth = timelineWidth * 2
+    end
+    --when timeline slot still too large, hide half markers
+    if timelineWidth < 32 then
+        showHalf = false
+        timelineWidth = timelineWidth * 2
+    end
+
     for i = start_i, stepsCount do
         local line = i + stepOffset
         local beat = math_ceil((line - lpb) / lpb) % 4 + 1
         local bar = calculateBarBeat(line, false, lpb)
 
         if lastbeat ~= beat then
-            timestep = timestep + 1
             timeslot = vbw["timeline" .. timestep]
             timeslot.origin = { (gridStepSizeWScaled * (i - 1)) - 4, 0 }
+            timeslot.text = ""
             if line % lpb == 1 then
-                if lpb == 2 and beat % lpb == 0 then
-                    timeslot.text = ""
-                else
+                if beat == 1 or
+                    ((beat == 2 or beat == 4) and showOdd) or
+                    (beat == 3 and showHalf)
+                then
                     timeslot.text = "│ " .. bar .. "." .. beat
                 end
-            else
-                timeslot.text = ""
             end
             if beat == 1 then
                 if preferences.timelineEven.value == 2 then
@@ -4203,12 +4213,16 @@ local function fillTimeline()
                     timeslot.style = "normal"
                 end
             end
-            timeslot.visible = true
+            if timeslot.text ~= "" then
+                timeslot.visible = true
+                timestep = timestep + 1
+            end
+            timeslot.width = timelineWidth
             lastbeat = beat
         end
     end
-    while vbw["timeline" .. timestep + 1] do
-        vbw["timeline" .. timestep + 1].visible = false
+    while vbw["timeline" .. timestep] do
+        vbw["timeline" .. timestep].visible = false
         timestep = timestep + 1
     end
     -- Set block loop indicator visibility
