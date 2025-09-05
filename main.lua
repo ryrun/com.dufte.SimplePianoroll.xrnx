@@ -6551,6 +6551,9 @@ local function executeToolAction(action, allWhenNothingSelected, param1, param2)
     elseif action == "paste_with_current_instrument" then
         if #clipboard > 0 then
             showStatus(#clipboard .. " notes with current instrument pasted.")
+            if not currentInstrument or not (windowObj and windowObj.visible) then
+                currentInstrument = song.selected_instrument_index - 1
+            end
             pasteNotesFromClipboard(currentInstrument)
             jumpToNoteInPattern("sel")
             return true
