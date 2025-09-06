@@ -189,6 +189,7 @@ local defaultPreferences = {
     timelineOdd = 3,
     restrictNotesToScale = false,
     sortNewNotesMode = 2,
+    pauseFollowPlayerWhileEditing = true,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -277,6 +278,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     timelineEven = defaultPreferences.timelineEven,
     timelineOdd = defaultPreferences.timelineOdd,
     sortNewNotesMode = defaultPreferences.sortNewNotesMode,
+    pauseFollowPlayerWhileEditing = defaultPreferences.pauseFollowPlayerWhileEditing,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -1872,6 +1874,14 @@ local function refreshNoteControls()
     refreshStates.refreshControls = false
 end
 
+--function to pause follow player for editing
+local function pauseFollowPlayerWhileEditing()
+    if preferences.pauseFollowPlayerWhileEditing.value then
+        wasFollowPlayer = song.transport.follow_player
+        song.transport.follow_player = false
+    end
+end
+
 local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, newOrChanged, instrument)
     --special handling of preview notes, on new notes or changed notes (transpose)
     if newOrChanged and (pressed == true or pressed == nil) then
@@ -2004,8 +2014,7 @@ local function moveSelectedNotes(steps)
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     if song.transport.follow_player then
-        wasFollowPlayer = song.transport.follow_player
-        song.transport.follow_player = false
+        pauseFollowPlayerWhileEditing()
     end
     --
     setUndoDescription("Move notes ...")
@@ -2118,8 +2127,7 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     if song.transport.follow_player then
-        wasFollowPlayer = song.transport.follow_player
-        song.transport.follow_player = false
+        pauseFollowPlayerWhileEditing()
     end
     --remove all notes before processing
     if removeAll then
@@ -2223,8 +2231,7 @@ local function transposeSelectedNotes(transpose, keepscale, nopreview)
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     if song.transport.follow_player then
-        wasFollowPlayer = song.transport.follow_player
-        song.transport.follow_player = false
+        pauseFollowPlayerWhileEditing()
     end
     --go through selection
     for key = 1, #noteSelection do
@@ -2281,8 +2288,7 @@ local function pasteNotesFromClipboard(overwriteInstrument)
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     if song.transport.follow_player then
-        wasFollowPlayer = song.transport.follow_player
-        song.transport.follow_player = false
+        pauseFollowPlayerWhileEditing()
     end
     --describe undo for renoise
     setUndoDescription("Paste notes from clipboard ...")
@@ -2611,8 +2617,7 @@ local function duplicateSelectedNotes(noOffset)
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     if song.transport.follow_player then
-        wasFollowPlayer = song.transport.follow_player
-        song.transport.follow_player = false
+        pauseFollowPlayerWhileEditing()
     end
     --
     --remove offset to duplicate on same pos
@@ -2675,8 +2680,7 @@ local function changeSizeSelectedNotesByMicroSteps(microsteps)
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     if song.transport.follow_player then
-        wasFollowPlayer = song.transport.follow_player
-        song.transport.follow_player = false
+        pauseFollowPlayerWhileEditing()
     end
     --
     if microsteps == "legato" then
@@ -2775,8 +2779,7 @@ local function changeSizeSelectedNotes(len, add)
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     if song.transport.follow_player then
-        wasFollowPlayer = song.transport.follow_player
-        song.transport.follow_player = false
+        pauseFollowPlayerWhileEditing()
     end
     --
     setUndoDescription("Change note lengths ...")
@@ -2853,8 +2856,7 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     if song.transport.follow_player then
-        wasFollowPlayer = song.transport.follow_player
-        song.transport.follow_player = false
+        pauseFollowPlayerWhileEditing()
     end
     --go through selection
     local selection
@@ -5623,8 +5625,7 @@ local function initHistogram()
     --
     song.transport.edit_mode = false
     if song.transport.follow_player then
-        wasFollowPlayer = song.transport.follow_player
-        song.transport.follow_player = false
+        pauseFollowPlayerWhileEditing()
     end
     randomHistogramValues = {}
     --set random values
@@ -9384,6 +9385,14 @@ showPreferences = function()
                             },
                             vbp:text {
                                 text = "Reset note size when note drawing",
+                            },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.pauseFollowPlayerWhileEditing,
+                            },
+                            vbp:text {
+                                text = "Pause player follow while editing",
                             },
                         },
                         vbp:row {
