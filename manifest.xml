@@ -2,7 +2,7 @@
 <RenoiseScriptingTool doc_version="0">
   <ApiVersion>6.2</ApiVersion>
   <Id>com.duftetools.SimplePianoroll</Id>
-  <Version>5.3</Version>
+  <Version>5.4</Version>
   <Author>dufte (toimp)</Author>
   <Name>Simple Pianoroll</Name>
   <Category>Editing,Pattern</Category>
