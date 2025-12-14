@@ -7767,6 +7767,24 @@ local function handleMouse(event)
     local x, y, c, type, forceScaling, val_x, val_y, quickRefresh, forceFullRefresh
     local gridWidthScaled = math.ceil(gridWidth * preferences.gridXZoom.value)
 
+    --filter out bad move events from modifier keys, bug 3.5.4
+    if xypadpos.last_x
+        and (event.type == "move" or event.type == "drag")
+        and event.modifier_flags.control == false
+        and event.modifier_flags.shift == false
+        and event.modifier_flags.super == false
+        and event.modifier_flags.alt == false
+    then
+        local dist = math.sqrt((xypadpos.last_x - event.position.x) ^ 2 + (xypadpos.last_y - event.position.y) ^ 2)
+        if dist > 100 then
+            xypadpos.last_x = event.position.x
+            xypadpos.last_y = event.position.y
+            return
+        end
+    end
+    xypadpos.last_x = event.position.x
+    xypadpos.last_y = event.position.y
+
     --no special cursor
     xypadpos.mouseCursor = nil
 
