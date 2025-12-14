@@ -649,6 +649,35 @@ local function badTrackError()
     end
 end
 
+--calculate x-skip value for grid when zoom out, also align x value to grid when parameter is passsed
+local function computeAlignedGridSkipX(x)
+    local gW = math.ceil(gridWidth * preferences.gridXZoom.value)
+    local w = vbw["canvas"].width / gW
+    local lpb = song.transport.lpb
+    local minPx = gridStepSizeW * 0.8
+    local skipX = 1
+
+    while (w * skipX) < minPx do
+        skipX = skipX * 2
+    end
+
+    local chosen = lpb
+    for d = 1, lpb do
+        if (lpb % d == 0) and (d >= skipX) then
+            chosen = d
+            break
+        end
+    end
+
+    if x ~= nil then
+        local xi = x - 1
+        xi = xi - (xi % chosen)
+        return xi + 1
+    end
+    return chosen
+end
+
+
 --bring focus back to main dialog, when out of focus
 local function restoreFocus()
     --dont set focus on note control refresh
@@ -3629,6 +3658,7 @@ function pianoGridClick(x, y, released)
             local new_note_data
             --move x by stepoffset
             x = x + stepOffset
+            x = computeAlignedGridSkipX(x)
             --check if current note length is too long for pattern size, reduce len if needed
             if x + currentNoteLength > steps then
                 currentNoteLength = steps - x + 1
@@ -9819,6 +9849,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                     local h = context.size.height / gH
                     local lpb = song.transport.lpb
                     local steps = song.selected_pattern.number_of_lines
+                    local skipX = computeAlignedGridSkipX()
 
                     --fill color
                     context.fill_color = colorBaseGridColor
@@ -9849,10 +9880,12 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                     end
 
                     for x = 0, gW do
-                        context:begin_path()
-                        context:move_to(x * w, 0)
-                        context:line_to(x * w, h * gH)
-                        context:stroke()
+                        if (x + stepOffset) % skipX == 0 then
+                            context:begin_path()
+                            context:move_to(x * w, 0)
+                            context:line_to(x * w, h * gH)
+                            context:stroke()
+                        end
                     end
 
                     --simple 3d emboss effect
