@@ -8090,7 +8090,7 @@ local function handleMouse(event)
                             xypadpos.lastx = math.floor(val_x)
                         end
                     end
-                    if math.floor(xypadpos.y) - math.floor(val_y + 0.1) > 0 then
+                    if xypadpos.y - val_y > 0.45 then
                         if xypadpos.duplicate then
                             if modifier.keyControl and xypadpos.idx then
                                 if noteInSelection(noteData[xypadpos.idx]) then
@@ -8111,7 +8111,7 @@ local function handleMouse(event)
                                 break
                             end
                         end
-                    elseif math.floor(xypadpos.y) - math.floor(val_y - 0.1) < 0 then
+                    elseif xypadpos.y - val_y < -1.45 then
                         if xypadpos.duplicate then
                             if modifier.keyControl and xypadpos.idx then
                                 if noteInSelection(noteData[xypadpos.idx]) then
