@@ -8011,6 +8011,10 @@ local function handleMouse(event)
                                     v = 0
                                 end
                             else
+                                --when current note len doesn't fit to grid, then use step size of 1
+                                if note_data.len % minGridStep ~= 0 then
+                                    minGridStep = 1
+                                end
                                 v = snapDown(math.floor((val_x - (xypadpos.nx + note_data.len)) * 0x100 - note_data
                                     .end_dly) / 0x100 + 0.5, minGridStep) * 0x100
                                 if note_data.len + math.floor((note_data.end_dly + v) / 0x100) < minGridStep then
