@@ -612,6 +612,11 @@ local function clamp(value, lowerBound, upperBound)
     return math.max(lowerBound, math.min(upperBound, value))
 end
 
+--force value to be a multiple of y
+local function snapDown(x, y)
+    return math.floor(x / y) * y
+end
+
 --scrollbar helpers
 local function setScrollbarValue(val, scrollbar)
     scrollbar.value = clamp(val, scrollbar.min, scrollbar.max - scrollbar.pagestep)
@@ -7796,6 +7801,7 @@ local function handleMouse(event)
     local pianorollColumns = vbw["pianorollColumns"]
     local x, y, c, type, forceScaling, val_x, val_y, quickRefresh, forceFullRefresh
     local gridWidthScaled = math.ceil(gridWidth * preferences.gridXZoom.value)
+    local minGridStep = computeAlignedGridSkipX()
 
     --filter out bad move events from modifier keys, bug 3.5.4
     if xypadpos.last_x
@@ -7975,7 +7981,7 @@ local function handleMouse(event)
                     if not xypadpos.distanceblock then
                         if #noteSelection == 1 and xypadpos.resetscale then
                             --when a new len will be drawn, then reset len to 1
-                            changeSizeSelectedNotes(1)
+                            changeSizeSelectedNotes(minGridStep)
                             --and remove delay
                             changePropertiesOfSelectedNotes(nil, nil, 0, 0, nil, nil, nil, "removecut")
                             --switch to scale mode, when note was resettet
@@ -8001,13 +8007,13 @@ local function handleMouse(event)
                                     v = v - delay
                                 end
                                 --no scaling when target len < 1, then no scaling
-                                if note_data.len + len < 1 then
+                                if note_data.len + len < minGridStep then
                                     v = 0
                                 end
                             else
-                                v = math.floor(math.floor((val_x - (xypadpos.nx + note_data.len)) * 0x100 - note_data
-                                    .end_dly) / 0x100 + 0.5) * 0x100
-                                if note_data.len + math.floor((note_data.end_dly + v) / 0x100) < 1 then
+                                v = snapDown(math.floor((val_x - (xypadpos.nx + note_data.len)) * 0x100 - note_data
+                                    .end_dly) / 0x100 + 0.5, minGridStep) * 0x100
+                                if note_data.len + math.floor((note_data.end_dly + v) / 0x100) < minGridStep then
                                     v = 0
                                 end
                             end
@@ -8044,7 +8050,7 @@ local function handleMouse(event)
                     else
                         xypadpos.x = math.floor(xypadpos.x)
                         xypadpos.y = math.floor(xypadpos.y)
-                        if xypadpos.x - math.floor(val_x) > 0 and math.floor(val_x) ~= xypadpos.lastx then
+                        if xypadpos.x - math.floor(val_x) > (minGridStep - 1) and math.floor(val_x) ~= xypadpos.lastx then
                             if xypadpos.duplicate then
                                 if modifier.keyControl and xypadpos.idx then
                                     if noteInSelection(noteData[xypadpos.idx]) then
@@ -8057,7 +8063,7 @@ local function handleMouse(event)
                                 forceFullRefresh = true
                                 xypadpos.duplicate = false
                             end
-                            for d = math.abs(xypadpos.x - math.floor(val_x)), 1, -1 do
+                            for d = snapDown(math.abs(xypadpos.x - math.floor(val_x)), minGridStep), 1, -1 do
                                 refreshStates.blockLineModifier = true
                                 quickRefresh = true
                                 if moveSelectedNotes(-d) then
@@ -8066,7 +8072,7 @@ local function handleMouse(event)
                                 end
                             end
                             xypadpos.lastx = math.floor(val_x)
-                        elseif xypadpos.x - math.floor(val_x) < 0 and math.floor(val_x) ~= xypadpos.lastx then
+                        elseif xypadpos.x - math.floor(val_x) < -(minGridStep - 1) and math.floor(val_x) ~= xypadpos.lastx then
                             if xypadpos.duplicate then
                                 if modifier.keyControl and xypadpos.idx then
                                     if noteInSelection(noteData[xypadpos.idx]) then
@@ -8079,7 +8085,7 @@ local function handleMouse(event)
                                 forceFullRefresh = true
                                 xypadpos.duplicate = false
                             end
-                            for d = math.abs(xypadpos.x - math.floor(val_x)), 1, -1 do
+                            for d = snapDown(math.abs(xypadpos.x - math.floor(val_x)), minGridStep), 1, -1 do
                                 refreshStates.blockLineModifier = true
                                 quickRefresh = true
                                 if moveSelectedNotes(d) then
