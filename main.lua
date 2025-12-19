@@ -4884,6 +4884,12 @@ local function updateCanvas()
     if refreshStates.updateGridCanvas then
         vbw["canvas"]:update()
         refreshStates.updateGridCanvas = false
+        --refresh grid resolution value
+        local lpb = song.transport.lpb
+        local skipX = computeAlignedGridSkipX()
+        if lpb > 0 and skipX > 0 then
+            vbw["gridresolution"].text= "1/" .. tostring(lpb * 4 / skipX)
+        end
     end
     --offset y of canvas
     vbw["canvas"].origin = { 0, ((noteOffset % 12) - 12) * (vbw["canvas"].height / (gridHeight + 12)) }
@@ -11043,6 +11049,35 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
                                                 vb:text {
                                                     id = "chordprog",
                                                     width = 110,
+                                                    text = "-",
+                                                    font = "bold",
+                                                    style = "strong",
+                                                    align = "center",
+                                                },
+                                                vb:space {
+                                                    width = 4,
+                                                },
+                                            },
+                                            vb:row {
+                                                style = "panel",
+                                                margin = 1,
+                                                vb:space {
+                                                    width = 2,
+                                                },
+                                                vb:vertical_aligner {
+                                                    mode = "center",
+                                                    vb:bitmap {
+                                                        bitmap = "Icons/MiddleFrame_Phrases.bmp",
+                                                        mode = "transparent",
+                                                        tooltip = "Grid resolution",
+                                                    },
+                                                },
+                                                vb:space {
+                                                    width = 2,
+                                                },
+                                                vb:text {
+                                                    id = "gridresolution",
+                                                    width = 56,
                                                     text = "-",
                                                     font = "bold",
                                                     style = "strong",
