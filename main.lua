@@ -8022,7 +8022,7 @@ local function handleMouse(event)
                                     minGridStep = 1
                                 end
                                 v = snapDown(math.floor((val_x - (xypadpos.nx + note_data.len)) * 0x100 - note_data
-                                    .end_dly) / 0x100 + 0.5, minGridStep) * 0x100
+                                    .end_dly) / 0x100 + (0.5 * minGridStep), minGridStep) * 0x100
                                 if note_data.len + math.floor((note_data.end_dly + v) / 0x100) < minGridStep then
                                     v = 0
                                 end
