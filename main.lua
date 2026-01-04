@@ -7364,7 +7364,7 @@ local function handleKeyEvent(keyEvent, mouseXPosition)
                     --move cursor
                     if currentEditPos + steps >= 1 and currentEditPos + steps <= song.selected_pattern.number_of_lines + 1 then
                         --do step sequencing
-                        if not song.transport.playing and math.abs(steps) == 1 then
+                        if not song.transport.playing and math.abs(steps) == computeAlignedGridSkipX() then
                             if stepSequencing(currentEditPos, steps) then
                                 keyInfoText = keyInfoText .. ", do step sequencing ..."
                             end
