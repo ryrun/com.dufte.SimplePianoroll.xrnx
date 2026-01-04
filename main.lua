@@ -3584,6 +3584,9 @@ function pianoGridClick(x, y, released)
     local outside = false
     local noteDrawn = {}
 
+    --force x to be aligned with grid
+    x = computeAlignedGridSkipX(x)
+
     --just allow selection, deselect notes, when pos is outside the grid
     if x + stepOffset > song.selected_pattern.number_of_lines then
         outside = true
@@ -3661,9 +3664,8 @@ function pianoGridClick(x, y, released)
             local notesOnLine
             local note_data
             local new_note_data
-            --move x by stepoffset
-            x = x + stepOffset
-            x = computeAlignedGridSkipX(x)
+            --move x by stepoffset, aligned to the grid
+            x = computeAlignedGridSkipX(x + stepOffset)
             --check if current note length is too long for pattern size, reduce len if needed
             if x + currentNoteLength > steps then
                 currentNoteLength = steps - x + 1
@@ -4888,7 +4890,7 @@ local function updateCanvas()
         local lpb = song.transport.lpb
         local skipX = computeAlignedGridSkipX()
         if lpb > 0 and skipX > 0 then
-            vbw["gridresolution"].text= "1/" .. tostring(lpb * 4 / skipX)
+            vbw["gridresolution"].text = "1/" .. tostring(lpb * 4 / skipX)
         end
     end
     --offset y of canvas
