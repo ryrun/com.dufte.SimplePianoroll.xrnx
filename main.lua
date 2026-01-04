@@ -7321,9 +7321,9 @@ local function handleKeyEvent(keyEvent, mouseXPosition)
     end
     if (key.name == "left" or key.name == "right") then
         if key.state == "pressed" then
-            local steps = 1
+            local steps = computeAlignedGridSkipX()
             if modifier.keyShift or modifier.keyRShift then
-                steps = 4
+                steps = steps * 4
             end
             if key.name == "left" then
                 steps = steps * -1
