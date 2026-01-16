@@ -28,7 +28,6 @@ local convertStringToColorValue
 local convertColorValueToString
 local colorNoteVelocity
 local setKeyboardKeyColor
-local highlightNoteRow
 local initColors
 local setNoteColor
 
@@ -261,7 +260,6 @@ local defaultPreferences = {
     addNoteColumnsIfNeeded = true,
     keyboardStyle = 1,
     noNotePreviewDuringSongPlayback = false,
-    highlightEntireLineOfPlayingNote = false,
     rowHighlightingAmount = 0.15,
     oddBarsShadingAmount = 0.15,
     oddBeatShadingAmount = 0.0,
@@ -342,7 +340,6 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     velocityColorShadingAmount = defaultPreferences.velocityColorShadingAmount,
     scaleBtnShadingAmount = defaultPreferences.scaleBtnShadingAmount,
     shadingType = defaultPreferences.shadingType,
-    highlightEntireLineOfPlayingNote = defaultPreferences.highlightEntireLineOfPlayingNote,
     rowHighlightingAmount = defaultPreferences.rowHighlightingAmount,
     followPlayCursor = defaultPreferences.followPlayCursor,
     addNoteOffToEmptyNoteColumns = defaultPreferences.addNoteOffToEmptyNoteColumns,
@@ -3267,24 +3264,6 @@ setKeyboardKeyColor = function(row, pressed, highlighted)
     end
 end
 
---highlight entire row
-highlightNoteRow = function(row, highlighted)
-    if preferences.highlightEntireLineOfPlayingNote.value then
-        --[[
-        TODO
-        local n = math.min(song.selected_pattern.number_of_lines, gridWidth)
-        for l = 1, n do
-            local idx = "p" .. l .. "_" .. row
-            if highlighted then
-                vbw[idx].color = shadeColor(defaultColor[idx], -preferences.rowHighlightingAmount.value)
-            else
-                vbw[idx].color = defaultColor[idx]
-            end
-        end
-        ]] --
-    end
-end
-
 --simple arp function
 quickArp = function(mode, len)
     local heldNotes = {}
@@ -3657,10 +3636,6 @@ function keyClick(y, pressed)
             updateNoteSelection(newNoteSelection, not modifier.keyShift)
         end
     else
-        local row = noteValue2GridRowOffset(note)
-        if row ~= nil then
-            highlightNoteRow(row, pressed)
-        end
         triggerNoteOfCurrentInstrument(note, pressed)
     end
 end
@@ -3779,7 +3754,6 @@ pianoGridClick = function(x, y, released)
                 local row = noteValue2GridRowOffset(note_data.note)
                 if row ~= nil then
                     setKeyboardKeyColor(row, not released, false)
-                    highlightNoteRow(row, not released)
                 end
             end
         end
@@ -4903,7 +4877,6 @@ highlightNotesOnStep = function(step, highlight)
     --color rows and keyboard
     for key in pairs(rows) do
         setKeyboardKeyColor(key, false, highlight)
-        highlightNoteRow(key, highlight)
     end
     refreshStates.refreshChordDetection = true
 end
@@ -7588,7 +7561,6 @@ handleKeyEvent = function(keyEvent, mouseXPosition)
                     triggerNoteOfCurrentInstrument(note, false)
                     if row ~= nil then
                         setKeyboardKeyColor(row, false, false)
-                        highlightNoteRow(row, false)
                     end
                 end
                 if key.modifiers == "" then
@@ -7616,7 +7588,6 @@ handleKeyEvent = function(keyEvent, mouseXPosition)
                 end
                 if row ~= nil then
                     setKeyboardKeyColor(row, true, false)
-                    highlightNoteRow(row, true)
                 end
                 if #chord > 1 then
                     keyInfoText = "Play a chord"
@@ -7996,7 +7967,6 @@ handleMouse = function(event)
                 local row = noteValue2GridRowOffset(note_data.note)
                 if row ~= nil then
                     setKeyboardKeyColor(row, false, false)
-                    highlightNoteRow(row, false)
                 end
             end
             xypadpos.previewmode = false
@@ -8062,7 +8032,6 @@ handleMouse = function(event)
                         local row = noteValue2GridRowOffset(note_data.note)
                         if row ~= nil then
                             setKeyboardKeyColor(row, false, false)
-                            highlightNoteRow(row, false)
                         end
                     end
                 end
@@ -8082,7 +8051,6 @@ handleMouse = function(event)
                     local row = noteValue2GridRowOffset(playNotes[i].note)
                     if row ~= nil then
                         setKeyboardKeyColor(row, true, false)
-                        highlightNoteRow(row, true)
                     end
                 end
                 --draw cursor
@@ -8999,14 +8967,6 @@ showPreferences = function()
                                 tonumber = function(v)
                                     return tonumber(v)
                                 end
-                            },
-                        },
-                        vbp:row {
-                            vbp:checkbox {
-                                bind = preferences.highlightEntireLineOfPlayingNote
-                            },
-                            vbp:text {
-                                text = "Highlight the entire row of a playing note",
                             },
                         },
                         vbp:horizontal_aligner {
