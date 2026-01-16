@@ -1,0 +1,23 @@
+name: Build XRNX
+
+on:
+  push:
+    branches: ["**"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create XRNX package
+        run: |
+          zip -r com.duftetools.SimplePianoroll.xrnx \
+            manifest.xml main.lua thumbnail.png cover.png
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: com.duftetools.SimplePianoroll.xrnx
+          path: com.duftetools.SimplePianoroll.xrnx
