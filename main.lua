@@ -10647,7 +10647,7 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
                         else
                             currentNoteVelocity = number
                         end
-                        if #noteSelection > 0 and not refreshStates.refreshControls then
+                        if #noteSelection > 0 then
                             changePropertiesOfSelectedNotes(currentNoteVelocity)
                         end
                         refreshStates.refreshControls = true
@@ -10697,7 +10697,7 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
                         else
                             currentNoteEndVelocity = number
                         end
-                        if #noteSelection > 0 and not refreshStates.refreshControls then
+                        if #noteSelection > 0 then
                             changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity)
                         end
                         refreshStates.refreshControls = true
@@ -10757,7 +10757,7 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
                         else
                             currentNotePan = number
                         end
-                        if #noteSelection > 0 and not refreshStates.refreshControls then
+                        if #noteSelection > 0 then
                             changePropertiesOfSelectedNotes(nil, nil, nil, nil, currentNotePan)
                         end
                         refreshStates.refreshControls = true
@@ -10812,7 +10812,7 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
                     end,
                     notifier = function(number)
                         currentNoteDelay = number
-                        if #noteSelection > 0 and not refreshStates.refreshControls then
+                        if #noteSelection > 0 then
                             changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay)
                         end
                         refreshStates.refreshControls = true
@@ -10857,7 +10857,7 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
                     end,
                     notifier = function(number)
                         currentNoteEndDelay = number
-                        if #noteSelection > 0 and not refreshStates.refreshControls then
+                        if #noteSelection > 0 then
                             changePropertiesOfSelectedNotes(nil, nil, nil, currentNoteEndDelay)
                         end
                         refreshStates.refreshControls = true
