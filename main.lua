@@ -20,7 +20,6 @@ local noteValue2GridRowOffset
 local gridOffset2NoteValue
 local toRenoiseHex
 local fromRenoiseHex
-local getSingularPlural
 
 local shadeColor
 local alphablendColors
@@ -846,18 +845,6 @@ fromRenoiseHex = function(val)
         tstart = string.format("%X", tstart)
     end
     return tonumber(tstart .. tend, 16)
-end
-
---plural text function
-getSingularPlural = function(val, singular, plural, addVal)
-    local b = ""
-    if addVal then
-        b = math.abs(val) .. " "
-    end
-    if math.abs(val) == 1 then
-        return b .. singular
-    end
-    return b .. plural
 end
 
 --convert note positon data into microsteps
@@ -7448,8 +7435,7 @@ handleKeyEvent = function(keyEvent, mouseXPosition)
             if #noteSelection > 0 and not modifier.keyAlt then
                 transposeSelectedNotes(transpose,
                     (modifier.keyControl or modifier.keyRControl) and not (modifier.keyShift or modifier.keyRShift))
-                keyInfoText = "Transpose selected notes by " ..
-                    getSingularPlural(transpose, "semitone", "semitones", true)
+                keyInfoText = "Transpose selected notes"
                 if (modifier.keyControl or modifier.keyRControl) and not (modifier.keyShift or modifier.keyRShift) then
                     keyInfoText = keyInfoText .. ", keep in scale"
                 end
@@ -7492,7 +7478,7 @@ handleKeyEvent = function(keyEvent, mouseXPosition)
                     end
                 else
                     moveSelectedNotes(steps)
-                    keyInfoText = "Move selected notes by " .. getSingularPlural(steps, "step", "steps", true)
+                    keyInfoText = "Move selected notes"
                 end
             else
                 if modifier.keyAlt then
