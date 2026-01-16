@@ -73,6 +73,7 @@ local restoreFocus
 local pauseFollowPlayerWhileEditing
 local playPatternFromLine
 local triggerNoteOfCurrentInstrument
+local stopInstrumentNoteIfPlaying
 local jumpToNoteInPattern
 local afterEditProcess
 
@@ -1773,6 +1774,7 @@ removeSelectedNotes = function(cut)
     --loop through selected notes
     for i = 1, #noteSelection do
         removeNoteInPattern(noteSelection[i].column, noteSelection[i].line, noteSelection[i].len)
+        stopInstrumentNoteIfPlaying(noteSelection[i])
     end
     updateNoteSelection(nil, true)
     --add other notes on this line back
@@ -2122,6 +2124,33 @@ triggerNoteOfCurrentInstrument = function(note_value, pressed, velocity, newOrCh
         song:trigger_instrument_note_on(noteEvent.instrument_index, noteEvent.track_index, noteEvent.note,
             noteEvent.volume)
         table.insert(lastTriggerNote, noteEvent)
+    end
+end
+
+--stop if note is playing, only when song is playing and instrument is a plugin
+stopInstrumentNoteIfPlaying = function(note_data)
+    if song.transport.playing and
+        song.transport.edit_pos.sequence == song.transport.playback_pos.sequence and
+        note_data.line <= song.transport.playback_pos.line and
+        note_data.line + note_data.len > song.transport.playback_pos.line
+    then
+        local instrument = note_data.ins
+        if instrument == 255 then
+            if patternInstrument ~= nil and patternInstrument ~= 255 then
+                instrument = patternInstrument
+            else
+                instrument = song.selected_instrument_index - 1
+            end
+        end
+        local plugin = song.instruments[instrument + 1].plugin_properties
+        if plugin and plugin.plugin_device then
+            --send note on with velocity 0 for a note_off event
+            song:trigger_instrument_note_on(
+                instrument + 1,
+                song.selected_track_index,
+                note_data.note,
+                0)
+        end
     end
 end
 
@@ -8020,6 +8049,7 @@ handleMouse = function(event)
                     elseif noteInSelection(note_data) then
                         refreshStates.blockLineModifier = true
                         removeNoteInPattern(note_data.column, note_data.line, note_data.len)
+                        stopInstrumentNoteIfPlaying(note_data)
                         noteSelection = {}
                         forceFullRefresh = true
                         break
@@ -8428,6 +8458,7 @@ appIdleEvent = function()
         if xypadpos.leftClick == true and xypadpos.removemode == true and #noteSelection > 0 then
             refreshStates.blockLineModifier = true
             removeNoteInPattern(noteSelection[1].column, noteSelection[1].line, noteSelection[1].len)
+            stopInstrumentNoteIfPlaying(noteSelection[1])
             noteSelection = {}
             refreshStates.refreshPianoRollNeeded = true
         end
