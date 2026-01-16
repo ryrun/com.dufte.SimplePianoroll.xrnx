@@ -3383,6 +3383,7 @@ quickArp = function(mode, len)
     --remove selected notes
     for _, note in ipairs(noteSelection) do
         removeNoteInPattern(note.column, note.line, note.len)
+        stopInstrumentNoteIfPlaying(note)
     end
     noteSelection = {}
     --draw arp
