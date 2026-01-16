@@ -3680,12 +3680,10 @@ end
 function noteClick(x, y, c, released, forceScaling)
     local index = tostring(x) .. "_" .. tostring(y) .. "_" .. tostring(c)
     local note_data = noteData[index]
-    local row = noteValue2GridRowOffset(note_data.note)
 
     --mouse drag support, very very hacky
     if not released and not checkMode("preview") then
         xypadpos.disabled = {}
-        local rowidx = noteValue2GridRowOffset(note_data.note, true)
         xypadpos.leftClick = true
         xypadpos.selection_key = noteInSelection(note_data)
         xypadpos.idx = note_data.idx
@@ -3731,7 +3729,6 @@ end
 
 --will be called, when an empty grid button was clicked
 function pianoGridClick(x, y, released)
-    local index = tostring(x) .. "_" .. tostring(y)
     local outside = false
     local noteDrawn = {}
 
