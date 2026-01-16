@@ -2,7 +2,11 @@ name: Build XRNX
 
 on:
   push:
-    branches: ["**"]
+    paths:
+      - manifest.xml
+      - main.lua
+      - thumbnail.png
+      - cover.png
 
 jobs:
   build:
