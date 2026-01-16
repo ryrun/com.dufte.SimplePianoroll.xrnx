@@ -3735,9 +3735,6 @@ function pianoGridClick(x, y, released)
     local outside = false
     local noteDrawn = {}
 
-    --force x to be aligned with grid
-    x = computeAlignedGridSkipX(x)
-
     --just allow selection, deselect notes, when pos is outside the grid
     if x + stepOffset > song.selected_pattern.number_of_lines then
         outside = true
