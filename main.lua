@@ -5042,6 +5042,9 @@ updateCanvas = function()
         local skipX = computeAlignedGridSkipX()
         if lpb > 0 and skipX > 0 then
             vbw["gridresolution"].text = "1/" .. tostring(lpb * 4 / skipX)
+            vbw["gridresolutiontooltip"].tooltip =
+                string.format("Grid resolution: 1/%d, ", lpb * 4 / skipX) ..
+                string.format("Zoom: %.2fx", 1 / preferences.gridXZoom.value)
         end
     end
     --offset y of canvas
@@ -11222,6 +11225,7 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
                                                 vb:vertical_aligner {
                                                     mode = "center",
                                                     vb:bitmap {
+                                                        id = "gridresolutiontooltip",
                                                         bitmap = "Icons/MiddleFrame_Phrases.bmp",
                                                         mode = "transparent",
                                                         tooltip = "Grid resolution",
