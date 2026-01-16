@@ -3,8 +3,121 @@ local app = renoise.app()
 local tool = renoise.tool()
 local song
 
---predefine functions
+--predefine local functions, forward declaration
 local showPreferences
+local appNewDoc
+local appIdleEvent
+local main_function
+
+local clamp
+local snapDown
+local calcDistance
+local computeAlignedGridSkipX
+local findNearestMicroStepValue
+local getMicroStepValue
+local calculateBarBeat
+local noteValue2GridRowOffset
+local gridOffset2NoteValue
+local toRenoiseHex
+local fromRenoiseHex
+local getSingularPlural
+
+local shadeColor
+local alphablendColors
+local shiftHueColor
+local convertStringToColorValue
+local convertColorValueToString
+local colorNoteVelocity
+local setKeyboardKeyColor
+local highlightNoteRow
+local initColors
+local setNoteColor
+
+local noteIndexInMajorScale
+local noteIndexInScale
+local noteInScale
+local romanNumeralsAndScaleDegree
+local switchToRelativeScale
+local showSetScaleDialog
+local setScaleHighlighting
+local refreshDetectedChord
+local setupChordPainter
+
+local posInNoteRange
+local noteInSelection
+local updateNoteSelection
+local refreshSelectedNotes
+local selectRectangle
+local handleInvisibleLasso
+local moveSelectionThroughNotes
+
+local addNoteToPattern
+local removeNoteInPattern
+local removeSelectedNotes
+local duplicateSelectedNotes
+local glueSelectedNotes
+local chopSelectedNotes
+local pasteNotesFromClipboard
+local scaleNoteSelection
+local changePropertiesOfSelectedNotes
+local changeSizeSelectedNotes
+local changeSizeSelectedNotesByMicroSteps
+local moveSelectedNotes
+local moveSelectedNotesByMicroSteps
+local transposeSelectedNotes
+local modifyNoteValueChord
+local returnColumnWhenEnoughSpaceForNote
+
+local updateCursor
+local restoreFocus
+local pauseFollowPlayerWhileEditing
+local playPatternFromLine
+local triggerNoteOfCurrentInstrument
+local jumpToNoteInPattern
+local afterEditProcess
+
+local drawNotesToGrid
+local fillPianoRoll
+local fillTimeline
+local updateCanvas
+local refreshEditPosIndicator
+local refreshPlaybackPosIndicator
+local highlightNotesOnStep
+local obsPianoRefresh
+local obsColumnRefresh
+
+local setScrollbarValue
+local setScrollbarMax
+local showStatus
+local setUndoDescription
+local badTrackError
+local checkMode
+local refreshNoteControls
+local switchGhostTrack
+
+local initHistogram
+local refreshHistogramWindow
+local showHistogram
+
+local handleMouse
+local handleTimelineMouse
+local handleScrollWheel
+local handleKeyEvent
+local midiInCallback
+local executeToolAction
+local azertyMode
+
+local quickArp
+local stepSequencing
+
+local lineNotifier
+local numberOfLinesNotifier
+
+local createPianoRollDialog
+local showPenSettingsDialog
+
+local switchVSTFxReference
+local fitSampleBeatSync
 
 --viewbuilder for pianoroll dialog
 local vb
@@ -602,7 +715,7 @@ local sortFunc = {
 }
 
 --force value between and inclusive min/max values, return lowerBound when value is nan
-local function clamp(value, lowerBound, upperBound)
+clamp = function(value, lowerBound, upperBound)
     if value ~= value then -- NaN check
         value = lowerBound
     end
@@ -613,15 +726,15 @@ local function clamp(value, lowerBound, upperBound)
 end
 
 --force value to be a multiple of y
-local function snapDown(x, y)
+snapDown = function(x, y)
     return math.floor(x / y) * y
 end
 
 --scrollbar helpers
-local function setScrollbarValue(val, scrollbar)
+setScrollbarValue = function(val, scrollbar)
     scrollbar.value = clamp(val, scrollbar.min, scrollbar.max - scrollbar.pagestep)
 end
-local function setScrollbarMax(max, pagestep, scrollbar)
+setScrollbarMax = function(max, pagestep, scrollbar)
     if max < pagestep then
         scrollbar.pagestep = 1
         scrollbar.max = 1
@@ -633,21 +746,21 @@ local function setScrollbarMax(max, pagestep, scrollbar)
 end
 
 --calc distance
-local function calcDistance(x1, y1, x2, y2)
+calcDistance = function(x1, y1, x2, y2)
     return math.sqrt((x2 - x1) ^ 2 + (y2 - y1) ^ 2)
 end
 
 --show some text in Renoise status bar
-local function showStatus(status)
+showStatus = function(status)
     app:show_status("Simple Pianoroll: " .. status)
 end
 
 --set undo description
-local function setUndoDescription(description)
+setUndoDescription = function(description)
     song:describe_undo("Simple Pianoroll: " .. description)
 end
 
-local function badTrackError()
+badTrackError = function()
     showStatus("Current selected track cant be edited with piano roll.")
     if windowObj and windowObj.visible then
         windowObj:close()
@@ -655,7 +768,7 @@ local function badTrackError()
 end
 
 --calculate x-skip value for grid when zoom out, also align x value to grid when parameter is passsed
-local function computeAlignedGridSkipX(x)
+computeAlignedGridSkipX = function(x)
     local gW = math.ceil(gridWidth * preferences.gridXZoom.value)
     local w = vbw["canvas"].width / gW
     local lpb = song.transport.lpb
@@ -684,7 +797,7 @@ end
 
 
 --bring focus back to main dialog, when out of focus
-local function restoreFocus()
+restoreFocus = function()
     --dont set focus on note control refresh
     if windowObj and windowObj.visible
         and (not dialogVars.histogramObj or not dialogVars.histogramObj.visible)
@@ -694,7 +807,7 @@ local function restoreFocus()
 end
 
 --return special "hex" value which allow values like ZF
-local function toRenoiseHex(val)
+toRenoiseHex = function(val)
     local t = string.format("%X", val)
     t = string.upper(t)
     if string.len(t) == 1 then
@@ -712,7 +825,7 @@ local function toRenoiseHex(val)
 end
 
 --converts special "hex" value like ZF to a number
-local function fromRenoiseHex(val)
+fromRenoiseHex = function(val)
     if val == ".." then
         return nil
     end
@@ -733,7 +846,7 @@ local function fromRenoiseHex(val)
 end
 
 --plural text function
-local function getSingularPlural(val, singular, plural, addVal)
+getSingularPlural = function(val, singular, plural, addVal)
     local b = ""
     if addVal then
         b = math.abs(val) .. " "
@@ -745,7 +858,7 @@ local function getSingularPlural(val, singular, plural, addVal)
 end
 
 --convert note positon data into microsteps
-local function getMicroStepValue(line, dly, len, end_dly)
+getMicroStepValue = function(line, dly, len, end_dly)
     local v = line * 0x100
     if type(dly) == "number" then
         v = v + dly
@@ -761,7 +874,7 @@ local function getMicroStepValue(line, dly, len, end_dly)
 end
 
 --find nearest values
-local function findNearestMicroStepValue(currentval, add, array)
+findNearestMicroStepValue = function(currentval, add, array)
     local v
     local val = currentval + add
     local steps = math.floor((currentval + add) / 0x100)
@@ -784,7 +897,7 @@ local function findNearestMicroStepValue(currentval, add, array)
 end
 
 --for the line index calculate the correct bar index
-local function calculateBarBeat(line, returnbeat, lpb)
+calculateBarBeat = function(line, returnbeat, lpb)
     local math_ceil = math.ceil
     if not lpb then
         lpb = song.transport.lpb
@@ -796,7 +909,7 @@ local function calculateBarBeat(line, returnbeat, lpb)
 end
 
 --shade color
-local function shadeColor(color, shade)
+shadeColor = function(color, shade)
     if shade == 0 then
         return color
     end
@@ -811,7 +924,7 @@ local function shadeColor(color, shade)
 end
 
 --alpha blend colors
-local function alphablendColors(color1, color2, alphablend)
+alphablendColors = function(color1, color2, alphablend)
     if alphablend == 0 then
         return color1
     end
@@ -825,7 +938,7 @@ local function alphablendColors(color1, color2, alphablend)
 end
 
 --shift hue value
-local function shiftHueColor(col, degree)
+shiftHueColor = function(col, degree)
     local m = {
         { 1, 0, 0 },
         { 0, 1, 0 },
@@ -851,7 +964,7 @@ local function shiftHueColor(col, degree)
 end
 
 --simple function for coloring velocity
-local function colorNoteVelocity(vel, isOnStep, isInSelection, ins)
+colorNoteVelocity = function(vel, isOnStep, isInSelection, ins)
     local color
     local noteColor = colorNote
     if preferences.useTrackColorFor.value == 3 then
@@ -885,7 +998,7 @@ local function colorNoteVelocity(vel, isOnStep, isInSelection, ins)
 end
 
 --return true if delay column is enabled, check for auto enable
-local function isDelayColumnActive(showHint)
+isDelayColumnActive = function(showHint)
     --auto enable delay column
     if not song.selected_track.delay_column_visible then
         if preferences.autoEnableDelayWhenNeeded.value then
@@ -903,7 +1016,7 @@ local function isDelayColumnActive(showHint)
 end
 
 --converts a color string to a table
-local function convertStringToColorValue(val, default)
+convertStringToColorValue = function(val, default)
     local ret
     local red, green, blue = string.match(val,
         '^#*([0-9a-fA-F][0-9a-fA-F])([0-9a-fA-F][0-9a-fA-F])([0-9a-fA-F][0-9a-fA-F])$')
@@ -943,7 +1056,7 @@ local function convertStringToColorValue(val, default)
 end
 
 --convert table to string
-local function convertColorValueToString(val)
+convertColorValueToString = function(val)
     local ret
     if #val == 3 then
         ret = "#" .. toRenoiseHex(val[1]) .. toRenoiseHex(val[2]) .. toRenoiseHex(val[3])
@@ -952,7 +1065,7 @@ local function convertColorValueToString(val)
 end
 
 --check if x is in range of note
-local function posInNoteRange(pos, note_data)
+posInNoteRange = function(pos, note_data)
     local posn = math.floor(pos * 0x100)
     local posx1 = note_data.line * 0x100
     local posx2 = (note_data.line + note_data.len) * 0x100
@@ -1015,7 +1128,7 @@ local function posInNoteRange(pos, note_data)
 end
 
 --init dynamic calculated colors
-local function initColors()
+initColors = function()
     --load colors from preferences
     colorBaseGridColor = convertStringToColorValue(preferences.colorBaseGridColor.value,
         defaultPreferences.colorBaseGridColor)
@@ -1067,7 +1180,7 @@ local function initColors()
 end
 
 --check mode
-local function checkMode(mode)
+checkMode = function(mode)
     if mode == "preview" then
         if audioPreviewMode then
             return true
@@ -1084,7 +1197,7 @@ local function checkMode(mode)
 end
 
 --refresh edit pos
-local function refreshEditPosIndicator()
+refreshEditPosIndicator = function()
     local eP = song.transport.edit_pos.line
     local se = vbw["se" .. tostring(lastEditPos)]
     if (currentEditPos < song.selected_pattern.number_of_lines + 1 or currentEditPos > song.selected_pattern.number_of_lines + 1) and currentEditPos ~= eP then
@@ -1110,7 +1223,7 @@ local function refreshEditPosIndicator()
 end
 
 --jump to the note position in pattern
-local function jumpToNoteInPattern(notedata)
+jumpToNoteInPattern = function(notedata)
     --jump to the first note in selection, when needed
     if type(notedata) == "string" and notedata == "sel" then
         if #noteSelection > 0 then
@@ -1147,7 +1260,7 @@ local function jumpToNoteInPattern(notedata)
 end
 
 --check if a note index is in major scale
-local function noteIndexInMajorScale(noteIndex)
+noteIndexInMajorScale = function(noteIndex)
     if noteIndex == 1 or noteIndex == 3 or noteIndex == 6 or noteIndex == 8 or noteIndex == 10 then
         return false
     end
@@ -1155,7 +1268,7 @@ local function noteIndexInMajorScale(noteIndex)
 end
 
 --return note index of scale
-local function noteIndexInScale(note, forceMajorC)
+noteIndexInScale = function(note, forceMajorC)
     if not forceMajorC then
         if currentScaleOffset ~= nil then
             note = note - (currentScaleOffset - 1)
@@ -1173,7 +1286,7 @@ local function noteIndexInScale(note, forceMajorC)
 end
 
 --return true, when note in scale
-local function noteInScale(note, forceMajorC)
+noteInScale = function(note, forceMajorC)
     note = noteIndexInScale(note, forceMajorC)
     if note == -1 then
         return true
@@ -1185,7 +1298,7 @@ local function noteInScale(note, forceMajorC)
 end
 
 --return index, when note is in selection
-local function noteInSelection(notedata, otherTable)
+noteInSelection = function(notedata, otherTable)
     if otherTable == nil then
         otherTable = noteSelection
     end
@@ -1200,7 +1313,7 @@ local function noteInSelection(notedata, otherTable)
 end
 
 --function set set note button colors
-local function setNoteColor(note_data, isOnStep, isInSelection)
+setNoteColor = function(note_data, isOnStep, isInSelection)
     local nB = vbw["b" .. note_data.idx]
     if nB then
         nB.color = colorNoteVelocity(note_data.vel, isOnStep, isInSelection, note_data.ins)
@@ -1211,7 +1324,7 @@ local function setNoteColor(note_data, isOnStep, isInSelection)
 end
 
 --clear selection and set note colors back
-local function updateNoteSelection(note_data, clear, noNoteReadOut)
+updateNoteSelection = function(note_data, clear, noNoteReadOut)
     local newNotes = {}
     local wasInSelection = {}
     local selection = song.selection_in_pattern
@@ -1437,7 +1550,7 @@ local function updateNoteSelection(note_data, clear, noNoteReadOut)
 end
 
 --return true, when a note off was set
-local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly, end_dly, ins)
+addNoteToPattern = function(column, line, len, note, vel, end_vel, pan, dly, end_dly, ins)
     local noteoff = false
     local lineValues = song.selected_pattern_track.lines
 
@@ -1473,7 +1586,7 @@ local function addNoteToPattern(column, line, len, note, vel, end_vel, pan, dly,
 end
 
 --search for a column, which have enough space for the line and length of a new note
-local function returnColumnWhenEnoughSpaceForNote(line, len, dly, end_dly)
+returnColumnWhenEnoughSpaceForNote = function(line, len, dly, end_dly)
     local sT = song.selected_pattern_track
     local number_of_lines = song.selected_pattern.number_of_lines
     local lineLen = line + len
@@ -1565,7 +1678,7 @@ local function returnColumnWhenEnoughSpaceForNote(line, len, dly, end_dly)
 end
 
 --remove note
-local function removeNoteInPattern(column, line, len)
+removeNoteInPattern = function(column, line, len)
     local lineValues = song.selected_pattern_track.lines
     local note_column = lineValues[line]:note_column(column)
     local steps = song.selected_pattern.number_of_lines
@@ -1621,7 +1734,7 @@ local function removeNoteInPattern(column, line, len)
 end
 
 --remove selected notes, resort all other notes on same line and bring them to free columns
-local function removeSelectedNotes(cut)
+removeSelectedNotes = function(cut)
     local notesOnLine = {}
     local note_data
     local column
@@ -1692,7 +1805,7 @@ local function removeSelectedNotes(cut)
 end
 
 --refresh mouse cursor in pianorollColumns
-local function updateCursor()
+updateCursor = function()
     local pianorollColumns = vbw["pianorollColumns"]
     local setCursor = nil
 
@@ -1713,7 +1826,7 @@ local function updateCursor()
 end
 
 --refresh all controls
-local function refreshNoteControls()
+refreshNoteControls = function()
     local track = song.selected_track
 
     vbw.note_len.value = currentNoteLength
@@ -1909,14 +2022,14 @@ local function refreshNoteControls()
 end
 
 --function to pause follow player for editing
-local function pauseFollowPlayerWhileEditing()
+pauseFollowPlayerWhileEditing = function()
     if preferences.pauseFollowPlayerWhileEditing.value then
         wasFollowPlayer = song.transport.follow_player
         song.transport.follow_player = false
     end
 end
 
-local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, newOrChanged, instrument)
+triggerNoteOfCurrentInstrument = function(note_value, pressed, velocity, newOrChanged, instrument)
     --special handling of preview notes, on new notes or changed notes (transpose)
     if newOrChanged and (pressed == true or pressed == nil) then
         if not preferences.notePreview.value then
@@ -2013,7 +2126,7 @@ local function triggerNoteOfCurrentInstrument(note_value, pressed, velocity, new
 end
 
 --start playing from specific line in pattern
-local function playPatternFromLine(line)
+playPatternFromLine = function(line)
     if line == nil then
         if song.transport.edit_pos.sequence == song.transport.loop_start.sequence
             and song.transport.loop_start.line < song.selected_pattern.number_of_lines + 1 then
@@ -2028,7 +2141,7 @@ local function playPatternFromLine(line)
 end
 
 --move selected notes
-local function moveSelectedNotes(steps)
+moveSelectedNotes = function(steps)
     local column
     local state = true
     --when nothing is selected, then nothing is to do
@@ -2090,7 +2203,7 @@ local function moveSelectedNotes(steps)
 end
 
 --micro step movement selected notes using delay values
-local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
+moveSelectedNotesByMicroSteps = function(microsteps, snapSpecialGrid)
     local column
     local steps
     local len
@@ -2229,7 +2342,7 @@ local function moveSelectedNotesByMicroSteps(microsteps, snapSpecialGrid)
 end
 
 --transpose each selected notes
-local function transposeSelectedNotes(transpose, keepscale, nopreview)
+transposeSelectedNotes = function(transpose, keepscale, nopreview)
     local lineValues = song.selected_pattern_track.lines
     local ret = true
     local lo, hi = math.huge, -math.huge
@@ -2314,7 +2427,7 @@ local function transposeSelectedNotes(transpose, keepscale, nopreview)
 end
 
 --paste notes from clipboard
-local function pasteNotesFromClipboard(overwriteInstrument)
+pasteNotesFromClipboard = function(overwriteInstrument)
     local column
     local noteoffset = 0
     local lineoffset = 0
@@ -2397,7 +2510,7 @@ local function pasteNotesFromClipboard(overwriteInstrument)
 end
 
 --scale note selection
-local function scaleNoteSelection(times)
+scaleNoteSelection = function(times)
     setUndoDescription("Scale note selection ...")
     --get offset
     table.sort(noteSelection, sortFunc.sortLeftOneFirst)
@@ -2450,7 +2563,7 @@ local function scaleNoteSelection(times)
 end
 
 --glue selected notes
-local function glueSelectedNotes()
+glueSelectedNotes = function()
     -- helper: check if two notes can be glued
     local function canGlue(a, b)
         -- notes must be immediately adjacent in lines and have no transition delays
@@ -2573,7 +2686,7 @@ local function glueSelectedNotes()
 end
 
 --chop selected notes
-local function chopSelectedNotes()
+chopSelectedNotes = function()
     local newSelection = {}
     setUndoDescription("Chop notes ...")
     --first notes first
@@ -2638,7 +2751,7 @@ local function chopSelectedNotes()
 end
 
 --duplicate content
-local function duplicateSelectedNotes(noOffset)
+duplicateSelectedNotes = function(noOffset)
     local offset
     local column
     --first notes first
@@ -2698,7 +2811,7 @@ local function duplicateSelectedNotes(noOffset)
 end
 
 --change note length by micro steps
-local function changeSizeSelectedNotesByMicroSteps(microsteps)
+changeSizeSelectedNotesByMicroSteps = function(microsteps)
     local column
     local state = true
     local len
@@ -2804,7 +2917,7 @@ local function changeSizeSelectedNotesByMicroSteps(microsteps)
 end
 
 --change note size
-local function changeSizeSelectedNotes(len, add)
+changeSizeSelectedNotes = function(len, add)
     local ret = true
     local column
     local newLen = len
@@ -2866,7 +2979,7 @@ local function changeSizeSelectedNotes(len, add)
 end
 
 --change note properties
-local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, ins, pitch, special)
+changePropertiesOfSelectedNotes = function(vel, end_vel, dly, end_dly, pan, ins, pitch, special)
     local lineValues = song.selected_pattern_track.lines
     local temp
     --randomize seed for humanizing
@@ -3078,7 +3191,7 @@ local function changePropertiesOfSelectedNotes(vel, end_vel, dly, end_dly, pan, 
 end
 
 --convert the note value to a grid y position
-local function noteValue2GridRowOffset(noteValue, allowOutside)
+noteValue2GridRowOffset = function(noteValue, allowOutside)
     noteValue = noteValue + (-noteOffset) + 1
     if (noteValue >= 1 and noteValue <= gridHeight) or allowOutside then
         return noteValue
@@ -3087,12 +3200,12 @@ local function noteValue2GridRowOffset(noteValue, allowOutside)
 end
 
 --convert grid y value to note value
-local function gridOffset2NoteValue(y)
+gridOffset2NoteValue = function(y)
     return y + noteOffset - 1
 end
 
 --change note_value when not in scale or above limit
-local function modifyNoteValueChord(note_value, last_note_value)
+modifyNoteValueChord = function(note_value, last_note_value)
     if chordPainterForceInScale and not noteInScale(note_value) then
         if last_note_value ~= nil then
             if note_value - last_note_value > 2 then
@@ -3111,7 +3224,7 @@ local function modifyNoteValueChord(note_value, last_note_value)
 end
 
 --color keyboard key
-local function setKeyboardKeyColor(row, pressed, highlighted)
+setKeyboardKeyColor = function(row, pressed, highlighted)
     local idx = "k" .. row
     if notesPlaying[gridOffset2NoteValue(row)] then
         vbw[idx].color = colorStepOn
@@ -3129,7 +3242,7 @@ local function setKeyboardKeyColor(row, pressed, highlighted)
 end
 
 --highlight entire row
-local function highlightNoteRow(row, highlighted)
+highlightNoteRow = function(row, highlighted)
     if preferences.highlightEntireLineOfPlayingNote.value then
         --[[
         TODO
@@ -3147,7 +3260,7 @@ local function highlightNoteRow(row, highlighted)
 end
 
 --simple arp function
-local function quickArp(mode, len)
+quickArp = function(mode, len)
     local heldNotes = {}
     local finalArp = {}
     local noteLen = len
@@ -3294,7 +3407,7 @@ local function quickArp(mode, len)
 end
 
 --step sequencing like in other daws
-local function stepSequencing(pos, steps)
+stepSequencing = function(pos, steps)
     local refresh = false
     local column
     local newLen
@@ -3386,7 +3499,7 @@ local function stepSequencing(pos, steps)
 end
 
 --move the current seleciton to the next desired note
-local function moveSelectionThroughNotes(dx, dy, addToSelection)
+moveSelectionThroughNotes = function(dx, dy, addToSelection)
     local note_data
     local distance = 99999
     local x1
@@ -3454,7 +3567,7 @@ local function moveSelectionThroughNotes(dx, dy, addToSelection)
 end
 
 --add notes from a rectangle to the selection
-local function selectRectangle(x, y, x2, y2, addToSelection)
+selectRectangle = function(x, y, x2, y2, addToSelection)
     local smin = math.min(x, x2)
     local smax = math.max(x, x2)
     local nmin = gridOffset2NoteValue(math.min(y, y2))
@@ -3845,7 +3958,7 @@ function pianoGridClick(x, y, released)
 end
 
 --enable a note button, when its visible, set correct length of the button
-local function drawNotesToGrid(allNotes)
+drawNotesToGrid = function(allNotes)
     local l_song = song
     local l_song_transport = l_song.transport
     local l_song_st = l_song.selected_track
@@ -4168,7 +4281,7 @@ local function drawNotesToGrid(allNotes)
 end
 
 --refresh timeline
-local function fillTimeline()
+fillTimeline = function()
     local lpb = song.transport.lpb
     local steps = song.selected_pattern.number_of_lines
     local gW = math.ceil(gridWidth * preferences.gridXZoom.value)
@@ -4308,7 +4421,7 @@ local function fillTimeline()
 end
 
 --switch to current selected ghost if possible
-local function switchGhostTrack()
+switchGhostTrack = function()
     if currentGhostTrack and currentGhostTrack ~= song.selected_track_index then
         local temp = currentGhostTrack
         vbw.ghosttracks.value = song.selected_track_index
@@ -4319,7 +4432,7 @@ local function switchGhostTrack()
 end
 
 --set scale highlighting, none, manual modes, instrument scale, automatic mode
-local function setScaleHighlighting(afterPianoRollRefresh)
+setScaleHighlighting = function(afterPianoRollRefresh)
     local ret = false
     if vbw["currentscale"].text == "" then
         currentScale = nil
@@ -4430,7 +4543,7 @@ local function setScaleHighlighting(afterPianoRollRefresh)
 end
 
 --returns corresponding numeral and degree
-local function romanNumeralsAndScaleDegree(scale, note, chordname)
+romanNumeralsAndScaleDegree = function(scale, note, chordname)
     --realign note
     local roman
     local before = ""
@@ -4625,7 +4738,7 @@ local function romanNumeralsAndScaleDegree(scale, note, chordname)
 end
 
 --detect chords and progression
-local function refreshDetectedChord()
+refreshDetectedChord = function()
     local distance_string = {}
     local notelabels = ""
     local rawnotes = {}
@@ -4731,7 +4844,7 @@ local function refreshDetectedChord()
 end
 
 --highlight each note on the current playback pos
-local function highlightNotesOnStep(step, highlight)
+highlightNotesOnStep = function(step, highlight)
     local rows = {}
     local n = 0
     notesOnStep = {}
@@ -4775,7 +4888,7 @@ local function highlightNotesOnStep(step, highlight)
 end
 
 --refresh playback pos indicator
-local function refreshPlaybackPosIndicator()
+refreshPlaybackPosIndicator = function()
     local line = song.transport.playback_pos.line
     local seq = song.sequencer:pattern(song.transport.playback_pos.sequence)
     local gW = math.ceil(gridWidth * preferences.gridXZoom.value)
@@ -4813,7 +4926,7 @@ local function refreshPlaybackPosIndicator()
 end
 
 --process some features, which should be triggered once after a change
-local function afterEditProcess()
+afterEditProcess = function()
     local l_song = song
     local patterns = l_song.patterns
     local maxColumns = l_song.selected_track.visible_note_columns
@@ -4870,7 +4983,7 @@ local function afterEditProcess()
 end
 
 --update canvas, set new offsets
-local function updateCanvas()
+updateCanvas = function()
     if refreshStates.updateGhostTrackCanvas then
         if not currentGhostTrack or song.selected_pattern:track(currentGhostTrack).is_empty then
             vbw["canvas_ghosttrack"].visible = false
@@ -4898,7 +5011,7 @@ local function updateCanvas()
 end
 
 --reset pianoroll and enable notes
-local function fillPianoRoll(quickRefresh)
+fillPianoRoll = function(quickRefresh)
     local l_vbw = vbw
     local l_song = song
     local l_math_floor = math.floor
@@ -5307,7 +5420,7 @@ function setPlaybackPos(pos)
 end
 
 --refresh notifier for observers
-local function obsPianoRefresh()
+obsPianoRefresh = function()
     --clear note selection
     noteSelection = {}
     --set refresh flags
@@ -5315,14 +5428,14 @@ local function obsPianoRefresh()
 end
 
 --will be called when the visibility of columns will be changed
-local function obsColumnRefresh()
+obsColumnRefresh = function()
     refreshStates.refreshControls = true
     refreshStates.refreshPianoRollNeeded = true
     refreshStates.refreshChordDetection = true
 end
 
 --will be called when something in the pattern will be changed
-local function lineNotifier()
+lineNotifier = function()
     --when global flag is set, then piano roll refresh on specific events will be blocked
     if not refreshStates.blockLineModifier then
         refreshStates.refreshPianoRollNeeded = true
@@ -5330,7 +5443,7 @@ local function lineNotifier()
 end
 
 --number of lines refresh, fix missing note off, when pattern length get increased
-local function numberOfLinesNotifier()
+numberOfLinesNotifier = function()
     --fix missing note off
     local lineValues = song.selected_pattern_track.lines
     for key in pairs(noteData) do
@@ -5352,7 +5465,7 @@ local function numberOfLinesNotifier()
 end
 
 --on each new song, reset piano roll and setup locals
-local function appNewDoc()
+appNewDoc = function()
     --close window, when a new song was opened
     if windowObj and windowObj.visible then
         windowObj:close()
@@ -5472,7 +5585,7 @@ local function appNewDoc()
 end
 
 --refresh histogram / apply values
-local function refreshHistogramWindow(apply)
+refreshHistogramWindow = function(apply)
     local max = 128
     local min = 0
     local val = 0
@@ -5664,7 +5777,7 @@ local function refreshHistogramWindow(apply)
 end
 
 --init histogram start values and random values
-local function initHistogram()
+initHistogram = function()
     --
     song.transport.edit_mode = false
     if song.transport.follow_player then
@@ -5684,7 +5797,7 @@ local function initHistogram()
 end
 
 --histogram window
-local function showHistogram()
+showHistogram = function()
     if dialogVars.histogramContent == nil then
         dialogVars.histogramContent = vbp:column {
             spacing = -8,
@@ -5953,7 +6066,7 @@ local function showHistogram()
 end
 
 --init chord painter table
-local function setupChordPainter()
+setupChordPainter = function()
     local idx = vbwp.chordpreset.value
     local presettable = chordPainterPresets.inbuild
     local chord = {}
@@ -6040,7 +6153,7 @@ local function setupChordPainter()
 end
 
 --pen settings window
-local function showPenSettingsDialog()
+showPenSettingsDialog = function()
     if dialogVars.penSettingsContent == nil then
         dialogVars.penSettingsContent = vbp:column {
             spacing = -8,
@@ -6513,7 +6626,7 @@ local function showPenSettingsDialog()
 end
 
 --convert some keys to qwerty layout
-local function azertyMode(key)
+azertyMode = function(key)
     key = table.copy(key)
     if key.name == "&" then
         key.name = "1"
@@ -6540,7 +6653,7 @@ local function azertyMode(key)
 end
 
 --function to execute specific tool actions
-local function executeToolAction(action, allWhenNothingSelected, param1, param2)
+executeToolAction = function(action, allWhenNothingSelected, param1, param2)
     if allWhenNothingSelected == true and #noteSelection == 0 then
         updateNoteSelection("all", true)
     end
@@ -6829,7 +6942,7 @@ local function executeToolAction(action, allWhenNothingSelected, param1, param2)
 end
 
 --handle scrollwheel on timeline for zooming
-local function handleTimelineMouse(event)
+handleTimelineMouse = function(event)
     local transport = song.transport
     local steps = song.selected_pattern.number_of_lines
     local dynMaxZoom = math.min(math.max(gridWidth, steps) / gridWidth, defaultPreferences.gridXZoomMax)
@@ -6877,7 +6990,7 @@ local function handleTimelineMouse(event)
 end
 
 --function for all keyboard shortcuts
-local function handleKeyEvent(keyEvent, mouseXPosition)
+handleKeyEvent = function(keyEvent, mouseXPosition)
     local handled = false
     local keyInfoText
     local isModifierKey = false
@@ -7529,7 +7642,7 @@ local function handleKeyEvent(keyEvent, mouseXPosition)
 end
 
 --process incoming midi data
-local function midiInCallback(message)
+midiInCallback = function(message)
     --only handle note events
     if message[1] >= 0x90 and message[1] <= 0x9f then
         --pass them as key events
@@ -7559,7 +7672,7 @@ local function midiInCallback(message)
 end
 
 --handle scroll wheel value boxes
-local function handleScrollWheel(event)
+handleScrollWheel = function(event)
     local mouseXPosition
     --when a scroll event has occurred on canvas also send x position of the mouse to key handler for zooming
     if #event.hover_views > 0 then
@@ -7582,7 +7695,7 @@ local function handleScrollWheel(event)
 end
 
 --just refresh selected notes, improves mouse actions
-local function refreshSelectedNotes()
+refreshSelectedNotes = function()
     local l_vbw = vbw
     local lineValues = song.selected_pattern_track.lines
     local newNotes = {}
@@ -7631,7 +7744,7 @@ local function refreshSelectedNotes()
 end
 
 --selection via invisible lasso
-local function handleInvisibleLasso(event, addToSelection)
+handleInvisibleLasso = function(event, addToSelection)
     local pianorollColumns = vbw["pianorollColumns"]
     local newNoteSelection = {}
     local n = 0
@@ -7805,7 +7918,7 @@ local function handleInvisibleLasso(event, addToSelection)
 end
 
 --handle mouse events
-local function handleMouse(event)
+handleMouse = function(event)
     local pianorollColumns = vbw["pianorollColumns"]
     local x, y, c, type, forceScaling, val_x, val_y, quickRefresh, forceFullRefresh
     local gridWidthScaled = math.ceil(gridWidth * preferences.gridXZoom.value)
@@ -8262,7 +8375,7 @@ local function handleMouse(event)
 end
 
 --app idle
-local function appIdleEvent()
+appIdleEvent = function()
     --only process when window is created and visible
     if windowObj and windowObj.visible then
         --refresh modifier states, when keys are pressed outside focus
@@ -8445,7 +8558,7 @@ local function appIdleEvent()
 end
 
 --function to switch between relative major and minor
-local function switchToRelativeScale()
+switchToRelativeScale = function()
     if preferences.scaleHighlightingType.value == 3 then
         preferences.scaleHighlightingType.value = 2
         preferences.keyForSelectedScale.value = ((preferences.keyForSelectedScale.value + 2) % 12) + 1
@@ -8458,7 +8571,7 @@ local function switchToRelativeScale()
 end
 
 --setscale window
-local function showSetScaleDialog()
+showSetScaleDialog = function()
     if dialogVars.setScaleContent == nil then
         dialogVars.setScaleContent = vbp:column {
             spacing = -8,
@@ -9819,7 +9932,7 @@ showPreferences = function()
 end
 
 --create main piano roll dialog
-local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridStepSizeH)
+createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepSizeH)
     local playCursor = vb:stack {
         width = gridStepSizeW * gridWidth,
         height = gridStepSizeH,
@@ -11525,7 +11638,7 @@ local function createPianoRollDialog(gridWidth, gridHeight, gridStepSizeW, gridS
 end
 
 --edit in pianoroll main function
-local function main_function(hidden)
+main_function = function(hidden)
     --setup observers
     if not tool.app_new_document_observable:has_notifier(appNewDoc) then
         tool.app_new_document_observable:add_notifier(appNewDoc)
@@ -11906,7 +12019,7 @@ tool:add_menu_entry {
 }
 
 --search for typical vstfx on master chain to switch reference
-local function switchVSTFxReference(type)
+switchVSTFxReference = function(type)
     --search for master track
     for it, track in ipairs(renoise.song().tracks) do
         if track.type == renoise.Track.TRACK_TYPE_MASTER then
@@ -12011,7 +12124,7 @@ tool:add_keybinding {
 
 --additional contextmenu tools non piano roll related
 if preferences.enableAdditionalSampleToolsContextMenu.value then
-    local function fitSampleBeatSync(bpm)
+    fitSampleBeatSync = function(bpm)
         song = renoise.song()
         local sample = song.selected_sample
         local sample_buffer = sample.sample_buffer
