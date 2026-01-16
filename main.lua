@@ -2165,6 +2165,14 @@ playPatternFromLine = function(line)
         end
     end
     if line <= song.selected_pattern.number_of_lines then
+        --stop all preview notes to prevent new notes not being played
+        if #lastTriggerNote > 0 then
+            for i = 1, #lastTriggerNote do
+                song:trigger_instrument_note_off(lastTriggerNote[i].instrument_index, lastTriggerNote[i].track_index,
+                    lastTriggerNote[i].note)
+            end
+            table.clear(lastTriggerNote)
+        end
         song.transport:start_at(line)
     end
 end
