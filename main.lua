@@ -5043,7 +5043,7 @@ updateCanvas = function()
         if lpb > 0 and skipX > 0 then
             vbw["gridresolution"].text = "1/" .. tostring(lpb * 4 / skipX)
             vbw["gridresolutiontooltip"].tooltip =
-                string.format("Grid resolution: 1/%d, ", lpb * 4 / skipX) ..
+                string.format("Grid resolution: 1/%d\n", lpb * 4 / skipX) ..
                 string.format("Zoom: %.2fx", 1 / preferences.gridXZoom.value)
         end
     end
