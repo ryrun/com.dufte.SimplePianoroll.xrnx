@@ -107,6 +107,8 @@ local handleKeyEvent
 local midiInCallback
 local executeToolAction
 local azertyMode
+local noteClick
+local pianoGridClick
 
 local quickArp
 local stepSequencing
@@ -3677,7 +3679,7 @@ function keyClick(y, pressed)
 end
 
 --will be called, when a note was clicked
-function noteClick(x, y, c, released, forceScaling)
+noteClick = function(x, y, c, released, forceScaling)
     local index = tostring(x) .. "_" .. tostring(y) .. "_" .. tostring(c)
     local note_data = noteData[index]
 
@@ -3728,7 +3730,7 @@ function noteClick(x, y, c, released, forceScaling)
 end
 
 --will be called, when an empty grid button was clicked
-function pianoGridClick(x, y, released)
+pianoGridClick = function(x, y, released)
     local outside = false
     local noteDrawn = {}
 
