@@ -144,8 +144,7 @@ used in the pattern.
 
 Download the latest version from official tool page:<br>https://www.renoise.com/tools/simple-pianoroll
 
-Alternative download: open the link, select the latest successful run (✓), download the zip from Artifacts, unpack it, then drop the xrnx file onto Renoise:
-https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/actions/workflows/build-xrnx.yml
+Alternatively, you can download the latest build and install it by dragging the file onto Renoise (beta build):<br>https://ryrun.github.io/com.dufte.SimplePianoroll.xrnx/com.duftetools.SimplePianoroll.xrnx
 
 Tool updater is supported, so when a new version is released, it should show you an update prompt.
 
