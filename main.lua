@@ -131,6 +131,7 @@ local vbwp = vbp.views
 --load manifest for fetching versionnumber
 local manifest = renoise.Document.create("RenoiseScriptingTool") {
     Version = "",
+    BuildInfo = ""
 }
 manifest:load_from("manifest.xml")
 
