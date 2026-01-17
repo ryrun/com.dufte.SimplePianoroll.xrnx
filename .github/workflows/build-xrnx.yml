@@ -8,6 +8,7 @@ on:
       - thumbnail.png
       - cover.png
       - .github/workflows/pages-dev-build.yml
+  workflow_dispatch:
 
 permissions:
   contents: read
