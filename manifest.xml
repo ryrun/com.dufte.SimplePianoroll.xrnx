@@ -13,4 +13,5 @@
     >https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx</Repository>
   <Documentation
     >https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/readme.md</Documentation>
+  <BuildInfo>Dev</BuildInfo>
 </RenoiseScriptingTool>

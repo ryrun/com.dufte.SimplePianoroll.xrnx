@@ -8653,20 +8653,6 @@ end
 showPreferences = function()
     dialogVars.preferencesWasShown = true
     if dialogVars.preferencesContent == nil then
-        --crc2 of main.lua file
-        local crc = 0
-        local file = assert(io.open("main.lua", "r"))
-        if file then
-            while true do
-                local byte = file:read(1)
-                if byte == nil then
-                    break
-                else
-                    crc = crc + string.byte(byte)
-                end
-            end
-            file:close()
-        end
         --preinit colors, when piano roll wasn't opened before
         if not vbw then
             initColors()
@@ -9876,7 +9862,7 @@ showPreferences = function()
                     end
                 },
                 vbp:text {
-                    text = "CRC: " .. string.format("%x", crc)
+                    text = manifest:property("BuildInfo").value
                 },
             },
         }
