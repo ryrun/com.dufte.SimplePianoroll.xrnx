@@ -1,4 +1,4 @@
-name: Build XRNX
+name: Build XRNX and publish dev build to GitHub Pages
 
 on:
   push:
@@ -7,21 +7,77 @@ on:
       - main.lua
       - thumbnail.png
       - cover.png
+      - .github/workflows/pages-dev-build.yml
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Create XRNX package
+      - name: Create site folder
+        run: mkdir -p site
+
+      - name: Build .xrnx
         run: |
-          zip -r com.duftetools.SimplePianoroll.xrnx \
+          zip -r "site/com.duftetools.SimplePianoroll.xrnx" \
             manifest.xml main.lua thumbnail.png cover.png
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Create index.html (commit + date)
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          BUILD_DATE_UTC="$(date -u +"%Y-%m-%d %H:%M UTC")"
+
+          cat > site/index.html <<EOF
+          <!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <title>com.dufte.SimplePianoroll.xrnx – Dev Build</title>
+            </head>
+            <body>
+              <h1>Latest dev build</h1>
+
+              <p>
+                <a href="com.duftetools.SimplePianoroll.xrnx">
+                  Download com.duftetools.SimplePianoroll.xrnx
+                </a>
+              </p>
+
+              <p>
+                Built from commit
+                <a href="https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}">
+                  ${SHORT_SHA}
+                </a>
+                on ${BUILD_DATE_UTC}
+              </p>
+            </body>
+          </html>
+          EOF
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: com.duftetools.SimplePianoroll.xrnx
-          path: com.duftetools.SimplePianoroll.xrnx
+          path: site
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
