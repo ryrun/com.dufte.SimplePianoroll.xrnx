@@ -9824,48 +9824,66 @@ showPreferences = function()
                     },
                 }
             },
-            vbp:horizontal_aligner {
-                mode = "center",
-                margin = vbc.DEFAULT_DIALOG_MARGIN,
-                spacing = vbc.DEFAULT_CONTROL_SPACING * 10,
-                vbp:button {
-                    text = "Close",
-                    height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
-                    width = 100,
-                    notifier = function()
-                        dialogVars.preferencesObj:close()
-                        restoreFocus()
-                    end
+            vbp:stack {
+                width = "100%",
+                height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
+
+                vbp:horizontal_aligner {
+                    width = "100%",
+                    mode = "right",
+                    margin = vbc.DEFAULT_DIALOG_MARGIN,
+
+                    vbp:text {
+                        text = manifest:property("BuildInfo").value
+                    }
                 },
-                vbp:button {
-                    text = "Reset to default",
-                    height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
-                    width = 100,
-                    notifier = function()
-                        if app:show_prompt("Reset to default", "Are you sure you want to reset all settings to their default values?", { "Yes", "No" }) == "Yes" then
-                            for key in pairs(defaultPreferences) do
-                                if preferences[key] then
-                                    preferences[key].value = defaultPreferences[key]
-                                end
-                            end
-                            app:show_message("All preferences was set to default values.")
+
+                vbp:horizontal_aligner {
+                    width = "100%",
+                    mode = "center",
+                    margin = vbc.DEFAULT_DIALOG_MARGIN,
+                    spacing = vbc.DEFAULT_CONTROL_SPACING * 10,
+
+                    vbp:button {
+                        text = "Close",
+                        height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
+                        width = 100,
+                        notifier = function()
+                            dialogVars.preferencesObj:close()
+                            restoreFocus()
                         end
-                    end
-                },
-                vbp:button {
-                    text = "Help / Feedback",
-                    height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
-                    width = 100,
-                    notifier = function()
-                        app:open_url(
-                            "https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx/63034")
-                        dialogVars.preferencesObj:close()
-                    end
-                },
-                vbp:text {
-                    text = manifest:property("BuildInfo").value
-                },
-            },
+                    },
+                    vbp:button {
+                        text = "Reset to default",
+                        height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
+                        width = 100,
+                        notifier = function()
+                            if app:show_prompt(
+                                    "Reset to default",
+                                    "Are you sure you want to reset all settings to their default values?",
+                                    { "Yes", "No" }
+                                ) == "Yes" then
+                                for key in pairs(defaultPreferences) do
+                                    if preferences[key] then
+                                        preferences[key].value = defaultPreferences[key]
+                                    end
+                                end
+                                app:show_message("All preferences was set to default values.")
+                            end
+                        end
+                    },
+                    vbp:button {
+                        text = "Help / Feedback",
+                        height = vbc.DEFAULT_DIALOG_BUTTON_HEIGHT,
+                        width = 100,
+                        notifier = function()
+                            app:open_url(
+                                "https://forum.renoise.com/t/simple-pianoroll-com-duftetools-simplepianoroll-xrnx/63034")
+                            dialogVars.preferencesObj:close()
+                        end
+                    }
+                }
+            }
         }
     end
     --refresh midi in list
