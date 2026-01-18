@@ -564,8 +564,6 @@ local chordPainterPresets = {
         notes = {}
     }
 }
-local lastClickCache = {}
-local lastClickIndex
 local pasteCursor = {}
 local currentInstrument
 local currentNoteLength = 2
