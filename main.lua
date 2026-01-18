@@ -237,7 +237,6 @@ local defaultPreferences = {
     gridStepSizeW = 16,
     gridStepSizeH = 15,
     gridSpacing = 4,
-    gridMargin = 1,
     gridWidth = 64,
     gridHeight = 42,
     gridXZoom = 1,
@@ -327,7 +326,6 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     gridStepSizeW = defaultPreferences.gridStepSizeW,
     gridStepSizeH = defaultPreferences.gridStepSizeH,
     gridSpacing = defaultPreferences.gridSpacing,
-    gridMargin = defaultPreferences.gridMargin,
     gridWidth = defaultPreferences.gridWidth,
     gridHeight = defaultPreferences.gridHeight,
     gridHLines = defaultPreferences.gridHLines,
@@ -441,7 +439,6 @@ local stepOffset = 0
 local gridStepSizeW
 local gridStepSizeH
 local gridSpacing
-local gridMargin
 local gridWidth
 local gridHeight
 local pianoKeyWidth
@@ -11669,7 +11666,6 @@ main_function = function(hidden)
             gridStepSizeW = defaultPreferences.gridStepSizeW
             gridStepSizeH = defaultPreferences.gridStepSizeH
             gridSpacing = preferences.gridSpacing.value
-            gridMargin = preferences.gridMargin.value
             gridWidth = preferences.gridWidth.value
             pianoKeyWidth = gridStepSizeW * 4
             --limit gridHeight
