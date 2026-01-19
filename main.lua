@@ -303,6 +303,7 @@ local defaultPreferences = {
     restrictNotesToScale = false,
     sortNewNotesMode = 2,
     pauseFollowPlayerWhileEditing = true,
+    setEditPosToSelectedNote = true,
     --colors
     colorBaseGridColor = "#34444E",
     colorNote = "#AAD9B3",
@@ -390,6 +391,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     timelineOdd = defaultPreferences.timelineOdd,
     sortNewNotesMode = defaultPreferences.sortNewNotesMode,
     pauseFollowPlayerWhileEditing = defaultPreferences.pauseFollowPlayerWhileEditing,
+    setEditPosToSelectedNote = defaultPreferences.setEditPosToSelectedNote,
     --colors
     colorBaseGridColor = defaultPreferences.colorBaseGridColor,
     colorNote = defaultPreferences.colorNote,
@@ -1206,40 +1208,42 @@ refreshEditPosIndicator = function()
 end
 
 --jump to the note position in pattern
-jumpToNoteInPattern = function(notedata)
-    --jump to the first note in selection, when needed
-    if type(notedata) == "string" and notedata == "sel" then
-        if #noteSelection > 0 then
-            table.sort(noteSelection, sortFunc.sortLeftOneFirst)
-            notedata = noteSelection[1]
-        else
-            --no selection, dont do anything
-            return false
+jumpToNoteInPattern = function(notedata, force)
+    if preferences.setEditPosToSelectedNote.value or force then
+        --jump to the first note in selection, when needed
+        if type(notedata) == "string" and notedata == "sel" then
+            if #noteSelection > 0 then
+                table.sort(noteSelection, sortFunc.sortLeftOneFirst)
+                notedata = noteSelection[1]
+            else
+                --no selection, dont do anything
+                return false
+            end
+        elseif type(notedata) == "number" then
+            notedata = {
+                line = notedata,
+                column = 1
+            }
         end
-    elseif type(notedata) == "number" then
-        notedata = {
-            line = notedata,
-            column = 1
-        }
-    end
-    --only when not playing or follow player
-    if not song.transport.playing or not song.transport.follow_player then
-        --only when the edit cursor is in the correct pattern
-        if song.selected_pattern_index == song.sequencer:pattern(song.transport.edit_pos.sequence) then
-            local npos = renoise.SongPos()
-            currentEditPos = clamp(notedata.line, 1, song.selected_pattern.number_of_lines)
-            npos.line = currentEditPos
-            npos.sequence = song.transport.edit_pos.sequence
-            song.transport.edit_pos = npos
-            --switch to the correct note column
-            if song.selected_note_column_index ~= notedata.column then
-                song.selected_note_column_index = clamp(notedata.column, 1, song.selected_track.visible_note_columns)
+        --only when not playing or follow player
+        if not song.transport.playing or not song.transport.follow_player then
+            --only when the edit cursor is in the correct pattern
+            if song.selected_pattern_index == song.sequencer:pattern(song.transport.edit_pos.sequence) then
+                local npos = renoise.SongPos()
+                currentEditPos = clamp(notedata.line, 1, song.selected_pattern.number_of_lines)
+                npos.line = currentEditPos
+                npos.sequence = song.transport.edit_pos.sequence
+                song.transport.edit_pos = npos
+                --switch to the correct note column
+                if song.selected_note_column_index ~= notedata.column then
+                    song.selected_note_column_index = clamp(notedata.column, 1, song.selected_track.visible_note_columns)
+                end
             end
         end
+        --refresh edit pos
+        refreshEditPosIndicator()
+        refreshStates.refreshChordDetection = true
     end
-    --refresh edit pos
-    refreshEditPosIndicator()
-    refreshStates.refreshChordDetection = true
 end
 
 --check if a note index is in major scale
@@ -9575,6 +9579,14 @@ showPreferences = function()
                         },
                         vbp:row {
                             vbp:checkbox {
+                                bind = preferences.setEditPosToSelectedNote,
+                            },
+                            vbp:text {
+                                text = "Edit Position Follows Note Selection",
+                            },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
                                 bind = preferences.centerViewOnOpen,
                             },
                             vbp:text {
@@ -10337,7 +10349,7 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
                 else
                     --no control key is holded, so reset loop slider state
                     xypadpos.loopslider = nil
-                    jumpToNoteInPattern(math.floor(nScaled + 0.5) + stepOffset)
+                    jumpToNoteInPattern(math.floor(nScaled + 0.5) + stepOffset, true)
                 end
                 if newloopset then
                     --when new end loop is before current playback pos, restart from loop start
