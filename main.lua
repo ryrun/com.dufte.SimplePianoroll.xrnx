@@ -9582,7 +9582,7 @@ showPreferences = function()
                                 bind = preferences.setEditPosToSelectedNote,
                             },
                             vbp:text {
-                                text = "Edit Position Follows Note Selection",
+                                text = "Edit position follows note selection",
                             },
                         },
                         vbp:row {
