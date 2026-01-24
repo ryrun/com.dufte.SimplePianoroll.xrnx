@@ -2376,8 +2376,8 @@ transposeSelectedNotes = function(transpose, keepscale, nopreview)
             if n < lo then lo = n end
             if n > hi then hi = n end
         end
-    elseif type(transpose) == "number" then
-        if transpose > 0 then
+    elseif type(transpose) == "number" or transpose == "invup" or transpose == "invdown" then
+        if transpose == "invdown" or (type(transpose) == "number" and transpose > 0) then
             --higher one notes first
             table.sort(noteSelection, function(a, b)
                 return a.note > b.note
@@ -2395,6 +2395,8 @@ transposeSelectedNotes = function(transpose, keepscale, nopreview)
             return false
         end
         setUndoDescription("Pitch flip notes ...")
+    elseif transpose == "invup" or transpose == "invdown" then
+        setUndoDescription("Apply chord inversion ...")
     else
         setUndoDescription("Transpose notes ...")
     end
@@ -2409,7 +2411,11 @@ transposeSelectedNotes = function(transpose, keepscale, nopreview)
         --transpose
         local note_column = lineValues[noteSelection[key].line]:note_column(noteSelection[key].column)
         --flip jut flip the note
-        if transpose == "flip" then
+        if transpose == "invup" then
+            transposeVal = noteSelection[key].note + 12
+        elseif transpose == "invdown" then
+            transposeVal = noteSelection[key].note - 12
+        elseif transpose == "flip" then
             transposeVal = hi - noteSelection[key].note + lo
         else
             --when in scale transposing is active move note further, when needed
@@ -2430,9 +2436,17 @@ transposeSelectedNotes = function(transpose, keepscale, nopreview)
             ret = false
             break
         end
-        if (transpose ~= "invup" a transpose == "invdown") and transposeVal < 0 then
-            ret = false
-            break
+        --check if target note value is not used in selection
+        if transpose == "invup" or transpose == "invdown" then
+            for key2 = 1, #noteSelection do
+                if noteSelection[key2].note == transposeVal
+                    and noteSelection[key].line <= noteSelection[key2].line + noteSelection[key2].len - 1
+                    and noteSelection[key2].line <= noteSelection[key].line + noteSelection[key].len - 1
+                then
+                    --skip tranpose
+                    goto continue
+                end
+            end
         end
         --default transpose note
         noteSelection[key].note = transposeVal
@@ -2442,6 +2456,11 @@ transposeSelectedNotes = function(transpose, keepscale, nopreview)
             noteSelection[key].note = 119
         end
         note_column.note_value = noteSelection[key].note
+        --transpose only one note in chord inversion mode
+        if transpose == "invup" or transpose == "invdown" then
+            break
+        end
+        ::continue::
     end
     --trigger notes after transpose
     if nopreview == nil or nopreview == false then
@@ -6848,6 +6867,18 @@ executeToolAction = function(action, allWhenNothingSelected, param1, param2)
                 showStatus(#noteSelection .. " notes were pitch flipped.")
                 return true
             end
+        end
+    elseif action == "inversiondown_selected_notes" then
+        if #noteSelection > 0 then
+            transposeSelectedNotes("invdown", true)
+            showStatus("Notes were moved down one chord inversion.")
+            return true
+        end
+    elseif action == "inversionup_selected_notes" then
+        if #noteSelection > 0 then
+            transposeSelectedNotes("invup", true)
+            showStatus("Notes were moved up one chord inversion.")
+            return true
         end
     elseif action == "semiinscaledown_selected_notes" then
         if #noteSelection > 0 then
@@ -11464,6 +11495,26 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
                                     tooltip = "Transpose selected or all notes up one semitone in Scale ...",
                                     notifier = function()
                                         executeToolAction("semiinscaleup_selected_notes", true)
+                                    end,
+                                },
+                            },
+                            vb:horizontal_aligner {
+                                width = "100%",
+                                mode = "justify",
+                                vb:button {
+                                    text = "-1 Inv",
+                                    width = "50%",
+                                    tooltip = "Apply chord inversion down to selected or all notes ...",
+                                    notifier = function()
+                                        executeToolAction("inversiondown_selected_notes", true)
+                                    end,
+                                },
+                                vb:button {
+                                    text = "+1 Inv",
+                                    width = "50%",
+                                    tooltip = "Apply chord inversion up to selected or all notes  ...",
+                                    notifier = function()
+                                        executeToolAction("inversionup_selected_notes", true)
                                     end,
                                 },
                             },
