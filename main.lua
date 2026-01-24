@@ -2430,6 +2430,10 @@ transposeSelectedNotes = function(transpose, keepscale, nopreview)
             ret = false
             break
         end
+        if (transpose ~= "invup" a transpose == "invdown") and transposeVal < 0 then
+            ret = false
+            break
+        end
         --default transpose note
         noteSelection[key].note = transposeVal
         if noteSelection[key].note < 0 then
