@@ -4137,16 +4137,19 @@ drawNotesToGrid = function(allNotes)
 
             --only process notes on steps and visibility, when there is a valid row
             if current_note_rowIndex >= 1 and current_note_rowIndex <= gridHeight then
-                --change note display len
-                if current_note_step > gW then
+                --change note display len and note step (x position)
+                local s = current_note_step
+                local e = current_note_step + current_note_len - 1
+                -- outside grid?
+                if e < 1 or s > gW or current_note_len <= 0 then
                     current_note_len = 0
-                elseif current_note_step + current_note_len > gW + 1 and current_note_step <= gW then
-                    current_note_len = current_note_len - (current_note_step + current_note_len - gW - 1)
+                else
+                    -- set xpos(step) and len so it stays in visible grid
+                    if s < 1 then s = 1 end
+                    if e > gW then e = gW end
+                    current_note_step = s
+                    current_note_len  = e - s + 1
                 end
-                if current_note_len > gW then
-                    current_note_len = gW
-                end
-
                 --display note button, note len is greater 0 and when the row is visible
                 if current_note_len > 0 then
                     spaceWidth = 0
