@@ -3272,6 +3272,10 @@ end
 --color keyboard key
 setKeyboardKeyColor = function(row, pressed, highlighted)
     local idx = "k" .. row
+    --key outside visible keyboard, do nothing
+    if not vbw[idx] then
+        return
+    end
     if notesPlaying[gridOffset2NoteValue(row)] then
         vbw[idx].color = colorStepOn
     elseif highlighted then
@@ -4878,8 +4882,8 @@ highlightNotesOnStep = function(step, highlight)
                 local sidx = "bs" .. note.index
                 n = n + 1
                 notesOnStep[n] = note.note
+                rows[note.row] = note.note
                 if vbw[idx] then
-                    rows[note.row] = note.note
                     if highlight then
                         if not noteData[note.index] or not noteInSelection(noteData[note.index]) then
                             if preferences.useTrackColorFor.value == 2 then
@@ -4914,23 +4918,22 @@ refreshPlaybackPosIndicator = function()
     local gW = math.ceil(gridWidth * preferences.gridXZoom.value)
     if song.selected_pattern_index == seq and lastStepOn ~= line and song.transport.playing then
         if lastStepOn then
-            vbw["s" .. tostring(lastStepOn)].color = colorStepOff
+            if vbw["s" .. tostring(lastStepOn)] then
+                vbw["s" .. tostring(lastStepOn)].color = colorStepOff
+            end
             highlightNotesOnStep(lastStepOn, false)
             lastStepOn = nil
         end
         lastStepOn = line - stepOffset
+        highlightNotesOnStep(lastStepOn, true)
 
         if preferences.followPlayCursor.value and song.transport.follow_player and (lastStepOn > gW or lastStepOn < 0) then
             --follow play cursor, when enabled
             local v = stepSlider.value + (gW * (lastStepOn / gW)) - 1
             lastStepOn = nil
             setScrollbarValue(v, stepSlider)
-        elseif lastStepOn > 0 and lastStepOn <= gW then
-            --highlight when inside the grid
+        elseif vbw["s" .. tostring(lastStepOn)] then
             vbw["s" .. tostring(lastStepOn)].color = colorStepOn
-            highlightNotesOnStep(lastStepOn, true)
-        else
-            lastStepOn = nil
         end
     elseif (song.selected_pattern_index ~= seq or not song.transport.playing) then
         if #notesOnStep > 0 then
@@ -4938,7 +4941,9 @@ refreshPlaybackPosIndicator = function()
             refreshStates.refreshChordDetection = true
         end
         if lastStepOn then
-            vbw["s" .. tostring(lastStepOn)].color = colorStepOff
+            if vbw["s" .. tostring(lastStepOn)] then
+                vbw["s" .. tostring(lastStepOn)].color = colorStepOff
+            end
             highlightNotesOnStep(lastStepOn, false)
             lastStepOn = nil
         end
