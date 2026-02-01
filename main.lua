@@ -5493,7 +5493,11 @@ appNewDoc = function()
 
     song = renoise.song()
     --reset zoom state
-    preferences.gridXZoom.value = 1
+    preferences.gridXZoom.value = clamp(
+        math.max(song.selected_pattern.number_of_lines, preferences.gridWidth.value) /
+        preferences.gridWidth.value,
+        defaultPreferences.gridXZoomMin,
+        defaultPreferences.gridXZoomMax)
     --reset vars
     lastTrackIndex = nil
     currentNoteVelocity = 255
@@ -11725,8 +11729,6 @@ main_function = function(hidden)
         penMode = not preferences.forceSelectMode.value
         --create main dialog
         if not windowContent or refreshStates.rebuildWindowDialog then
-            --reset zoom state
-            preferences.gridXZoom.value = 1
             --init colors
             initColors()
             --setup grid settings
@@ -11735,6 +11737,12 @@ main_function = function(hidden)
             gridSpacing = preferences.gridSpacing.value
             gridWidth = preferences.gridWidth.value
             pianoKeyWidth = gridStepSizeW * 4
+            --reset zoom state
+            preferences.gridXZoom.value = clamp(
+                math.max(song.selected_pattern.number_of_lines, preferences.gridWidth.value) /
+                preferences.gridWidth.value,
+                defaultPreferences.gridXZoomMin,
+                defaultPreferences.gridXZoomMax)
             --limit gridHeight
             preferences.gridHeight.value = clamp(preferences.gridHeight.value, 16, 64)
             gridHeight = preferences.gridHeight.value
