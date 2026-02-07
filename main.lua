@@ -4103,7 +4103,7 @@ drawNotesToGrid = function(allNotes)
                 column = column
             }
             --check if note is in selection and refresh noteData
-            if #noteSelection then
+            if #noteSelection > 0 then
                 local key = noteInSelection(noteData[current_note_index])
                 if key then
                     noteSelection[key] = noteData[current_note_index]
