@@ -689,7 +689,7 @@ local sortFunc = {
     sortRightOneFirst = function(a, b)
         local x, y
         x = a.line + a.len + a.end_dly / 0x100
-        y = b.line + b.len + a.end_dly / 0x100
+        y = b.line + b.len + b.end_dly / 0x100
         if x == y then
             --flip x and y, because column order shouldn't changed
             y = a.column
