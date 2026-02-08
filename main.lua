@@ -8418,6 +8418,7 @@ end
 appIdleEvent = function()
     --only process when window is created and visible
     if windowObj and windowObj.visible then
+        local now = os.clock()
         --refresh modifier states, when keys are pressed outside focus
         local keyState = app.key_modifier_states
         --swap alt and control?
@@ -8473,7 +8474,7 @@ appIdleEvent = function()
             refreshStates.refreshPianoRollNeeded = true
         end
         --process after edit features
-        if afterEditProcessTime ~= nil and afterEditProcessTime < os.clock() - 0.1 then
+        if afterEditProcessTime ~= nil and afterEditProcessTime < now - 0.1 then
             afterEditProcess()
         end
         --refresh control, when needed
@@ -8500,7 +8501,7 @@ appIdleEvent = function()
             end
         end
         --key info state
-        if lastKeyInfoTime and lastKeyInfoTime + preferences.keyInfoTime.value < os.clock() then
+        if lastKeyInfoTime and lastKeyInfoTime + preferences.keyInfoTime.value < now then
             vbw["key_state"].text = ""
         end
         --refresh playback pos indicator
@@ -8559,7 +8560,7 @@ appIdleEvent = function()
         if #lastTriggerNote > 0 then
             local newLastTriggerNote = {}
             for i = 1, #lastTriggerNote do
-                if lastTriggerNote[i].time < os.clock() - (preferences.triggerTime.value / 1000) then
+                if lastTriggerNote[i].time < now - (preferences.triggerTime.value / 1000) then
                     song:trigger_instrument_note_off(lastTriggerNote[i].instrument_index, lastTriggerNote[i].track_index,
                         lastTriggerNote[i].note)
                 else
