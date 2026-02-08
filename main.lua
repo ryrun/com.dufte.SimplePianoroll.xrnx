@@ -5125,6 +5125,7 @@ fillPianoRoll = function(quickRefresh)
         local current_note_step
         local current_note_line
         local current_note_rowIndex
+        local column_is_muted = song.selected_track:column_is_muted(c)
 
         --loop through lines as steps
         for line = 1, steps do
@@ -5238,7 +5239,7 @@ fillPianoRoll = function(quickRefresh)
             end
 
             --skip muted columns
-            if not song.selected_track:column_is_muted(c) then
+            if not column_is_muted then
                 --render notes
                 local note_column = lineValues[line]:note_column(c)
                 local note = note_column.note_value
