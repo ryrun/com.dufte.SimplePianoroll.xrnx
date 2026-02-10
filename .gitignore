@@ -1,8 +1,5 @@
-/fw.sh
-/.gitignore
 /update.md
 /.idea
-.DS_Store
-out/.DS_Store
-issues.md
 /internal-docs
+/issues.md
+.DS_Store
