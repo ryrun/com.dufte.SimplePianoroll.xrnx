@@ -10,7 +10,7 @@ install:
 package:
 	@echo "\033[1m==> Creating .xrnx package\033[0m"
 	unlink out/com.duftetools.SimplePianoroll.xrnx || true
-	zip out/com.duftetools.SimplePianoroll.xrnx manifest.xml main.lua thumbnail.png cover.png
+	zip out/com.duftetools.SimplePianoroll.xrnx manifest.xml main.lua thumbnail.png cover.png LICENSE
 
 # Watch target to monitor changes in main.lua
 watch:

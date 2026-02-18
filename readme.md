@@ -1,6 +1,8 @@
-> ⚠️ This README is currently outdated. Will be updated soon.
+![GitHub License](https://img.shields.io/github/license/ryrun/com.dufte.SimplePianoroll.xrnx)
 
 <h1>Simple Pianoroll Tool for Renoise</h1>
+
+> ⚠️ This README is currently outdated. Will be updated soon.
 
 <img src="https://github.com/ryrun/com.dufte.SimplePianoroll.xrnx/blob/master/docs/images/pianorollanim3.gif?raw=true" alt="Simple Pianoroll Tool for Renoise" />
 

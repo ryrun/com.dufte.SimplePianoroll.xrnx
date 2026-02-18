@@ -41,7 +41,7 @@ jobs:
       - name: Build .xrnx
         run: |
           zip -r "site/com.duftetools.SimplePianoroll.xrnx" \
-            manifest.xml main.lua thumbnail.png cover.png
+            manifest.xml main.lua thumbnail.png cover.png LICENSE
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
