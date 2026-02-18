@@ -7,6 +7,7 @@ on:
       - main.lua
       - thumbnail.png
       - cover.png
+      - LICENSE
 
   workflow_dispatch:
 
