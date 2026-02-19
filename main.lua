@@ -7470,7 +7470,7 @@ handleKeyEvent = function(keyEvent, mouseXPosition)
                     end
                 else
                     keyInfoText = "Move through the grid"
-                    setScrollbarValue(noteSlider.value + transpose, noteSlider)
+                    setScrollbarValue(noteSlider.value - transpose, noteSlider)
                 end
             end
         end
