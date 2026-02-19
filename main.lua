@@ -1242,8 +1242,8 @@ jumpToNoteInPattern = function(notedata, force)
         end
         --refresh edit pos
         refreshEditPosIndicator()
-        refreshStates.refreshChordDetection = true
     end
+    refreshStates.refreshChordDetection = true
 end
 
 --check if a note index is in major scale
