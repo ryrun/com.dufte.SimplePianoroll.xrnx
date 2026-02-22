@@ -1185,21 +1185,29 @@ end
 refreshEditPosIndicator = function()
     local eP = song.transport.edit_pos.line
     local se = vbw["se" .. tostring(lastEditPos)]
-    if (currentEditPos < song.selected_pattern.number_of_lines + 1 or currentEditPos > song.selected_pattern.number_of_lines + 1) and currentEditPos ~= eP then
+    local pattern_end = song.selected_pattern.number_of_lines + 1
+
+    if (currentEditPos < pattern_end or currentEditPos > pattern_end) and currentEditPos ~= eP then
         currentEditPos = eP
     end
+
     if se then
-        if currentEditPos == song.selected_pattern.number_of_lines + 1 then
+        if currentEditPos == pattern_end then
             se.color = shadeColor(colorStepOn, 0.5)
         else
             se.color = colorStepOn
         end
     end
-    if lastEditPos == nil or lastEditPos ~= eP - stepOffset then
+
+    local skipX = computeAlignedGridSkipX()
+    local gridPhase = stepOffset % skipX
+    local alignedEditPos = computeAlignedGridSkipX((eP - stepOffset) + gridPhase)
+
+    if lastEditPos == nil or lastEditPos ~= alignedEditPos then
         if se then
             se.visible = false
         end
-        lastEditPos = eP - stepOffset
+        lastEditPos = alignedEditPos
         se = vbw["se" .. tostring(lastEditPos)]
         if se then
             se.visible = true
@@ -4318,22 +4326,29 @@ fillTimeline = function()
     local lastbeat
     local timeslot
     local start_i = 1
+    local skipX = computeAlignedGridSkipX()
+    local startOffset = -gridStepSizeWScaled * (stepOffset % skipX)
 
     -- refresh visibility of step indicators
     for i = 1, gridWidth * math.ceil(defaultPreferences.gridXZoomMax) do
         if i <= steps then
-            vbw["se" .. i].origin = {
-                x = ((i - 1) * gridStepSizeWScaled),
-                y = 2
-            }
-            vbw["se" .. i].width = math.max(gridStepSizeWScaled - 2, gridStepSizeWScaled, 6)
-            vbw["se" .. i].visible = false
-            vbw["s" .. i].origin = {
-                x = ((i - 1) * gridStepSizeWScaled),
-                y = 4
-            }
-            vbw["s" .. i].width = math.max(gridStepSizeWScaled - 2, gridStepSizeWScaled, 6)
-            vbw["s" .. i].visible = true
+            if (i - 1) % skipX == 0 then
+                vbw["se" .. i].origin = {
+                    x = startOffset + ((i - 1) * gridStepSizeWScaled),
+                    y = 2
+                }
+                vbw["se" .. i].width = math.max((gridStepSizeWScaled * skipX) - 2, (gridStepSizeWScaled * skipX), 6)
+                vbw["se" .. i].visible = false
+                vbw["s" .. i].origin = {
+                    x = startOffset + ((i - 1) * gridStepSizeWScaled),
+                    y = 4
+                }
+                vbw["s" .. i].width = math.max((gridStepSizeWScaled * skipX) - 2, (gridStepSizeWScaled * skipX), 6)
+                vbw["s" .. i].visible = true
+            else
+                vbw["s" .. i].visible = false
+                vbw["se" .. i].visible = false
+            end
         else
             vbw["s" .. i].visible = false
             vbw["se" .. i].visible = false
@@ -4924,7 +4939,7 @@ refreshPlaybackPosIndicator = function()
             highlightNotesOnStep(lastStepOn, false)
             lastStepOn = nil
         end
-        lastStepOn = line - stepOffset
+        lastStepOn = computeAlignedGridSkipX((line - stepOffset) + (stepOffset % computeAlignedGridSkipX()))
         highlightNotesOnStep(lastStepOn, true)
 
         if preferences.followPlayCursor.value and song.transport.follow_player and (lastStepOn > gW or lastStepOn < 0) then
@@ -5161,7 +5176,7 @@ fillPianoRoll = function(quickRefresh)
                         --refresh step indicator
                         if y == 1 then
                             l_vbw["s" .. stepString].active = true
-                            if s == song.transport.edit_pos.line - stepOffset then
+                            if s == computeAlignedGridSkipX((song.transport.edit_pos.line - stepOffset) + (stepOffset % computeAlignedGridSkipX())) then
                                 l_vbw["se" .. stepString].visible = true
                             else
                                 l_vbw["se" .. stepString].visible = false
@@ -7040,6 +7055,7 @@ handleKeyEvent = function(keyEvent, mouseXPosition)
     local keyInfoText
     local isModifierKey = false
     local key
+    local gW = math.ceil(gridWidth * preferences.gridXZoom.value)
 
     if preferences.disableKeyHandler.value then
         return false
@@ -7532,9 +7548,9 @@ handleKeyEvent = function(keyEvent, mouseXPosition)
                             npos.line = currentEditPos + steps
                             npos.sequence = song.transport.edit_pos.sequence
                             song.transport.edit_pos = npos
-                            if npos.line > gridWidth + stepOffset or npos.line <= stepOffset then
-                                if npos.line - gridWidth >= stepSlider.min then
-                                    setScrollbarValue(npos.line - gridWidth, stepSlider)
+                            if npos.line > gW + stepOffset or npos.line <= stepOffset then
+                                if npos.line - gW >= stepSlider.min then
+                                    setScrollbarValue(npos.line - gW, stepSlider)
                                 elseif npos.line <= stepOffset then
                                     setScrollbarValue(npos.line - 1, stepSlider)
                                 end
