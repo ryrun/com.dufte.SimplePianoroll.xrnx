@@ -10414,7 +10414,7 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
                 else
                     --no control key is holded, so reset loop slider state
                     xypadpos.loopslider = nil
-                    jumpToNoteInPattern(math.floor(nScaled + 0.5) + stepOffset, true)
+                    jumpToNoteInPattern(computeAlignedGridSkipX(math.floor(nScaled + 0.5) + stepOffset), true)
                 end
                 if newloopset then
                     --when new end loop is before current playback pos, restart from loop start
