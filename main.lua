@@ -4944,7 +4944,7 @@ refreshPlaybackPosIndicator = function()
 
         if preferences.followPlayCursor.value and song.transport.follow_player and (lastStepOn > gW or lastStepOn < 0) then
             --follow play cursor, when enabled
-            local v = stepSlider.value + (gW * (lastStepOn / gW)) - 1
+            local v = computeAlignedGridSkipX(stepSlider.value + (gW * (lastStepOn / gW))) - 1
             lastStepOn = nil
             setScrollbarValue(v, stepSlider)
         elseif vbw["s" .. tostring(lastStepOn)] then
