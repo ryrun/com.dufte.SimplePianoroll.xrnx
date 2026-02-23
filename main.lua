@@ -1203,7 +1203,10 @@ refreshEditPosIndicator = function()
     local gridPhase = stepOffset % skipX
     local alignedEditPos = computeAlignedGridSkipX((eP - stepOffset) + gridPhase)
 
-    if lastEditPos == nil or lastEditPos ~= alignedEditPos then
+    if lastEditPos == nil or
+        lastEditPos ~= alignedEditPos or
+        (lastEditPos == alignedEditPos and se and not se.visible)
+    then
         if se then
             se.visible = false
         end
