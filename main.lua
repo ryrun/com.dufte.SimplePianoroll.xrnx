@@ -12370,8 +12370,8 @@ if preferences.enableAdditionalSampleToolsContextMenu.value then
         invoke = function()
             local current_pattern = renoise.song().selected_pattern
             local pattern_length = current_pattern.number_of_lines
-            current_pattern.number_of_lines = pattern_length * 2
-            if pattern_length * 2 <= 512 then
+            if pattern_length * 2 <= renoise.Pattern.MAX_NUMBER_OF_LINES then
+                current_pattern.number_of_lines = pattern_length * 2
                 for _, current_patterntrack in ipairs(current_pattern.tracks) do
                     for line_idx = 1, pattern_length do
                         current_patterntrack:line(line_idx + pattern_length):copy_from(current_patterntrack:line(
