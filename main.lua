@@ -12396,7 +12396,7 @@ if preferences.enableAdditionalSampleToolsContextMenu.value then
                     break
                 end
                 from = i
-                lastValTools.lastGlobalPitch = math.max(ins.transpose)
+                lastValTools.lastGlobalPitch = ins.transpose
             end
             --check till next empty one
             for i = to, math.min(from + renoise.Song.MAX_NUMBER_OF_INSTRUMENTS, renoise.Song.MAX_NUMBER_OF_INSTRUMENTS) do
@@ -12405,7 +12405,7 @@ if preferences.enableAdditionalSampleToolsContextMenu.value then
                     break
                 end
                 to = i
-                lastValTools.lastGlobalPitch = math.max(ins.transpose)
+                lastValTools.lastGlobalPitch = ins.transpose
             end
             --show dialog
             local global_pitch_box = renoise.ViewBuilder():valuebox { min = -120, max = 1220, value = lastValTools.lastGlobalPitch }
