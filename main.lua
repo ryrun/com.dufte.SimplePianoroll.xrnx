@@ -1248,8 +1248,6 @@ jumpToNoteInPattern = function(notedata, force)
                 end
             end
         end
-        --refresh edit pos
-        refreshEditPosIndicator()
     end
     refreshStates.refreshChordDetection = true
 end
