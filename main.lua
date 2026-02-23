@@ -7572,7 +7572,7 @@ handleKeyEvent = function(keyEvent, mouseXPosition)
                         wasFollowPlayer = song.transport.follow_player
                         song.transport.follow_player = false
                     end
-                    playPatternFromLine(lastEditPos + stepOffset)
+                    playPatternFromLine(song.transport.edit_pos.line)
                     keyInfoText = "Start song from cursor position"
                 else
                     playPatternFromLine()
