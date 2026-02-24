@@ -1184,19 +1184,19 @@ end
 --refresh edit pos
 refreshEditPosIndicator = function()
     local eP = song.transport.edit_pos.line
-    local se = vbw["se" .. tostring(lastEditPos)]
     local pattern_end = song.selected_pattern.number_of_lines + 1
+    local gW = math.ceil(gridWidth * preferences.gridXZoom.value)
+    local gridStepSizeWScaled = gridStepSizeW / (gW / gridWidth)
+    local se = vbw["se"]
 
     if (currentEditPos < pattern_end or currentEditPos > pattern_end) and currentEditPos ~= eP then
         currentEditPos = eP
     end
 
-    if se then
-        if currentEditPos == pattern_end then
-            se.color = shadeColor(colorStepOn, 0.5)
-        else
-            se.color = colorStepOn
-        end
+    if currentEditPos == pattern_end then
+        se.color = shadeColor(colorStepOn, 0.5)
+    else
+        se.color = colorStepOn
     end
 
     local skipX = computeAlignedGridSkipX()
@@ -1204,17 +1204,14 @@ refreshEditPosIndicator = function()
     local alignedEditPos = computeAlignedGridSkipX((eP - stepOffset) + gridPhase)
 
     if lastEditPos == nil or
-        lastEditPos ~= alignedEditPos or
-        (lastEditPos == alignedEditPos and se and not se.visible)
+        lastEditPos ~= alignedEditPos
     then
-        if se then
-            se.visible = false
-        end
         lastEditPos = alignedEditPos
-        se = vbw["se" .. tostring(lastEditPos)]
-        if se then
-            se.visible = true
-        end
+        se.width = math.max(gridStepSizeWScaled * skipX, 6)
+        se.origin = {
+            x = (lastEditPos - 1 - gridPhase) * gridStepSizeWScaled,
+            y = 2
+        }
     end
 end
 
@@ -4334,12 +4331,6 @@ fillTimeline = function()
     for i = 1, gridWidth * math.ceil(defaultPreferences.gridXZoomMax) do
         if i <= steps then
             if (i - 1) % skipX == 0 then
-                vbw["se" .. i].origin = {
-                    x = startOffset + ((i - 1) * gridStepSizeWScaled),
-                    y = 2
-                }
-                vbw["se" .. i].width = math.max((gridStepSizeWScaled * skipX) - 2, (gridStepSizeWScaled * skipX), 6)
-                vbw["se" .. i].visible = false
                 vbw["s" .. i].origin = {
                     x = startOffset + ((i - 1) * gridStepSizeWScaled),
                     y = 4
@@ -4348,11 +4339,9 @@ fillTimeline = function()
                 vbw["s" .. i].visible = true
             else
                 vbw["s" .. i].visible = false
-                vbw["se" .. i].visible = false
             end
         else
             vbw["s" .. i].visible = false
-            vbw["se" .. i].visible = false
         end
     end
 
@@ -5177,11 +5166,6 @@ fillPianoRoll = function(quickRefresh)
                         --refresh step indicator
                         if y == 1 then
                             l_vbw["s" .. stepString].active = true
-                            if s == computeAlignedGridSkipX((song.transport.edit_pos.line - stepOffset) + (stepOffset % computeAlignedGridSkipX())) then
-                                l_vbw["se" .. stepString].visible = true
-                            else
-                                l_vbw["se" .. stepString].visible = false
-                            end
                             l_vbw["s" .. stepString].color = colorStepOff
                         end
                         --refresh keyboard
@@ -10001,14 +9985,18 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
         height = gridStepSizeH,
         autosize = false,
     }
+    playCursor:add_child(vb:button {
+        id = "se",
+        height = gridStepSizeH - 3,
+        color = colorStepOn,
+        active = false,
+        visible = true,
+        origin = {
+            x = -999,
+            y = 2
+        }
+    })
     for x = 1, gridWidth * math.ceil(defaultPreferences.gridXZoomMax) do
-        playCursor:add_child(vb:button {
-            id = "se" .. tostring(x),
-            height = gridStepSizeH - 3,
-            color = colorStepOn,
-            active = false,
-            visible = false,
-        })
         playCursor:add_child(vb:button {
             id = "s" .. tostring(x),
             height = gridStepSizeH - 7,
