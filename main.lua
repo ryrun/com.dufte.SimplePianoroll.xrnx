@@ -1210,7 +1210,7 @@ refreshEditPosIndicator = function()
         se.width = math.max(gridStepSizeWScaled * skipX, 6)
         se.origin = {
             x = (lastEditPos - 1 - gridPhase) * gridStepSizeWScaled,
-            y = 2
+            y = se.origin.y
         }
     end
 end
