@@ -4921,34 +4921,43 @@ refreshPlaybackPosIndicator = function()
     local line = song.transport.playback_pos.line
     local seq = song.sequencer:pattern(song.transport.playback_pos.sequence)
     local gW = math.ceil(gridWidth * preferences.gridXZoom.value)
+    local sp = vbw["sp"]
+
     if song.selected_pattern_index == seq and lastStepOn ~= line and song.transport.playing then
+        local gridStepSizeWScaled = gridStepSizeW / (gW / gridWidth)
+        local skipX = computeAlignedGridSkipX()
+        local gridPhase = stepOffset % skipX
+
         if lastStepOn then
-            if vbw["s" .. tostring(lastStepOn)] then
-                vbw["s" .. tostring(lastStepOn)].color = colorStepOff
-            end
             highlightNotesOnStep(lastStepOn, false)
             lastStepOn = nil
         end
         lastStepOn = computeAlignedGridSkipX((line - stepOffset) + (stepOffset % computeAlignedGridSkipX()))
         highlightNotesOnStep(lastStepOn, true)
 
+        sp.width = math.max(gridStepSizeWScaled * skipX - 4, 6)
+        sp.origin = {
+            x = (lastStepOn - 1 - gridPhase) * gridStepSizeWScaled + 2,
+            y = 6
+        }
+
         if preferences.followPlayCursor.value and song.transport.follow_player and (lastStepOn > gW or lastStepOn < 0) then
             --follow play cursor, when enabled
             local v = computeAlignedGridSkipX(stepSlider.value + (gW * (lastStepOn / gW))) - 1
             lastStepOn = nil
             setScrollbarValue(v, stepSlider)
-        elseif vbw["s" .. tostring(lastStepOn)] then
-            vbw["s" .. tostring(lastStepOn)].color = colorStepOn
         end
     elseif (song.selected_pattern_index ~= seq or not song.transport.playing) then
+        sp.origin = {
+            x = -999,
+            y = 2
+        }
+
         if #notesOnStep > 0 then
             notesOnStep = {}
             refreshStates.refreshChordDetection = true
         end
         if lastStepOn then
-            if vbw["s" .. tostring(lastStepOn)] then
-                vbw["s" .. tostring(lastStepOn)].color = colorStepOff
-            end
             highlightNotesOnStep(lastStepOn, false)
             lastStepOn = nil
         end
@@ -5166,7 +5175,6 @@ fillPianoRoll = function(quickRefresh)
                         --refresh step indicator
                         if y == 1 then
                             l_vbw["s" .. stepString].active = true
-                            l_vbw["s" .. stepString].color = colorStepOff
                         end
                         --refresh keyboard
                         if s == 1 then
@@ -10005,6 +10013,19 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
             notifier = loadstring("setPlaybackPos(" .. tostring(x) .. ")"),
         })
     end
+    playCursor:add_child(vb:canvas {
+        id = "sp",
+        height = gridStepSizeH - 11,
+        mode = "plain",
+        origin = {
+            x = -999,
+            y = 6
+        },
+        render = function(context)
+            context.fill_color = colorStepOn
+            context:fill_rect(0, 0, context.size.width, context.size.height)
+        end
+    })
     local pianorollColumns = vb:stack {
         width = gridStepSizeW * gridWidth,
         height = gridStepSizeH * gridHeight,
