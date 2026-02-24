@@ -4932,13 +4932,13 @@ refreshPlaybackPosIndicator = function()
             highlightNotesOnStep(lastStepOn, false)
             lastStepOn = nil
         end
-        lastStepOn = computeAlignedGridSkipX((line - stepOffset) + (stepOffset % computeAlignedGridSkipX()))
+        lastStepOn = line - stepOffset
         highlightNotesOnStep(lastStepOn, true)
 
-        sp.width = math.max(gridStepSizeWScaled * skipX - 4, 6)
+        sp.width = math.max(skipX * gridStepSizeWScaled - 4, 6)
         sp.origin = {
-            x = (lastStepOn - 1 - gridPhase) * gridStepSizeWScaled + 2,
-            y = 6
+            x = (computeAlignedGridSkipX(lastStepOn + gridPhase) - gridPhase - 1) * gridStepSizeWScaled + 2,
+            y = sp.origin.y
         }
 
         if preferences.followPlayCursor.value and song.transport.follow_player and (lastStepOn > gW or lastStepOn < 0) then
@@ -4950,7 +4950,7 @@ refreshPlaybackPosIndicator = function()
     elseif (song.selected_pattern_index ~= seq or not song.transport.playing) then
         sp.origin = {
             x = -999,
-            y = 2
+            y = sp.origin.y
         }
 
         if #notesOnStep > 0 then
