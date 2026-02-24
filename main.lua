@@ -4335,7 +4335,7 @@ fillTimeline = function()
                     x = startOffset + ((i - 1) * gridStepSizeWScaled),
                     y = 4
                 }
-                vbw["s" .. i].width = math.max((gridStepSizeWScaled * skipX) - 2, (gridStepSizeWScaled * skipX), 6)
+                vbw["s" .. i].width = math.max(gridStepSizeWScaled * skipX, 6)
                 vbw["s" .. i].visible = true
             else
                 vbw["s" .. i].visible = false
