@@ -1349,6 +1349,25 @@ updateNoteSelection = function(note_data, clear, noNoteReadOut)
                     table.insert(newNotes, noteData[k])
                 end
             end
+        elseif note_data == "bottommost" then
+            --search for the bottommost notes and select them
+            for k in pairs(noteData) do
+                local isBottomMost = true
+                for k2 in pairs(noteData) do
+                    if
+                        k ~= k2
+                        and noteData[k2].note < noteData[k].note
+                        and not (noteData[k].line + noteData[k].len - 1 < noteData[k2].line
+                            or noteData[k2].line + noteData[k2].len - 1 < noteData[k].line)
+                    then
+                        isBottomMost = false
+                        break
+                    end
+                end
+                if isBottomMost then
+                    table.insert(newNotes, noteData[k])
+                end
+            end
         elseif note_data == "renoise_selection" then
             for k in pairs(noteData) do
                 --check if note is in renoise selection
@@ -6962,6 +6981,11 @@ executeToolAction = function(action, allWhenNothingSelected, param1, param2)
         if #noteSelection > 0 then
             return true
         end
+    elseif action == "select_bottommost" then
+        updateNoteSelection("bottommost", true)
+        if #noteSelection > 0 then
+            return true
+        end
     elseif action == "select_none" then
         updateNoteSelection(nil, true)
         return true
@@ -11454,13 +11478,25 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
                                     executeToolAction("invert_selection")
                                 end,
                             },
-                            vb:button {
-                                text = "Select topmost notes",
+                            vb:horizontal_aligner {
                                 width = "100%",
-                                tooltip = "Select all topmost notes ...",
-                                notifier = function()
-                                    executeToolAction("select_topmost")
-                                end,
+                                mode = "justify",
+                                vb:button {
+                                    text = "Top",
+                                    width = "50%",
+                                    tooltip = "Select all topmost notes ...",
+                                    notifier = function()
+                                        executeToolAction("select_topmost")
+                                    end,
+                                },
+                                vb:button {
+                                    text = "Bottom",
+                                    width = "50%",
+                                    tooltip = "Select all bottommost notes ...",
+                                    notifier = function()
+                                        executeToolAction("select_bottommost")
+                                    end,
+                                },
                             },
                             vb:button {
                                 text = "Odd deselect",
