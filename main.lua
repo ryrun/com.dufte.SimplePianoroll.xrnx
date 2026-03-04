@@ -20,6 +20,7 @@ local noteValue2GridRowOffset
 local gridOffset2NoteValue
 local toRenoiseHex
 local fromRenoiseHex
+local sortNoteSelection
 
 local shadeColor
 local alphablendColors
@@ -711,6 +712,33 @@ local sortFunc = {
     end
 }
 
+-- sort noteSelection and keep xypadpos.selection_key pointing to the same note after sorting
+sortNoteSelection = function(sortFn)
+    if #noteSelection > 1 then
+        local old_key = xypadpos.selection_key
+        local anchor_idx = nil
+
+        -- remember currently selected note id (if valid)
+        if old_key and noteSelection[old_key] then
+            anchor_idx = noteSelection[old_key].idx
+        end
+
+        --sort table
+        table.sort(noteSelection, sortFn)
+
+        -- anchor_idx, find correct selection key, when possible
+        if anchor_idx then
+            for i = 1, #noteSelection do
+                if noteSelection[i].idx == anchor_idx then
+                    xypadpos.selection_key = i
+                    return
+                end
+            end
+        end
+    end
+end
+
+
 --force value between and inclusive min/max values, return lowerBound when value is nan
 clamp = function(value, lowerBound, upperBound)
     if value ~= value then -- NaN check
@@ -1221,7 +1249,7 @@ jumpToNoteInPattern = function(notedata, force)
         --jump to the first note in selection, when needed
         if type(notedata) == "string" and notedata == "sel" then
             if #noteSelection > 0 then
-                table.sort(noteSelection, sortFunc.sortLeftOneFirst)
+                sortNoteSelection(sortFunc.sortLeftOneFirst)
                 notedata = noteSelection[1]
             else
                 --no selection, dont do anything
@@ -1321,6 +1349,14 @@ updateNoteSelection = function(note_data, clear, noNoteReadOut)
     local newNotes = {}
     local wasInSelection = {}
     local selection = song.selection_in_pattern
+    local old_key = xypadpos.selection_key
+    local anchor_idx = nil
+
+    -- remember currently selected note id (if valid)
+    if old_key and noteSelection[old_key] then
+        anchor_idx = noteSelection[old_key].idx
+    end
+
     if note_data ~= nil then
         --no selection in renoise, force all
         if selection == nil and note_data == "renoise_selection" then
@@ -1558,6 +1594,16 @@ updateNoteSelection = function(note_data, clear, noNoteReadOut)
         --refresh chord detection
         refreshStates.refreshChordDetection = true
         refreshStates.refreshHistogram = true
+    end
+
+    -- anchor_idx is valid, find correct selection key, when possible
+    if anchor_idx then
+        for i = 1, #noteSelection do
+            if noteSelection[i].idx == anchor_idx then
+                xypadpos.selection_key = i
+                return
+            end
+        end
     end
 end
 
@@ -2200,10 +2246,10 @@ moveSelectedNotes = function(steps)
     if #noteSelection > 1 then
         if steps < 0 then
             --left one notes first
-            table.sort(noteSelection, sortFunc.sortLeftOneFirst)
+            sortNoteSelection(sortFunc.sortLeftOneFirst)
         else
             --right one notes first
-            table.sort(noteSelection, sortFunc.sortRightOneFirst)
+            sortNoteSelection(sortFunc.sortRightOneFirst)
         end
     end
     --disable edit mode and following to prevent side effects
@@ -2264,7 +2310,7 @@ moveSelectedNotesByMicroSteps = function(microsteps, snapSpecialGrid)
         return false
     end
     if microsteps == "reverse" then
-        table.sort(noteSelection, sortFunc.sortRightOneFirst)
+        sortNoteSelection(sortFunc.sortRightOneFirst)
         for i = 1, #noteSelection do
             local s = getMicroStepValue(noteSelection[i].line, noteSelection[i].dly)
             local L = getMicroStepValue(
@@ -2282,10 +2328,10 @@ moveSelectedNotesByMicroSteps = function(microsteps, snapSpecialGrid)
         if #noteSelection > 1 then
             if microsteps < 0 or snapSpecialGrid then
                 --left one notes first
-                table.sort(noteSelection, sortFunc.sortLeftOneFirst)
+                sortNoteSelection(sortFunc.sortLeftOneFirst)
             else
                 --right one notes first
-                table.sort(noteSelection, sortFunc.sortRightOneFirst)
+                sortNoteSelection(sortFunc.sortRightOneFirst)
             end
         end
 
@@ -2404,12 +2450,12 @@ transposeSelectedNotes = function(transpose, keepscale, nopreview)
     elseif type(transpose) == "number" or transpose == "invup" or transpose == "invdown" then
         if transpose == "invdown" or (type(transpose) == "number" and transpose > 0) then
             --higher one notes first
-            table.sort(noteSelection, function(a, b)
+            sortNoteSelection(function(a, b)
                 return a.note > b.note
             end)
         else
             --lower one notes first
-            table.sort(noteSelection, function(a, b)
+            sortNoteSelection(function(a, b)
                 return a.note < b.note
             end)
         end
@@ -2826,10 +2872,10 @@ duplicateSelectedNotes = function(noOffset)
     local offset
     local column
     --first notes first
-    table.sort(noteSelection, sortFunc.sortLeftOneFirst)
+    sortNoteSelection(sortFunc.sortLeftOneFirst)
     offset = noteSelection[1].line
     --last notes first
-    table.sort(noteSelection, sortFunc.sortRightOneFirst)
+    sortNoteSelection(sortFunc.sortRightOneFirst)
     --get offset
     offset = (noteSelection[1].line + noteSelection[1].len) - offset
     --disable edit mode and following to prevent side effects
@@ -2846,7 +2892,7 @@ duplicateSelectedNotes = function(noOffset)
         setUndoDescription("Duplicate notes to right ...")
     end
     --resort so column order stays
-    table.sort(noteSelection, sortFunc.sortFirstColumnFirst)
+    sortNoteSelection(sortFunc.sortFirstColumnFirst)
     --go through selection
     for key = 1, #noteSelection do
         --search for valid column
@@ -2894,7 +2940,7 @@ changeSizeSelectedNotesByMicroSteps = function(microsteps)
         return false
     end
     --first notes first
-    table.sort(noteSelection, sortFunc.sortLeftOneFirst)
+    sortNoteSelection(sortFunc.sortLeftOneFirst)
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     if song.transport.follow_player then
@@ -2993,7 +3039,7 @@ changeSizeSelectedNotes = function(len, add)
     local column
     local newLen = len
     --first notes first
-    table.sort(noteSelection, sortFunc.sortLeftOneFirst)
+    sortNoteSelection(sortFunc.sortLeftOneFirst)
     --disable edit mode and following to prevent side effects
     song.transport.edit_mode = false
     if song.transport.follow_player then
