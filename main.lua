@@ -699,16 +699,10 @@ local sortFunc = {
         return x > y
     end,
     sortFromLowToTop = function(a, b)
-        local x, y
-        x = a.note
-        y = b.note
-        return x < y
+        return a.note < b.note
     end,
     sortFirstColumnFirst = function(a, b)
-        local x, y
-        x = a.column
-        y = b.column
-        return x < y
+        return a.column < b.column
     end
 }
 
