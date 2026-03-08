@@ -2617,7 +2617,7 @@ pasteNotesFromClipboard = function(overwriteInstrument)
         table.insert(noteSelection, clipboard[key])
     end
     --move paste cursor
-    table.sort(noteSelection, function(a, b)
+    sortNoteSelection(function(a, b)
         return a.line > b.line
     end)
     pasteCursor = { noteSelection[1].line + noteSelection[1].len, pasteCursor[2] }
@@ -2630,11 +2630,11 @@ end
 scaleNoteSelection = function(times)
     setUndoDescription("Scale note selection ...")
     --get offset
-    table.sort(noteSelection, sortFunc.sortLeftOneFirst)
+    sortNoteSelection(sortFunc.sortLeftOneFirst)
     local first_line = noteSelection[1].line
     --change note order depends of scaling or shrinking
     if times > 1 then
-        table.sort(noteSelection, sortFunc.sortRightOneFirst)
+        sortNoteSelection(sortFunc.sortRightOneFirst)
     end
     --go through selection
     for key = 1, #noteSelection do
@@ -2699,7 +2699,7 @@ glueSelectedNotes = function()
     setUndoDescription("Glue notes ...")
 
     -- ensure processing order is left-to-right
-    table.sort(noteSelection, sortFunc.sortNoteLeftOneFirst)
+    sortNoteSelection(sortFunc.sortNoteLeftOneFirst)
 
     local newSelection = {}
     local used = {} -- marks indices already merged into a glued note
@@ -2807,7 +2807,7 @@ chopSelectedNotes = function()
     local newSelection = {}
     setUndoDescription("Chop notes ...")
     --first notes first
-    table.sort(noteSelection, sortFunc.sortLeftOneFirst)
+    sortNoteSelection(sortFunc.sortLeftOneFirst)
     --go through selection
     for key = 1, #noteSelection do
         if noteSelection[key].len > 1 then
@@ -3385,7 +3385,7 @@ quickArp = function(mode, len)
         arpMode = 1
     end
     --sort left from bottom to top
-    table.sort(noteSelection, sortFunc.sortLeftOneFirstFromLowToTop)
+    sortNoteSelection(sortFunc.sortLeftOneFirstFromLowToTop)
     for _, note in ipairs(noteSelection) do
         if not from or note.line < from then
             from = note.line
@@ -5720,9 +5720,9 @@ refreshHistogramWindow = function(apply)
     if #noteSelection > 0 then
         --resort note selection
         if vbwp["histogramasctype"].value == 2 then
-            table.sort(noteSelection, sortFunc.sortFromLowToTop)
+            sortNoteSelection(sortFunc.sortFromLowToTop)
         else
-            table.sort(noteSelection, sortFunc.sortLeftOneFirstFromLowToTop)
+            sortNoteSelection(sortFunc.sortLeftOneFirstFromLowToTop)
         end
         --fill value table
         for i = 1, #noteSelection do
@@ -6873,7 +6873,7 @@ executeToolAction = function(action, allWhenNothingSelected, param1, param2)
     elseif action == "random_deselection" then
         if #noteSelection > 0 then
             showStatus("Randomly deselect halve of the selected notes.")
-            table.sort(noteSelection, sortFunc.sortLeftOneFirst)
+            sortNoteSelection(sortFunc.sortLeftOneFirst)
             local newSelection = {}
             local skip = 0
             local removed = 0
@@ -7048,7 +7048,7 @@ executeToolAction = function(action, allWhenNothingSelected, param1, param2)
             else
                 showStatus("Deselect even notes of the current selection.")
             end
-            table.sort(noteSelection, sortFunc.sortLeftOneFirst)
+            sortNoteSelection(sortFunc.sortLeftOneFirst)
             local newSelection = {}
             for i = 1, #noteSelection do
                 if (i % 2 == 0 and action == "odddeselect_selection")
