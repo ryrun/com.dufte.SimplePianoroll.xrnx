@@ -1501,12 +1501,14 @@ updateNoteSelection = function(note_data, clear, noNoteReadOut)
                 elseif vel ~= noteSelection[i].vel then
                     vel = "mixed"
                 end
-                if end_vel == nil then
-                    end_vel = noteSelection[i].end_vel
-                elseif type(end_vel) == "number" and end_vel ~= noteSelection[i].end_vel and noteSelection[i].end_vel < 129 then
-                    end_vel = math.max(end_vel, noteSelection[i].end_vel)
-                elseif end_vel ~= noteSelection[i].end_vel then
-                    end_vel = "mixed"
+                if noteSelection[i].len > 1 then
+                    if end_vel == nil then
+                        end_vel = noteSelection[i].end_vel
+                    elseif type(end_vel) == "number" and end_vel ~= noteSelection[i].end_vel and noteSelection[i].end_vel < 129 then
+                        end_vel = math.max(end_vel, noteSelection[i].end_vel)
+                    elseif end_vel ~= noteSelection[i].end_vel then
+                        end_vel = "mixed"
+                    end
                 end
                 if pan == nil then
                     pan = noteSelection[i].pan
