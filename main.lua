@@ -298,6 +298,7 @@ local defaultPreferences = {
     useTrackColorFor = 1,
     enableAdditionalSampleToolsContextMenu = false,
     resetNoteSizeOnNoteDraw = true,
+    setVelocityWhenDrawingNotes = false,
     enableInvisibleLasso = false,
     timelineEven = 2,
     timelineOdd = 3,
@@ -370,6 +371,7 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     autoEnableDelayWhenNeeded = defaultPreferences.autoEnableDelayWhenNeeded,
     snapToGridSize = defaultPreferences.snapToGridSize,
     resetNoteSizeOnNoteDraw = defaultPreferences.resetNoteSizeOnNoteDraw,
+    setVelocityWhenDrawingNotes = defaultPreferences.setVelocityWhenDrawingNotes,
     enableInvisibleLasso = defaultPreferences.enableInvisibleLasso,
     setVelPanDlyLenFromLastNote = defaultPreferences.setVelPanDlyLenFromLastNote,
     keyLabels = defaultPreferences.keyLabels,
@@ -608,6 +610,7 @@ local xypadpos = {
     ny = 0,     --note y pos
     nc = 0,     --note column
     nlen = 0,   --note len
+    nvel = 0,
     time = 0,   --click time
     lastx = 0,
     lastval = nil,
@@ -3752,6 +3755,7 @@ noteClick = function(x, y, c, released, forceScaling)
         xypadpos.lastx = -1
         xypadpos.nx = x
         xypadpos.ny = y
+        xypadpos.nvel = note_data.vel
         xypadpos.nc = c
         xypadpos.nlen = note_data.len
         xypadpos.previewmode = false
@@ -3806,6 +3810,7 @@ pianoGridClick = function(x, y, released)
         end
         xypadpos.nx = x
         xypadpos.ny = y
+        xypadpos.nvel = currentNoteVelocity
         xypadpos.nc = nil
         xypadpos.preview = {}
         xypadpos.previewmode = false
@@ -8278,6 +8283,20 @@ handleMouse = function(event)
                                 xypadpos.scalemode = false
                             end
                         end
+                        --set velocity while drawing feature
+                        if preferences.setVelocityWhenDrawingNotes.value and xypadpos.wasnewnote and not xypadpos.resetscale then
+                            local oldvel = clamp(xypadpos.nvel, 0, 128)
+                            local newvel = clamp(math.floor(math.min(128,xypadpos.nvel)+((val_y-xypadpos.ny)*4)),0,128)
+                            if oldvel ~= newvel then
+                                if newvel == 128 then
+                                    newvel = 255
+                                end
+                                changePropertiesOfSelectedNotes(newvel)
+                                for key = 1, #noteSelection do
+                                    triggerNoteOfCurrentInstrument(noteSelection[key].note, nil, noteSelection[key].vel, true, noteSelection[key].ins)
+                                end
+                            end
+                        end
                     end
                 end
                 --when move note is active, move notes
@@ -9665,6 +9684,14 @@ showPreferences = function()
                             },
                             vbp:text {
                                 text = "Reset note size when note drawing",
+                            },
+                        },
+                        vbp:row {
+                            vbp:checkbox {
+                                bind = preferences.setVelocityWhenDrawingNotes,
+                            },
+                            vbp:text {
+                                text = "Set velocity when drawing notes",
                             },
                         },
                         vbp:row {
