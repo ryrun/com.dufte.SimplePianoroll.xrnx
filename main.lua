@@ -3436,6 +3436,8 @@ quickArp = function(mode, len)
             elseif arpMode == 2 then
                 table.insert(finalArp,
                     heldNotes[((#heldNotes - idx - 1) % #heldNotes) + 1].note)
+            elseif arpMode == 6 then
+                table.insert(finalArp, heldNotes[math.random(#heldNotes)].note)
             end
             --special up/down handling
             if idx % #heldNotes >= #heldNotes - 1 and (mode == 3 or mode == 4) then
@@ -11771,7 +11773,8 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
                                         "Down",
                                         "Up-Down",
                                         "Down-Up",
-                                        "Piano"
+                                        "Piano",
+                                        "Random"
                                     },
                                 },
                                 vb:valuebox {
