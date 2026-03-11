@@ -3193,7 +3193,8 @@ changePropertiesOfSelectedNotes = function(vel, end_vel, dly, end_dly, pan, ins,
                 else
                     note.volume_string = toRenoiseHex(vel)
                     selection.vel = vel
-                    if selection.len == 1 then
+                    --set end_vel only for fx commands
+                    if selection.len == 1 and vel > 127 and vel ~= 255 then
                         selection.end_vel = vel
                     end
                 end
@@ -8286,14 +8287,16 @@ handleMouse = function(event)
                         --set velocity while drawing feature
                         if preferences.setVelocityWhenDrawingNotes.value and xypadpos.wasnewnote and not xypadpos.resetscale then
                             local oldvel = clamp(xypadpos.nvel, 0, 128)
-                            local newvel = clamp(math.floor(math.min(128,xypadpos.nvel)+((val_y-xypadpos.ny)*4)),0,128)
+                            local newvel = clamp(math.floor(math.min(128, xypadpos.nvel) + ((val_y - xypadpos.ny) * 4)),
+                                0, 128)
                             if oldvel ~= newvel then
                                 if newvel == 128 then
                                     newvel = 255
                                 end
                                 changePropertiesOfSelectedNotes(newvel)
                                 for key = 1, #noteSelection do
-                                    triggerNoteOfCurrentInstrument(noteSelection[key].note, nil, noteSelection[key].vel, true, noteSelection[key].ins)
+                                    triggerNoteOfCurrentInstrument(noteSelection[key].note, nil, noteSelection[key].vel,
+                                        true, noteSelection[key].ins)
                                 end
                             end
                         end
