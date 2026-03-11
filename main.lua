@@ -8286,10 +8286,10 @@ handleMouse = function(event)
                         end
                         --set velocity while drawing feature
                         if preferences.setVelocityWhenDrawingNotes.value and xypadpos.wasnewnote and not xypadpos.resetscale then
-                            local oldvel = clamp(xypadpos.nvel, 0, 128)
-                            local newvel = clamp(math.floor(math.min(128, xypadpos.nvel) + ((val_y - xypadpos.ny) * 4)),
+                            local newvel = clamp(
+                                math.floor(math.min(128, xypadpos.nvel) + ((val_y - xypadpos.ny) * gridStepSizeH)),
                                 0, 128)
-                            if oldvel ~= newvel then
+                            if note_data.vel ~= newvel then
                                 if newvel == 128 then
                                     newvel = 255
                                 end
