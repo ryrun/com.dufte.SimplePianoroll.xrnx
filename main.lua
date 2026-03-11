@@ -6269,10 +6269,30 @@ showPenSettingsDialog = function()
     if dialogVars.penSettingsContent == nil then
         dialogVars.penSettingsContent = vbp:column {
             spacing = -8,
-            vbp:row {
+            vbp:column {
                 uniform = true,
                 margin = 5,
                 spacing = 5,
+                vbp:column {
+                    style = "group",
+                    margin = 5,
+                    uniform = true,
+                    spacing = 4,
+                    width = 250,
+                    vbp:text {
+                        text = "Note drawing",
+                        font = "big",
+                        style = "strong",
+                    },
+                    vbp:row {
+                        vbp:checkbox {
+                            bind = preferences.setVelocityWhenDrawingNotes,
+                        },
+                        vbp:text {
+                            text = "Set velocity when drawing notes",
+                        },
+                    },
+                },
                 vbp:column {
                     style = "group",
                     margin = 5,
@@ -6662,10 +6682,9 @@ showPenSettingsDialog = function()
                             bind = preferences.useChordStampingForNotePreview,
                         },
                         vbp:text {
-                            text = "Use chord stamping also for note preview",
+                            text = "Use chord stamping also for keyboard/midi playing",
                         },
                     },
-
                 }
             },
             vbp:horizontal_aligner {
@@ -9969,7 +9988,7 @@ showPreferences = function()
                                 bind = preferences.useChordStampingForNotePreview,
                             },
                             vbp:text {
-                                text = "Use chord stamping also for note preview",
+                                text = "Use chord stamping also for keyboard/midi playing",
                             },
                         },
                         vbp:row {
