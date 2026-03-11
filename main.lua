@@ -8289,10 +8289,10 @@ handleMouse = function(event)
                             local newvel = clamp(
                                 math.floor(math.min(128, xypadpos.nvel) + ((val_y - xypadpos.ny) * gridStepSizeH)),
                                 0, 128)
+                            if newvel == 128 then
+                                newvel = 255
+                            end
                             if note_data.vel ~= newvel then
-                                if newvel == 128 then
-                                    newvel = 255
-                                end
                                 changePropertiesOfSelectedNotes(newvel)
                                 for key = 1, #noteSelection do
                                     triggerNoteOfCurrentInstrument(noteSelection[key].note, nil, noteSelection[key].vel,
