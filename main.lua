@@ -6782,6 +6782,8 @@ executeToolAction = function(action, allWhenNothingSelected, param1, param2)
                 end
             end
         end
+    elseif action == "force_refresh_pianoroll" then
+        return fillPianoRoll()
     elseif action == "undo" then
         song:undo()
         --after undo selection could be messed up, so deselect all
@@ -12025,6 +12027,8 @@ tool:add_menu_entry {
         if executeToolAction("select_track_sequence_slot") then
             if not vb then
                 main_function(true)
+            else
+                executeToolAction("force_refresh_pianoroll")
             end
             executeToolAction("select_none")
             executeToolAction("cut", true)
@@ -12038,6 +12042,8 @@ tool:add_menu_entry {
         if executeToolAction("select_track_sequence_slot") then
             if not vb then
                 main_function(true)
+            else
+                executeToolAction("force_refresh_pianoroll")
             end
             executeToolAction("select_none")
             executeToolAction("copy", true)
