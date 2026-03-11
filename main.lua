@@ -2115,13 +2115,10 @@ triggerNoteOfCurrentInstrument = function(note_value, pressed, velocity, newOrCh
     end
     --disable record mode, when enabled
     song.transport.edit_mode = false
-    if not velocity or velocity > 127 then
-        --no volume value = max velocity
-        if velocity == 255 then
-            velocity = 127
-        else
-            velocity = currentNoteVelocityPreview
-        end
+    if not velocity then
+        velocity = currentNoteVelocityPreview
+    elseif velocity > 127 then
+        velocity = 127
     end
     if pressed == true then
         notesPlaying[note_value] = 1
