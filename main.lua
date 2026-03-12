@@ -2091,12 +2091,6 @@ end
 triggerNoteOfCurrentInstrument = function(note_value, pressed, velocity, newOrChanged, instrument, special)
     --special trigger for selection
     if type(note_value) == "string" and note_value == "sel" then
-        --for velocity change, reduce trigger note calls
-        if type(special) == "string" and special == "delayed" then
-            if os.clock() - xypadpos.lastmousepreviewtime < (preferences.triggerTime.value / 1000) then
-                return
-            end
-        end
         for i = 1, #noteSelection do
             triggerNoteOfCurrentInstrument(noteSelection[i].note, pressed, noteSelection[i].vel, true,
                 noteSelection[i].ins, "mousepreview")
@@ -8337,9 +8331,14 @@ handleMouse = function(event)
                                 newvel = 255
                             end
                             if note_data.vel ~= newvel then
-                                triggerNoteOfCurrentInstrument("sel", false, nil, nil, nil, "delayed")
-                                changePropertiesOfSelectedNotes(newvel)
-                                triggerNoteOfCurrentInstrument("sel", true, nil, nil, nil, "delayed")
+                                --for velocity change, reduce trigger note calls
+                                if os.clock() - xypadpos.lastmousepreviewtime < (preferences.triggerTime.value / 1000) then
+                                    changePropertiesOfSelectedNotes(newvel)
+                                else
+                                    triggerNoteOfCurrentInstrument("sel", false)
+                                    changePropertiesOfSelectedNotes(newvel)
+                                    triggerNoteOfCurrentInstrument("sel", true)
+                                end
                             end
                         end
                     end
