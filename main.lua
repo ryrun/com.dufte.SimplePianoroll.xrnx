@@ -10878,10 +10878,9 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
                         else
                             currentNoteVelocity = number
                         end
-                        if #noteSelection > 0 then
+                        if #noteSelection > 0 and not refreshStates.refreshControls then
                             changePropertiesOfSelectedNotes(currentNoteVelocity)
                         end
-                        refreshStates.refreshControls = true
                         --fix for bad keyevents of key handler, bug
                         restoreFocus()
                     end,
@@ -10928,10 +10927,9 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
                         else
                             currentNoteEndVelocity = number
                         end
-                        if #noteSelection > 0 then
+                        if #noteSelection > 0 and not refreshStates.refreshControls then
                             changePropertiesOfSelectedNotes(nil, currentNoteEndVelocity)
                         end
-                        refreshStates.refreshControls = true
                         --fix for bad keyevents of key handler, bug
                         restoreFocus()
                     end,
@@ -10988,10 +10986,9 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
                         else
                             currentNotePan = number
                         end
-                        if #noteSelection > 0 then
+                        if #noteSelection > 0 and not refreshStates.refreshControls then
                             changePropertiesOfSelectedNotes(nil, nil, nil, nil, currentNotePan)
                         end
-                        refreshStates.refreshControls = true
                         --fix for bad keyevents of key handler, bug
                         restoreFocus()
                     end,
@@ -11043,10 +11040,9 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
                     end,
                     notifier = function(number)
                         currentNoteDelay = number
-                        if #noteSelection > 0 then
+                        if #noteSelection > 0 and not refreshStates.refreshControls then
                             changePropertiesOfSelectedNotes(nil, nil, currentNoteDelay)
                         end
-                        refreshStates.refreshControls = true
                         --fix for bad keyevents of key handler, bug
                         restoreFocus()
                     end,
@@ -11088,10 +11084,9 @@ createPianoRollDialog = function(gridWidth, gridHeight, gridStepSizeW, gridStepS
                     end,
                     notifier = function(number)
                         currentNoteEndDelay = number
-                        if #noteSelection > 0 then
+                        if #noteSelection > 0 and not refreshStates.refreshControls then
                             changePropertiesOfSelectedNotes(nil, nil, nil, currentNoteEndDelay)
                         end
-                        refreshStates.refreshControls = true
                         --fix for bad keyevents of key handler, bug
                         restoreFocus()
                     end,
