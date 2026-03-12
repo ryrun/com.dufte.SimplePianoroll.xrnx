@@ -620,6 +620,7 @@ local xypadpos = {
     scaling = false,       --are we scaling currently?
     duplicate = false,     --for duplicate shortcut state var
     distanceblock = false, --some distance needed before process anything
+    mousepreview = false,  --state if note preview for new or changed notes via mouse is active
     resetscale = false,
     pickuptiming = 0.025,  --time before trackpad reacts
     scalethreshold = 0.2,
@@ -2085,7 +2086,17 @@ pauseFollowPlayerWhileEditing = function()
     end
 end
 
-triggerNoteOfCurrentInstrument = function(note_value, pressed, velocity, newOrChanged, instrument)
+--function to trigger a note on an instrument
+triggerNoteOfCurrentInstrument = function(note_value, pressed, velocity, newOrChanged, instrument, special)
+    --special trigger for selection
+    if type(note_value) == "string" and note_value == "sel" then
+        for i = 1, #noteSelection do
+            triggerNoteOfCurrentInstrument(noteSelection[i].note, pressed, noteSelection[i].vel, true,
+                noteSelection[i].ins, "mousepreview")
+        end
+        xypadpos.mousepreview = pressed
+        return
+    end
     --special handling of preview notes, on new notes or changed notes (transpose)
     if newOrChanged and (pressed == true or pressed == nil) then
         if not preferences.notePreview.value then
@@ -2122,13 +2133,17 @@ triggerNoteOfCurrentInstrument = function(note_value, pressed, velocity, newOrCh
         velocity = 127
     end
     if pressed == true then
-        notesPlaying[note_value] = 1
-        notesPlayingLine[note_value] = nil
+        if not (type(special) == "string" and special == "mousepreview") then
+            notesPlaying[note_value] = 1
+            notesPlayingLine[note_value] = nil
+        end
         song:trigger_instrument_note_on(instrument + 1, song.selected_track_index, note_value, velocity / 127.0)
         refreshStates.refreshChordDetection = true
     elseif pressed == false then
-        notesPlaying[note_value] = nil
-        notesPlayingLine[note_value] = nil
+        if not (type(special) == "string" and special == "mousepreview") then
+            notesPlaying[note_value] = nil
+            notesPlayingLine[note_value] = nil
+        end
         song:trigger_instrument_note_off(instrument + 1, song.selected_track_index, note_value)
         refreshStates.refreshChordDetection = true
     else
@@ -3763,14 +3778,16 @@ noteClick = function(x, y, c, released, forceScaling)
         xypadpos.time = os.clock()
 
         if not checkMode("pen") then
-            triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true, note_data.ins)
+            triggerNoteOfCurrentInstrument(note_data.note, true, note_data.vel, true, note_data.ins, "mousepreview")
+            xypadpos.mousepreview = true
         end
         return
     end
 
     if released then
         if note_data ~= nil then
-            triggerNoteOfCurrentInstrument(note_data.note, nil, note_data.vel, true, note_data.ins)
+            triggerNoteOfCurrentInstrument(note_data.note, true, note_data.vel, true, note_data.ins, "mousepreview")
+            xypadpos.mousepreview = true
             if not checkMode("preview") then
                 --clear selection, when ctrl is not holded
                 if #noteSelection > 0 and modifier.keyControl and not forceScaling then
@@ -4015,9 +4032,7 @@ pianoGridClick = function(x, y, released)
                 end
             end
             --trigger new notes
-            for i = 1, #noteSelection do
-                triggerNoteOfCurrentInstrument(noteSelection[i].note, nil, nil, true, noteSelection[i].ins)
-            end
+            triggerNoteOfCurrentInstrument("sel", true)
             --
             refreshStates.refreshPianoRollNeeded = true
             refreshStates.refreshChordDetection = true
@@ -8091,6 +8106,11 @@ handleMouse = function(event)
         event.button_flags["right"] = false
     end
 
+    --stop preview notes when mouse button is released in notemode
+    if xypadpos.notemode and event.type == "up" and (event.button == "left" or event.button == "right" or event.button == "middle") then
+        triggerNoteOfCurrentInstrument("sel", false)
+    end
+
     --when in dragmode reset
     if xypadpos.dragging and event.type == "up" and (event.button == "left" or event.button == "right" or event.button == "middle") then
         xypadpos.dragging = false
@@ -8133,6 +8153,9 @@ handleMouse = function(event)
                 not event.button_flags["middle"] then
                 if checkMode("pen") and not xypadpos.removemode then
                     xypadpos.removemode = true
+                    if xypadpos.mousepreview then
+                        triggerNoteOfCurrentInstrument("sel", false)
+                    end
                     updateNoteSelection(nil, true)
                 else
                     xypadpos.previewmode = true
@@ -8166,6 +8189,9 @@ handleMouse = function(event)
                 xypadpos.mouseCursor = "erase"
             elseif xypadpos.previewmode then
                 local playNotes = {}
+                if xypadpos.mousepreview then
+                    triggerNoteOfCurrentInstrument("sel", false)
+                end
                 --stop old notes
                 for key in pairs(xypadpos.preview) do
                     local note_data = xypadpos.preview[key]
@@ -8301,11 +8327,9 @@ handleMouse = function(event)
                                 newvel = 255
                             end
                             if note_data.vel ~= newvel then
+                                triggerNoteOfCurrentInstrument("sel", false)
                                 changePropertiesOfSelectedNotes(newvel)
-                                for key = 1, #noteSelection do
-                                    triggerNoteOfCurrentInstrument(noteSelection[key].note, nil, noteSelection[key].vel,
-                                        true, noteSelection[key].ins)
-                                end
+                                triggerNoteOfCurrentInstrument("sel", true)
                             end
                         end
                     end
@@ -8385,14 +8409,16 @@ handleMouse = function(event)
                             forceFullRefresh = true
                             xypadpos.duplicate = false
                         end
+                        triggerNoteOfCurrentInstrument("sel", false)
                         for d = math.abs(math.floor(xypadpos.y) - math.floor(val_y + 0.1)), 1, -1 do
                             refreshStates.blockLineModifier = true
                             quickRefresh = true
-                            if transposeSelectedNotes(-d) then
+                            if transposeSelectedNotes(-d, nil, true) then
                                 xypadpos.y = math.floor(xypadpos.y) - d
                                 break
                             end
                         end
+                        triggerNoteOfCurrentInstrument("sel", true)
                     elseif math.floor(xypadpos.y) - math.floor(val_y - 0.1) < 0 then
                         if xypadpos.duplicate then
                             if modifier.keyControl and xypadpos.idx then
@@ -8406,14 +8432,16 @@ handleMouse = function(event)
                             forceFullRefresh = true
                             xypadpos.duplicate = false
                         end
+                        triggerNoteOfCurrentInstrument("sel", false)
                         for d = math.abs(math.floor(xypadpos.y) - math.floor(val_y - 0.1)), 1, -1 do
                             refreshStates.blockLineModifier = true
                             quickRefresh = true
-                            if transposeSelectedNotes(d) then
+                            if transposeSelectedNotes(d, nil, true) then
                                 xypadpos.y = math.floor(xypadpos.y) + d
                                 break
                             end
                         end
+                        triggerNoteOfCurrentInstrument("sel", true)
                     end
                     --y-scroll through, when note hits border
                     if xypadpos.y > gridHeight and noteSlider.value > 0 then
