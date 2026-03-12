@@ -2091,9 +2091,15 @@ end
 triggerNoteOfCurrentInstrument = function(note_value, pressed, velocity, newOrChanged, instrument, special)
     --special trigger for selection
     if type(note_value) == "string" and note_value == "sel" then
+        local triggered = {}
         for i = 1, #noteSelection do
-            triggerNoteOfCurrentInstrument(noteSelection[i].note, pressed, noteSelection[i].vel, true,
-                noteSelection[i].ins, "mousepreview")
+            local note = noteSelection[i]
+            local key = tostring(note.ins) .. ":" .. tostring(note.note)
+            if not triggered[key] then
+                triggered[key] = true
+                triggerNoteOfCurrentInstrument(note.note, pressed, note.vel, true,
+                    note.ins, "mousepreview")
+            end
         end
         xypadpos.mousepreview = pressed
         if xypadpos.mousepreview then
