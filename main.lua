@@ -277,7 +277,6 @@ local defaultPreferences = {
     disableKeyHandler = false,
     shadingType = 1,
     previewPolyphony = 3,
-    previewMidiStuckWorkaround = false,
     limitPreviewBySelectionSize = true,
     disableAltClickNoteRemove = false,
     resetVolPanDlyControlOnClick = true,
@@ -377,7 +376,6 @@ local preferences = renoise.Document.create("ScriptingToolPreferences") {
     keyLabels = defaultPreferences.keyLabels,
     centerViewOnOpen = defaultPreferences.centerViewOnOpen,
     previewPolyphony = defaultPreferences.previewPolyphony,
-    previewMidiStuckWorkaround = defaultPreferences.previewMidiStuckWorkaround,
     limitPreviewBySelectionSize = defaultPreferences.limitPreviewBySelectionSize,
     chordDetection = defaultPreferences.chordDetection,
     outOfPentatonicScaleHighlightingAmount = defaultPreferences.outOfPentatonicScaleHighlightingAmount,
@@ -2152,25 +2150,16 @@ triggerNoteOfCurrentInstrument = function(note_value, pressed, velocity, newOrCh
             table.sort(lastTriggerNote, function(a, b)
                 return a.time < b.time
             end)
-            if preferences.previewMidiStuckWorkaround.value then
-                --use idle function to send note off notes to prevent stuck notes of some vst plugins
-                for i = 1, #lastTriggerNote do
-                    if i <= math.max(1, #lastTriggerNote - preferences.previewPolyphony.value) then
-                        lastTriggerNote[i].time = 0
-                    end
+            --just send note off's directly
+            for i = 1, #lastTriggerNote do
+                if i <= math.max(1, #lastTriggerNote - preferences.previewPolyphony.value) then
+                    song:trigger_instrument_note_off(lastTriggerNote[i].instrument_index,
+                        lastTriggerNote[i].track_index, lastTriggerNote[i].note)
+                else
+                    table.insert(newLastTriggerNote, lastTriggerNote[i])
                 end
-            else
-                --just send note off's directly
-                for i = 1, #lastTriggerNote do
-                    if i <= math.max(1, #lastTriggerNote - preferences.previewPolyphony.value) then
-                        song:trigger_instrument_note_off(lastTriggerNote[i].instrument_index,
-                            lastTriggerNote[i].track_index, lastTriggerNote[i].note)
-                    else
-                        table.insert(newLastTriggerNote, lastTriggerNote[i])
-                    end
-                end
-                lastTriggerNote = newLastTriggerNote
             end
+            lastTriggerNote = newLastTriggerNote
         end
         local noteEvent = {
             time = os.clock(),
@@ -9635,15 +9624,6 @@ showPreferences = function()
                             },
                             vbp:text {
                                 text = "Reduce preview polyphony to selection size",
-                            },
-                        },
-                        vbp:row {
-                            vbp:checkbox {
-                                bind = preferences.previewMidiStuckWorkaround,
-                                tooltip = "It sends note off events after some delay. This will fix stuck notes in some plugins like VCV Rack 2.",
-                            },
-                            vbp:text {
-                                text = "Use workaround for stuck notes",
                             },
                         },
                         vbp:horizontal_aligner {
