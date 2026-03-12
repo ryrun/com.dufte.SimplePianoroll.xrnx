@@ -4082,6 +4082,7 @@ drawNotesToGrid = function(allNotes)
     local l_table_insert = table.insert
     local allNotes_length = #allNotes
     local isInSelection
+    local isPlaying
     local column
     local current_note_line
     local current_note_step
@@ -4132,6 +4133,7 @@ drawNotesToGrid = function(allNotes)
 
     for j = 1, allNotes_length do
         isInSelection = false
+        isPlaying = false
 
         column = allNotes[j][1]
         current_note_line = allNotes[j][2]
@@ -4226,6 +4228,9 @@ drawNotesToGrid = function(allNotes)
                             vel = current_note_vel,
                             ins = current_note_ins
                         })
+                        if not isPlaying and lastStepOn == noteOnStepIndex + i then
+                            isPlaying = true
+                        end
                     end
                 end
             end
@@ -4363,7 +4368,7 @@ drawNotesToGrid = function(allNotes)
                     l_vbw["pianorollColumns"]:add_child(btn);
 
                     --set color
-                    setNoteColor(noteData[current_note_index], false, isInSelection)
+                    setNoteColor(noteData[current_note_index], isPlaying, isInSelection)
 
                     --display retrigger effect
                     if retriggerWidth > 0 then
