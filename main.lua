@@ -621,8 +621,9 @@ local xypadpos = {
     duplicate = false,     --for duplicate shortcut state var
     distanceblock = false, --some distance needed before process anything
     mousepreview = false,  --state if note preview for new or changed notes via mouse is active
+    lastmousepreviewtime = 0,
     resetscale = false,
-    pickuptiming = 0.025,  --time before trackpad reacts
+    pickuptiming = 0.025, --time before trackpad reacts
     scalethreshold = 0.2,
     selection_key = nil,
     idx = nil,
@@ -2090,11 +2091,20 @@ end
 triggerNoteOfCurrentInstrument = function(note_value, pressed, velocity, newOrChanged, instrument, special)
     --special trigger for selection
     if type(note_value) == "string" and note_value == "sel" then
+        --for velocity change, reduce trigger note calls
+        if type(special) == "string" and special == "delayed" then
+            if os.clock() - xypadpos.lastmousepreviewtime < (preferences.triggerTime.value / 1000) then
+                return
+            end
+        end
         for i = 1, #noteSelection do
             triggerNoteOfCurrentInstrument(noteSelection[i].note, pressed, noteSelection[i].vel, true,
                 noteSelection[i].ins, "mousepreview")
         end
         xypadpos.mousepreview = pressed
+        if xypadpos.mousepreview then
+            xypadpos.lastmousepreviewtime = os.clock()
+        end
         return
     end
     --special handling of preview notes, on new notes or changed notes (transpose)
@@ -8327,9 +8337,9 @@ handleMouse = function(event)
                                 newvel = 255
                             end
                             if note_data.vel ~= newvel then
-                                triggerNoteOfCurrentInstrument("sel", false)
+                                triggerNoteOfCurrentInstrument("sel", false, nil, nil, nil, "delayed")
                                 changePropertiesOfSelectedNotes(newvel)
-                                triggerNoteOfCurrentInstrument("sel", true)
+                                triggerNoteOfCurrentInstrument("sel", true, nil, nil, nil, "delayed")
                             end
                         end
                     end
