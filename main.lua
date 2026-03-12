@@ -4363,7 +4363,7 @@ drawNotesToGrid = function(allNotes)
                     l_vbw["pianorollColumns"]:add_child(btn);
 
                     --set color
-                    setNoteColor(noteData[current_note_index], false, isInSelection, current_note_ins)
+                    setNoteColor(noteData[current_note_index], false, isInSelection)
 
                     --display retrigger effect
                     if retriggerWidth > 0 then
