@@ -2,6 +2,8 @@ name: Build XRNX and publish dev build to GitHub Pages
 
 on:
   push:
+    branches:
+      - main
     paths:
       - manifest.xml
       - main.lua
