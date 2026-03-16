@@ -9,8 +9,15 @@ install:
 # Target to create .xrnx package
 package:
 	@echo "\033[1m==> Creating .xrnx package\033[0m"
-	unlink out/com.duftetools.SimplePianoroll.xrnx || true
-	zip out/com.duftetools.SimplePianoroll.xrnx manifest.xml main.lua thumbnail.png cover.png LICENSE
+	@version="$$(sed -n 's|.*<Version>\(.*\)</Version>.*|\1|p' manifest.xml)"; \
+	api_version="$$(sed -n 's|.*<ApiVersion>\(.*\)</ApiVersion>.*|\1|p' manifest.xml)"; \
+	package_name="com.duftetools.SimplePianoroll_v$${version}_api$${api_version}.xrnx"; \
+	backup_file="$$(mktemp manifest.xml.XXXXXX)"; \
+	cp manifest.xml "$$backup_file"; \
+	trap 'mv "$$backup_file" manifest.xml' EXIT; \
+	sed 's|<BuildInfo>Dev</BuildInfo>|<BuildInfo>Stable</BuildInfo>|' "$$backup_file" > manifest.xml; \
+	rm -f "$$package_name"; \
+	zip "$$package_name" manifest.xml main.lua thumbnail.png cover.png LICENSE
 
 # Watch target to monitor changes in main.lua
 watch:
